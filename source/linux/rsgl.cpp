@@ -3,7 +3,10 @@
 #include "../../include/include/linux/rsgl.hpp" // source headers
 #include "../../include/include/linux/deps/X11/Xutil.h"  // more xlib
 #include <pthread.h> // pthread for threading
-
+float			TimeCounter, LastFrameTimeCounter, DT, prevTime = 0.0, FPS;
+struct timeval		tv, tv0;
+int			Frame = 1, FramesPerFPS;
+#include<sys/time.h>
 
 int singleBufferAttributess[] = {
     GLX_RGBA,
@@ -91,7 +94,7 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::co
             else if (dr){
                 if (h < high && text.size() > 2) b=high-h;
                 else b=0;
-                if (d.GPU==1) glBegin(GL_POINTS);   
+                if (d.GPU==1){ glBegin(GL_POINTS);    glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
                 for (j=0; j < h; ++j){
                     for (i=0; i < w; ++i) if ( " .:ioVM@"[bitmap[j*w+i]>>5] != ' '){ 
                         if (!d.GPU){RSGL::drawPoint({i+r.x+(L*s),j+(r.y+b)},col,d);}
@@ -102,7 +105,6 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::co
                             i = d.r.length/2*1.0f;
                             float  y = (-(r.y+y3)/IJ)+1.0f;
                         
-                            glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
                             glVertex2f(x, y);
                         }
                     }
@@ -160,12 +162,10 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill, RSGL::drawable win){
         float  y2 =(-(r.y+r.length)/i)+1.0f;
         GLenum m; if (fill) m=GL_POLYGON; else m=GL_LINE_STRIP;
         glBegin(m);
+        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
         glVertex2f(x,  y);
-        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
         glVertex2f(x2, y);
-        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
         glVertex2f(x2, y2);
-        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
         glVertex2f(x, y2);
         if (!fill) glVertex2f(x,  y);
         glEnd();
@@ -212,8 +212,8 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
         float  r = ((-(c.radius-258)/i)-1.0f);
         if (!fill){
         glBegin(GL_LINE_LOOP);
+                glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
                 for(int ii = 0; ii < 60; ii++){
-                    glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
                     float theta = 2.0f * 3.1415926f * float(ii) / float(60);//get the current angle
 
                     float x = r * cosf(theta);//calculate the x component
@@ -227,7 +227,7 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
         }
         if (fill){
         glBegin(GL_TRIANGLE_FAN);
-            glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
+             glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
             glVertex2f(x2,y2);
 
             for (float angle=1.0f;angle<361.0f;angle+=0.2){
@@ -249,8 +249,20 @@ int RSGL::drawPoint(RSGL::point p, color c, RSGL::drawable win){
 
 
 void RSGL::window::checkEvents(){
+  LastFrameTimeCounter = TimeCounter;
+  gettimeofday(&tv, NULL);
+  TimeCounter = (float)(tv.tv_sec-tv0.tv_sec) + 0.000001*((float)(tv.tv_usec-tv0.tv_usec));
+  DT = TimeCounter - LastFrameTimeCounter;
+ 
+  //calculate FPS
+  Frame ++;
+  if ((Frame%FramesPerFPS) == 0) {
+	FPS = ((float)(FramesPerFPS)) / (TimeCounter-prevTime);
+	prevTime = TimeCounter;
+  }
+  debug.fps=FPS;
   XEvent E;
-  XNextEvent(display, &E);
+  if (XEventsQueued(display,QueuedAlready) + XEventsQueued(display,QueuedAfterReading)) XNextEvent(display, &E);
   event.type = E.type;
   if (event.type == 33 && E.xclient.data.l[0] == (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)){} 
   else if(event.type == 33){event.type = 0;} 
@@ -309,13 +321,10 @@ void RSGL::drawImage(std::string fileName, RSGL::rect r,bool resize,RSGL::drawab
                 i = d.r.length/2*1.0f;
                 float  y = (-(r.y+y3)/i)+1.0f;
                 float  y2 =(-(r.y+y3+1)/i)+1.0f;
-    
+                glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
                 glVertex2f(x,  y);
-                glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
                 glVertex2f(x2, y);
-                glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
                 glVertex2f(x2, y2);
-                glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
                 glVertex2f(x, y2);
                 
             }
@@ -347,8 +356,14 @@ int RSGL::window::setColor(RSGL::color c){
     XSetWindowBackground(display,d,RSGLRGBTOHEX(c.r,c.g,c.b));
     return 1;
 }
+
+static Bool WaitForNotify( Display *dpy, XEvent *event, XPointer arg ) {return (event->type == MapNotify) && (event->xmap.window == (Window) arg);}
+
+
 RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gpu, bool resize){   
     XInitThreads();
+    gettimeofday(&tv0, NULL);
+    FramesPerFPS = 30; 
     display = XOpenDisplay(0);
     if (display == nullptr) exit(0);
     GPU=gpu;
@@ -383,6 +398,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
 
         XLockDisplay(display);
         XUnlockDisplay(display); 
+        glEnable(GL_CULL_FACE);
     }
     else if (gpu==1){
         int numReturned;
@@ -421,6 +437,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         XSelectInput(display, d, swa.event_mask);
         XEvent event;
         XMapWindow(display, d);
+        XIfEvent(display, &event, WaitForNotify, (char*)d);
         /* connect the context to the window */
         glXMakeCurrent(display, d, context);
         
