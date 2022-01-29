@@ -1,3 +1,4 @@
+#define RSGLNOOPENGL
 #include "../RSGL.hpp"
 #include <iostream>
 
@@ -6,7 +7,7 @@
 
 bool running = true;
 
-RSGL::window win("name",{500,500,500,500},{255,255,255});
+RSGL::window win("name",{500,500,500,500},{255,255,255},0);
 
 int main(){
     RSGL::color c = {255,0,0};

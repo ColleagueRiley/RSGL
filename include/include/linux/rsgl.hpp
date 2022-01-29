@@ -84,8 +84,10 @@ namespace RSGL{
           int ledState; // 0 : numlock, 1 : caps lock, 3 : small lock
         }; // event structure to handle events sent to a specific drawable
         char keyboard[32]; // 32 bit char of the keyboard status
+        #ifndef RSGLNOOPENGL
         GLXContext context;
         XVisualInfo* vInfo;
+        #endif
         bool swapFlag=true;
       public:
         std::string name; // the name of the window

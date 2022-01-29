@@ -11,7 +11,7 @@ int singleBufferAttributess[] = {
     GLX_GREEN_SIZE, 8,
     GLX_BLUE_SIZE,  8,
     None };
-int doubleBufferAttributes[] =  {
+int doubleBufferAttributes[] =  { 
 	GLX_RGBA, 
 	GLX_DOUBLEBUFFER,
 	GLX_RED_SIZE,   8,
@@ -209,7 +209,7 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
         float  y2 = (-(c.y)/i)+1.0f;
 
         i = win.r.width/2*1.0f;
-        float  r = ((-(c.radius-220)/i)-1.0f);
+        float  r = ((-(c.radius-258)/i)-1.0f);
         if (!fill){
         glBegin(GL_LINE_LOOP);
                 for(int ii = 0; ii < 60; ii++){
@@ -253,7 +253,7 @@ void RSGL::window::checkEvents(){
   XNextEvent(display, &E);
   event.type = E.type;
   if (event.type == 33 && E.xclient.data.l[0] == (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)){} 
-  else {event.type = 0;} 
+  else if(event.type == 33){event.type = 0;} 
   if (event.type == 4 || event.type == 5){event.button = E.xbutton.button;}
   if (event.type == 4 || event.type == 5 || event.type == 6){event.x=E.xbutton.x;event.y=E.xbutton.y;}
   if (event.type == 2 || event.type == 3){XQueryKeymap(display,keyboard);}
@@ -347,8 +347,6 @@ int RSGL::window::setColor(RSGL::color c){
     XSetWindowBackground(display,d,RSGLRGBTOHEX(c.r,c.g,c.b));
     return 1;
 }
-static Bool WaitForNotify( Display *dpy, XEvent *event, XPointer arg ) {return (event->type == MapNotify) && (event->xmap.window == (Window) arg);}
-
 RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gpu, bool resize){   
     XInitThreads();
     display = XOpenDisplay(0);
@@ -365,8 +363,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
                 | FocusChangeMask
                 | PointerMotionMask
                 | SubstructureNotifyMask
-                | StructureNotifyMask 
-                | ExposureMask;
+                | StructureNotifyMask;
         XSelectInput(display, d, event_mask);
         XMapWindow(display, d);
         if (!d) d={};
@@ -409,23 +406,21 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
 
         swa.colormap = cmap;
         swa.border_pixel = 0;
-        swa.event_mask = KeyPressMask
+        swa.event_mask =  ExposureMask
+                | KeyPressMask
                 | KeyReleaseMask
                 | ButtonPressMask
                 | ButtonReleaseMask
                 | FocusChangeMask
                 | PointerMotionMask
                 | SubstructureNotifyMask
-                | StructureNotifyMask 
-                | ExposureMask;
+                | StructureNotifyMask;
         d = XCreateWindow(display, RootWindow(display, vi->screen), winrect.x, winrect.y, winrect.width,winrect.length,
                         0, vi->depth, InputOutput, vi->visual,
                         (1L<<1) | (1L<<13) | CWBorderPixel | CWEventMask, &swa);
         XSelectInput(display, d, swa.event_mask);
         XEvent event;
         XMapWindow(display, d);
-        XIfEvent(display, &event, WaitForNotify, (char*)d);
-
         /* connect the context to the window */
         glXMakeCurrent(display, d, context);
         
@@ -433,8 +428,8 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         glClearColor(color.r,color.g,color.b,color.a);
         name = wname; r = winrect; color = c;
         dbuffer.d = XCreatePixmap(display,d,winrect.width,winrect.length,XDefaultDepth(display,XDefaultScreen(display)));
-        if (!RSGL::root.d){root=*this;}
     }
+    if (!RSGL::root.d){root=*this;root.display=display;}
 }
 
 int RSGL::CircleCollide(RSGL::circle cir,RSGL::circle cir2){
