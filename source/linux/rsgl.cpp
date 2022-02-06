@@ -79,10 +79,12 @@ std::vector<std::string> RSGL::fileDialog(std::string title,bool multiple,bool s
 }
 
 char ttf_buffer[1<<25];
+char ttf_buffer2[1<<25];
 
 void RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::color col, RSGL::drawable d){
     stbtt_fontinfo Font; bool cre=false; 
-    fread(ttf_buffer, 1, 1<<25, fopen(font, "rb"));
+    FILE* f = fopen(font, "rb");
+    if (ttf_buffer != NULL && f != NULL) fread(ttf_buffer, 1, 1<<25,f);
     int high=0;
     for (int dr=0; dr<2; dr++){
         int L=0;
@@ -99,13 +101,12 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::co
                     for (i=0; i < w; ++i) if ( " .:ioVM@"[bitmap[j*w+i]>>5] != ' '){ 
                         if (!d.GPU){RSGL::drawPoint({i+r.x+(L*s),j+(r.y+b)},col,d);}
                         else if (d.GPU == 1){ 
-                            int x3 = i+r.x+(L*s), y3=j+(r.y+b);
-                            float IJ = d.r.width/2*1.0f;
-                            float  x = (r.x+x3/IJ)-1.0f;
+                            RSGL::point p1 = {i+r.x+(L*s),j+(r.y+b)};
+                            float i = d.r.width/2*1.0f;
+                            float  x = (p1.x/i)-1.0f;
                             i = d.r.length/2*1.0f;
-                            float  y = (-(r.y+y3)/IJ)+1.0f;
-                        
-                            glVertex2f(x, y);
+                            float  y = (-(p1.y)/i)+1.0f;
+                            glVertex2f(x,y);
                         }
                     }
                 }
@@ -116,6 +117,7 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::co
             }
         }
     }  
+    *ttf_buffer=*ttf_buffer2;
 }
 
 RSGL::Text::Text(std::string txt, RSGL::circle r, const char* font, RSGL::color col, bool draw, RSGL::drawable d){
@@ -136,11 +138,49 @@ bool RSGL::window::isPressed(unsigned long key) {
     return isPressed;
 }
 
+
 bool RSGL::window::isPressed(std::string key){
     return isPressed(XStringToKeysym(key.data()));
 }
 
-void RSGL::drawRect(RSGL::rect r,color c, bool fill, RSGL::drawable win){
+
+
+void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,bool t=false) {
+    if (t){
+        DrawDottedLine({r.x,r.y,r.x+r.width,r.y},c,win);
+        DrawDottedLine({r.x,r.y,r.x,r.y+r.length},c,win);
+        DrawDottedLine({r.x+r.width,r.y,r.x+r.width,r.y+r.length},c,win);
+        
+        DrawDottedLine({r.x,r.y+r.length,r.x+r.width,r.y+r.length},c,win);
+    }   
+    else{
+    int x0=r.x, y0=r.y, x1=r.width, y1=r.length;
+    int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
+    int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
+    int err = dx+dy, e2;
+    int count = 0;
+    glBegin(GL_POINTS);
+    while (1) {
+        if (count < 10) {
+            float i = win.r.width/2*1.0f;
+            float  x2 = (x0/i)-1.0f;
+            i = win.r.length/2*1.0f;
+            float  y2 = (-(y0)/i)+1.0f;
+            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
+            glVertex2f(x2,  y2);
+        }
+        if (x0==x1 && y0==y1) break;
+        e2 = 2*err;
+        if (e2 > dy) { err += dy; x0 += sx; }
+        if (e2 < dx) { err += dx; y0 += sy; }
+        count = (count + 1) % 20;
+    }
+    glEnd();
+    glFlush();
+    }
+}
+
+void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable win){
     if (!win.GPU){
         XSetForeground(win.display,XDefaultGC(win.display,XDefaultScreen(win.display)),
         RSGLRGBTOHEX(c.r,c.g,c.b));
@@ -160,6 +200,8 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill, RSGL::drawable win){
         i = win.r.length/2*1.0f;
         float  y = (-(r.y)/i)+1.0f;
         float  y2 =(-(r.y+r.length)/i)+1.0f;
+        if (dotted){DrawDottedLine(r,c,win,true);}
+        else{
         GLenum m; if (fill) m=GL_POLYGON; else m=GL_LINE_STRIP;
         glBegin(m);
         glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
@@ -170,6 +212,7 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill, RSGL::drawable win){
         if (!fill) glVertex2f(x,  y);
         glEnd();
         glFlush();
+        }
     }
 }
 
@@ -243,9 +286,10 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
 
 
 int RSGL::drawPoint(RSGL::point p, color c, RSGL::drawable win){
-    RSGL::drawRect({p.x,p.y,1,1,},c,true,win);
+    RSGL::drawRect({p.x,p.y,1,1,},c,true,false,win);
     return 1;
 }
+
 
 
 void RSGL::window::checkEvents(){
@@ -261,16 +305,31 @@ void RSGL::window::checkEvents(){
 	prevTime = TimeCounter;
   }
   debug.fps=FPS;
+
+  //pthread_t t;
+  //workWindow=*this;
+  //pthread_create(&t,NULL,mouseEvent,NULL);
+
   XEvent E;
   if (XEventsQueued(display,QueuedAlready) + XEventsQueued(display,QueuedAfterReading)) XNextEvent(display, &E);
   event.type = E.type;
   if (event.type == 33 && E.xclient.data.l[0] == (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)){} 
   else if(event.type == 33){event.type = 0;} 
   if (event.type == 4 || event.type == 5){event.button = E.xbutton.button;}
-  if (event.type == 4 || event.type == 5 || event.type == 6){event.x=E.xbutton.x;event.y=E.xbutton.y;}
+  if (event.type == 4 || event.type == 5 || event.type == 6){
+    int x, y,i; unsigned m; unsigned m2; Window w;
+
+    if (XQueryPointer(display, DefaultRootWindow(display), &DefaultRootWindow(display), &w, &x, &y, &i, &i, &m)){event.x=x-(r.width+210); event.y=y-(r.length-200);}
+  }
   if (event.type == 2 || event.type == 3){XQueryKeymap(display,keyboard);}
   if (event.type == 2 || event.type == 3){ event.keycode = XKeycodeToKeysym(display,E.xkey.keycode,1); event.key=XKeysymToString(event.keycode);}
-  else { event.keycode = 0; event.key="";}
+  else { 
+        event.keycode = 0; event.key="";    
+  }  
+  XWindowAttributes a;
+  XGetWindowAttributes(display,d,&a); 
+  if (r.width != a.width || r.length != a.height  && areesize){ glViewport(0,0,a.width,a.height); } //std::cout << E.xresizerequest.width << " , " << E.xresizerequest.height << std::endl;}
+  r.width=a.width; r.length=a.height; r.x=a.x; r.y=a.y;
   XKeyboardState keystate;
   XGetKeyboardControl(display,&keystate); event.ledState= keystate.led_mask;
 }
@@ -360,25 +419,28 @@ int RSGL::window::setColor(RSGL::color c){
 static Bool WaitForNotify( Display *dpy, XEvent *event, XPointer arg ) {return (event->type == MapNotify) && (event->xmap.window == (Window) arg);}
 
 
-RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gpu, bool resize){   
+RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gpu, bool resize, bool autoResize){   
+    areesize=autoResize;
     XInitThreads();
     gettimeofday(&tv0, NULL);
     FramesPerFPS = 30; 
     display = XOpenDisplay(0);
     if (display == nullptr) exit(0);
     GPU=gpu;
+    long event_mask = ExposureMask
+        | KeyPressMask
+        | KeyReleaseMask
+        | ButtonPressMask
+        | ButtonReleaseMask
+        | FocusChangeMask
+        | PointerMotionMask
+        | SubstructureNotifyMask
+        | StructureNotifyMask;
+       // | ResizeRedirectMask;
     if (!gpu){
         Window parent = RootWindow(display, XDefaultScreen(display));
         d = XCreateSimpleWindow(display, parent, winrect.x,winrect.y,winrect.width,winrect.length, 0,0,  RSGLRGBTOHEX(c.r,c.g,c.b));
-        long event_mask = ExposureMask
-                | KeyPressMask
-                | KeyReleaseMask
-                | ButtonPressMask
-                | ButtonReleaseMask
-                | FocusChangeMask
-                | PointerMotionMask
-                | SubstructureNotifyMask
-                | StructureNotifyMask;
+
         XSelectInput(display, d, event_mask);
         XMapWindow(display, d);
         if (!d) d={};
@@ -422,15 +484,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
 
         swa.colormap = cmap;
         swa.border_pixel = 0;
-        swa.event_mask =  ExposureMask
-                | KeyPressMask
-                | KeyReleaseMask
-                | ButtonPressMask
-                | ButtonReleaseMask
-                | FocusChangeMask
-                | PointerMotionMask
-                | SubstructureNotifyMask
-                | StructureNotifyMask;
+        swa.event_mask =  event_mask;
         d = XCreateWindow(display, RootWindow(display, vi->screen), winrect.x, winrect.y, winrect.width,winrect.length,
                         0, vi->depth, InputOutput, vi->visual,
                         (1L<<1) | (1L<<13) | CWBorderPixel | CWEventMask, &swa);

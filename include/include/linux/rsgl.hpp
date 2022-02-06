@@ -75,6 +75,7 @@ namespace RSGL{
     //Window structure
     struct window : drawable{
       private:
+        bool areesize;
         struct Event{ 
           int type; // which even has been sent?
           int button; // which mouse button has been clicked (0) left (1) middle (2) right
@@ -92,6 +93,7 @@ namespace RSGL{
         XVisualInfo* vInfo;
         #endif
         bool swapFlag=true;
+        //static void *event_helper(void *context){return ((RSGL::window *)context)->mouseEvent();}
       public:
         std::string name; // the name of the window
         RSGL::pixmap dbuffer; //double buffer
@@ -110,7 +112,8 @@ namespace RSGL{
               int gpu = 1 /*what to use for graphics?
                     0 - None (xlib/processor only) [ALSO ADD "#ifndef RSGLNOOPENGL" before including RSGL]
                     1 - openGL*/,
-              bool resize = false /* can the user resize the window?*/); //inits the window with these values
+              bool resize = false, /* can the user resize the window?*/
+              bool autoResize = false /* Should everything resize if the window size changes?*/); //inits the window with these values
         
         void checkEvents(); // checks if any events have been sent (is required to get events)
         bool isPressed(unsigned long key); // checks if a key has been pressed (with key code)
@@ -121,7 +124,6 @@ namespace RSGL{
     
     window root; // the first window made
     void test(RSGL::drawable d=root);
-
     // collition functions
     int CircleCollidePoint(RSGL::circle c, RSGL::point p); // if a circle collides with a point
     int CircleCollideRect(RSGL::circle c, RSGL::rect r); // if a circle collides with a rect
@@ -163,6 +165,7 @@ namespace RSGL{
           RSGL::rect r /*the rect to draw*/,
           color c /*the color rect*/, 
           bool fill=True /* fill or just outlines?*/, 
+          bool dotted=false, /*is it a dotted rectangle?*/
           RSGL::drawable win=root /*the window to draw on*/); // draws a rect on the screen
 
     void drawLine(
