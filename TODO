@@ -1,0 +1,7 @@
+TODO Before next update
+
+- Mouse event lag
+- X11 rendering doesn't work
+- 500x500 specific math
+- resize by default (fixed I think)
+- fix any bad code
