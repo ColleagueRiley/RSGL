@@ -1,7 +1,6 @@
 TODO Before next update
 
-- Mouse event lag
-- X11 rendering doesn't work
 - 500x500 specific math
-- resize by default (fixed I think)
+- Mouse event lag
+- resize image function
 - fix any bad code

@@ -202,7 +202,7 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable 
         float  y2 =(-(r.y+r.length)/i)+1.0f;
         if (dotted){DrawDottedLine(r,c,win,true);}
         else{
-        GLenum m; if (fill) m=GL_POLYGON; else m=GL_LINE_STRIP;
+        GLenum m=GL_POLYGON; if (!fill) m=GL_LINE_STRIP;
         glBegin(m);
         glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
         glVertex2f(x,  y);
@@ -311,20 +311,19 @@ void RSGL::window::checkEvents(){
   event.type = E.type;
   if (event.type == 33 && E.xclient.data.l[0] == (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)){} 
   else if(event.type == 33){event.type = 0;} 
-  if (event.type == 4 || event.type == 5){event.button = E.xbutton.button; 
+  else if (event.type == 4 || event.type == 5){event.button = E.xbutton.button; 
     if (event.type==4) pressed=true;  else pressed=false; }
-  if (event.type == 4 || event.type == 5 || event.type == 6){
-    int x, y,i; unsigned m; unsigned m2; 
-    if (XQueryPointer(display, DefaultRootWindow(display), &DefaultRootWindow(display), &d, &x, &y, &i, &i, &m)){event.x=x-(r.width+210); event.y=y-(r.length-200);}
+  else if (event.type == 4 || event.type == 5 || event.type == 6){
+    int x, y,i; unsigned m; unsigned m2; Window w=d;
+    if (XQueryPointer(display, w, &w, &w, &x, &y, &i, &i, &m)){event.x=x-(r.width+210); event.y=y-(r.length-200);}
   }
-  if (event.type == 2 || event.type == 3){XQueryKeymap(display,keyboard);}
-  if (event.type == 2 || event.type == 3){ event.keycode = XKeycodeToKeysym(display,E.xkey.keycode,1); event.key=XKeysymToString(event.keycode);}
+  else if (event.type == 2 || event.type == 3){XQueryKeymap(display,keyboard);}
+  else if (event.type == 2 || event.type == 3){ event.keycode = XKeycodeToKeysym(display,E.xkey.keycode,1); event.key=XKeysymToString(event.keycode);}
   else { 
         event.keycode = 0; event.key="";    
-        int x, y,i; unsigned m; unsigned m2; Window w;
+        int x, y,i; unsigned m; unsigned m2; Window w=d;
         if (XQueryPointer(display, DefaultRootWindow(display), &DefaultRootWindow(display), &w, &x, &y, &i, &i, &m)){
-            
-            if (m){
+        if (m ){
                 if (m == 256) event.button=1;
                 else if (m == 212) event.button=2;
                 else if (m == 1024) event.button=3;
@@ -501,7 +500,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         XIfEvent(display, &event, WaitForNotify, (char*)d);
         /* connect the context to the window */
         glXMakeCurrent(display, d, context); 
-        glEnable(GL_CULL_FACE);
+        
         
         XSetWindowBackground(display,d,RSGLRGBTOHEX(c.r,c.g,c.b));
         glClearColor(color.r,color.g,color.b,color.a);
