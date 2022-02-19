@@ -1,17 +1,15 @@
 #pragma once
-#include <iostream>
-#include <vector>
-#include <map>
-#include "../linux/deps/png++/image.hpp"                     
 #ifndef WIN_NOEXCEPT
 #define WIN_NOEXCEPT
 #endif
 #define _WIN32_WINNT 999999
 
+#include <iostream>
 #include <iomanip>
 #include <algorithm>
 #include <windows.h>
 #include <psapi.h>
+#include <shlobj.h>
 #include <vector>
 #include <chrono>
 #include <gdiplus.h>
@@ -20,8 +18,8 @@
 #include "deps/win32/no_sal2.h"
 #include "deps/win32/Xinput.h" //Init the WIN32 files that requires the Win SDK
 #include "deps/DiscordSDK/discord.h"
+#include "../linux/deps/png++/image.hpp"
 #include "deps/GL/glut.h" // OpenGL Rendering 
-
 
 //#include "d3d9.h" // DirectX Rendering
 #define BYTESTOGB(memory) round((double)memory/1073741824)  // Converts bytes to GB and then rounds it up. Used for converting RAM bytes into GBs
