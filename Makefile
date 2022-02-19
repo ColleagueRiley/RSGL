@@ -1,7 +1,7 @@
 ARGS = -Wall -fPIC -O -g
 OS = linux
 SOURCEDIR = source/$(OS)
-SOURCE = $(SOURCEDIR)/rsgl.cpp
+SOURCE = $(SOURCEDIR)/rsgl.cpp $(SOURCEDIR)/draw.cpp $(SOURCEDIR)/collide.cpp $(SOURCEDIR)/other.cpp
 LIBDIR = $(SOURCEDIR)/deps
 LIBS = $(LIBDIR)/libX11.so.6.4.0 $(LIBDIR)/libpng16.so.16.37.0  $(LIBDIR)/libpthread-2.33.so  $(LIBDIR)/libGL.so.1.7.0 $(LIBDIR)/libGLX.so.0.0.0
 
@@ -13,9 +13,9 @@ WLIBDIR = $(WSOURCEDIR)/deps
 WLIBS = $(WLIBDIR)/libSDL2.a $(WLIBDIR)/libSDL2.dll.a $(WLIBDIR)/libSDL2.a
 
 build:
-	@$(GXX) -c $(ARGS) $(SOURCE) -c -o rsgl.o --no-warnings
-	@$(GXX) -shared rsgl.o $(LIBS) -o libRSGL.so
-	@rm rsgl.o;	
+	@$(GXX) -c $(ARGS) $(SOURCE) -c --no-warnings
+	@$(GXX) -shared rsgl.o draw.o collide.o other.o  $(LIBS) -o libRSGL.so 
+	@rm rsgl.o draw.o collide.o other.o;	
 
 install:
 	@make build

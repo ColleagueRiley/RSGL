@@ -6,7 +6,7 @@
 #include "deps/X11/Xatom.h" //Xlib atom defs
 #include "deps/X11/cursorfont.h" //Xlib defs
 #include "deps/png++/image.hpp" // for loading .png files                
-
+#include "keys.hpp"
 #ifndef RSGLOPEGNL
   #ifndef RSGLNOOPENGL
       #define RSGLOPENGL 0x98342
@@ -36,9 +36,6 @@ namespace RSGL{
     struct circle{int x, y; int radius;}; // a circle
     struct area{int width,length;}; // an area (width/length) without a specific x/y
     struct color{int r,g,b; /* red, green blue and float alpha (not required)*/ float a=255;}; // color structure
-
-    int value(RSGL::rect r){return r.x+r.y+r.width+r.length;}; // get the full value of a rectangle
-    int value(RSGL::circle c){return c.x+c.y+c.radius;}; // get the full value of a circle
 
     // structure for images (.pngs)
     struct image{
@@ -122,7 +119,7 @@ namespace RSGL{
         void clear(); // clears the display
     };
     
-    window root; // the first window made
+    extern window root; // the first window made
     void test(RSGL::drawable d=root);
     // collition functions
     int CircleCollidePoint(RSGL::circle c, RSGL::point p); // if a circle collides with a point

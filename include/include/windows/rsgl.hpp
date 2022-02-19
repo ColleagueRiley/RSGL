@@ -26,9 +26,6 @@ namespace RSGL{
     struct area{int width,length;};
     struct color{int r,g,b; float a=1.0;};
 
-    int value(RSGL::rect r){return r.x+r.y+r.width+r.length;};
-    int value(RSGL::circle c){return c.x+c.y+c.radius;};
-
     struct image{
       RSGL::rect r;
       RSGL::rect srcr = r; 
