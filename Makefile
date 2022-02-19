@@ -6,14 +6,9 @@ LIBDIR = $(SOURCEDIR)/deps
 LIBS = $(LIBDIR)/libX11.so.6.4.0 $(LIBDIR)/libpng16.so.16.37.0  $(LIBDIR)/libpthread-2.33.so  $(LIBDIR)/libGL.so.1.7.0 $(LIBDIR)/libGLX.so.0.0.0
 
 GXX = g++
-WGXX= wineg++
-WSOURCEDIR = source/windows
-WSOURCE = $(WSOURCEDIR)/rsgl.cpp
-WLIBDIR = $(WSOURCEDIR)/deps
-WLIBS = $(WLIBDIR)/libSDL2.a $(WLIBDIR)/libSDL2.dll.a $(WLIBDIR)/libSDL2.a
-
 build:
 	@$(GXX) -c $(ARGS) $(SOURCE) -c --no-warnings
+	@ar qc libRSGL.a *.o
 	@$(GXX) -shared rsgl.o draw.o collide.o other.o  $(LIBS) -o libRSGL.so 
 	@rm rsgl.o draw.o collide.o other.o;	
 
@@ -48,6 +43,26 @@ windows:
 	make windowsBuild
 	make windowsInstall
 
+help:
+	@echo "make help : runs this help tab"
+	@echo "make : runs both build and install"
+	@echo "make build : builds libRSGL.so in the local dir"
+	@echo "make install : installs the build into /usr/lib, then removes in, runs buld if it's not already build"
+	@echo "make update : update preexisting RSGL"
+	@echo "make uninstall : uninstall RSGL"
+
+WARGS = -Wall -fPIC -O2 -Wno-unknown-pragmas -g
+WSOURCEDIR = source/windows
+WSOURCE = $(WSOURCEDIR)/rsgl.cpp $(WSOURCEDIR)/collide.cpp $(WSOURCEDIR)/device.cpp $(WSOURCEDIR)/draw.cpp $(WSOURCEDIR)/xinput.cpp
+WLIBS = -L"$(CURDIR)/source/windows/deps" -lcomdlg32 -lgdiplus -lgdi32 -lmsimg32 -Lcomdlg32 -ldiscord -lopengl32 -lfreeglut -lxinput -lpng -lwin32
+
+windowsBuild:
+	@$(GXX) -C $(WARGS) $(WSOURCE) -c --no-warnings
+	@$(GXX) -shared rsgl.o draw.o collide.o device.o xinput.o $(WLIBS) -lmingw32 -static-libgcc -static-libstdc++ -static -o libRSGL.lib
+	@rm rsgl.o draw.o collide.o device.o  xinput.o;	
+windowsCompile:
+	@$(GXX) $(WARGS) source/main.cpp libRSGL.lib -o RSGL.exe
+	./RSGL.exe
 help:
 	@echo "make help : runs this help tab"
 	@echo "make : runs both build and install"

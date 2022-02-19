@@ -1,287 +1,640 @@
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../../include/include/linux/deps/stb_image_write.h" 
-#define STB_TRUETYPE_IMPLEMENTATION 
-#include "../../include/include/linux/deps/stb_truetype.h"
+#ifndef RSGL
 #include "../../include/include/windows/rsgl.hpp"
-#include "../../include/include/windows/deps/SDL2/SDL.h"
-#include <pthread.h>
+#endif
 
-void RSGL::notifiy(std::string title, std::string content ,std::string image){
-
+std::string wintest() { 
+    return "windows gay";
 }
+HGLRC glrc;
+RSGL::window::window(const char* name, RSGL::rect r, RSGL::color c, uint32_t flag/*=0*/) {
+    if (flag & 32) {  }
+    else { win32_SetProcessDpiAware(); } //We check if DPI is enabled
 
-void RSGL::messageBox(std::string message,bool question,bool error){
+    HINSTANCE inh = GetModuleHandle(nullptr); // We get the instance
 
-}
+    WNDCLASSEXA Class;
+	ZeroMemory(&Class, sizeof(WNDCLASSEXW));
+    Class.cbSize = sizeof(WNDCLASSEXW);
+    Class.lpszClassName = TEXT("RSGL Windows (Official)");
+    Class.hInstance = inh;
+    Class.hIcon = LoadIcon(NULL, IDI_WINLOGO);
+    Class.hCursor = LoadCursor(NULL, IDC_ARROW);
+    Class.lpfnWndProc = WindowProc;
+    Class.hbrBackground = CreateSolidBrush(RGB(c.r, c.g, c.b));
+    Class.cbClsExtra = 0;
+	Class.cbWndExtra = 0;
+    Class.lpszMenuName = NULL;
+    Class.hIconSm = NULL;
+    RegisterClassExA(&Class);
 
-std::vector<std::string> RSGL::fileDialog(std::string title,bool multiple,bool save, bool directory){
-    return {};
-}
-
-
-RSGL::text RSGL::loadText(std::string word, RSGL::rect r, std::string font, RSGL::color c,RSGL::drawable win){
-    /* load font file */
-    int size;
-    unsigned char* fontBuffer;
-    
-    FILE* fontFile = fopen(font.data(), "rb");
-    fseek(fontFile, 0, SEEK_END);
-    size = ftell(fontFile); /* how long is the file ? */
-    fseek(fontFile, 0, SEEK_SET); /* reset */
-    
-    fontBuffer = (unsigned char*)malloc(size);
-    
-    fread(fontBuffer, size, 1, fontFile);
-    fclose(fontFile);
-
-    /* prepare font */
-    stbtt_fontinfo info;
-    if (!stbtt_InitFont(&info, fontBuffer, 0)) std::cout << "failed to load font\n";
-    r.width = (int)word.size()*25.6;
-    //r.width = word.size()*r.length;
-    int b_w = r.width; /* bitmap width */;
-    int b_h = r.length; /* bitmap height */
-    int l_h = r.length; /* line height */
-
-    /* create a bitmap for the phrase */
-    unsigned char* bitmap = (unsigned char*)calloc(b_w * b_h, sizeof(unsigned char));
-    memset(bitmap,0xFF,b_w * b_h*sizeof(unsigned char));
-    
-    /* calculate font scaling */
-    float scale = stbtt_ScaleForPixelHeight(&info, l_h);
-    
-    int x = 0;
-       
-    int ascent, descent, lineGap;
-    stbtt_GetFontVMetrics(&info, &ascent, &descent, &lineGap);
-    
-    ascent = roundf(ascent * scale); descent = roundf(descent * scale);
-    
-    for (int i = 0; i < (int)word.size(); ++i){
-        /* how wide is this character */
-        int ax; int lsb;
-        stbtt_GetCodepointHMetrics(&info, word[i], &ax, &lsb);
-
-        /* get bounding box for character (may be offset to account for chars that dip above or below the line */
-        int c_x1, c_y1, c_x2, c_y2;
-        stbtt_GetCodepointBitmapBox(&info, word[i], scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
-        
-        /* compute y (different characters have different heights */
-        int y = ascent + c_y1;
-        
-        /* render character (stride and offset is important here) */
-        int byteOffset = x + roundf(lsb * scale) + (y * b_w);
-        stbtt_MakeCodepointBitmap(&info, bitmap + byteOffset, c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, word[i]);
-
-        /* advance x */
-        x += roundf(ax * scale);
-        
-        /* add kerning */
-        int kern; 
-        kern = stbtt_GetCodepointKernAdvance(&info, word[i], word[i + 1]);
-        x += roundf(kern * scale);
+    RECT Rect = {r.x, r.y, r.length, r.width}; 
+    AdjustWindowRect(&Rect, WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU | WS_BORDER | WS_SIZEBOX, false);
+    HWND window = CreateWindowEx(0, 
+        TEXT("RSGL Windows (Official)"), 
+        name, 
+        WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SYSMENU | WS_BORDER | WS_SIZEBOX, 
+        r.x, r.y, r.width, r.length, 
+        NULL, 
+        NULL, 
+        inh, 
+        NULL
+    );                
+    RSGL::window::hwnd = window;
+    if (flag & 64) { //GDI rendering
+        Gdiplus::GdiplusStartupInput input = {0}; 
+        input.GdiplusVersion = 1;
+        ULONG_PTR token;
+        Gdiplus::GdiplusStartup(&token, &input, NULL);
     }
-    //int len;    
-    std::ifstream stream;
+    /*else if (RSGL::win.enabled_flags & 512) { // DirectX rendering
+        d3d = Direct3DCreate9(D3D_SDK_VERSION);
+        D3DPRESENT_PARAMETERS d3dpp;
 
-    png::image< png::rgba_pixel > image(stream);
+        ZeroMemory(&d3dpp, sizeof(d3dpp));
+        d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+        d3dpp.hDeviceWindow = window;
+        d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
+        d3dpp.BackBufferWidth = r.width;
+        d3dpp.BackBufferHeight = r.length;
+
+        d3d->CreateDevice(D3DADAPTER_DEFAULT,
+                        D3DDEVTYPE_HAL,
+                        window,
+                        D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                        &d3dpp,
+                        &d3ddev);
+        
+        
+    }*/
+    else { // OpenGL rendering
+        PIXELFORMATDESCRIPTOR pfd;
+        ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+        pfd.nVersion = 1;
+        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
+        pfd.iPixelType = PFD_TYPE_RGBA;
+        pfd.cColorBits = 32;
+        pfd.cDepthBits = 24;
+        pfd.cStencilBits = 8;
+        
+        HDC hdc = GetDC(hwnd);
+        int format = ChoosePixelFormat(hdc, &pfd);
+        SetPixelFormat(hdc, format, &pfd);
+        glrc = wglCreateContext(hdc);
+        wglMakeCurrent(hdc, glrc);
+        
+        glEnable(GL_BLEND); //Enable blending.
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //Set blending function.
+        glClearColor((float)c.r/255, (float)c.g/255, (float)c.b/255, float(c.a)/255);
+    }
+
+    RSGL::window::enabled_flags=flag;
+    RSGL::window::r = r;
+
+    int show = SW_SHOW;
+    if (flag & 8) { show=SW_SHOWMAXIMIZED; } // MAXAMIZED_WINDOW flag
+    else if (flag & 16) { show=SW_SHOWMINIMIZED; } // MINIMIZED_WINDOW flag
+
+    if (flag & 1)  { }; // DEBUG, not implemented trolololol
+    if (flag & 4)  { RSGL::window::fullscreen(true);}; // Fullscreen
+    if (flag & 128) { RSGL::window::centralize();} //Centralized
     
-    
-    return {};
+    ShowWindow(window, show);
+    UpdateWindow(window);
+    SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0); // We check for mouse input
 }
 
-RSGL::image RSGL::loadImage(const char* file, RSGL::rect r,RSGL::drawable win){
-  std::string command = "convert ";
-  command += file; command += " -resize " + std::to_string(r.width) + "x" +std::to_string(r.length) + " out.png"; 
-  system(command.data());
-  
-  png::image< png::rgba_pixel > image("out.png");
-  system("rm out.png");
-  std::vector<std::vector<int>> cords;
-  
-  for (png::uint_16 y=0; y < image.get_height(); y++){
-    for (png::uint_16 x=0; x < image.get_width(); x++){
-        if(image[y][x].alpha >= 100){
-          cords.insert(cords.end(),{(int)x+r.x,(int)y+r.y});
+
+int RSGL::window::checkEvents(){
+    RSGL::window::event.type = RSGL::window::ProcMSG();
+    RSGL::win = {RSGL::window::r, RSGL::window::c, RSGL::window::enabled_flags, RSGL::window::hwnd, RSGL::win.old_key, RSGL::win.check, RSGL::win.biop};
+
+    if (RSGL::window::event.type == RSGL::MousePosChanged) { //We get the mouse position (if the mouse position changed)
+        POINT cursorPos;
+        GetCursorPos(&cursorPos);
+        RSGL::window::event.x = cursorPos.x-RSGL::window::r.x-15;
+        RSGL::window::event.y = cursorPos.y-(RSGL::window::r.y);
+    }
+
+    if (RSGL::win.enabled_flags & 2) { // We check if xinput is enabled
+        XINPUT_STATE state;
+        ZeroMemory(&state, sizeof(XINPUT_STATE));
+        XInputGetState(0, &state);
+
+        RSGL::window::event.pad_x = state.Gamepad.sThumbLX; // L-stick
+        RSGL::window::event.pad_y = state.Gamepad.sThumbLY;
+        RSGL::window::event.r_pad_x = state.Gamepad.sThumbRX; // R-stick
+        RSGL::window::event.r_pad_y = state.Gamepad.sThumbRY;
+    }
+    if (RSGL::win.enabled_flags & 64) { // GDI rendering
+        PAINTSTRUCT ps;
+        BeginPaint(RSGL::win.hwnd, &ps);
+
+        HBRUSH background_brush = CreateSolidBrush(RGB(RSGL::window::c.r, RSGL::window::c.g, RSGL::window::c.b));
+        RECT rect;
+        GetClientRect(RSGL::window::hwnd, &rect);
+        FillRect(RSGL::win.biop->Get_DC_Buffer(0),&rect,background_brush);
+        DeleteObject(background_brush);
+    }
+    /*else if (RSGL::win.enabled_flags & 512) { // DirectX rendering
+        
+    }*/
+    else { glClear(GL_COLOR_BUFFER_BIT); } // OpenGL rendering
+    /*if (RSGL::win.enabled_flags & 1) {
+        if (!RSGL::check_hardware_info) {
+            device_info info = RSGL::getGPUDeviceInfo();
+            window::debug.gpu = info.gpu;
+            window::debug.vram_available = info.vram;
+            window::debug.driver = info.driver_version;
+            info = RSGL::getCPUDeviceInfo(true, false, false, false);
+            window::debug.cpu = info.cpu;
+            info = RSGL::getOSDeviceInfo(true, false, false, false, false);
+            window::debug.os = info.os;
+            check_hardware_info=true;
+        }
+        PROCESS_MEMORY_COUNTERS_EX pmc;
+        GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+        window::debug.fps = RSGL::getFPS();
+        window::debug.vram_used =  BYTESTOMB(pmc.PeakWorkingSetSize)/2;
+    }*/
+    Sleep(1);
+    return 0;
+}
+
+int RSGL::window::clear() {
+    if (RSGL::win.enabled_flags & 64) { RSGL::win.biop->Copy_to_Screen(0);} // GDI Rendering
+    /*else if (RSGL::win.enabled_flags & 512) {// DirectX rendering
+        d3ddev->EndScene();
+        d3ddev->Present(NULL, NULL, NULL, NULL);
+    }*/
+    else {  glFlush(); } // OpenGL rendering
+    PAINTSTRUCT ps;
+    EndPaint(RSGL::window::hwnd, &ps);
+    return 0;
+}
+
+int RSGL::window::close() {
+    if (RSGL::win.enabled_flags & 64) { Gdiplus::GdiplusShutdown((ULONG_PTR)0); } // GDI rendering
+    /*else if (RSGL::win.enabled_flags & 512) { // DirectX rendering
+        v_buffer->Release();
+        d3ddev->Release();
+        d3d->Release();
+    }*/
+    else { // OpenGL rendering
+        wglMakeCurrent(NULL, NULL);
+        wglDeleteContext(glrc);
+    }
+    DestroyWindow(RSGL::win.hwnd);
+    PostQuitMessage(0);
+    return 0;
+}
+
+void RSGL::window::resize(bool value){
+    if (value) SetWindowLong(RSGL::win.hwnd, GWL_STYLE, GetWindowLong(RSGL::win.hwnd, GWL_STYLE)|WS_SIZEBOX);
+    else SetWindowLong(RSGL::win.hwnd, GWL_STYLE, GetWindowLong(RSGL::win.hwnd, GWL_STYLE)&~WS_SIZEBOX);
+}
+
+void RSGL::window::fullscreen(bool value) {
+    DWORD style = GetWindowLong(RSGL::win.hwnd, GWL_STYLE);
+    MONITORINFO mi = { sizeof(mi) };
+	if (value) {
+		RECT rect;
+		GetWindowRect(RSGL::win.hwnd, &rect);
+        RSGL::window::r.x = rect.left;
+		RSGL::window::r.y = rect.top;
+		RSGL::window::r.width = rect.right - rect.left;
+		RSGL::window::r.length = rect.bottom - rect.top;
+
+		GetMonitorInfo(MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+		SetWindowLong(RSGL::win.hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+		SetWindowPos(RSGL::win.hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
+			mi.rcMonitor.right - mi.rcMonitor.left,
+			mi.rcMonitor.bottom - mi.rcMonitor.top,
+			SWP_NOOWNERZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+	}
+	else {
+		GetMonitorInfo(MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+		SetWindowLong(RSGL::win.hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+		SetWindowPos(RSGL::win.hwnd, HWND_NOTOPMOST, RSGL::window::r.x, RSGL::window::r.y, RSGL::window::r.width, RSGL::window::r.length, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+	}
+}
+void RSGL::window::position(RSGL::rect window){ MoveWindow(RSGL::win.hwnd, window.x, window.y, window.width, window.length ,true); }
+void RSGL::window::maximize(bool value) {
+    int g;
+    if (value) g = SW_SHOWMAXIMIZED;
+    else g=SW_SHOWNORMAL;
+    ShowWindow(RSGL::win.hwnd, g);
+}
+
+void RSGL::window::centralize() {
+	MONITORINFO mi = { sizeof(mi) };
+
+	GetMonitorInfo(MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTONEAREST), &mi);
+	int x = (mi.rcMonitor.right - mi.rcMonitor.left - RSGL::window::r.width) / 2;
+	int y = (mi.rcMonitor.bottom - mi.rcMonitor.top - RSGL::window::r.length) / 2;
+
+	SetWindowPos(RSGL::win.hwnd, 0, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
+}
+
+RSGL::resolution RSGL::window::getScreenResolution() {
+    HMONITOR monitor = MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO info;
+    info.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfo(monitor, &info);
+    DEVMODE dev;
+    dev.dmSize = sizeof(DEVMODE);
+    EnumDisplaySettings(NULL, 0, &dev);
+       
+    return {info.rcMonitor.right - info.rcMonitor.left, info.rcMonitor.bottom - info.rcMonitor.top, (int)dev.dmDisplayFrequency};
+}
+
+std::vector<RSGL::resolution> RSGL::window::getAvailableResolutions() {
+    DEVMODE dev;
+    dev.dmSize = sizeof(DEVMODE);
+    int i=0;
+    std::vector<RSGL::resolution> list= { {0,0,0} };
+    while (EnumDisplaySettings(NULL, i, &dev)) {
+        if (list.begin()->x != (int)dev.dmPelsWidth && list.begin()->y != (int)dev.dmPelsHeight)  { list.insert(list.begin(), {(int)dev.dmPelsWidth, (int)dev.dmPelsHeight, (int)dev.dmDisplayFrequency}); }
+        i++;
+    }
+    list.pop_back();
+    return list;
+}
+
+int RSGL::window::changeIcon(const char* filename) {
+    HANDLE hIcon = LoadImage(NULL, filename, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+    if (hIcon) {
+        SendMessage(RSGL::win.hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+        return 0;
+    } 
+    return -1;
+}
+
+int RSGL::window::changeName(const char* name) {
+    SetWindowText(RSGL::win.hwnd, name);
+    return 0;
+}
+
+
+
+bool RSGL::window::isPressed(int key, int port/*=0*/) {
+    if (RSGL::win.enabled_flags & 2) {
+        if ((key == VK_PAD_A || key == VK_PAD_B || key == VK_PAD_X || key == VK_PAD_Y) || 
+            (key == VK_PAD_LTHUMB_PRESS || key == VK_PAD_RTHUMB_PRESS || 
+            (key == VK_PAD_LSHOULDER || key == VK_PAD_RSHOULDER || key == VK_PAD_LTRIGGER) || key == VK_PAD_RTRIGGER) ||
+            (key == VK_PAD_START || key == VK_PAD_BACK) ||
+            (key == VK_PAD_DPAD_UP || key == VK_PAD_DPAD_DOWN || key == VK_PAD_DPAD_LEFT || key == VK_PAD_DPAD_RIGHT) || 
+            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_LTHUMB_DOWN || key == VK_PAD_LTHUMB_LEFT || key == VK_PAD_LTHUMB_RIGHT) || 
+            (key == VK_PAD_LTHUMB_UPLEFT || key == VK_PAD_LTHUMB_UPRIGHT || key == VK_PAD_LTHUMB_DOWNLEFT || key == VK_PAD_LTHUMB_DOWNRIGHT) || 
+            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_RTHUMB_DOWN || key == VK_PAD_RTHUMB_LEFT || key == VK_PAD_RTHUMB_RIGHT) || 
+            (key == VK_PAD_RTHUMB_UPLEFT || key == VK_PAD_RTHUMB_UPRIGHT || key == VK_PAD_RTHUMB_DOWNLEFT || key == VK_PAD_RTHUMB_DOWNRIGHT) 
+        ) { // We check if the Key is an Xinput input.
+            XINPUT_KEYSTROKE state;
+            ZeroMemory(&state, sizeof(XINPUT_KEYSTROKE));
+            
+            XInputGetKeystroke(port, 0, &state); // We get the current inputs
+            return state.VirtualKey == key;
         }
     }
-  }
-  return {};
+    return GetKeyState(key) & 0x1000;
 }
 
-int RSGL::drawImage(RSGL::image image,RSGL::drawable win){
-  if (image.srcr.width != image.r.width || image.srcr.length != image.r.length) image = RSGL::loadImage(image.file,image.r);
-  return 1;
-}
-
-
-int RSGL::clear(RSGL::rect r,RSGL::drawable win){
-  #ifdef OPENGL
-    //cairo_push_group(RSGL::ctx);
-    cairo_set_source_rgb(RSGL::ctx,1,1,1);
-    cairo_paint(RSGL::ctx);
-    cairo_set_source_rgb(RSGL::ctx,255,255,255);
-
-    //cairo_pop_group_to_source(RSGL::ctx);
-    cairo_paint(RSGL::ctx);
-    cairo_surface_flush(RSGL::sfc);
-  #endif
-  return 1;
-}
-
-bool RSGL::window::isPressed(unsigned long key) {
+bool RSGL::window::isReleased(int key, int port/*=0*/) {
+    if (RSGL::win.enabled_flags & 2) {
+        if ((key == VK_PAD_A || key == VK_PAD_B || key == VK_PAD_X || key == VK_PAD_Y) || 
+            (key == VK_PAD_LTHUMB_PRESS || key == VK_PAD_RTHUMB_PRESS || 
+            (key == VK_PAD_LSHOULDER || key == VK_PAD_RSHOULDER || key == VK_PAD_LTRIGGER) || key == VK_PAD_RTRIGGER) ||
+            (key == VK_PAD_START || key == VK_PAD_BACK) ||
+            (key == VK_PAD_DPAD_UP || key == VK_PAD_DPAD_DOWN || key == VK_PAD_DPAD_LEFT || key == VK_PAD_DPAD_RIGHT) || 
+            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_LTHUMB_DOWN || key == VK_PAD_LTHUMB_LEFT || key == VK_PAD_LTHUMB_RIGHT) || 
+            (key == VK_PAD_LTHUMB_UPLEFT || key == VK_PAD_LTHUMB_UPRIGHT || key == VK_PAD_LTHUMB_DOWNLEFT || key == VK_PAD_LTHUMB_DOWNRIGHT) || 
+            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_RTHUMB_DOWN || key == VK_PAD_RTHUMB_LEFT || key == VK_PAD_RTHUMB_RIGHT) || 
+            (key == VK_PAD_RTHUMB_UPLEFT || key == VK_PAD_RTHUMB_UPRIGHT || key == VK_PAD_RTHUMB_DOWNLEFT || key == VK_PAD_RTHUMB_DOWNRIGHT) 
+        ) {
+            XINPUT_KEYSTROKE state;
+            ZeroMemory(&state, sizeof(XINPUT_KEYSTROKE));
+            
+            XInputGetKeystroke(port, 0, &state);
+            return ((state.Flags == XINPUT_KEYSTROKE_KEYUP) && (state.VirtualKey == key));
+        }
+    }
+    int g = GetKeyState(key) & 0x1000; // We check if `key` is being pressed`
+    if (g == 4096) { RSGL::win.old_key=key; return false; }  // If it is being pressed, set `RSGL::win.old_key` as `key` and return false
+    else if (key==RSGL::win.old_key && g != 4096) {RSGL::win.old_key=695; return true;} // If `RSGL::win.old_key` is `key` but `key` isn't being pressed, then it means `key` was released recently. Set `RSGL::win.old_key` to anything to make sure it doesn't spam true
     return false;
 }
 
-
-void RSGL::drawRect(RSGL::rect r,color c, bool fill,int stroke, int lineColor, RSGL::color lineCol,RSGL::drawable win){
-
-}
-
-int RSGL::drawCircle(RSGL::circle c, color col,bool fill,int stroke, int lineColor, RSGL::color lineCol,RSGL::drawable win){
-  if (!lineColor) lineCol = col;
-    #ifdef OPENGL    
-    cairo_set_source_rgba(RSGL::ctx, (double)lineCol.r,(double)lineCol.g,(double)lineCol.b,(double)lineCol.a);
-    cairo_arc(RSGL::ctx,c.x,c.y,c.radius,0,2 * M_PI);
-    cairo_set_line_width(RSGL::ctx, stroke);
-    cairo_stroke(RSGL::ctx);
-    if (fill){
-      cairo_set_source_rgba(RSGL::ctx, (double)col.r,(double)col.g,(double)col.b,(double)col.a);
-      cairo_arc(RSGL::ctx, c.x,c.y, c.radius,0, 2 * M_PI);
-      cairo_stroke_preserve(RSGL::ctx);
-      cairo_set_source_rgba(RSGL::ctx, (double)col.r,(double)col.g,(double)col.b,(double)col.a);
-      cairo_fill(RSGL::ctx);
-      cairo_set_source_rgba(RSGL::ctx, (double)col.r,(double)col.g,(double)col.b,(double)col.a);
+bool RSGL::window::isClicked(int key, int port/*=0*/) {
+    if (RSGL::win.enabled_flags & 2) {
+        if ((key == VK_PAD_A || key == VK_PAD_B || key == VK_PAD_X || key == VK_PAD_Y) || 
+            (key == VK_PAD_LTHUMB_PRESS || key == VK_PAD_RTHUMB_PRESS || 
+            (key == VK_PAD_LSHOULDER || key == VK_PAD_RSHOULDER || key == VK_PAD_LTRIGGER) || key == VK_PAD_RTRIGGER) ||
+            (key == VK_PAD_START || key == VK_PAD_BACK) ||
+            (key == VK_PAD_DPAD_UP || key == VK_PAD_DPAD_DOWN || key == VK_PAD_DPAD_LEFT || key == VK_PAD_DPAD_RIGHT) || 
+            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_LTHUMB_DOWN || key == VK_PAD_LTHUMB_LEFT || key == VK_PAD_LTHUMB_RIGHT) || 
+            (key == VK_PAD_LTHUMB_UPLEFT || key == VK_PAD_LTHUMB_UPRIGHT || key == VK_PAD_LTHUMB_DOWNLEFT || key == VK_PAD_LTHUMB_DOWNRIGHT) || 
+            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_RTHUMB_DOWN || key == VK_PAD_RTHUMB_LEFT || key == VK_PAD_RTHUMB_RIGHT) || 
+            (key == VK_PAD_RTHUMB_UPLEFT || key == VK_PAD_RTHUMB_UPRIGHT || key == VK_PAD_RTHUMB_DOWNLEFT || key == VK_PAD_RTHUMB_DOWNRIGHT) 
+        ) {
+            XINPUT_KEYSTROKE state;
+            ZeroMemory(&state, sizeof(XINPUT_KEYSTROKE));
+            
+            XInputGetKeystroke(port, 0, &state);
+            return ((state.Flags == XINPUT_KEYSTROKE_KEYDOWN) && (state.VirtualKey == key));
+        }
     }
-  #endif
-  return 1;
+    int g = GetKeyState(key) & 0x1000; 
+    if (g == 4096 && key!=RSGL::win.old_key) { RSGL::win.old_key=key; return true; } 
+    else if (g != 4096 && key==RSGL::win.old_key) {RSGL::win.old_key=635;}
+    return false;
 }
 
+int RSGL::messageBox(std::string title, std::string message, int option/*=-1*/, UINT flags/*=0*/) {
+    /* 
+    -1 - Nothing
+    0  - Error
+    1  - Warning
+    2  - Question
+    */
+    UINT opt=0;
+    if (option == 0) opt = MB_ICONERROR | flags;
+    else if (option == 1) opt = MB_ICONWARNING | flags;
+    else if (option == 2) opt = MB_ICONQUESTION | flags;
+    else if (option == -1) opt = flags;
 
-int RSGL::drawPoint(RSGL::point p, color c, RSGL::drawable win){
-  #ifdef OPENGL
-      cairo_set_source_rgba(RSGL::ctx, (double)c.r,(double)c.b,(double)c.g,(double)c.a);
-      cairo_rectangle(RSGL::ctx, (float)p.x,(float)p.y, 1,1);
-      cairo_fill_preserve(RSGL::ctx);
-  #endif
-  return 1;
+    return MessageBox(RSGL::win.hwnd, message.c_str(), title.c_str(), opt);
 }
 
+std::string RSGL::fileDialog(const char* title, bool multiple/*=false*/, bool save/*=false*/, bool directory/*=false*/) {
+    if (!directory) { 
+        OPENFILENAME ofn;
+        char szFile[260];
+        
+        // Initialize OPENFILENAME
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.lpstrFile = szFile;
+        ofn.lpstrFile[0] = '\0';
+        ofn.nMaxFile = 1024;
+        ofn.lpstrFilter = title; 
+        ofn.nFilterIndex = 0;//"All\0*.*\0Text\0*.TXT\0";
+        if (multiple) ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_ALLOWMULTISELECT | OFN_EXPLORER ;
+        else ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
-void RSGL::window::checkEvents(){
-
-}
-
-void RSGL::window::close(){
-  SDL_Quit();
-}
-
-void RSGL::window::clear(){
-  
-}
-
-
-int RSGL::drawText(RSGL::text t,RSGL::drawable win){
-    RSGL::text image = t;
-    if (image.srcr.width != image.r.width || image.srcr.length != image.r.length || (image.c.r+image.c.g+image.c.b) != (image.sc.r+image.sc.g+image.sc.b) || image.text  != image.stext){
-
-    }
-    return 1;
-}
-
-void RSGL::drawable::loadArea(RSGL::drawable& dsrc, RSGL::rect r, RSGL::point p){
-}
-
-
-RSGL::pixmap::pixmap(RSGL::drawable dr, RSGL::area a){
-
-}
-
-int RSGL::window::setColor(RSGL::color c){
-    color = c;
-
-    return 1;
-}
-
-RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, bool resize){
-    SDL_Init(NULL);
-    d = SDL_CreateWindow(wname.data(), winrect.x,winrect.y,winrect.width,winrect.length,0);
-    r = SDL_CreateRenderer(d, 0, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-}
-
-int RSGL::CircleCollide(RSGL::circle cir,RSGL::circle cir2){
-	float distanceBetweenCircles = (float)sqrt(
-	(cir2.x - cir.x) * (cir2.x - cir.x) + 
-    (cir2.y - cir.y) * (cir2.y - cir.y)
-  	);
-	if (distanceBetweenCircles > cir.radius + cir2.radius){return 0;}else{return 1;}
-}
-
-int RSGL::CircleCollideRect(RSGL::circle c, RSGL::rect r){
-  float testX = c.x; float testY = c.y;
-
-  if (c.x < r.x) {testX = r.x;}  else if (c.x > r.x+r.width) {testX = r.x+r.width;}
-  if (c.y < r.y) {testY = r.y;}  else if (c.y > r.y+r.length) {testY = r.y+r.length;} 
-  
-  return (sqrt( ( (c.x-testX) * (c.x-testX) ) + ( (c.y-testY) *(c.y-testY) ) )  <= c.radius);
-}
-
-int RSGL::CircleCollidePoint(RSGL::circle c, RSGL::point p){
-	float testX = c.x; float testY = c.y;
-
-  	if (c.x < p.x) {testX = p.x;}  else if (c.x > p.x+1) {testX = p.x+1;}
-  	if (c.y < p.y) {testY = p.y;}  else if (c.y > p.y+1) {testY = p.y+1;} 
-  
-  	return (sqrt( ( (c.x-testX) * (c.x-testX) ) + ( (c.y-testY) *(c.y-testY) ) )  <= c.radius);
-}
-
-int RSGL::RectCollidePoint(RSGL::rect r, RSGL::point p){
-    if (p.x >= r.x &&  p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.length) return 1;
-    return 0;
-}
-
-int RSGL::PointCollide(RSGL::point p, RSGL::point p2){
-    if (p.x == p2.x && p.y == p2.y) return 1;
-    return 0;
-}
-
-int RSGL::RectCollideRect(RSGL::rect r, RSGL::rect r2){
-    if(r.x + r.width >= r2.x && r.x <= r2.x + r2.width && r.y + r.length >= r2.y && r.y <= r2.y + r2.length) return 1; 
-    return 0;
-}
-
-int RSGL::ImageCollideRect(RSGL::image img, RSGL::rect r){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        if(RSGL::RectCollidePoint(r, {img.cords[i][0],img.cords[i][1]})){
-            return 1;
-        }
-    }return 0;
-}
-
-int RSGL::ImageCollideCircle(RSGL::image img, RSGL::circle c){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        if(RSGL::CircleCollidePoint(c, {img.cords[i][0],img.cords[i][1]})){
-            return 1;
-        }
-    }return 0;    
-}
-
-int RSGL::ImageCollidePoint(RSGL::image img, RSGL::point p){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        if(RSGL::PointCollide(p, {img.cords[i][0],img.cords[i][1]})){
-            return 1;
-        }
-    }return 0;      
-}
-
-int RSGL::ImageCollideImage(RSGL::image img, RSGL::image img2){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        for (int j=0; j < (int)img2.cords.size(); j++)
-            if(RSGL::PointCollide({img2.cords[i][0],img2.cords[i][1]}, {img.cords[i][0],img.cords[i][1]})){
-                return 1;
+        GetOpenFileNameA(&ofn);
+        if (multiple) {
+            char* ptr = ofn.lpstrFile;
+            ptr[ofn.nFileOffset-1] = 0;
+            ptr += ofn.nFileOffset;
+            std::string list = ofn.lpstrFile;
+            while (*ptr) {    
+                list += " ";
+                list += ptr;
+                ptr += (lstrlen(ptr)+1);
             }
-    }return 0;      
+            return list;
+        }
+        return ofn.lpstrFile;
+    }
+    else {
+        char szFolder[260];
+        BROWSEINFO bi = { 0 };
+        bi.pszDisplayName = szFolder;
+        bi.lpszTitle  = title;
+        bi.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE | BIF_SHAREABLE;
+        LPITEMIDLIST pidl = SHBrowseForFolder (&bi);
+        if (pidl && SHGetPathFromIDList(pidl, szFolder))
+        return bi.pszDisplayName;
+    }
+    return "";
 }
 
+DiscordState discord_state;
+int64_t discord_duration=-1;
 
+int RSGL::discordCreateApplication(discord::ClientId clientID, bool timer/*=false*/) {
+    discord::Core* core{}; 
+    discord::Core::Create(clientID, DiscordCreateFlags_Default, &core); // Get the application from the `clientID`
+    discord_state.core.reset(core);
+    core->UserManager().OnCurrentUserUpdate.Connect([]() {
+        discord_state.core->UserManager().GetCurrentUser(&discord_state.currentUser); // Get the discord user
+    });
+    if (timer) {
+        auto now = std::chrono::system_clock::now();
+        auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+        auto epoch = now_ms.time_since_epoch();
+        auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
+        discord_duration = value.count();
+    }
+    return 0;
+}
 
+int RSGL::discordUpdatePresence(const char* details/*="*/, const char* state/*="*/, const char* largeImage/*="*/, const char* largeText/*="*/, const char* smallImage/*="*/, const char* smallText/*=""*/) {
+    discord::Activity activity{};
+    if (strcmp(details, "")) activity.SetDetails(details); // We check if the parameters are empty or nah
+    if (strcmp(state, "")) activity.SetState(state);
+    if (strcmp(largeImage, "")) activity.GetAssets().SetLargeImage(largeImage);
+    if (strcmp(largeText, "")) activity.GetAssets().SetLargeText(largeText);
+    if (strcmp(smallImage, "")) activity.GetAssets().SetSmallImage(smallImage);
+    if (strcmp(smallText, "")) activity.GetAssets().SetSmallText(smallText);
+    if (discord_duration != -1) activity.GetTimestamps().SetStart(discord_duration);
+    activity.SetType(discord::ActivityType::Playing); // We set the type to g a m i n g
+
+    discord_state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {}); // Update
+    discord_state.core->RunCallbacks(); // Run it back
+    return 0;
+}
+
+std::string RSGL::readIniKey(const char* path, std::string Key) {
+    char szValue[MAX_PATH];
+    char fullFilename[MAX_PATH];
+    GetFullPathName(path, MAX_PATH, fullFilename, nullptr);
+    
+    GetPrivateProfileString(NULL, Key.c_str(), TEXT("ERROR"), szValue, MAX_PATH, fullFilename);
+    if ( strcmp(szValue,"ERROR") != 0) { return szValue; }
+    return "";
+}
+int RSGL::writeIniKey(const char* path, std::string Key, std::string value) {
+    char fullFilename[MAX_PATH];
+    GetFullPathName(path, MAX_PATH, fullFilename, nullptr);
+    WritePrivateProfileString (NULL, Key.c_str(), value.c_str(), fullFilename);
+    return 0;
+}
+
+int RSGL::deleteIniKey(const char* path, std::string Key) {
+    char fullFilename[MAX_PATH];
+    GetFullPathName(path, MAX_PATH, fullFilename, nullptr);
+    WritePrivateProfileString (NULL, Key.c_str(), NULL, fullFilename);
+    return 0;
+}
+
+int RSGL::deleteIniSection(const char* path) {
+    char fullFilename[MAX_PATH];
+    GetFullPathName(path, MAX_PATH, fullFilename, nullptr);
+    WritePrivateProfileString (NULL, NULL, NULL, fullFilename);
+    return 0;
+}
+bool RSGL::iniKeyExists(const char* path, std::string Key) {
+    return readIniKey(path, Key).size() > 0;
+}
+
+std::string RSGL::getUsername() {
+    char username[257];
+    DWORD username_len = 257;
+    GetUserName(username, &username_len);
+    
+    return (std::string)username;
+}
+
+int RSGL::getLanguage() {
+    return PRIMARYLANGID(GetUserDefaultLCID());
+}
+std::string RSGL::getClipboardText() {
+    OpenClipboard(nullptr);
+    HANDLE hData = GetClipboardData(CF_TEXT);
+    char* text = static_cast<char*>(GlobalLock(hData));
+    std::string txt(text);
+    GlobalUnlock(hData);
+    CloseClipboard();
+
+    return txt;
+}
+
+int RSGL::setClipboardText(std::string txt) {
+    HANDLE global = GlobalAlloc(GMEM_FIXED, 32);
+    memcpy(global, txt.c_str(), txt.size());
+
+    OpenClipboard(RSGL::win.hwnd);
+    EmptyClipboard();
+    SetClipboardData(CF_TEXT, global);
+    CloseClipboard();
+
+    return 0;
+}
+
+int fps_lasttime=0;
+int fps_current; 
+int fps_frames = 0; 
+auto start = std::chrono::system_clock::now();
+
+int RSGL::getFPS() {
+    std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now()-start;
+    fps_frames++;
+    if (fps_lasttime < elapsed_seconds.count() - 1.0){
+        fps_lasttime = elapsed_seconds.count();
+        fps_current = fps_frames;
+        fps_frames = 0;
+    }
+    return fps_current;
+}
+
+int RSGL::findNumberAfterDecimalPoint(float num, int howManyKeep/*=-1*/) {
+    std::string s;
+    std::stringstream out;
+    out << num; s = out.str();
+    s = s.substr(s.find(".")+1, -1);
+    if (howManyKeep != -1) s = s.substr(0, howManyKeep);
+    return std::stoi(s);
+}
+
+RSGL::timer RSGL::startTimer() {
+    auto start = std::chrono::system_clock::now();
+    return {0,0,0,0,start};
+}
+
+int RSGL::updateTimer(RSGL::timer& t, int howManyKeep/*=-1*/) {
+    std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now()-t.id;
+    int h=0,
+        m=0,
+        s=0,
+        ms=0;
+    double time =  elapsed_seconds.count(); 
+    ms=RSGL::findNumberAfterDecimalPoint(time, howManyKeep);
+    s=time;
+    if (m >= 60) { h=m/60;}
+    if (time >= 60.0) { m=abs(s)/60; }
+
+    t = {h, m, s-(m*60), ms,t.id};
+
+    return 0;
+}
+
+LRESULT CALLBACK WindowProc(HWND h, UINT msg, WPARAM param, LPARAM lparam) {
+    switch (msg) {
+        case WM_CREATE: { 
+         
+		    if (RSGL::win.enabled_flags & 64) {
+                RSGL::win.biop = new Bitmap_Operations();
+
+		        RSGL::win.biop->Initialize_Buffers(h,1);
+		        RSGL::win.biop->Create_Buffer(0);
+            }
+            else {
+            }
+            break;
+		}
+        case WM_SIZE:
+		    if (RSGL::win.enabled_flags & 64) {}
+            else if (RSGL::win.enabled_flags & 256) {}
+            else glViewport(0, 0, LOWORD(lparam), HIWORD(lparam));
+            break;
+        case WM_CLOSE:
+		    if (RSGL::win.enabled_flags & 64)  {}
+            else if (RSGL::win.enabled_flags & 256) {}
+            else {
+                wglMakeCurrent(NULL, NULL);
+		        wglDeleteContext(glrc);
+            }
+		    DestroyWindow(h);
+		    PostQuitMessage(0);
+            break;
+    }
+    return DefWindowProc(h, msg, param, lparam);
+}
+
+int RSGL::window::ProcMSG() {
+    MSG msg = {};
+    while (PeekMessage(&msg, nullptr, 0u, 0u, PM_REMOVE)) {
+        switch (msg.message) {
+            case WM_QUIT:
+            return RSGL::quit;
+            case WM_KEYDOWN:
+            return RSGL::KeyPressed;
+            case WM_KEYUP:
+            return RSGL::KeyReleased;
+            case WM_MOUSEMOVE:
+            return RSGL::MousePosChanged;
+            case WM_LBUTTONDOWN:
+            return RSGL::MouseButtonPressed;
+            case WM_LBUTTONUP:
+            return RSGL::MouseButtonReleased;
+            case WM_RBUTTONDOWN:
+            return RSGL::RightMouseButtonPressed;
+            case WM_RBUTTONUP:
+            return RSGL::RightMouseButtonReleased;
+            case WM_MBUTTONDOWN:
+            return RSGL::MiddleMouseButtonPressed;
+            case WM_MBUTTONUP:
+            return RSGL::MiddleMouseButtonReleased;
+            case WM_MOUSEWHEEL:
+            return RSGL::win.check;
+        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    return 0;
+}
+
+LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+  if (nCode >= 0) {
+    if (wParam == WM_MOUSEWHEEL) {
+        MSLLHOOKSTRUCT *pMhs = (MSLLHOOKSTRUCT *)lParam;
+        short zdelta = HIWORD(pMhs->mouseData);
+        if (zdelta > 0) RSGL::win.check= 11;
+        else RSGL::win.check = 12;
+    }
+  }
+  return CallNextHookEx(0, nCode, wParam, lParam);
+}
+
+namespace RSGL{RSGL::drawable win=win;};

@@ -34,6 +34,7 @@ namespace RSGL{
     struct point{int x, y;};  // a single point
     struct rect {int x, y , width, length; }; // a rectangle
     struct circle{int x, y; int radius;}; // a circle
+    struct triangle {  int x, y; int width, length; }; /*Triangle structure.*/
     struct area{int width,length;}; // an area (width/length) without a specific x/y
     struct color{int r,g,b; /* red, green blue and float alpha (not required)*/ float a=255;}; // color structure
 
