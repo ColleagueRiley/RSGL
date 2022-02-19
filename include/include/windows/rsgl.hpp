@@ -23,6 +23,10 @@
 #include "deps/GL/glut.h" // OpenGL Rendering 
 
 
+//#include "d3d9.h" // DirectX Rendering
+#define BYTESTOGB(memory) round((double)memory/1073741824)  // Converts bytes to GB and then rounds it up. Used for converting RAM bytes into GBs
+#define BYTESTOMB(memory) round((double)memory/1048576) // Converts bytes to MB and then rounds it up. Used for converting VRAM bytes into MBs.
+
 
 
 namespace RSGL{ /* It all starts with this, the namespace containing the Ultimate Power.*/
