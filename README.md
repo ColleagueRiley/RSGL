@@ -7,21 +7,22 @@ discord server: https://discord.gg/ckC7mqdjCb
 
 # Linux
   how to install?:
-self install:
-1. Download the library
-2. Extract the file into your include directory (default is /usr/include)
-3. Now you can include your file with `#include <RSGL/RSGL.hpp>` 
-
-make:
-
-  1. if this is your first time installing RSGL on your computer do
+  1. Download the library 
+  2. Extract the file
+  3. To install RSGL for linux run
 
 make install
+  1.2. To build RSGL, run
+make build
 
-2. if you already have RSGL on your computer and you're trying to update it do
-
-make update 
-
-3. if you want to delete with make do
+4. if you want to delete with make do
 
 make remove
+
+# Windows
+  How to install:
+  1. Download the library 
+  2. Extract the file
+  
+  3. build RSGLWindows with 
+make buildWindows
