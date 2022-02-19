@@ -9,11 +9,13 @@ int main(int argc, char **argv){
     int x = 190;  int frames=0;
     while (running){
         window.checkEvents();
-        if (window.event.type == RSGL::MouseButtonPressed) a=true;
+        if (window.event.type == RSGL::MouseButtonPressed) a=true; 
         if (window.event.type == RSGL::MouseButtonReleased) a=false;
-        RSGL::drawRect({200,200,200,200},{255,0,0},a);
+        RSGL::drawRect({window.event.x,window.event.y,20,20},{255,0,0},a);
+        std::cout << window.event.x << std::endl;
+        std::cout << window.event.y<< std::endl;
        // std::cout << window.debug.fps << std::endl;
-        if (window.event.type == RSGL::quit) running=false;
+        if (window.event.type == RSGL::quit) running=false; 
         window.clear();
     } window.close();
 } 
