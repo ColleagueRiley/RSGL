@@ -20,6 +20,8 @@ make build
 make remove
 
 # Windows
+  Windows port made by @SaCode
+
   How to install:
   1. Download the library 
   2. Extract the file
