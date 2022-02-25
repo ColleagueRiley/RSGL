@@ -8,7 +8,6 @@ LIBS = $(LIBDIR)/libX11.so.6.4.0 $(LIBDIR)/libpng16.so.16.37.0  $(LIBDIR)/libpth
 GXX = g++
 build:
 	@$(GXX) -c $(ARGS) $(SOURCE) -c --no-warnings
-	@ar qc libRSGL.a *.o
 	@$(GXX) -shared rsgl.o draw.o collide.o other.o  $(LIBS) -o libRSGL.so 
 	@rm rsgl.o draw.o collide.o other.o;	
 
@@ -31,13 +30,6 @@ uninstall:
 update:
 	rm /usr/lib/libRSGL.so
 	@make install
-
-GXX = g++
-ARGS = -Wall -fPIC -g -O2
-SOURCEDIR = source/linux
-SOURCE = $(SOURCEDIR)/rsgl.cpp
-LIBDIR = $(SOURCEDIR)/deps
-LIBS = $(LIBDIR)/libX11.so.6.4.0 $(LIBDIR)/libpng16.so.16.37.0  $(LIBDIR)/libpthread-2.33.so
 
 WARGS = -Wall -fPIC -O2 -Wno-unknown-pragmas -g
 WSOURCEDIR = source/windows

@@ -122,7 +122,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         glClearColor(color.r,color.g,color.b,color.a);
         name = wname; r = winrect; color = c;
         dbuffer.d = XCreatePixmap(display,d,winrect.width,winrect.length,XDefaultDepth(display,XDefaultScreen(display)));
-    }
+    } XStoreName(display,d,wname.data());
     if (!RSGL::root.d){root=*this;root.display=display;}
 }
 
