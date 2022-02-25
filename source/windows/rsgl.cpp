@@ -1,11 +1,15 @@
 #ifndef RSGL
 #include "../../include/include/windows/rsgl.hpp"
 #endif
+#include "deps/Bitmap_OP.cpp"
+#include "deps/win32_SetProcessDpiAware.c"
 
 std::string wintest() { 
     return "windows gay";
 }
+
 HGLRC glrc;
+
 RSGL::window::window(const char* name, RSGL::rect r, RSGL::color c, uint32_t flag/*=0*/) {
     if (flag & 32) {  }
     else { win32_SetProcessDpiAware(); } //We check if DPI is enabled
@@ -90,6 +94,7 @@ RSGL::window::window(const char* name, RSGL::rect r, RSGL::color c, uint32_t fla
 
     RSGL::window::enabled_flags=flag;
     RSGL::window::r = r;
+    RSGL::window::hwnd = window;
 
     int show = SW_SHOW;
     if (flag & 8) { show=SW_SHOWMAXIMIZED; } // MAXAMIZED_WINDOW flag
@@ -121,14 +126,14 @@ int RSGL::window::checkEvents(){
         ZeroMemory(&state, sizeof(XINPUT_STATE));
         XInputGetState(0, &state);
 
-        RSGL::window::event.pad_x = state.Gamepad.sThumbLX; // L-stick
-        RSGL::window::event.pad_y = state.Gamepad.sThumbLY;
-        RSGL::window::event.r_pad_x = state.Gamepad.sThumbRX; // R-stick
-        RSGL::window::event.r_pad_y = state.Gamepad.sThumbRY;
+        RSGL::window::event.pad = {state.Gamepad.sThumbLX, state.Gamepad.sThumbLY}; // L-stick
+        RSGL::window::event.r_pad = {state.Gamepad.sThumbRX, state.Gamepad.sThumbRY}; // R-stick
+        RSGL::window::event.triggers[0] = state.Gamepad.bLeftTrigger;
+        RSGL::window::event.triggers[1] = state.Gamepad.bRightTrigger;
     }
     if (RSGL::win.enabled_flags & 64) { // GDI rendering
         PAINTSTRUCT ps;
-        BeginPaint(RSGL::win.hwnd, &ps);
+        BeginPaint(RSGL::window::hwnd, &ps);
 
         HBRUSH background_brush = CreateSolidBrush(RGB(RSGL::window::c.r, RSGL::window::c.g, RSGL::window::c.b));
         RECT rect;
@@ -184,60 +189,57 @@ int RSGL::window::close() {
         wglMakeCurrent(NULL, NULL);
         wglDeleteContext(glrc);
     }
-    DestroyWindow(RSGL::win.hwnd);
+    DestroyWindow(RSGL::window::hwnd);
     PostQuitMessage(0);
     return 0;
 }
 
 void RSGL::window::resize(bool value){
-    if (value) SetWindowLong(RSGL::win.hwnd, GWL_STYLE, GetWindowLong(RSGL::win.hwnd, GWL_STYLE)|WS_SIZEBOX);
-    else SetWindowLong(RSGL::win.hwnd, GWL_STYLE, GetWindowLong(RSGL::win.hwnd, GWL_STYLE)&~WS_SIZEBOX);
+    if (value) SetWindowLong(RSGL::window::hwnd, GWL_STYLE, GetWindowLong(RSGL::window::hwnd, GWL_STYLE)|WS_SIZEBOX);
+    else SetWindowLong(RSGL::window::hwnd, GWL_STYLE, GetWindowLong(RSGL::window::hwnd, GWL_STYLE)&~WS_SIZEBOX);
 }
 
 void RSGL::window::fullscreen(bool value) {
-    DWORD style = GetWindowLong(RSGL::win.hwnd, GWL_STYLE);
+    DWORD style = GetWindowLong(RSGL::window::hwnd, GWL_STYLE);
     MONITORINFO mi = { sizeof(mi) };
 	if (value) {
 		RECT rect;
-		GetWindowRect(RSGL::win.hwnd, &rect);
-        RSGL::window::r.x = rect.left;
-		RSGL::window::r.y = rect.top;
-		RSGL::window::r.width = rect.right - rect.left;
-		RSGL::window::r.length = rect.bottom - rect.top;
+		GetWindowRect(RSGL::window::hwnd, &rect);
+        RSGL::window::r = {rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top};
 
-		GetMonitorInfo(MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
-		SetWindowLong(RSGL::win.hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
-		SetWindowPos(RSGL::win.hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
+		GetMonitorInfo(MonitorFromWindow(RSGL::window::hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+		SetWindowLong(RSGL::window::hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+		SetWindowPos(RSGL::window::hwnd, HWND_TOP, mi.rcMonitor.left, mi.rcMonitor.top,
 			mi.rcMonitor.right - mi.rcMonitor.left,
 			mi.rcMonitor.bottom - mi.rcMonitor.top,
 			SWP_NOOWNERZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 	}
 	else {
-		GetMonitorInfo(MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
-		SetWindowLong(RSGL::win.hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
-		SetWindowPos(RSGL::win.hwnd, HWND_NOTOPMOST, RSGL::window::r.x, RSGL::window::r.y, RSGL::window::r.width, RSGL::window::r.length, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+		GetMonitorInfo(MonitorFromWindow(RSGL::window::hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+		SetWindowLong(RSGL::window::hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+		SetWindowPos(RSGL::window::hwnd, HWND_NOTOPMOST, RSGL::window::r.x, RSGL::window::r.y, RSGL::window::r.width, RSGL::window::r.length, SWP_NOZORDER | SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 	}
 }
-void RSGL::window::position(RSGL::rect window){ MoveWindow(RSGL::win.hwnd, window.x, window.y, window.width, window.length ,true); }
+void RSGL::window::position(RSGL::rect window){ MoveWindow(RSGL::window::hwnd, window.x, window.y, window.width, window.length ,true); }
 void RSGL::window::maximize(bool value) {
     int g;
     if (value) g = SW_SHOWMAXIMIZED;
     else g=SW_SHOWNORMAL;
-    ShowWindow(RSGL::win.hwnd, g);
+    ShowWindow(RSGL::window::hwnd, g);
 }
 
 void RSGL::window::centralize() {
 	MONITORINFO mi = { sizeof(mi) };
 
-	GetMonitorInfo(MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTONEAREST), &mi);
+	GetMonitorInfo(MonitorFromWindow(RSGL::window::hwnd, MONITOR_DEFAULTTONEAREST), &mi);
 	int x = (mi.rcMonitor.right - mi.rcMonitor.left - RSGL::window::r.width) / 2;
 	int y = (mi.rcMonitor.bottom - mi.rcMonitor.top - RSGL::window::r.length) / 2;
 
-	SetWindowPos(RSGL::win.hwnd, 0, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
+	SetWindowPos(RSGL::window::hwnd, 0, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
 }
 
 RSGL::resolution RSGL::window::getScreenResolution() {
-    HMONITOR monitor = MonitorFromWindow(RSGL::win.hwnd, MONITOR_DEFAULTTONEAREST);
+    HMONITOR monitor = MonitorFromWindow(RSGL::window::hwnd, MONITOR_DEFAULTTONEAREST);
     MONITORINFO info;
     info.cbSize = sizeof(MONITORINFO);
     GetMonitorInfo(monitor, &info);
@@ -264,14 +266,14 @@ std::vector<RSGL::resolution> RSGL::window::getAvailableResolutions() {
 int RSGL::window::changeIcon(const char* filename) {
     HANDLE hIcon = LoadImage(NULL, filename, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
     if (hIcon) {
-        SendMessage(RSGL::win.hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+        SendMessage(RSGL::window::hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
         return 0;
     } 
     return -1;
 }
 
 int RSGL::window::changeName(const char* name) {
-    SetWindowText(RSGL::win.hwnd, name);
+    SetWindowText(RSGL::window::hwnd, name);
     return 0;
 }
 
@@ -279,44 +281,51 @@ int RSGL::window::changeName(const char* name) {
 
 bool RSGL::window::isPressed(int key, int port/*=0*/) {
     if (RSGL::win.enabled_flags & 2) {
-        if ((key == VK_PAD_A || key == VK_PAD_B || key == VK_PAD_X || key == VK_PAD_Y) || 
-            (key == VK_PAD_LTHUMB_PRESS || key == VK_PAD_RTHUMB_PRESS || 
-            (key == VK_PAD_LSHOULDER || key == VK_PAD_RSHOULDER || key == VK_PAD_LTRIGGER) || key == VK_PAD_RTRIGGER) ||
-            (key == VK_PAD_START || key == VK_PAD_BACK) ||
-            (key == VK_PAD_DPAD_UP || key == VK_PAD_DPAD_DOWN || key == VK_PAD_DPAD_LEFT || key == VK_PAD_DPAD_RIGHT) || 
-            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_LTHUMB_DOWN || key == VK_PAD_LTHUMB_LEFT || key == VK_PAD_LTHUMB_RIGHT) || 
-            (key == VK_PAD_LTHUMB_UPLEFT || key == VK_PAD_LTHUMB_UPRIGHT || key == VK_PAD_LTHUMB_DOWNLEFT || key == VK_PAD_LTHUMB_DOWNRIGHT) || 
-            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_RTHUMB_DOWN || key == VK_PAD_RTHUMB_LEFT || key == VK_PAD_RTHUMB_RIGHT) || 
-            (key == VK_PAD_RTHUMB_UPLEFT || key == VK_PAD_RTHUMB_UPRIGHT || key == VK_PAD_RTHUMB_DOWNLEFT || key == VK_PAD_RTHUMB_DOWNRIGHT) 
-        ) { // We check if the Key is an Xinput input.
-            XINPUT_KEYSTROKE state;
-            ZeroMemory(&state, sizeof(XINPUT_KEYSTROKE));
+        key-=100;
+        if ((key == XINPUT_GAMEPAD_A || key == XINPUT_GAMEPAD_B || key == XINPUT_GAMEPAD_X || key == XINPUT_GAMEPAD_Y) || 
+            (key == XINPUT_GAMEPAD_LEFT_THUMB || key == XINPUT_GAMEPAD_RIGHT_THUMB) || 
+            (key == XINPUT_GAMEPAD_LEFT_SHOULDER || key == XINPUT_GAMEPAD_RIGHT_THUMB) ||
+            (key == XINPUT_GAMEPAD_START || key == XINPUT_GAMEPAD_BACK) ||
+            (key == XINPUT_GAMEPAD_DPAD_UP || key == XINPUT_GAMEPAD_DPAD_DOWN || key == XINPUT_GAMEPAD_DPAD_LEFT || key == XINPUT_GAMEPAD_DPAD_RIGHT) 
+        ) {
+            XINPUT_STATE state;
+            ZeroMemory(&state, sizeof(XINPUT_STATE));
             
-            XInputGetKeystroke(port, 0, &state); // We get the current inputs
-            return state.VirtualKey == key;
+            XInputGetState(port, &state);
+            return state.Gamepad.wButtons & key;
         }
+        else if ((key == 0x5820 || key == 0x5821 || key == 0x5822 || key == 0x5823) || 
+            (key == 0x5824 || key == 0x5825 || key == 0x5826 || key == 0x5827) || 
+            (key == 0x5828 || key == 0x5829 || key == 0x5830 || key == 0x5831) || 
+            (key == 0x5832 || key == 0x5833 || key == 0x5834 || key == 0x5835)) {
+                XINPUT_STATE state;
+                ZeroMemory(&state, sizeof(XINPUT_STATE));
+                
+                XInputGetState(port, &state);
+                if (key == 0x5820 || key == 0x5821 || key == 0x5822 || key == 0x5823) {
+                    int left[2] = {state.Gamepad.sThumbLX, state.Gamepad.sThumbLY};
+                    return (left[0] >= 32767 && key == 0x5822) || (left[0] <= -32767 && key == 0x5823) || (left[1] >= 32767 && key == 0x5820) || (left[1] <= -32767 && key == 0x5821);
+                }
+                if (key == 0x5830 || key == 0x5831 || key == 0x5832 || key == 0x5833) {
+                    int right[2] = {state.Gamepad.sThumbRX, state.Gamepad.sThumbRY};
+                    return (right[0] >= 32767 && key == 0x5832) || (right[0] <= -32767 && key == 0x5833) || (right[1] >= 32767 && key == 0x5830) || (right[1] <= -32767 && key == 0x5831);
+                }
+            }
+        else if (key == 0x5806 || key == 0x5807) { // RT and LT
+            XINPUT_STATE state;
+            ZeroMemory(&state, sizeof(XINPUT_STATE));
+
+            XInputGetState(port, &state);
+            return (state.Gamepad.bLeftTrigger > 0 || state.Gamepad.bRightTrigger > 0);
+        }
+        key+=100;
     }
     return GetKeyState(key) & 0x1000;
 }
 
 bool RSGL::window::isReleased(int key, int port/*=0*/) {
     if (RSGL::win.enabled_flags & 2) {
-        if ((key == VK_PAD_A || key == VK_PAD_B || key == VK_PAD_X || key == VK_PAD_Y) || 
-            (key == VK_PAD_LTHUMB_PRESS || key == VK_PAD_RTHUMB_PRESS || 
-            (key == VK_PAD_LSHOULDER || key == VK_PAD_RSHOULDER || key == VK_PAD_LTRIGGER) || key == VK_PAD_RTRIGGER) ||
-            (key == VK_PAD_START || key == VK_PAD_BACK) ||
-            (key == VK_PAD_DPAD_UP || key == VK_PAD_DPAD_DOWN || key == VK_PAD_DPAD_LEFT || key == VK_PAD_DPAD_RIGHT) || 
-            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_LTHUMB_DOWN || key == VK_PAD_LTHUMB_LEFT || key == VK_PAD_LTHUMB_RIGHT) || 
-            (key == VK_PAD_LTHUMB_UPLEFT || key == VK_PAD_LTHUMB_UPRIGHT || key == VK_PAD_LTHUMB_DOWNLEFT || key == VK_PAD_LTHUMB_DOWNRIGHT) || 
-            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_RTHUMB_DOWN || key == VK_PAD_RTHUMB_LEFT || key == VK_PAD_RTHUMB_RIGHT) || 
-            (key == VK_PAD_RTHUMB_UPLEFT || key == VK_PAD_RTHUMB_UPRIGHT || key == VK_PAD_RTHUMB_DOWNLEFT || key == VK_PAD_RTHUMB_DOWNRIGHT) 
-        ) {
-            XINPUT_KEYSTROKE state;
-            ZeroMemory(&state, sizeof(XINPUT_KEYSTROKE));
-            
-            XInputGetKeystroke(port, 0, &state);
-            return ((state.Flags == XINPUT_KEYSTROKE_KEYUP) && (state.VirtualKey == key));
-        }
+        /*Xinput needs to be implemented for isReleased.*/
     }
     int g = GetKeyState(key) & 0x1000; // We check if `key` is being pressed`
     if (g == 4096) { RSGL::win.old_key=key; return false; }  // If it is being pressed, set `RSGL::win.old_key` as `key` and return false
@@ -326,22 +335,7 @@ bool RSGL::window::isReleased(int key, int port/*=0*/) {
 
 bool RSGL::window::isClicked(int key, int port/*=0*/) {
     if (RSGL::win.enabled_flags & 2) {
-        if ((key == VK_PAD_A || key == VK_PAD_B || key == VK_PAD_X || key == VK_PAD_Y) || 
-            (key == VK_PAD_LTHUMB_PRESS || key == VK_PAD_RTHUMB_PRESS || 
-            (key == VK_PAD_LSHOULDER || key == VK_PAD_RSHOULDER || key == VK_PAD_LTRIGGER) || key == VK_PAD_RTRIGGER) ||
-            (key == VK_PAD_START || key == VK_PAD_BACK) ||
-            (key == VK_PAD_DPAD_UP || key == VK_PAD_DPAD_DOWN || key == VK_PAD_DPAD_LEFT || key == VK_PAD_DPAD_RIGHT) || 
-            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_LTHUMB_DOWN || key == VK_PAD_LTHUMB_LEFT || key == VK_PAD_LTHUMB_RIGHT) || 
-            (key == VK_PAD_LTHUMB_UPLEFT || key == VK_PAD_LTHUMB_UPRIGHT || key == VK_PAD_LTHUMB_DOWNLEFT || key == VK_PAD_LTHUMB_DOWNRIGHT) || 
-            (key == VK_PAD_LTHUMB_UP || key == VK_PAD_RTHUMB_DOWN || key == VK_PAD_RTHUMB_LEFT || key == VK_PAD_RTHUMB_RIGHT) || 
-            (key == VK_PAD_RTHUMB_UPLEFT || key == VK_PAD_RTHUMB_UPRIGHT || key == VK_PAD_RTHUMB_DOWNLEFT || key == VK_PAD_RTHUMB_DOWNRIGHT) 
-        ) {
-            XINPUT_KEYSTROKE state;
-            ZeroMemory(&state, sizeof(XINPUT_KEYSTROKE));
-            
-            XInputGetKeystroke(port, 0, &state);
-            return ((state.Flags == XINPUT_KEYSTROKE_KEYDOWN) && (state.VirtualKey == key));
-        }
+        /*Xinput needs to be implemented for isClicked.*/
     }
     int g = GetKeyState(key) & 0x1000; 
     if (g == 4096 && key!=RSGL::win.old_key) { RSGL::win.old_key=key; return true; } 
@@ -410,7 +404,7 @@ std::string RSGL::fileDialog(const char* title, bool multiple/*=false*/, bool sa
 }
 
 DiscordState discord_state;
-int64_t discord_duration=-1;
+int64_t duration;
 
 int RSGL::discordCreateApplication(discord::ClientId clientID, bool timer/*=false*/) {
     discord::Core* core{}; 
@@ -424,7 +418,7 @@ int RSGL::discordCreateApplication(discord::ClientId clientID, bool timer/*=fals
         auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
         auto epoch = now_ms.time_since_epoch();
         auto value = std::chrono::duration_cast<std::chrono::seconds>(epoch);
-        discord_duration = value.count();
+        duration = value.count();
     }
     return 0;
 }
@@ -437,7 +431,7 @@ int RSGL::discordUpdatePresence(const char* details/*="*/, const char* state/*="
     if (strcmp(largeText, "")) activity.GetAssets().SetLargeText(largeText);
     if (strcmp(smallImage, "")) activity.GetAssets().SetSmallImage(smallImage);
     if (strcmp(smallText, "")) activity.GetAssets().SetSmallText(smallText);
-    if (discord_duration != -1) activity.GetTimestamps().SetStart(discord_duration);
+    if (duration != -1) activity.GetTimestamps().SetStart(duration);
     activity.SetType(discord::ActivityType::Playing); // We set the type to g a m i n g
 
     discord_state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {}); // Update
@@ -574,9 +568,7 @@ LRESULT CALLBACK WindowProc(HWND h, UINT msg, WPARAM param, LPARAM lparam) {
             break;
 		}
         case WM_SIZE:
-		    if (RSGL::win.enabled_flags & 64) {}
-            else if (RSGL::win.enabled_flags & 256) {}
-            else glViewport(0, 0, LOWORD(lparam), HIWORD(lparam));
+		    if (!(RSGL::win.enabled_flags & 64) & !(RSGL::win.enabled_flags & 256))  glViewport(RSGL::win.r.x, RSGL::win.r.y, LOWORD(lparam), HIWORD(lparam));
             break;
         case WM_CLOSE:
 		    if (RSGL::win.enabled_flags & 64)  {}
@@ -609,13 +601,13 @@ int RSGL::window::ProcMSG() {
             case WM_LBUTTONUP:
             return RSGL::MouseButtonReleased;
             case WM_RBUTTONDOWN:
-            return RSGL::RightMouseButtonPressed;
+            return RSGL::MouseButtonPressed;
             case WM_RBUTTONUP:
-            return RSGL::RightMouseButtonReleased;
+            return RSGL::MouseButtonReleased;
             case WM_MBUTTONDOWN:
-            return RSGL::MiddleMouseButtonPressed;
+            return RSGL::MouseButtonPressed;
             case WM_MBUTTONUP:
-            return RSGL::MiddleMouseButtonReleased;
+            return RSGL::MouseButtonReleased;
             case WM_MOUSEWHEEL:
             return RSGL::win.check;
         }

@@ -2,7 +2,7 @@
     #include "include/wii.hpp"
 #endif
 #ifdef WIN32
-    #include "include/win.hpp"
+    #include "include/windows.hpp"
 #endif
 #if __linux__
     #include "include/linux.hpp"

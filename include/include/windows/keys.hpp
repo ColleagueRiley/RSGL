@@ -117,46 +117,46 @@
 #define YESNO                    MB_YESNO               
 #define CANCELTRYCONTINUE        MB_CANCELTRYCONTINUE 
 
-#define RK_PAD_A                 VK_PAD_A               
-#define RK_PAD_B                 VK_PAD_B               
-#define RK_PAD_X                 VK_PAD_X               
-#define RK_PAD_Y                 VK_PAD_Y               
+#define RK_PAD_A                 XINPUT_GAMEPAD_A+100              
+#define RK_PAD_B                 XINPUT_GAMEPAD_B+100              
+#define RK_PAD_X                 XINPUT_GAMEPAD_X+100              
+#define RK_PAD_Y                 XINPUT_GAMEPAD_Y+100              
    
-#define RK_PAD_L                 VK_PAD_LSHOULDER       
-#define RK_PAD_R                 VK_PAD_RSHOULDER       
-#define RK_PAD_LT                VK_PAD_LTRIGGER        
-#define RK_PAD_RT                VK_PAD_RTRIGGER        
+#define RK_PAD_L                 XINPUT_GAMEPAD_LEFT_SHOULDER+100    
+#define RK_PAD_R                 XINPUT_GAMEPAD_RIGHT_SHOULDER+100     
+#define RK_PAD_LT                0x5806+100       
+#define RK_PAD_RT                0x5807+100       
    
-#define RK_PAD_UP                VK_PAD_DPAD_UP         
-#define RK_PAD_DOWN              VK_PAD_DPAD_DOWN       
-#define RK_PAD_LEFT              VK_PAD_DPAD_LEFT       
-#define RK_PAD_RIGHT             VK_PAD_DPAD_RIGHT      
+#define RK_PAD_UP                XINPUT_GAMEPAD_DPAD_UP+100        
+#define RK_PAD_DOWN              XINPUT_GAMEPAD_DPAD_DOWN+100      
+#define RK_PAD_LEFT              XINPUT_GAMEPAD_DPAD_LEFT+100      
+#define RK_PAD_RIGHT             XINPUT_GAMEPAD_DPAD_RIGHT+100     
    
-#define RK_PAD_START             VK_PAD_START           
-#define RK_PAD_BACK              VK_PAD_BACK            
+#define RK_PAD_START             XINPUT_GAMEPAD_START+100          
+#define RK_PAD_BACK              XINPUT_GAMEPAD_BACK+100           
    
-#define RK_PAD_LSTICK_PRESS      VK_PAD_LTHUMB_PRESS    
-#define RK_PAD_RSTICK_PRESS      VK_PAD_RTHUMB_PRESS    
+#define RK_PAD_LSTICK_PRESS      XINPUT_GAMEPAD_LEFT_THUMB+100    
+#define RK_PAD_RSTICK_PRESS      XINPUT_GAMEPAD_RIGHT_THUMB+100   
    
-#define RK_PAD_LSTICK_UP         VK_PAD_LTHUMB_UP       
-#define RK_PAD_LSTICK_DOWN       VK_PAD_LTHUMB_DOWN     
-#define RK_PAD_LSTICK_LEFT       VK_PAD_LTHUMB_LEFT     
-#define RK_PAD_LSTICK_RIGHT      VK_PAD_LTHUMB_RIGHT    
+#define RK_PAD_LSTICK_UP         0x5820+100      
+#define RK_PAD_LSTICK_DOWN       0x5821+100
+#define RK_PAD_LSTICK_RIGHT      0x5822+100
+#define RK_PAD_LSTICK_LEFT       0x5823+100
    
-#define RK_PAD_LSTICK_UPLEFT     VK_PAD_LTHUMB_UPLEFT   
-#define RK_PAD_LSTICK_UPRIGHT    VK_PAD_LTHUMB_UPRIGHT  
-#define RK_PAD_LSTICK_DOWNLEFT   VK_PAD_LTHUMB_DOWNLEFT 
-#define RK_PAD_LSTICK_DOWNRIGHT  VK_PAD_LTHUMB_DOWNRIGHT
+#define RK_PAD_LSTICK_UPLEFT     0x5824+100
+#define RK_PAD_LSTICK_UPRIGHT    0x5825+100
+#define RK_PAD_LSTICK_DOWNRIGHT  0x5826+100
+#define RK_PAD_LSTICK_DOWNLEFT   0x5827+100
 
-#define RK_PAD_RSTICK_UP         VK_PAD_RTHUMB_UP       
-#define RK_PAD_RSTICK_DOWN       VK_PAD_RTHUMB_DOWN     
-#define RK_PAD_RSTICK_RIGHT      VK_PAD_RTHUMB_RIGHT    
-#define RK_PAD_RSTICK_LEFT       VK_PAD_RTHUMB_LEFT     
+#define RK_PAD_RSTICK_UP         0x5830+100     
+#define RK_PAD_RSTICK_DOWN       0x5831+100  
+#define RK_PAD_RSTICK_RIGHT      0x5832+100  
+#define RK_PAD_RSTICK_LEFT       0x5833+100  
 
-#define RK_PAD_RSTICK_UPLEFT     VK_PAD_RTHUMB_UPLEFT   
-#define RK_PAD_RSTICK_UPRIGHT    VK_PAD_RTHUMB_UPRIGHT  
-#define RK_PAD_RSTICK_DOWNRIGHT  VK_PAD_RTHUMB_DOWNRIGHT
-#define RK_PAD_RSTICK_DOWNLEFT   VK_PAD_RTHUMB_DOWNLEFT 
+#define RK_PAD_RSTICK_UPLEFT     0x5834+100
+#define RK_PAD_RSTICK_UPRIGHT    0x5835+100
+#define RK_PAD_RSTICK_DOWNRIGHT  0x5836+100
+#define RK_PAD_RSTICK_DOWNLEFT   0x5837+100
 
 #define l_stick_x                pad_x                    
 #define l_stick_y                pad_y

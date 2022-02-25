@@ -1,4 +1,3 @@
-
 class Bitmap_Operations
 {
 public:
@@ -38,6 +37,5 @@ protected:
 	RECT *dc_rect;
 	HBITMAP  *hbm_Buffer;
 	HBITMAP *hbm_oldBuffer;
-        int num_buf;
-   
+    int num_buf;
 };

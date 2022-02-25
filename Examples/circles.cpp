@@ -1,5 +1,4 @@
 #include "../RSGL.hpp"
-#include <iostream>
 bool running = true;
 
 int main(){
@@ -8,7 +7,10 @@ int main(){
     RSGL::circle cir = {100,100,50};
     while (running){
         window.checkEvents();
-        if (window.event.type == RSGL::quit) running = false;
+        switch(window.event.type){
+            case RSGL::quit: running=false;
+            default: break;
+        }
         RSGL::drawCircle({200,200,25},{0,0,0},false);
         RSGL::drawCircle(cir,c);
     } window.close();

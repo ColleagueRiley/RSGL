@@ -19,13 +19,16 @@
 #include "deps/win32/Xinput.h" //Init the WIN32 files that requires the Win SDK
 #include "deps/DiscordSDK/discord.h"
 #include "../linux/deps/png++/image.hpp"
-#include "deps/GL/glut.h" // OpenGL Rendering 
+#include "GL/gl.h" // OpenGL Rendering 
 
 //#include "d3d9.h" // DirectX Rendering
 #define BYTESTOGB(memory) round((double)memory/1073741824)  // Converts bytes to GB and then rounds it up. Used for converting RAM bytes into GBs
 #define BYTESTOMB(memory) round((double)memory/1048576) // Converts bytes to MB and then rounds it up. Used for converting VRAM bytes into MBs.
 
-
+/* Important Windows functions */
+std::string wintest();
+LRESULT CALLBACK WindowProc(HWND h, UINT msg, WPARAM param, LPARAM lparam);
+LRESULT CALLBACK MouseHookProc(int nCode, WPARAM wParam, LPARAM lParam);
 
 namespace RSGL{ /* It all starts with this, the namespace containing the Ultimate Power.*/
     const int KeyPressed=2; // a key has been pressed
@@ -79,14 +82,13 @@ namespace RSGL{ /* It all starts with this, the namespace containing the Ultimat
             HWND hwnd; /* The window */
 
             struct Event {
-                int x; /*(Not to be confused with `windows_x`) X position of the mouse.*/
-                int y; /*(Not to be confused with `windows_y`) Y position of the mouse.*/
+                int x; /*X position of the mouse.*/
+                int y; /*Y position of the mouse.*/
                 int type; /* Event type variable, telling what and which action happened.*/
-                int pad_x; /*The X position of the L-stick. Also defined as `l_stick_x` and `cpad_x`*/ 
-                int pad_y; /*The Y position of the L-stick. Also defined as `l_stick_x` and `cpad_y`*/ 
-                int r_pad_x; /*The X position of the R-stick. Also defined as `r_stick_y` and `r_cpad_x`*/ 
-                int r_pad_y; /*The Y position of the R-stick. Also defined as `r_stick_x` and `r_cpad_x`*/ 
-                // Note: should be later changed from int to point
+                int button; /* Value indicating which mouse button was used.*/
+                point pad; /*The X and Y positions of the L-stick.*/ 
+                point r_pad; /*The X and Y positions of the R-stick.*/
+                int triggers[2] = {0,0}; /*The values of the trigger buttons from 0 to 255. `trigger[0]` is LT, while `trigger[1]` is RT.*/
             };
             Event event; // The Event variable.
             RSGL::debug debug;
@@ -246,10 +248,9 @@ namespace RSGL{ /* It all starts with this, the namespace containing the Ultimat
 
     // ============ Xinput Functions  ============
     /* Check if a controller is connected. Parameter `port` is 0 by default, meaning it'll check if the 1st controller is connected.*/
-    bool xinputConnected(int port);
-    // discord and 65535
+    bool xinputConnected(int port=0);
     /* Vibrates the controller. Parameter `port` is 0 by default, parameters `leftVal` and `rightVal` are 65535 by default.*/
-    int xinputVibrate(int leftVal, int rightVal, int port=0);
+    int xinputVibrate(int leftVal=65535, int rightVal=65535, int port=0);
     /* Returns the LT and RT values in a `trigger` struct (x and y) from 0-255. Parameter `port` is 0 by default.*/
     point xinputGetTriggerValues(int port=0);
     /* Returns the battery values in a `battery` struct (x and y). Parameter `port` is 0 by default.

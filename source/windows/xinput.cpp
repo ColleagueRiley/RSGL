@@ -1,6 +1,7 @@
 #ifndef RSGL
 #include "../../include/include/windows/rsgl.hpp"
 #endif
+
 bool RSGL::xinputConnected(int port/*=0*/) {  
     if (RSGL::win.enabled_flags & 2) {
         XINPUT_STATE state;

@@ -1,9 +1,6 @@
 # RSGL-Riley-s-Simple-GUI-Library-
-A simple GUI library currently only for Linux 
-a
-(This library currently only supports linux)
-
-discord server: https://discord.gg/ckC7mqdjCb
+A simple GUI library currently for Linux and Windows
+(offical 3DS port) https://github.com/RSGL-org/RSGL-3DS
 
 # Linux
   how to install?:
@@ -24,6 +21,7 @@ make remove
 
   How to install:
   1. Download the library 
+
   2. Extract the file
   
   3. build RSGLWindows with 

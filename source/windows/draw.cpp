@@ -1,8 +1,6 @@
 #ifndef RSGL
 #include "../../include/include/windows/rsgl.hpp"
 #endif
-#define STB_TRUETYPE_IMPLEMENTATION 
-#include "../linux/deps/stb_truetype.h" // for loading fonts
 
 int RSGL::drawRect(RSGL::rect r, RSGL::color c, bool solid/*=true*/, bool dotted/*=false*/, int border_size/*=3*/) {
     if (RSGL::win.enabled_flags & 64) { // GDI Rendering
@@ -268,39 +266,5 @@ char ttf_buffer[1<<25];
 char ttf_buffer2[1<<25];
 
 int RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::color col){
-    stbtt_fontinfo Font; bool cre=false; 
-    FILE* f = fopen(font, "rb");
-    if (ttf_buffer != NULL && f != NULL) fread(ttf_buffer, 1, 1<<25,f);
-    int high=0;
-    for (int dr=0; dr<2; dr++){
-        int L=0;
-        for (int l=0; l < text.size(); l++){
-            int w,h,i,j,c = text.at(l), s = r.radius,b; L++; 
-            stbtt_InitFont(&Font, (const unsigned char*)ttf_buffer, stbtt_GetFontOffsetForIndex((const unsigned char*)ttf_buffer,0));
-            unsigned char * bitmap = stbtt_GetCodepointBitmap(&Font, 0,stbtt_ScaleForPixelHeight(&Font, s), c, &w, &h, 0,0);
-            if (h > high && !dr) high=h; 
-            else if (dr){
-                if (h < high && text.size() > 2) b=high-h;
-                else b=0;
-                if (!(RSGL::win.enabled_flags & 64) && !(RSGL::win.enabled_flags & 512)){ glBegin(GL_POINTS);    glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
-                for (j=0; j < h; ++j){
-                    for (i=0; i < w; ++i) if ( " .:ioVM@"[bitmap[j*w+i]>>5] != ' '){ 
-                        //if (!d.GPU){RSGL::drawPoint({i+r.x+(L*s),j+(r.y+b)},col,d);}
-                        if (!(RSGL::win.enabled_flags & 64) && !(RSGL::win.enabled_flags & 512)){ 
-                            RSGL::point p1 = {i+r.x+(L*s),j+(r.y+b)};
-                            float i = RSGL::win.r.width/2*1.0f;
-                            float  x = (p1.x/i)-1.0f;
-                            i = RSGL::win.r.length/2*1.0f;
-                            float  y = (-(p1.y)/i)+1.0f;
-                            glVertex2f(x,y);
-                        }
-                    }
-                }
-                if (!(RSGL::win.enabled_flags & 64) && !(RSGL::win.enabled_flags & 512)){
-                    glEnd();
-                }
-            }
-        }
-    }  
-    *ttf_buffer=*ttf_buffer2;
+    return 0;
 }
