@@ -19,8 +19,10 @@
 #endif
 
 #define RSGLRGBTOHEX(r, g, b) ((r << 16) + (g << 8) + b)
+#include "deps/rsal.hpp"
 
 namespace RSGL{
+    using namespace RSAL;
     // Event vars
     const int KeyPressed=2; // a key has been pressed
     const int KeyReleased=3; // a key has been released
