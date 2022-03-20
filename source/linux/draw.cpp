@@ -7,44 +7,40 @@
 char ttf_buffer[1<<25];
 char ttf_buffer2[1<<25];
 
-void RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::color col, RSGL::drawable d){
-    stbtt_fontinfo Font; bool cre=false; 
-    FILE* f = fopen(font, "rb");
-    if (ttf_buffer != NULL && f != NULL) fread(ttf_buffer, 1, 1<<25,f);
-    int high=0;
-    for (int dr=0; dr<2; dr++){
-        int L=0;
-        for (int l=0; l < text.size(); l++){
-            int w,h,i,j,c = text.at(l), s = r.radius,b; L++; 
-            stbtt_InitFont(&Font, (const unsigned char*)ttf_buffer, stbtt_GetFontOffsetForIndex((const unsigned char*)ttf_buffer,0));
-            unsigned char * bitmap = stbtt_GetCodepointBitmap(&Font, 0,stbtt_ScaleForPixelHeight(&Font, s), c, &w, &h, 0,0);
+void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
+  int high=0;
+   for (int dr=0; dr<2; dr++){
+        int L2=0; 
+        for (int L=0; L < text.size(); L++){
+            stbtt_fontinfo font;
+            unsigned char *bitmap;
+            int w,h,i,j,c = text.at(L), s = r.radius; L2++;
+            FILE* f = fopen(Font, "rb");
+
+            if (ttf_buffer != NULL && f != NULL) fread(ttf_buffer, 1, 1<<25, f);
+
+            stbtt_InitFont(&font, (unsigned char*)ttf_buffer, stbtt_GetFontOffsetForIndex((unsigned char*)ttf_buffer,0));
+            bitmap = stbtt_GetCodepointBitmap(&font, 0,stbtt_ScaleForPixelHeight(&font, s), c, &w, &h, 0,0);
             if (h > high && !dr) high=h; 
             else if (dr){
+                int b=0;
                 if (h < high && text.size() > 2) b=high-h;
-                else b=0;
-                if (d.GPU==1){ glBegin(GL_POINTS);    glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
-                for (j=0; j < h; ++j){
-                    for (i=0; i < w; ++i) if ( " .:ioVM@"[bitmap[j*w+i]>>5] != ' '){ 
-                        if (!d.GPU){RSGL::drawPoint({i+r.x+(L*s),j+(r.y+b)},col,d);}
-                        else if (d.GPU == 1){ 
-                            RSGL::point p1 = {i+r.x+(L*s),j+(r.y+b)};
-                            float i = d.r.width/2*1.0f;
-                            float  x = (p1.x/i)-1.0f;
-                            i = d.r.length/2*1.0f;
-                            float  y = (-(p1.y)/i)+1.0f;
-                            glVertex2f(x,y);
-                        }
-                    }
-                }
-                if (d.GPU==1){
-                    glEnd();
-                    glFlush();
-                }
-            }
+                if (text.at(L) == ' ') r.x+=10;
+                for (j=0; j < h; ++j) {
+                    for (i=0; i < w; ++i)
+                        if (" .:ioVM@"[bitmap[j*w+i]>>5] != ' ') RSGL::drawPoint({r.x+i,r.y+j+b},col);
+                }  //r.x+=w + bias.at(text.at(L));
+                b=0; int w2=w;
+                if (L+1 < text.size()) bitmap = stbtt_GetCodepointBitmap(&font, 0,stbtt_ScaleForPixelHeight(&font, s), text.at(L+1), &w2, &h, 0,0);
+                if (w >= 20 || w2 >= 20 ) b++; 
+                if (w >= 32 || w2 >= 32) b++;  
+                r.x+=w + b; 
+            } 
         }
-    }  
+    }
     *ttf_buffer=*ttf_buffer2;
 }
+
 
 RSGL::Text::Text(std::string txt, RSGL::circle r, const char* font, RSGL::color col, bool draw, RSGL::drawable d){rect=r; text=txt; c=col; f=font; if (draw) RSGL::drawText(txt,r,font,col,d);}
 
@@ -144,6 +140,34 @@ void RSGL::drawLine(RSGL::point p1, RSGL::point p2, RSGL::color c, RSGL::drawabl
     }
 }
 
+
+
+int RSGL::drawTriangle(RSGL::triangle t, RSGL::color c, bool solid/*=true*/, RSGL::drawable win) {
+    if (!win.GPU){}
+    
+    else if (win.GPU == 1){
+        float i = win.r.x/2*1.0f;
+        float  x  = (t.x/i)-1.0f;
+        float  x2 = ((t.x+t.width)/i)-1.0f;
+        i = win.r.y/2*1.0f;
+        float  y = (-(t.y)/i)+1.0f;
+        float  y2 =(-(t.y+t.length)/i)+1.0f;
+        
+        if (solid) { glBegin(GL_POLYGON); }
+        else { glBegin(GL_LINE_LOOP);}
+            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
+            glVertex2f(x+abs(x2)+0.1f,  y);
+            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
+            glVertex2f(x, y2);
+            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
+            glVertex2f(x2, y2);
+        glEnd();
+    }
+    return 1;
+}
+
+
+
 int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
     if (!win.GPU){
         XSetForeground(win.display,XDefaultGC(win.display,XDefaultScreen(win.display)),RSGLRGBTOHEX(col.r,col.g,col.b));
@@ -152,44 +176,79 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
         return 1;
     }
     else if (win.GPU == 1){
-        float i = win.r.width/2*1.0f;
+        c.x+=c.radius/2;
+        c.y+=c.radius/2;
+        float i = win.r.x/2*1.0f;
         float  x2 = (c.x/i)-1.0f;
-        i = win.r.length/2*1.0f;
+        i = win.r.y/2*1.0f;
         float  y2 = (-(c.y)/i)+1.0f;
-
-        i = win.r.width/2*1.0f;
-        float  r = ((-(c.radius-258)/i)-1.0f);
+        c.radius-=10;
+        i = win.r.x/2*1.0f;
+        //c.radius -= 200 + (win.r.width*0.1);
+        float  r = ((-(c.radius)/i)-1.0f);
         if (!fill){
-        glBegin(GL_LINE_LOOP);
-                glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
-                for(int ii = 0; ii < 60; ii++){
-                    float theta = 2.0f * 3.1415926f * float(ii) / float(60);//get the current angle
+            int n_cx = c.x;
+            int n_cy = c.y;
+            int radius = c.radius;
+            
+            double error = (double)-radius;
+            double x = (double)radius - 0.5;
+            double y = (double)0.5;
+            double cx = n_cx - 0.5;
+            double cy = n_cy - 0.5;
 
-                    float x = r * cosf(theta);//calculate the x component
-                    float y = r * sinf(theta);//calculate the y component
+            while (x >= y){
+                RSGL::drawPoint( {(int)(cx + x), (int)(cy + y)},col);
+                RSGL::drawPoint( {(int)(cx + y), (int)(cy + x)},col);
 
-                    glVertex2f(x + x2, y + y2);//output vertex
-
+                if (x != 0)
+                {
+                    RSGL::drawPoint( {(int)(cx - x), (int)(cy + y)},col);
+                    RSGL::drawPoint( {(int)(cx + y), (int)(cy - x)},col);
                 }
-        glEnd();
-        return 1;
+
+                if (y != 0)
+                {
+                    RSGL::drawPoint( {(int)(cx + x), (int)(cy - y)},col);
+                    RSGL::drawPoint( {(int)(cx - y), (int)(cy + x)},col);
+                }
+
+                if (x != 0 && y != 0)
+                {
+                    RSGL::drawPoint({(int)(cx - x), (int)(cy - y)},col);
+                    RSGL::drawPoint( {(int)(cx - y), (int)(cy - x)},col);
+                }
+
+                error += y;
+                ++y;
+                error += y;
+
+                if (error >= 0)
+                {
+                    --x;
+                    error -= x;
+                    error -= x;
+                }
+	        }
         }
         if (fill){
-        glBegin(GL_TRIANGLE_FAN);
-             glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
-            glVertex2f(x2,y2);
+            int cx = c.x;
+            int cy = c.y;
+            int radius = c.radius;	
+            static const int BPP = 4;
 
-            for (float angle=1.0f;angle<361.0f;angle+=0.2){
-                float x3 = x2+sin(angle)*r;
-                float y3 = y2+cos(angle)*r;
-                glVertex2f(x3,y3);
-            }   
-        glEnd();
+            for (double dy = 1; dy <= radius; dy += 1.0){
+
+                double dx = floor(sqrt((2.0 * radius * dy) - (dy * dy)));
+                int x = cx - dx;
+                RSGL::drawLine({(int)(cx - dx), (int)(cy + dy - radius)}, {(int)(cx + dx), (int)(cy + dy - radius)},col);
+                RSGL::drawLine({(int)(cx - dx), (int)(cy - dy + radius)}, {(int)(cx + dx), (int)(cy - dy + radius)},col);
+
+            }
         }
   }
   return 1;
 }
-
 
 int RSGL::drawPoint(RSGL::point p, color c, RSGL::drawable win){  RSGL::drawRect({p.x,p.y,1,1,},c,true,false,win); return 1; }
 
