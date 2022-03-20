@@ -9,6 +9,7 @@ char ttf_buffer2[1<<25];
 
 void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
   int high=0;
+   if (d.GPU == 1){ glBegin(GL_POINTS); glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
    for (int dr=0; dr<2; dr++){
         int L2=0; 
         for (int L=0; L < text.size(); L++){
@@ -28,7 +29,15 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
                 if (text.at(L) == ' ') r.x+=10;
                 for (j=0; j < h; ++j) {
                     for (i=0; i < w; ++i)
-                        if (" .:ioVM@"[bitmap[j*w+i]>>5] != ' ') RSGL::drawPoint({r.x+i,r.y+j+b},col);
+                        if (" .:ioVM@"[bitmap[j*w+i]>>5] != ' '){ 
+                            RSGL::point p1 = {r.x+i,r.y+j+b};
+                            float i = d.r.width/2*1.0f;
+                            float  x = (p1.x/i)-1.0f;
+                            i = d.r.length/2*1.0f;
+                            float  y = (-(p1.y)/i)+1.0f;
+                            if (!d.GPU) RSGL::drawPoint(p1,col);
+                            else if (d.GPU == 1) glVertex2f(x,y);
+                        }
                 }  //r.x+=w + bias.at(text.at(L));
                 b=0; int w2=w;
                 if (L+1 < text.size()) bitmap = stbtt_GetCodepointBitmap(&font, 0,stbtt_ScaleForPixelHeight(&font, s), text.at(L+1), &w2, &h, 0,0);
@@ -37,10 +46,8 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
                 r.x+=w + b; 
             } 
         }
-    }
-    *ttf_buffer=*ttf_buffer2;
+   } if (d.GPU == 1){glEnd(); glFlush();} *ttf_buffer=*ttf_buffer2;
 }
-
 
 RSGL::Text::Text(std::string txt, RSGL::circle r, const char* font, RSGL::color col, bool draw, RSGL::drawable d){rect=r; text=txt; c=col; f=font; if (draw) RSGL::drawText(txt,r,font,col,d);}
 
