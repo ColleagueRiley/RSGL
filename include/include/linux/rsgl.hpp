@@ -32,6 +32,12 @@ namespace RSGL{
     const int MouseScroll=7; // if the mouse scrolls
     const int quit = 33; // the user clicked the quit button
     const int dnd = 34; // a file has been dropped into the window
+    
+    #define mouseLeft 1
+    #define mouseMiddle 2
+    #define mouseRight 3
+    #define mouseScrollUp 4
+    #define mouseScrolldown 6
 
     // shape/draw structures 
     struct point{int x, y;};  // a single point
@@ -85,7 +91,6 @@ namespace RSGL{
           int x,y; // the x/y of the mouse
           int keycode; // the source keycode of which key has been pressed
           std::string key; // a string of the key that has been pressed
-          int scroll=0;
           int ledState; // 0 : numlock, 1 : caps lock, 3 : small lock
         }; // event structure to handle events sent to a specific drawable
         struct Debug{

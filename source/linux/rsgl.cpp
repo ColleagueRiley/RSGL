@@ -143,14 +143,12 @@ void RSGL::window::checkEvents(){
   }
   debug.fps=FPS;
   XEvent E;
-  event.scroll=0;
   if (XEventsQueued(display,QueuedAlready) + XEventsQueued(display,QueuedAfterReading)) XNextEvent(display, &E);
   event.type = E.type; int x, y,i; unsigned m; unsigned m2; Window root, child,w; 
   switch (event.type){
         case 33: if (E.xclient.data.l[0] != (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)) event.type=0;break;
         case 4: event.button = E.xbutton.button; 
-            if (event.button == 5 || event.button == 6){event.scroll=event.button-5; if (!event.scroll) event.scroll++;  event.type=7;}
-            else if (event.type==4) pressed=true;  else pressed=false;
+            if (event.type==4) pressed=true;  else pressed=false;
             w=d; 
             if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.x=x; event.y=y;} break;
         case 5: event.button = E.xbutton.button; 

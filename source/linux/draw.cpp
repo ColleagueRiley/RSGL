@@ -124,6 +124,7 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable 
         }
     }
 }
+void RSGL::drawRecta(RSGL::rect r, RSGL::color c, RSGL::rectArgs args){RSGL::drawRect(r,c,args.fill,args.dotted,args.win);}
 
 void RSGL::drawLine(RSGL::point p1, RSGL::point p2, RSGL::color c, RSGL::drawable win){
     if (!win.GPU){
@@ -172,7 +173,7 @@ int RSGL::drawTriangle(RSGL::triangle t, RSGL::color c, bool solid/*=true*/, RSG
     }
     return 1;
 }
-
+int RSGL::drawTrianglea(RSGL::triangle t, RSGL::color c, RSGL::TriArgs args){RSGL::drawTriangle(t,c,args.solid,args.win);}
 
 
 int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
@@ -256,6 +257,7 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
   }
   return 1;
 }
+void RSGL::drawCirclea(RSGL::circle c, RSGL::color col, circleArgs args){RSGL::drawCircle(c,col,args.fill,args.win);}
 
 int RSGL::drawPoint(RSGL::point p, color c, RSGL::drawable win){  RSGL::drawRect({p.x,p.y,1,1,},c,true,false,win); return 1; }
 
@@ -274,35 +276,56 @@ std::vector<std::vector<RSGL::color>> RSGL::resizeImage(std::vector<std::vector<
     return output;
 }
 
-void RSGL::drawImage(std::string fileName, RSGL::rect r,bool resize,RSGL::drawable d){
-    png::image< png::rgba_pixel > image(fileName);
-    std::vector<std::vector<RSGL::color>> img;
-    for (png::uint_16 y=0; y < image.get_height(); y++){  
-        img.insert(img.end(),{{}}); 
-        for (png::uint_16 x=0; x < image.get_width(); x++) img.at(img.size()-1).insert(img.at(img.size()-1).end(),{image[y][x].red,image[y][x].green,image[y][x].blue,(float)image[y][x].alpha});
-    }
-    if (image.get_width() != r.width && image.get_height() != r.length && resize) img = RSGL::resizeImage(img,r,{0,0,(int)image.get_width(),(int)image.get_height()});
-    glBegin(GL_POINTS);        
-    for (int y3=0; y3 < img.size(); y3++){
-        for (int x3=0; x3 < img.at(y3).size(); x3++){
-            if(img.at(y3).at(x3).a >= 100){
-                RSGL::color c = img.at(y3).at(x3);
-                float i = d.r.width/2*1.0f;
-                float  x = (r.x+x3/i)-1.0f;
-                float  x2 =((r.x+x3+1)/i)-1.0f;
-                i = d.r.length/2*1.0f;
-                float  y = (-(r.y+y3)/i)+1.0f;
-                float  y2 =(-(r.y+y3+1)/i)+1.0f;
-                glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
-                glVertex2f(x,  y);
-                glVertex2f(x2, y);
-                glVertex2f(x2, y2);
-                glVertex2f(x, y2);
-                
-            }
+std::vector<RSGL::image> tex;
+int RSGL::drawImage(RSGL::image r, RSGL::window win){
+    int xx=-1;
+    if (!tex.empty()) {
+        for (int i=0; i<tex.size(); i++) { 
+            if (tex[i].file == r.file) {xx=i;break;} 
         }
     }
+
+    if (xx==-1) {
+        png::image< png::rgba_pixel > image(r.file);
+        int w=image.get_width();
+        int h=image.get_height();
+        std::vector<unsigned> img;
+        for (png::uint_16 y=0; y < h; y++){  
+            for (png::uint_16 x=0; x < w; x++) {
+                img.insert(img.end(), image[y][x].alpha*0x1000000 +RSGLRGBTOHEX(image[y][x].blue, image[y][x].green, image[y][x].red));
+            }
+        }
+        glGenTextures(1, &r.tex);
+        glBindTexture(GL_TEXTURE_2D, r.tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, img.data());
+    
+        glBindTexture(GL_TEXTURE_2D, 0);
+        tex.insert(tex.end(), r);
+        xx=tex.size()-1;
+        
+    }
+    float i = win.r.width/2*1.0f; //Convert RSGL::win.r int coordinates to OpenGL float coordinates
+    float  x = (r.r.x/i)-1.0f;
+    float  x2 =((r.r.x+r.r.width)/i)-1.0f;
+    i = win.r.length/2*1.0f;
+    float  y = (-(r.r.y)/i)+1.0f;
+    float  y2 =(-(r.r.y+r.r.length)/i)+1.0f;
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, tex[xx].tex);
+    glColor4f(1.0, 1.0, 1.0, 1.0);
+    glBegin(GL_QUADS);
+        glTexCoord2i(0, 0); glVertex2f(x,  y);
+        glTexCoord2i(1, 0); glVertex2f(x2, y);
+        glTexCoord2i(1, 1);  glVertex2f(x2, y2);
+        glTexCoord2i(0, 1); glVertex2f(x, y2);
     glEnd();
-    glFlush();
+    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return 0;
 }
 
+void RSGL::drawImage(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawImage({r,fileName.data()},d); }

@@ -1,4 +1,16 @@
-TODO Before next update
+TODO For next update
 
-- resize image function
-- fix any bad code
+- Fix image draw lag (chinz)
+- app icon 
+- button struct
+- mouse menu struct
+- menu struct
+- menu bar
+- scroll bar
+- color picker struct
+-check box struct
+- text bot struct
+- distance between point/shapes function
+- RSGL-broadcasting
+- flag arg system
+- Make text look a little better
