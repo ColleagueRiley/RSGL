@@ -126,6 +126,8 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
     if (!RSGL::root.d){root=*this;root.display=display;}
 }
 
+RSGL::window::window(RSGL::rect r,std::string n,RSGL::color c,RSGL::winArgs args){window(n,r,c,args.gpu,args.resize,args.autoResize);}
+
 bool pressed=false;
 void RSGL::window::checkEvents(){
   LastFrameTimeCounter = TimeCounter;
@@ -141,12 +143,14 @@ void RSGL::window::checkEvents(){
   }
   debug.fps=FPS;
   XEvent E;
+  event.scroll=0;
   if (XEventsQueued(display,QueuedAlready) + XEventsQueued(display,QueuedAfterReading)) XNextEvent(display, &E);
   event.type = E.type; int x, y,i; unsigned m; unsigned m2; Window root, child,w; 
   switch (event.type){
         case 33: if (E.xclient.data.l[0] != (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)) event.type=0;break;
         case 4: event.button = E.xbutton.button; 
-            if (event.type==4) pressed=true;  else pressed=false;
+            if (event.button == 5 || event.button == 6){event.scroll=event.button-5; if (!event.scroll) event.scroll++;  event.type=7;}
+            else if (event.type==4) pressed=true;  else pressed=false;
             w=d; 
             if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.x=x; event.y=y;} break;
         case 5: event.button = E.xbutton.button; 
@@ -177,7 +181,6 @@ void RSGL::window::checkEvents(){
   if (r.width != a.width&& areesize || r.length != a.height  && areesize){ glViewport(0,0,a.width,a.height); } //std::cout << E.xresizerequest.width << " , " << E.xresizerequest.height << std::endl;}
   r.width=a.width; r.length=a.height; r.x=a.x; r.y=a.y;
   XKeyboardState keystate;
-  XGetKeyboardControl(display,&keystate); event.ledState= keystate.led_mask;
 }
 
 void RSGL::window::close(){

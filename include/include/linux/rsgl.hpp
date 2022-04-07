@@ -29,6 +29,7 @@ namespace RSGL{
     const int MouseButtonPressed=4; // a mouse button has been pressed (left,middle,right)
     const int MouseButtonReleased=5; // a mouse button has been released (left,middle,right)
     const int MousePosChanged=6; // the position of the mouse has been changed
+    const int MouseScroll=7; // if the mouse scrolls
     const int quit = 33; // the user clicked the quit button
     const int dnd = 34; // a file has been dropped into the window
 
@@ -46,6 +47,7 @@ namespace RSGL{
       const char* file; // the source file a image is drawn from
       std::vector<std::vector<int>> cords; // every point in a image
       png::image< png::rgba_pixel> img; // the og pnglib++ image structure
+      GLuint tex;
     }; 
 
     // the structure for a surface that can be drawn upon (window/pixmap ect)
@@ -72,6 +74,7 @@ namespace RSGL{
           XImage* data; // source Image struct
     };
 
+    struct winArgs{int gpu=1; bool resize=false, autoResize=false;};
     //Window structure
     struct window : drawable{
       private:
@@ -82,6 +85,7 @@ namespace RSGL{
           int x,y; // the x/y of the mouse
           int keycode; // the source keycode of which key has been pressed
           std::string key; // a string of the key that has been pressed
+          int scroll=0;
           int ledState; // 0 : numlock, 1 : caps lock, 3 : small lock
         }; // event structure to handle events sent to a specific drawable
         struct Debug{
@@ -114,7 +118,7 @@ namespace RSGL{
                     1 - openGL*/,
               bool resize = false, /* can the user resize the window?*/
               bool autoResize = false /* Should everything resize if the window size changes?*/); //inits the window with these values
-        
+        window(RSGL::rect,std::string,RSGL::color,winArgs args);
         void checkEvents(); // checks if any events have been sent (is required to get events)
         bool isPressed(unsigned long key); // checks if a key has been pressed (with key code)
         bool isPressed(std::string key);  // checks if a key has been pressed (with string of a key)
@@ -148,8 +152,9 @@ namespace RSGL{
       Text(){}
     };
 
-    //drawing functions
-    void drawText(
+
+      //drawing functions
+      void drawText(
           std::string text /*the text*/, 
           RSGL::circle r /*the source x/y/size of the text*/, 
           const char* font /*the font of the text*/, 
@@ -161,13 +166,15 @@ namespace RSGL{
           color c /*the color of the point*/,
           RSGL::drawable win=root /*the window to draw on*/); // draws a point on the screen
     
-    void drawRect(
+      void drawRect(
           RSGL::rect r /*the rect to draw*/,
           color c /*the color rect*/, 
           bool fill=True /* fill or just outlines?*/, 
           bool dotted=false, /*is it a dotted rectangle?*/
           RSGL::drawable win=root /*the window to draw on*/); // draws a rect on the screen
-
+      struct rectArgs{bool fill=false, dotted=false; RSGL::drawable win=RSGL::root;};      
+      void drawRecta(RSGL::rect r, RSGL::color c, rectArgs args);
+      
     void drawLine(
             RSGL::point p1 /* the first point to draw */, 
             RSGL::point p2 /* the second point (where to stop)*/, 
@@ -179,12 +186,18 @@ namespace RSGL{
           color col /* the color of the circle*/, 
           bool fill=True /* fill or just outlines?*/, 
           RSGL::drawable win=root /*the window to draw on*/); // draws a cirlce on the screen
+    struct circleArgs{bool fill=false; RSGL::drawable win=RSGL::root;};      
+    void drawCirclea(RSGL::circle c, RSGL::color col, circleArgs args);
 
+    int drawTriangle(RSGL::triangle t, RSGL::color c, bool solid=true, RSGL::drawable win=RSGL::root);
+    struct TriArgs{bool solid=false; RSGL::drawable win=RSGL::root;};      
+    int drawTrianglea(RSGL::triangle t, RSGL::color c, TriArgs args);
+    
     void drawImage(
           std::string fileName /*the file to draw*/, 
           RSGL::rect r /*the width/length/x/y to put the image*/,
-          bool resize=true /*should the image resize if it needs to?*/,
-          RSGL::drawable d=RSGL::root /*the window to draw on*/); // draws a image on the screen
+          RSGL::window d=RSGL::root /*the window to draw on*/); // draws a image on the screen
+    int drawImage(RSGL::image r, RSGL::window win=RSGL::root);
 
     std::vector<std::vector<RSGL::color>> resizeImage(std::vector<std::vector<RSGL::color>> image, RSGL::rect newSize, RSGL::rect ogsize); // resizes an image (.png) file to a resized 2d vector
 
