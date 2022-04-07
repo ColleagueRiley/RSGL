@@ -29,7 +29,6 @@ namespace RSGL{
     const int MouseButtonPressed=4; // a mouse button has been pressed (left,middle,right)
     const int MouseButtonReleased=5; // a mouse button has been released (left,middle,right)
     const int MousePosChanged=6; // the position of the mouse has been changed
-    const int MouseScroll=7; // if the mouse scrolls
     const int quit = 33; // the user clicked the quit button
     const int dnd = 34; // a file has been dropped into the window
     
