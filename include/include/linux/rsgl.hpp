@@ -36,7 +36,7 @@ namespace RSGL{
     const int mouseMiddle= 2;
     const int mouseRight =3;
     const int mouseScrollUp =4;
-    const int mouseScrollDown =6;
+    const int mouseScrollDown =5;
 
     // shape/draw structures 
     struct point{int x, y;};  // a single point
