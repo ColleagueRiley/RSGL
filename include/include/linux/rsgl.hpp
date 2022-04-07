@@ -32,11 +32,11 @@ namespace RSGL{
     const int quit = 33; // the user clicked the quit button
     const int dnd = 34; // a file has been dropped into the window
     
-    #define mouseLeft 1
-    #define mouseMiddle 2
-    #define mouseRight 3
-    #define mouseScrollUp 4
-    #define mouseScrollDown 6
+    const int mouseLeft =1;
+    const int mouseMiddle= 2;
+    const int mouseRight =3;
+    const int mouseScrollUp =4;
+    const int mouseScrollDown =6;
 
     // shape/draw structures 
     struct point{int x, y;};  // a single point
