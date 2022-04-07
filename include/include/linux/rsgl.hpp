@@ -36,7 +36,7 @@ namespace RSGL{
     #define mouseMiddle 2
     #define mouseRight 3
     #define mouseScrollUp 4
-    #define mouseScrolldown 6
+    #define mouseScrollDown 6
 
     // shape/draw structures 
     struct point{int x, y;};  // a single point
