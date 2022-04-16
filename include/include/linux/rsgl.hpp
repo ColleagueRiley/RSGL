@@ -97,7 +97,6 @@ namespace RSGL{
         };
         char keyboard[32]; // 32 bit char of the keyboard status
         #ifndef RSGLNOOPENGL
-        GLXContext context;
         XVisualInfo* vInfo;
         #endif
         bool swapFlag=true;
@@ -110,6 +109,7 @@ namespace RSGL{
         RSGL::color color;
         #ifdef RSGLOPENGL
         GLXWindow glxWin;
+        GLXContext context;
         #endif
         int setColor(RSGL::color c); // changes the background color to c
         window(){}
@@ -122,7 +122,6 @@ namespace RSGL{
                     1 - openGL*/,
               bool resize = false, /* can the user resize the window?*/
               bool autoResize = false /* Should everything resize if the window size changes?*/); //inits the window with these values
-        window(RSGL::rect,std::string,RSGL::color,winArgs args);
         void checkEvents(); // checks if any events have been sent (is required to get events)
         bool isPressed(unsigned long key); // checks if a key has been pressed (with key code)
         bool isPressed(std::string key);  // checks if a key has been pressed (with string of a key)
