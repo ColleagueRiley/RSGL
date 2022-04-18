@@ -7,7 +7,7 @@
 char ttf_buffer[1<<25];
 char ttf_buffer2[1<<25];
 
-void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
+void drawTextRAW(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
   int high=0;
    if (d.GPU == 1){ glBegin(GL_POINTS); glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
    for (int dr=0; dr<2; dr++){
@@ -48,6 +48,100 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
         }
    } if (d.GPU == 1){glEnd(); glFlush();} *ttf_buffer=*ttf_buffer2;
 }
+
+
+struct Letter{
+    std::string letter;
+    int size; int num;
+    std::string text;
+    const char* font;
+};
+
+std::vector<Letter> ls;
+std::vector<RSGL::point> points;
+
+void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col,RSGL::drawable win){
+    int x; int x2=0; int y;
+    std::string textStr = text;
+    for (int I3=0; I3 < textStr.size(); I3++){
+        text = textStr.at(I3);
+        bool done=false; int L3=0;
+        for (L3; L3 < ls.size(); L3++){
+            if (text == ls.at(L3).letter && r.radius == ls.at(L3).size && Font == ls.at(L3).font && ls.at(L3).num == I3 && ls.at(L3).text == textStr){ done=true; break;} 
+        }
+        if (!done){
+            if (textStr.size() > I3+1) text += textStr.at(I3+1);
+            /* load font file */
+            long size;
+            unsigned char* fontBuffer;
+
+            FILE* fontFile = fopen(Font, "rb");
+            fseek(fontFile, 0, SEEK_END);
+            size = ftell(fontFile); /* how long is the file ? */
+            fseek(fontFile, 0, SEEK_SET); /* reset */
+            fontBuffer = (unsigned char*)malloc(size);
+
+            fread(fontBuffer, size, 1, fontFile);
+
+            /* prepare font */
+            stbtt_fontinfo info;
+            if (!stbtt_InitFont(&info, fontBuffer, 0)) printf("failed\n");
+
+
+            int b_w = r.radius*text.size(); /* bitmap width */
+            int b_h = r.radius; /* bitmap height */
+            int l_h = r.radius; /* line height */
+
+            /* create a bitmap for the phrase */
+            unsigned char* bitmap = (unsigned char*)calloc(b_w * b_h , sizeof(unsigned char));
+            /* calculate font scaling */
+            float scale = stbtt_ScaleForPixelHeight(&info, l_h);
+
+            char* word = (char*)text.data();
+            
+            x = 0;
+
+            int ascent, descent, lineGap;
+
+            stbtt_GetFontVMetrics(&info, &ascent, &descent, &lineGap);
+
+            ascent = roundf(ascent * scale);
+
+            for (int i = 0; i < 1; i++) {
+                /* how wide is this character */
+                int ax;
+                int lsb;
+                stbtt_GetCodepointHMetrics(&info, word[i], &ax, &lsb);
+                /* (Note that each Codepoint call has an alternative Glyph version which caches the work required to lookup the character word[i].) */
+
+                /* get bounding box for character (may be offset to account for chars that dip above or below the line */
+                int c_x1, c_y1, c_x2, c_y2;
+                stbtt_GetCodepointBitmapBox(&info, word[i], scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+                /* compute y (different characters have different heights */
+                y = ascent + c_y1;
+
+                /* advance x */
+                x += roundf(ax * scale);
+
+                /* add kerning */
+                int kern;
+                kern = stbtt_GetCodepointKernAdvance(&info, word[i], word[i + 1]);
+                x += roundf(kern * scale);
+            } 
+            std::string ftext; ftext += text.at(0);
+            drawTextRAW(ftext,{r.x + x2,r.y+y,r.radius},Font,col,win);
+            ls.insert(ls.end(),{ftext,r.radius,I3,textStr,Font});
+            points.insert(points.end(),{x2,y});
+            fclose(fontFile);
+            x2+=x;
+        }
+        else{
+            std::string ftext; ftext += text.at(0);
+            drawTextRAW(ftext,{r.x + points.at(L3).x ,r.y+ points.at(L3).y ,r.radius},Font,col,win);
+        }
+    }
+}
+
 
 RSGL::Text::Text(std::string txt, RSGL::circle r, const char* font, RSGL::color col, bool draw, RSGL::drawable d){rect=r; text=txt; c=col; f=font; if (draw) RSGL::drawText(txt,r,font,col,d);}
 
