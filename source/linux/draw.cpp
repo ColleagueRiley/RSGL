@@ -6,7 +6,6 @@
 
 char ttf_buffer[1<<25];
 char ttf_buffer2[1<<25];
-
 void drawTextRAW(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
   int high=0;
    if (d.GPU == 1){ glBegin(GL_POINTS); glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
@@ -16,9 +15,6 @@ void drawTextRAW(std::string text, RSGL::circle r, const char* Font, RSGL::color
             stbtt_fontinfo font;
             unsigned char *bitmap;
             int w,h,i,j,c = text.at(L), s = r.radius; L2++;
-            FILE* f = fopen(Font, "rb");
-
-            if (ttf_buffer != NULL && f != NULL) fread(ttf_buffer, 1, 1<<25, f);
 
             stbtt_InitFont(&font, (unsigned char*)ttf_buffer, stbtt_GetFontOffsetForIndex((unsigned char*)ttf_buffer,0));
             bitmap = stbtt_GetCodepointBitmap(&font, 0,stbtt_ScaleForPixelHeight(&font, s), c, &w, &h, 0,0);
@@ -73,19 +69,19 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
             if (textStr.size() > I3+1) text += textStr.at(I3+1);
             /* load font file */
             long size;
-            unsigned char* fontBuffer;
+            //unsigned char* fontBuffer;
 
-            FILE* fontFile = fopen(Font, "rb");
-            fseek(fontFile, 0, SEEK_END);
-            size = ftell(fontFile); /* how long is the file ? */
-            fseek(fontFile, 0, SEEK_SET); /* reset */
-            fontBuffer = (unsigned char*)malloc(size);
+            FILE* f = fopen(Font, "rb");
+            fseek(f, 0, SEEK_END);
+            size = ftell(f); /* how long is the file ? */
+            fseek(f, 0, SEEK_SET); /* reset */
+            //fontBuffer = (unsigned char*)malloc(size);
 
-            fread(fontBuffer, size, 1, fontFile);
-
+            fread(ttf_buffer, size, 1, f);
+            fclose(f);
             /* prepare font */
             stbtt_fontinfo info;
-            if (!stbtt_InitFont(&info, fontBuffer, 0)) printf("failed\n");
+            if (!stbtt_InitFont(&info, (unsigned char*)ttf_buffer, 0)) printf("failed\n");
 
 
             int b_w = r.radius*text.size(); /* bitmap width */
@@ -132,7 +128,6 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
             drawTextRAW(ftext,{r.x + x2,r.y+y,r.radius},Font,col,win);
             ls.insert(ls.end(),{ftext,r.radius,I3,textStr,Font});
             points.insert(points.end(),{x2,y});
-            fclose(fontFile);
             x2+=x;
         }
         else{
