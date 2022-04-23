@@ -6,8 +6,25 @@
 
 char ttf_buffer[1<<25];
 char ttf_buffer2[1<<25];
+std::string curfont="";
+
 void drawTextRAW(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
-  int high=0;
+    if (curfont != Font){
+        /* load font file */
+        long size;
+        //unsigned char* fontBuffer;
+
+        FILE* f = fopen(Font, "rb");
+        fseek(f, 0, SEEK_END);
+        size = ftell(f); /* how long is the file ? */
+        fseek(f, 0, SEEK_SET); /* reset */
+        //fontBuffer = (unsigned char*)malloc(size);
+        curfont=Font;
+
+        fread(ttf_buffer, size, 1, f);
+        fclose(f);
+    }   
+   int high=0;
    if (d.GPU == 1){ glBegin(GL_POINTS); glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
    for (int dr=0; dr<2; dr++){
         int L2=0; 
@@ -76,6 +93,7 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
             size = ftell(f); /* how long is the file ? */
             fseek(f, 0, SEEK_SET); /* reset */
             //fontBuffer = (unsigned char*)malloc(size);
+            curfont=Font;
 
             fread(ttf_buffer, size, 1, f);
             fclose(f);
@@ -136,6 +154,7 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
         }
     }
 }
+
 
 
 RSGL::Text::Text(std::string txt, RSGL::circle r, const char* font, RSGL::color col, bool draw, RSGL::drawable d){rect=r; text=txt; c=col; f=font; if (draw) RSGL::drawText(txt,r,font,col,d);}
