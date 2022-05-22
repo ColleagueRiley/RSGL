@@ -3,10 +3,12 @@
 #endif
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "deps/stb_truetype.h" // for loading fonts
+#include "nanosvgrast.h"
 
 char ttf_buffer[1<<25];
 char ttf_buffer2[1<<25];
 std::string curfont="";
+
 
 void drawTextRAW(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
     if (curfont != Font){
@@ -73,7 +75,8 @@ struct Letter{
 std::vector<Letter> ls;
 std::vector<RSGL::point> points;
 
-void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col,RSGL::drawable win){
+
+void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col,RSGL::drawable win, bool draw){
     int x; int x2=0; int y;
     std::string textStr = text;
     for (int I3=0; I3 < textStr.size(); I3++){
@@ -143,17 +146,18 @@ void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::co
                 x += roundf(kern * scale);
             } 
             std::string ftext; ftext += text.at(0);
-            drawTextRAW(ftext,{r.x + x2,r.y+y,r.radius},Font,col,win);
+            if (draw) drawTextRAW(ftext,{r.x + x2,r.y+y,r.radius},Font,col,win);
             ls.insert(ls.end(),{ftext,r.radius,I3,textStr,Font});
             points.insert(points.end(),{x2,y});
             x2+=x;
         }
         else{
             std::string ftext; ftext += text.at(0);
-            drawTextRAW(ftext,{r.x + points.at(L3).x ,r.y+ points.at(L3).y ,r.radius},Font,col,win);
+            if (draw) drawTextRAW(ftext,{r.x + points.at(L3).x ,r.y+ points.at(L3).y ,r.radius},Font,col,win);
         }
     }
 }
+
 
 
 
@@ -437,3 +441,60 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
 }
 
 void RSGL::drawImage(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawImage({r,fileName.data()},d); }
+
+int RSGL::drawSVG(RSGL::image r, RSGL::window win){
+    int xx=-1;
+    if (!tex.empty()) {
+        for (int i=0; i<tex.size(); i++) { 
+            if (tex[i].file == r.file) {xx=i;break;} 
+        }
+    }
+
+    if (xx==-1) {
+		NSVGimage *image = NULL;
+		NSVGrasterizer *rast = NULL;
+		unsigned char* img = NULL;
+		int w, h;
+		const char* filename =  r.file;
+		image = nsvgParseFromFile(filename, "px", 96.0f);
+		w = (int)image->width;
+		h = (int)image->height;
+		rast = nsvgCreateRasterizer();
+		img = (unsigned char*)malloc(w*h*4);
+		nsvgRasterize(rast, image, 0,0,1, img, w, h, w*4);
+
+        glGenTextures(1, &r.tex);
+        glBindTexture(GL_TEXTURE_2D, r.tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, img);
+		//nsvgDeleteRasterizer(rast);
+		//nsvgDelete(image);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        tex.insert(tex.end(), r);
+        xx=tex.size()-1;
+
+    }
+    float i = win.r.width/2*1.0f; //Convert RSGL::win.r int coordinates to OpenGL float coordinates
+    float  x = (r.r.x/i)-1.0f;
+    float  x2 =((r.r.x+r.r.width)/i)-1.0f;
+    i = win.r.length/2*1.0f;
+    float  y = (-(r.r.y)/i)+1.0f;
+    float  y2 =(-(r.r.y+r.r.length)/i)+1.0f;
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, tex[xx].tex);
+    glColor4f(1.0, 1.0, 1.0, 1.0);
+    glBegin(GL_QUADS);
+        glTexCoord2i(0, 0); glVertex2f(x,  y);
+        glTexCoord2i(1, 0); glVertex2f(x2, y);
+        glTexCoord2i(1, 1);  glVertex2f(x2, y2);
+        glTexCoord2i(0, 1); glVertex2f(x, y2);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+ 
+    return 0;
+} 
+void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawSVG({r,fileName.data()},d); }
