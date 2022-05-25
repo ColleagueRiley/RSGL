@@ -29,6 +29,16 @@ int RSGL::CircleCollidePoint(RSGL::circle c, RSGL::point p){
   	return (sqrt( ( (c.x-testX) * (c.x-testX) ) + ( (c.y-testY) *(c.y-testY) ) )  <= c.radius);
 }
 
+int RSGL::CircleCollideLine(RSGL::circle c,RSGL::point p1, RSGL::point p2) {
+  float distX = p1.x - p2.x;
+  float distY = p1.y - p2.y;
+  float len = sqrt( (distX*distX) + (distY*distY) );
+
+  float dot = ( ((c.x-p1.x)*(p2.x-p1.x)) + ((c.y-p1.y)*(p2.y-p1.y)) ) / pow(len,2);
+  distX = (float)(p1.x + (dot * (p2.x-p1.x))) - c.x;  distY = (float)(p1.y + (dot * (p2.y-p1.y))) - c.y;
+  if ((float)(sqrt( (distX*distX) + (distY*distY) )) <= c.radius) return true; return false;
+}
+
 int RSGL::RectCollidePoint(RSGL::rect r, RSGL::point p){
     if (p.x >= r.x &&  p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.length) return 1;
     return 0;
