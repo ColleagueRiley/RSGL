@@ -55,35 +55,18 @@ int RSGL::RectCollideRect(RSGL::rect r, RSGL::rect r2){
 }
 
 int RSGL::ImageCollideRect(RSGL::image img, RSGL::rect r){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        if(RSGL::RectCollidePoint(r, {img.cords[i][0],img.cords[i][1]})){
-            return 1;
-        }
-    }return 0;
+
 }
 
 int RSGL::ImageCollideCircle(RSGL::image img, RSGL::circle c){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        if(RSGL::CircleCollidePoint(c, {img.cords[i][0],img.cords[i][1]})){
-            return 1;
-        }
-    }return 0;    
+
     
 }
 
 int RSGL::ImageCollidePoint(RSGL::image img, RSGL::point p){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        if(RSGL::PointCollide(p, {img.cords[i][0],img.cords[i][1]})){
-            return 1;
-        }
-    }return 0;      
+
 }
 
 int RSGL::ImageCollideImage(RSGL::image img, RSGL::image img2){
-    for (int i=0; i < (int)img.cords.size(); i++){
-        for (int j=0; j < (int)img2.cords.size(); j++)
-            if(RSGL::PointCollide({img2.cords[i][0],img2.cords[i][1]}, {img.cords[i][0],img.cords[i][1]})){
-                return 1;
-            }
-    }return 0;      
+   
 }

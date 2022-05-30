@@ -45,12 +45,13 @@ namespace RSGL{
     struct triangle {  int x, y; int width, length; }; /*Triangle structure.*/
     struct area{int width,length;}; // an area (width/length) without a specific x/y
     struct color{int r,g,b; /* red, green blue and float alpha (not required)*/ float a=255;}; // color structure
+    struct stroke{ int size; RSGL::color color; bool fill=true;}; // info about the stroke of a shape
 
     // structure for images (.pngs)
     struct image{
       RSGL::rect r; // the area/x/y of the image stored in RSGL::rect
-      const char* file; // the source file a image is drawn from
-      std::vector<std::vector<int>> cords; // every point in a image
+      std::string file; // the source file a image is drawn from
+      std::vector<unsigned> cords; // every point in a image
       png::image< png::rgba_pixel> img; // the og pnglib++ image structure
       GLuint tex;
     }; 
@@ -135,6 +136,7 @@ namespace RSGL{
     int CircleCollidePoint(RSGL::circle c, RSGL::point p); // if a circle collides with a point
     int CircleCollideRect(RSGL::circle c, RSGL::rect r); // if a circle collides with a rect
     int CircleCollide(RSGL::circle cir1,RSGL::circle cir2); // if a circle collides with another circle
+    int CircleCollideLine(RSGL::circle c,RSGL::point p1, RSGL::point p2);
     int RectCollidePoint(RSGL::rect r, RSGL::point p); // if a rect collides with a point
     int RectCollideRect(RSGL::rect r, RSGL::rect r2); // if a rect collides with another rect
     int PointCollide(RSGL::point p, RSGL::point p2); // if a point collides with another point
@@ -142,7 +144,7 @@ namespace RSGL{
     int ImageCollideCircle(RSGL::image img, RSGL::circle c); // if a image collides with a circle
     int ImageCollidePoint(RSGL::image img, RSGL::point p); // if a image collides with a point
     int ImageCollideImage(RSGL::image img, RSGL::image img2); // if a image collides with another image
-  
+    
     // structure for text
     struct Text{
       RSGL::circle rect; // the rectangular area/x/y of the text
@@ -162,7 +164,8 @@ namespace RSGL{
           RSGL::circle r /*the source x/y/size of the text*/, 
           const char* font /*the font of the text*/, 
           RSGL::color c /*the color of the text*/, 
-          RSGL::drawable d=RSGL::root  /*what should it draw on*/); // draw text based on args
+          RSGL::drawable d=RSGL::root,  /*what should it draw on*/
+          bool draw=true); // draw text based on args
 
     int drawPoint(
           RSGL::point p /*the point to be draw*/, 
@@ -201,6 +204,16 @@ namespace RSGL{
           RSGL::rect r /*the width/length/x/y to put the image*/,
           RSGL::window d=RSGL::root /*the window to draw on*/); // draws a image on the screen
     int drawImage(RSGL::image r, RSGL::window win=RSGL::root);
+
+    void drawSVG(
+          std::string fileName /*the file to draw*/, 
+          RSGL::rect r /*the width/length/x/y to put the image*/,
+          RSGL::window d=RSGL::root /*the window to draw on*/); // draws a image on the screen
+    int drawSVG(RSGL::image r, RSGL::window win=RSGL::root);
+    
+    //draw with strokes 
+    void drawCircle(RSGL::circle c, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
+    void drawRect(RSGL::rect r, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
 
     std::vector<std::vector<RSGL::color>> resizeImage(std::vector<std::vector<RSGL::color>> image, RSGL::rect newSize, RSGL::rect ogsize); // resizes an image (.png) file to a resized 2d vector
 

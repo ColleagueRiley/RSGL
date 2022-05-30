@@ -455,7 +455,7 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
 		NSVGrasterizer *rast = NULL;
 		unsigned char* img = NULL;
 		int w, h;
-		const char* filename =  r.file;
+		const char* filename =  r.file.c_str();
 		image = nsvgParseFromFile(filename, "px", 96.0f);
 		w = (int)image->width;
 		h = (int)image->height;
@@ -468,13 +468,12 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, img);
-		//nsvgDeleteRasterizer(rast);
-		//nsvgDelete(image);
+		nsvgDeleteRasterizer(rast);
+		nsvgDelete(image);
 
         glBindTexture(GL_TEXTURE_2D, 0);
         tex.insert(tex.end(), r);
         xx=tex.size()-1;
-
     }
     float i = win.r.width/2*1.0f; //Convert RSGL::win.r int coordinates to OpenGL float coordinates
     float  x = (r.r.x/i)-1.0f;
@@ -497,4 +496,13 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
  
     return 0;
 } 
-void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawSVG({r,fileName.data()},d); }
+void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawSVG({r,fileName.c_str()},d); }
+
+void RSGL::drawRect(RSGL::rect r, RSGL::color col, RSGL::stroke s,bool fill, RSGL::window d){
+    if (fill == false && s.fill){
+         for (int i=0; i < s.size; i++){
+            RSGL::drawRect({r.x-i,r.y-i,r.width+i*2,r.length+i*2},s.color,false,false,d);
+        } RSGL::drawRect({r.x-s.size ,r.y-s.size,3,3},{220,0,0},true);
+    } else RSGL::drawRect({r.x-s.size,r.y-s.size,r.width+s.size*2,r.length+s.size*2},s.color,s.fill,false,d);
+    RSGL::drawRect(r,col,fill,false,d);
+}
