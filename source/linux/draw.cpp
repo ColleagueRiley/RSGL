@@ -1,169 +1,33 @@
 #ifndef RSGL
 #include "../../include/include/linux/rsgl.hpp" 
 #endif
-#define STB_TRUETYPE_IMPLEMENTATION 
-#include "deps/stb_truetype.h" // for loading fonts
 #include "nanosvgrast.h"
 
-char ttf_buffer[1<<25];
-char ttf_buffer2[1<<25];
-std::string curfont="";
+RSGL::Font::Font(std::string File, int Size){ size=Size; file=File; if(!(font = dtx_open_font(file.c_str(), size))) fprintf(stderr, "failed to open font\n"); }
 
+std::vector<RSGL::Font> fonts;
 
-void drawTextRAW(std::string text, RSGL::circle r, const char* Font, RSGL::color col, RSGL::drawable d){
-    if (curfont != Font){
-        /* load font file */
-        long size;
-        //unsigned char* fontBuffer;
+void RSGL::drawText(std::string text,RSGL::circle c,RSGL::Font font,RSGL::color col,RSGL::window win){
+    float i = win.r.width/2*1.0f; //Convert RSGL::win.r int coordinates to OpenGL float coordinates
+    float  x = (c.x/i)-1.0f;
+    i = win.r.length/2*1.0f;
+    float  y = (-(c.y)/i)+1.0f;
 
-        FILE* f = fopen(Font, "rb");
-        fseek(f, 0, SEEK_END);
-        size = ftell(f); /* how long is the file ? */
-        fseek(f, 0, SEEK_SET); /* reset */
-        //fontBuffer = (unsigned char*)malloc(size);
-        curfont=Font;
-
-        fread(ttf_buffer, size, 1, f);
-        fclose(f);
-    }   
-   int high=0;
-   if (d.GPU == 1){ glBegin(GL_POINTS); glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);}
-   for (int dr=0; dr<2; dr++){
-        int L2=0; 
-        for (int L=0; L < text.size(); L++){
-            stbtt_fontinfo font;
-            unsigned char *bitmap;
-            int w,h,i,j,c = text.at(L), s = r.radius; L2++;
-
-            stbtt_InitFont(&font, (unsigned char*)ttf_buffer, stbtt_GetFontOffsetForIndex((unsigned char*)ttf_buffer,0));
-            bitmap = stbtt_GetCodepointBitmap(&font, 0,stbtt_ScaleForPixelHeight(&font, s), c, &w, &h, 0,0);
-            if (h > high && !dr) high=h; 
-            else if (dr){
-                int b=0;
-                if (h < high && text.size() > 2) b=high-h;
-                if (text.at(L) == ' ') r.x+=10;
-                for (j=0; j < h; ++j) {
-                    for (i=0; i < w; ++i)
-                        if (" .:ioVM@"[bitmap[j*w+i]>>5] != ' '){ 
-                            RSGL::point p1 = {r.x+i,r.y+j+b};
-                            float i = d.r.width/2*1.0f;
-                            float  x = (p1.x/i)-1.0f;
-                            i = d.r.length/2*1.0f;
-                            float  y = (-(p1.y)/i)+1.0f;
-                            if (!d.GPU) RSGL::drawPoint(p1,col);
-                            else if (d.GPU == 1) glVertex2f(x,y);
-                        }
-                }  //r.x+=w + bias.at(text.at(L));
-                b=0; int w2=w;
-                if (L+1 < text.size()) bitmap = stbtt_GetCodepointBitmap(&font, 0,stbtt_ScaleForPixelHeight(&font, s), text.at(L+1), &w2, &h, 0,0);
-                if (w >= 20 || w2 >= 20 ) b++; 
-                if (w >= 32 || w2 >= 32) b++;  
-                r.x+=w + b; 
-            } 
-        }
-   } if (d.GPU == 1){glEnd(); glFlush();} *ttf_buffer=*ttf_buffer2;
-}
-
-
-struct Letter{
-    std::string letter;
-    int size; int num;
-    std::string text;
-    const char* font;
-};
-
-std::vector<Letter> ls;
-std::vector<RSGL::point> points;
-
-
-void RSGL::drawText(std::string text, RSGL::circle r, const char* Font, RSGL::color col,RSGL::drawable win, bool draw){
-    int x; int x2=0; int y;
-    std::string textStr = text;
-    for (int I3=0; I3 < textStr.size(); I3++){
-        text = textStr.at(I3);
-        bool done=false; int L3=0;
-        for (L3; L3 < ls.size(); L3++){
-            if (text == ls.at(L3).letter && r.radius == ls.at(L3).size && Font == ls.at(L3).font && ls.at(L3).num == I3 && ls.at(L3).text == textStr){ done=true; break;} 
-        }
-        if (!done){
-            if (textStr.size() > I3+1) text += textStr.at(I3+1);
-            /* load font file */
-            long size;
-            //unsigned char* fontBuffer;
-
-            FILE* f = fopen(Font, "rb");
-            fseek(f, 0, SEEK_END);
-            size = ftell(f); /* how long is the file ? */
-            fseek(f, 0, SEEK_SET); /* reset */
-            //fontBuffer = (unsigned char*)malloc(size);
-            curfont=Font;
-
-            fread(ttf_buffer, size, 1, f);
-            fclose(f);
-            /* prepare font */
-            stbtt_fontinfo info;
-            if (!stbtt_InitFont(&info, (unsigned char*)ttf_buffer, 0)) printf("failed\n");
-
-
-            int b_w = r.radius*text.size(); /* bitmap width */
-            int b_h = r.radius; /* bitmap height */
-            int l_h = r.radius; /* line height */
-
-            /* create a bitmap for the phrase */
-            unsigned char* bitmap = (unsigned char*)calloc(b_w * b_h , sizeof(unsigned char));
-            /* calculate font scaling */
-            float scale = stbtt_ScaleForPixelHeight(&info, l_h);
-
-            char* word = (char*)text.data();
-            
-            x = 0;
-
-            int ascent, descent, lineGap;
-
-            stbtt_GetFontVMetrics(&info, &ascent, &descent, &lineGap);
-
-            ascent = roundf(ascent * scale);
-
-            for (int i = 0; i < 1; i++) {
-                /* how wide is this character */
-                int ax;
-                int lsb;
-                stbtt_GetCodepointHMetrics(&info, word[i], &ax, &lsb);
-                /* (Note that each Codepoint call has an alternative Glyph version which caches the work required to lookup the character word[i].) */
-
-                /* get bounding box for character (may be offset to account for chars that dip above or below the line */
-                int c_x1, c_y1, c_x2, c_y2;
-                stbtt_GetCodepointBitmapBox(&info, word[i], scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
-                /* compute y (different characters have different heights */
-                y = ascent + c_y1;
-
-                /* advance x */
-                x += roundf(ax * scale);
-
-                /* add kerning */
-                int kern;
-                kern = stbtt_GetCodepointKernAdvance(&info, word[i], word[i + 1]);
-                x += roundf(kern * scale);
-            } 
-            std::string ftext; ftext += text.at(0);
-            if (draw) drawTextRAW(ftext,{r.x + x2,r.y+y,r.radius},Font,col,win);
-            ls.insert(ls.end(),{ftext,r.radius,I3,textStr,Font});
-            points.insert(points.end(),{x2,y});
-            x2+=x;
-        }
-        else{
-            std::string ftext; ftext += text.at(0);
-            if (draw) drawTextRAW(ftext,{r.x + points.at(L3).x ,r.y+ points.at(L3).y ,r.radius},Font,col,win);
-        }
+    RSGL::Font Font;
+	if (font.size != c.radius && font.file.size()){ bool loaded=false;
+        for (auto& fi : fonts) if (fi.file == font.file && fi.size == c.radius){ Font=fi; loaded=true; break; }
+        if (!loaded){ fonts.insert(fonts.end(),RSGL::Font(font.file,c.radius)); Font=fonts.back(); }
     }
+	dtx_use_font(Font.font,c.radius);
+
+	glPushMatrix();
+    int ybias = -405 + (.85 * win.r.length);
+	glOrtho(0, win.r.width, 0, win.r.length, 0, 2);
+	glTranslatef(c.x,c.y + ybias , 0);
+	glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
+	dtx_string(text.c_str());
+	glPopMatrix();
 }
-
-
-
-
-RSGL::Text::Text(std::string txt, RSGL::circle r, const char* font, RSGL::color col, bool draw, RSGL::drawable d){rect=r; text=txt; c=col; f=font; if (draw) RSGL::drawText(txt,r,font,col,d);}
-
-void RSGL::Text::draw(){ RSGL::drawText(text,rect,f,c,d); }
 
 
 void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,bool t=false) {
@@ -180,6 +44,9 @@ void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,boo
     int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
     int err = dx+dy, e2;
     int count = 0;
+    glPushMatrix();
+    glRotatef(r.rotationAngle, 0, 0, 1);
+    glTranslatef(dx,dy, 0);
     glBegin(GL_POINTS);
     while (1) {
         if (count < 10) {
@@ -197,6 +64,7 @@ void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,boo
         count = (count + 1) % 20;
     }
     glEnd();
+    glPopMatrix();
     glFlush();
     }
 }
@@ -224,6 +92,10 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable 
         if (dotted){DrawDottedLine(r,c,win,true);}
         else{
         GLenum m=GL_POLYGON; if (!fill) m=GL_LINE_STRIP;
+        glPushMatrix();
+        glRotatef(r.rotationAngle, 0, 0, 1);
+        glTranslatef(x,y, 0);
+        
         glBegin(m);
         glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
         glVertex2f(x,  y);
@@ -232,6 +104,7 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable 
         glVertex2f(x, y2);
         if (!fill) glVertex2f(x,  y);
         glEnd();
+        glPopMatrix();
         glFlush();
         }
     }
@@ -296,77 +169,30 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
         return 1;
     }
     else if (win.GPU == 1){
-        c.x+=c.radius/2;
-        c.y+=c.radius/2;
-        float i = win.r.x/2*1.0f;
-        float  x2 = (c.x/i)-1.0f;
-        i = win.r.y/2*1.0f;
-        float  y2 = (-(c.y)/i)+1.0f;
-        c.radius-=10;
-        i = win.r.x/2*1.0f;
-        //c.radius -= 200 + (win.r.width*0.1);
-        float  r = ((-(c.radius)/i)-1.0f);
-        if (!fill){
-            int n_cx = c.x;
-            int n_cy = c.y;
-            int radius = c.radius;
-            
-            double error = (double)-radius;
-            double x = (double)radius - 0.5;
-            double y = (double)0.5;
-            double cx = n_cx - 0.5;
-            double cy = n_cy - 0.5;
+        c.x += c.x-win.r.width/2; c.y += c.y-win.r.width/4;
+        float i = win.r.width/2.0f; //Convert win.r int coordinates to OpenGL float coordinates
+        float  x2 =(((c.radius+c.x)/i)-1.0f)/2;
+        float r = ((c.radius)/i)/2;
 
-            while (x >= y){
-                RSGL::drawPoint( {(int)(cx + x), (int)(cy + y)},col);
-                RSGL::drawPoint( {(int)(cx + y), (int)(cy + x)},col);
+        i =win.r.length/-2.0f;
+        float  y2 =(((c.radius+c.y)/i)+1.0f)/2;
+        float r1 = ((c.radius)/i)/2;
 
-                if (x != 0)
-                {
-                    RSGL::drawPoint( {(int)(cx - x), (int)(cy + y)},col);
-                    RSGL::drawPoint( {(int)(cx + y), (int)(cy - x)},col);
-                }
-
-                if (y != 0)
-                {
-                    RSGL::drawPoint( {(int)(cx + x), (int)(cy - y)},col);
-                    RSGL::drawPoint( {(int)(cx - y), (int)(cy + x)},col);
-                }
-
-                if (x != 0 && y != 0)
-                {
-                    RSGL::drawPoint({(int)(cx - x), (int)(cy - y)},col);
-                    RSGL::drawPoint( {(int)(cx - y), (int)(cy - x)},col);
-                }
-
-                error += y;
-                ++y;
-                error += y;
-
-                if (error >= 0)
-                {
-                    --x;
-                    error -= x;
-                    error -= x;
-                }
-	        }
-        }
         if (fill){
-            int cx = c.x;
-            int cy = c.y;
-            int radius = c.radius;	
-            static const int BPP = 4;
-
-            for (double dy = 1; dy <= radius; dy += 1.0){
-
-                double dx = floor(sqrt((2.0 * radius * dy) - (dy * dy)));
-                int x = cx - dx;
-                RSGL::drawLine({(int)(cx - dx), (int)(cy + dy - radius)}, {(int)(cx + dx), (int)(cy + dy - radius)},col);
-                RSGL::drawLine({(int)(cx - dx), (int)(cy - dy + radius)}, {(int)(cx + dx), (int)(cy - dy + radius)},col);
-
-            }
+            glBegin(GL_TRIANGLE_FAN);
+                glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
+                glVertex2f(x2, y2);
+        
+                for (float angle=1.0f;angle<361.0f;angle+=0.2) { glVertex2f( x2+cos(angle)*r, y2+sin(angle)*r1 ); }   
+            glEnd();
         }
-  }
+        else {
+            glBegin(GL_LINE_LOOP);
+                glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
+                for(int ii = 0; ii < 60; ii++) { float theta = 2.0f * M_PI * float(ii) / float(60); glVertex2f(x2+cosf(theta)*r, y2+sinf(theta)*r1); }
+            glEnd();
+        } 
+    }
   return 1;
 }
 void RSGL::drawCirclea(RSGL::circle c, RSGL::color col, circleArgs args){RSGL::drawCircle(c,col,args.fill,args.win);}
@@ -424,6 +250,9 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
     i = win.r.length/2*1.0f;
     float  y = (-(r.r.y)/i)+1.0f;
     float  y2 =(-(r.r.y+r.r.length)/i)+1.0f;
+    glPushMatrix();
+    glRotatef(r.r.rotationAngle, 0, 0, 1);
+    glTranslatef(x,y, 0);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, tex[xx].tex);
@@ -434,6 +263,7 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
         glTexCoord2i(1, 1);  glVertex2f(x2, y2);
         glTexCoord2i(0, 1); glVertex2f(x, y2);
     glEnd();
+    glPopMatrix();
     glDisable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -481,6 +311,9 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
     i = win.r.length/2*1.0f;
     float  y = (-(r.r.y)/i)+1.0f;
     float  y2 =(-(r.r.y+r.r.length)/i)+1.0f;
+    glPushMatrix();
+    glRotatef(r.r.rotationAngle, 0, 0, 1);
+    glTranslatef(x,y, 0);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, tex[xx].tex);
@@ -491,6 +324,7 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
         glTexCoord2i(1, 1);  glVertex2f(x2, y2);
         glTexCoord2i(0, 1); glVertex2f(x, y2);
     glEnd();
+    glPopMatrix();
     glDisable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
  
@@ -501,8 +335,8 @@ void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::dra
 void RSGL::drawRect(RSGL::rect r, RSGL::color col, RSGL::stroke s,bool fill, RSGL::window d){
     if (fill == false && s.fill){
          for (int i=0; i < s.size; i++){
-            RSGL::drawRect({r.x-i,r.y-i,r.width+i*2,r.length+i*2},s.color,false,false,d);
-        } RSGL::drawRect({r.x-s.size ,r.y-s.size,3,3},{220,0,0},true);
-    } else RSGL::drawRect({r.x-s.size,r.y-s.size,r.width+s.size*2,r.length+s.size*2},s.color,s.fill,false,d);
+            RSGL::drawRect({r.x-i,r.y-i,r.width+i*2,r.length+i*2,r.rotationAngle},s.color,false,false,d);
+        } RSGL::drawRect({r.x-s.size ,r.y-s.size,3,3,r.rotationAngle},{220,0,0},true);
+    } else RSGL::drawRect({r.x-s.size,r.y-s.size,r.width+s.size*2,r.length+s.size*2,r.rotationAngle},s.color,s.fill,false,d);
     RSGL::drawRect(r,col,fill,false,d);
 }

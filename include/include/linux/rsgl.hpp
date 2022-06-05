@@ -7,6 +7,7 @@
 #include "deps/X11/cursorfont.h" //Xlib defs
 #include "deps/png++/image.hpp" // for loading .png files                
 #include "keys.hpp"
+#include "deps/drawtext.h"
 #ifndef RSGLOPEGNL
   #ifndef RSGLNOOPENGL
       #define RSGLOPENGL 0x98342
@@ -40,7 +41,7 @@ namespace RSGL{
 
     // shape/draw structures 
     struct point{int x, y;};  // a single point
-    struct rect {int x, y , width, length; }; // a rectangle
+    struct rect {int x, y , width, length; int rotationAngle=0; }; // a rectangle
     struct circle{int x, y; int radius;}; // a circle
     struct triangle {  int x, y; int width, length; }; /*Triangle structure.*/
     struct area{int width,length;}; // an area (width/length) without a specific x/y
@@ -55,7 +56,13 @@ namespace RSGL{
       png::image< png::rgba_pixel> img; // the og pnglib++ image structure
       GLuint tex;
     }; 
-
+	  struct Font{
+        dtx_font* font; int size=0; std::string file;
+        Font(){}
+        Font(std::string File, int Size);
+        Font(std::string File) { file=File; }  Font(const char* File){ file=File; }
+    };
+    
     // the structure for a surface that can be drawn upon (window/pixmap ect)
     struct drawable{
       public:
@@ -159,13 +166,12 @@ namespace RSGL{
 
 
       //drawing functions
-      void drawText(
-          std::string text /*the text*/, 
-          RSGL::circle r /*the source x/y/size of the text*/, 
-          const char* font /*the font of the text*/, 
-          RSGL::color c /*the color of the text*/, 
-          RSGL::drawable d=RSGL::root,  /*what should it draw on*/
-          bool draw=true); // draw text based on args
+    void drawText(
+                  std::string text,
+                  RSGL::circle c,
+                  RSGL::Font font,
+                  RSGL::color col,
+                  RSGL::window win=RSGL::root);
 
     int drawPoint(
           RSGL::point p /*the point to be draw*/, 
