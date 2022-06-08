@@ -21,9 +21,10 @@ void RSGL::drawText(std::string text,RSGL::circle c,RSGL::Font font,RSGL::color 
 	dtx_use_font(Font.font,c.radius);
 
 	glPushMatrix();
-    int ybias = -405 + (.85 * win.r.length);
+    c.x-=5;
+    c.y = win.r.length-abs(c.y+20);
 	glOrtho(0, win.r.width, 0, win.r.length, 0, 2);
-	glTranslatef(c.x,c.y + ybias , 0);
+	glTranslatef(c.x,c.y , 0);
 	glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
 	dtx_string(text.c_str());
 	glPopMatrix();
@@ -45,15 +46,15 @@ void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,boo
     int err = dx+dy, e2;
     int count = 0;
     glPushMatrix();
+    if (r.rotationAngle){
     glRotatef(r.rotationAngle, 0, 0, 1);
     glTranslatef(dx,dy, 0);
+    } glOrtho(0, win.r.width, 0, win.r.length, 0, 2);
     glBegin(GL_POINTS);
     while (1) {
         if (count < 10) {
-            float i = win.r.width/2*1.0f;
-            float  x2 = (x0/i)-1.0f;
-            i = win.r.length/2*1.0f;
-            float  y2 = (-(y0)/i)+1.0f;
+            float  x2 = x0;
+            float  y2 = y0;
             glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
             glVertex2f(x2,  y2);
         }
@@ -91,21 +92,24 @@ void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable 
         float  y2 =(-(r.y+r.length)/i)+1.0f;
         if (dotted){DrawDottedLine(r,c,win,true);}
         else{
-        GLenum m=GL_POLYGON; if (!fill) m=GL_LINE_STRIP;
-        glPushMatrix();
-        glRotatef(r.rotationAngle, 0, 0, 1);
-        glTranslatef(x,y, 0);
+            GLenum m=GL_POLYGON; if (!fill) m=GL_LINE_STRIP;
         
-        glBegin(m);
-        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
-        glVertex2f(x,  y);
-        glVertex2f(x2, y);
-        glVertex2f(x2, y2);
-        glVertex2f(x, y2);
-        if (!fill) glVertex2f(x,  y);
-        glEnd();
-        glPopMatrix();
-        glFlush();
+            glPushMatrix();
+            if (r.rotationAngle){
+                glRotatef(r.rotationAngle, 0, 0, 1);
+                glTranslatef(r.x,r.y, 0);
+            } glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
+
+            glBegin(m);
+            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
+            glVertex2f(r.x,  r.y);
+            glVertex2f(r.x+r.width, r.y);
+            glVertex2f(r.x+r.width, r.y+r.length);
+            glVertex2f(r.x, r.y+r.length);
+            if (!fill) glVertex2f(r.x,  r.y);
+            glEnd();
+            glPopMatrix();
+            glFlush();
         }
     }
 }
@@ -169,29 +173,38 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
         return 1;
     }
     else if (win.GPU == 1){
-        c.x += c.x-win.r.width/2; c.y += c.y-win.r.width/4;
-        float i = win.r.width/2.0f; //Convert win.r int coordinates to OpenGL float coordinates
-        float  x2 =(((c.radius+c.x)/i)-1.0f)/2;
-        float r = ((c.radius)/i)/2;
+        c.radius /= 2; c.x+=c.radius; c.y+=c.radius;
 
-        i =win.r.length/-2.0f;
-        float  y2 =(((c.radius+c.y)/i)+1.0f)/2;
-        float r1 = ((c.radius)/i)/2;
+        float theta = 3.1415926 * 2 / float(50);
+        float tangetial_factor = tanf(theta);//calculate the tangential factor 
 
-        if (fill){
-            glBegin(GL_TRIANGLE_FAN);
-                glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
-                glVertex2f(x2, y2);
-        
-                for (float angle=1.0f;angle<361.0f;angle+=0.2) { glVertex2f( x2+cos(angle)*r, y2+sin(angle)*r1 ); }   
-            glEnd();
+        float radial_factor = cosf(theta);//calculate the radial factor 
+
+        glPushMatrix();
+        glLineWidth(2);
+        glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
+
+        glBegin(GL_LINE_LOOP);
+        glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
+        for (int i=0; i < c.radius; i++){
+            float x = c.radius-i;
+            float y = 0;
+
+            for (int ii = 0; ii < 50; ii++)
+            {
+                glVertex2f(x + c.x, y + c.y);//output vertex 
+                float tx = -y;
+                float ty = x;
+                
+                x += tx * tangetial_factor;
+                y += ty * tangetial_factor;
+                
+                x *= radial_factor;
+                y *= radial_factor;
+            } if (!fill) i=c.radius;
         }
-        else {
-            glBegin(GL_LINE_LOOP);
-                glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
-                for(int ii = 0; ii < 60; ii++) { float theta = 2.0f * M_PI * float(ii) / float(60); glVertex2f(x2+cosf(theta)*r, y2+sinf(theta)*r1); }
-            glEnd();
-        } 
+        glEnd();
+        glPopMatrix();
     }
   return 1;
 }
@@ -244,24 +257,21 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
         xx=tex.size()-1;
         
     }
-    float i = win.r.width/2*1.0f; //Convert RSGL::win.r int coordinates to OpenGL float coordinates
-    float  x = (r.r.x/i)-1.0f;
-    float  x2 =((r.r.x+r.r.width)/i)-1.0f;
-    i = win.r.length/2*1.0f;
-    float  y = (-(r.r.y)/i)+1.0f;
-    float  y2 =(-(r.r.y+r.r.length)/i)+1.0f;
     glPushMatrix();
-    glRotatef(r.r.rotationAngle, 0, 0, 1);
-    glTranslatef(x,y, 0);
+    if (r.r.rotationAngle){
+        glRotatef(r.r.rotationAngle, 0, 0, 1);
+        glTranslatef(r.r.x,r.r.y, 0);
+    }
+    glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, tex[xx].tex);
     glColor4f(1.0, 1.0, 1.0, 1.0);
     glBegin(GL_QUADS);
-        glTexCoord2i(0, 0); glVertex2f(x,  y);
-        glTexCoord2i(1, 0); glVertex2f(x2, y);
-        glTexCoord2i(1, 1);  glVertex2f(x2, y2);
-        glTexCoord2i(0, 1); glVertex2f(x, y2);
+        glTexCoord2i(0, 0); glVertex2f(r.r.x,  r.r.y);
+        glTexCoord2i(1, 0); glVertex2f(r.r.x + r.r.width, r.r.y);
+        glTexCoord2i(1, 1);  glVertex2f(r.r.x + r.r.width, r.r.y + r.r.length);
+        glTexCoord2i(0, 1); glVertex2f(r.r.x, r.r.y + r.r.length);
     glEnd();
     glPopMatrix();
     glDisable(GL_TEXTURE_2D);
@@ -305,29 +315,26 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
         tex.insert(tex.end(), r);
         xx=tex.size()-1;
     }
-    float i = win.r.width/2*1.0f; //Convert RSGL::win.r int coordinates to OpenGL float coordinates
-    float  x = (r.r.x/i)-1.0f;
-    float  x2 =((r.r.x+r.r.width)/i)-1.0f;
-    i = win.r.length/2*1.0f;
-    float  y = (-(r.r.y)/i)+1.0f;
-    float  y2 =(-(r.r.y+r.r.length)/i)+1.0f;
     glPushMatrix();
-    glRotatef(r.r.rotationAngle, 0, 0, 1);
-    glTranslatef(x,y, 0);
+    if (r.r.rotationAngle){
+        glRotatef(r.r.rotationAngle, 0, 0, 1);
+        glTranslatef(r.r.x,r.r.y, 0);
+    }
+    glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, tex[xx].tex);
     glColor4f(1.0, 1.0, 1.0, 1.0);
     glBegin(GL_QUADS);
-        glTexCoord2i(0, 0); glVertex2f(x,  y);
-        glTexCoord2i(1, 0); glVertex2f(x2, y);
-        glTexCoord2i(1, 1);  glVertex2f(x2, y2);
-        glTexCoord2i(0, 1); glVertex2f(x, y2);
+        glTexCoord2i(0, 0); glVertex2f(r.r.x,  r.r.y);
+        glTexCoord2i(1, 0); glVertex2f(r.r.x + r.r.width, r.r.y);
+        glTexCoord2i(1, 1);  glVertex2f(r.r.x + r.r.width, r.r.y + r.r.length);
+        glTexCoord2i(0, 1); glVertex2f(r.r.x, r.r.y + r.r.length);
     glEnd();
     glPopMatrix();
     glDisable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
- 
+
     return 0;
 } 
 void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawSVG({r,fileName.c_str()},d); }
