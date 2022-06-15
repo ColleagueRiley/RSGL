@@ -140,26 +140,16 @@ void RSGL::drawLine(RSGL::point p1, RSGL::point p2, RSGL::color c, RSGL::drawabl
 
 
 int RSGL::drawTriangle(RSGL::triangle t, RSGL::color c, bool solid/*=true*/, RSGL::drawable win) {
-    if (!win.GPU){}
-    
-    else if (win.GPU == 1){
-        float i = win.r.x/2*1.0f;
-        float  x  = (t.x/i)-1.0f;
-        float  x2 = ((t.x+t.width)/i)-1.0f;
-        i = win.r.y/2*1.0f;
-        float  y = (-(t.y)/i)+1.0f;
-        float  y2 =(-(t.y+t.length)/i)+1.0f;
-        
-        if (solid) { glBegin(GL_POLYGON); }
-        else { glBegin(GL_LINE_LOOP);}
-            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
-            glVertex2f(x+abs(x2)+0.1f,  y);
-            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
-            glVertex2f(x, y2);
-            glColor4f(c.r/255.0, c.g/255.0, c.b/255.0, c.a/255.0);
-            glVertex2f(x2, y2);
-        glEnd();
-    }
+    glPushMatrix(); 
+    glOrtho(0, win.r.width, win.r.length,0, 0, 2); 
+    if (solid) glBegin(GL_TRIANGLES); 
+    else{ glBegin(GL_LINE_LOOP);}
+        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
+        glVertex3f(t.vertx.x, t.vertx.y, 0);
+        glVertex3f(t.x, t.y, 0);
+        glVertex3f(t.x+t.size, t.y, 0);
+    glEnd();
+    glPopMatrix();
     return 1;
 }
 int RSGL::drawTrianglea(RSGL::triangle t, RSGL::color c, RSGL::TriArgs args){RSGL::drawTriangle(t,c,args.solid,args.win);}
@@ -211,21 +201,6 @@ int RSGL::drawCircle(RSGL::circle c, color col,bool fill,RSGL::drawable win){
 void RSGL::drawCirclea(RSGL::circle c, RSGL::color col, circleArgs args){RSGL::drawCircle(c,col,args.fill,args.win);}
 
 int RSGL::drawPoint(RSGL::point p, color c, RSGL::drawable win){  RSGL::drawRect({p.x,p.y,1,1,},c,true,false,win); return 1; }
-
-std::vector<std::vector<RSGL::color>> RSGL::resizeImage(std::vector<std::vector<RSGL::color>> values, RSGL::rect r,RSGL::rect og_r){
-    std::vector<std::vector<RSGL::color>> output;
-    int xx, yy;
-    for (int y=0; y < r.length; y++){ 
-        output.insert(output.end(),{{}});
-        yy = (og_r.length/r.length)*y;
-        for (int x=0; x < r.width; x++){
-            xx = (og_r.width/r.width)*x;
-            output.at(output.size()-1).insert(output.at(output.size()-1).end(),{values[yy][xx].r,values[yy][xx].g,values[yy][xx].b, values[yy][xx].a});
-        }
-    }
-    
-    return output;
-}
 
 std::vector<RSGL::image> tex;
 int RSGL::drawImage(RSGL::image r, RSGL::window win){

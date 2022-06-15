@@ -20,10 +20,8 @@
 #endif
 
 #define RSGLRGBTOHEX(r, g, b) ((r << 16) + (g << 8) + b)
-#include "deps/rsal.hpp"
 
 namespace RSGL{
-    using namespace RSAL;
     // Event vars
     const int KeyPressed=2; // a key has been pressed
     const int KeyReleased=3; // a key has been released
@@ -43,7 +41,7 @@ namespace RSGL{
     struct point{int x, y;};  // a single point
     struct rect {int x, y , width, length; int rotationAngle=0; }; // a rectangle
     struct circle{int x, y; int radius;}; // a circle
-    struct triangle {  int x, y; int width, length; }; /*Triangle structure.*/
+    struct triangle {  int x, y, size; RSGL::point vertx;};  /*Triangle structure.*/
     struct area{int width,length;}; // an area (width/length) without a specific x/y
     struct color{int r,g,b; /* red, green blue and float alpha (not required)*/ float a=255;}; // color structure
     struct stroke{ int size; RSGL::color color; bool fill=true;}; // info about the stroke of a shape
@@ -220,9 +218,6 @@ namespace RSGL{
     //draw with strokes 
     void drawCircle(RSGL::circle c, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
     void drawRect(RSGL::rect r, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
-
-    std::vector<std::vector<RSGL::color>> resizeImage(std::vector<std::vector<RSGL::color>> image, RSGL::rect newSize, RSGL::rect ogsize); // resizes an image (.png) file to a resized 2d vector
-
 
     std::vector<std::string> fileDialog(
         std::string title /*the title of the sub window*/,

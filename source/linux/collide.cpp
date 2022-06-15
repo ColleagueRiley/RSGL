@@ -14,11 +14,12 @@ int RSGL::CircleCollide(RSGL::circle cir,RSGL::circle cir2){
 int RSGL::CircleCollideRect(RSGL::circle c, RSGL::rect r){
   float testX = c.x; float testY = c.y;
 
-  if (c.x < r.x) {testX = r.x;}  else if (c.x > r.x+r.width) {testX = r.x+r.width;}
+  if (c.x < r.x) {testX = r.x;}  else if (c.x > r.x+r.width) {testX = r.x-r.width;}
   if (c.y < r.y) {testY = r.y;}  else if (c.y > r.y+r.length) {testY = r.y+r.length;} 
   
   return (sqrt( ( (c.x-testX) * (c.x-testX) ) + ( (c.y-testY) *(c.y-testY) ) )  <= c.radius);
 }
+
 
 int RSGL::CircleCollidePoint(RSGL::circle c, RSGL::point p){
 	float testX = c.x; float testY = c.y;
