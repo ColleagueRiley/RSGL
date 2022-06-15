@@ -35,4 +35,4 @@ std::vector<std::string> RSGL::fileDialog(std::string title,bool multiple,bool s
   }
   
   return {fn};
-}
+} 

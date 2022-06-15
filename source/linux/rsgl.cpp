@@ -1,4 +1,5 @@
 #ifndef RSGL
+#define GLX_GLXEXT_PROTOTYPES
 #include "../../include/include/linux/rsgl.hpp" // source headers
 #endif
 #include "../../include/include/linux/deps/X11/Xutil.h"  // more xlib
@@ -31,12 +32,11 @@ static int attributeList[] = {
     None };
 #else // DOUBLE_BUFFERING
 static int attributeList[] = {
-	GLX_RGBA, 
-	GLX_DOUBLEBUFFER,
-	GLX_RED_SIZE,   8,
-	GLX_GREEN_SIZE, 8,
-	GLX_BLUE_SIZE,  8,
-	None };
+    GLX_RGBA, GLX_DOUBLEBUFFER,
+    GLX_RED_SIZE,   8,
+    GLX_GREEN_SIZE, 8,
+    GLX_BLUE_SIZE,  8,
+    None };
 #endif // DOUBLE_BUFFERING
 
 static Bool WaitForNotify( Display *dpy, XEvent *event, XPointer arg ) {return (event->type == MapNotify) && (event->xmap.window == (Window) arg);}
@@ -114,7 +114,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         XEvent event;
         XMapWindow(display, d);
         XIfEvent(display, &event, WaitForNotify, (char*)d);
-        /* connect the context to the window */
+        //connect the context to the window 
         glXMakeCurrent(display, d, context); 
         
         
@@ -122,6 +122,9 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         glClearColor(color.r,color.g,color.b,color.a);
         name = wname; r = winrect; color = c;
         dbuffer.d = XCreatePixmap(display,d,winrect.width,winrect.length,XDefaultDepth(display,XDefaultScreen(display)));
+        glEnable(GL_BLEND); //Enable blending.
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //Set blending function
+
     } XStoreName(display,d,wname.data());
     if (!RSGL::root.d){root=*this;root.display=display;}
 }
@@ -177,7 +180,6 @@ void RSGL::window::checkEvents(){
   if (r.width != a.width&& areesize || r.length != a.height  && areesize){ glViewport(0,0,a.width,a.height); } //std::cout << E.xresizerequest.width << " , " << E.xresizerequest.height << std::endl;}
   r.width=a.width; r.length=a.height; r.x=a.x; r.y=a.y;
   XKeyboardState keystate;
-  XGetKeyboardControl(display,&keystate); event.ledState= keystate.led_mask;
 }
 
 void RSGL::window::close(){

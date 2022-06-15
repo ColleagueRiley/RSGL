@@ -262,9 +262,3 @@ std::vector<std::vector<RSGL::color>> RSGL::resizeImage(std::vector<std::vector<
     return output;
 }
 
-char ttf_buffer[1<<25];
-char ttf_buffer2[1<<25];
-
-int RSGL::drawText(std::string text, RSGL::circle r, const char* font, RSGL::color col){
-    return 0;
-}

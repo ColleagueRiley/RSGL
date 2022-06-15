@@ -1,4 +1,6 @@
 # RSGL-Riley-s-Simple-GUI-Library-
+![alt text](https://github.com/ColleagueRiley/RSGL/blob/main/logo.png?raw=true)
+
 A simple GUI library currently for Linux and Windows
 (offical 3DS port) https://github.com/RSGL-org/RSGL-3DS
 

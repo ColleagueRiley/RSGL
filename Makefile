@@ -2,8 +2,7 @@ ARGS = -Wall -fPIC -O -g
 OS = linux
 SOURCEDIR = source/$(OS)
 SOURCE = $(SOURCEDIR)/rsgl.cpp $(SOURCEDIR)/draw.cpp $(SOURCEDIR)/collide.cpp $(SOURCEDIR)/other.cpp
-LIBDIR = $(SOURCEDIR)/deps
-LIBS = $(LIBDIR)/libX11.so.6.4.0 $(LIBDIR)/libpng16.so.16.37.0  $(LIBDIR)/libpthread-2.33.so  $(LIBDIR)/libGL.so.1.7.0 $(LIBDIR)/libGLX.so.0.0.0
+LIBS =  $(SOURCEDIR)/deps/*.a $(SOURCEDIR)/deps/*.so $(SOURCEDIR)/deps/*.0 $(SOURCEDIR)/deps/*.3
 
 GXX = g++
 build:
@@ -19,6 +18,7 @@ install:
 	@cp -r include RSGL.hpp ./Examples ./RSGL
 	@sudo cp -r ./RSGL /usr/include/
 	@sudo rm -r ./RSGL
+	@sudo cp source/linux/deps/ffplay /usr/bin/
 
 all:
 	build

@@ -7,6 +7,7 @@
 #include "deps/X11/cursorfont.h" //Xlib defs
 #include "deps/png++/image.hpp" // for loading .png files                
 #include "keys.hpp"
+#include "deps/drawtext.h"
 #ifndef RSGLOPEGNL
   #ifndef RSGLNOOPENGL
       #define RSGLOPENGL 0x98342
@@ -29,23 +30,37 @@ namespace RSGL{
     const int MousePosChanged=6; // the position of the mouse has been changed
     const int quit = 33; // the user clicked the quit button
     const int dnd = 34; // a file has been dropped into the window
+    
+    const int mouseLeft =1;
+    const int mouseMiddle= 2;
+    const int mouseRight =3;
+    const int mouseScrollUp =4;
+    const int mouseScrollDown =5;
 
     // shape/draw structures 
     struct point{int x, y;};  // a single point
-    struct rect {int x, y , width, length; }; // a rectangle
+    struct rect {int x, y , width, length; int rotationAngle=0; }; // a rectangle
     struct circle{int x, y; int radius;}; // a circle
-    struct triangle {  int x, y; int width, length; }; /*Triangle structure.*/
+    struct triangle {  int x, y, size; RSGL::point vertx;};  /*Triangle structure.*/
     struct area{int width,length;}; // an area (width/length) without a specific x/y
     struct color{int r,g,b; /* red, green blue and float alpha (not required)*/ float a=255;}; // color structure
+    struct stroke{ int size; RSGL::color color; bool fill=true;}; // info about the stroke of a shape
 
     // structure for images (.pngs)
     struct image{
       RSGL::rect r; // the area/x/y of the image stored in RSGL::rect
-      const char* file; // the source file a image is drawn from
-      std::vector<std::vector<int>> cords; // every point in a image
+      std::string file; // the source file a image is drawn from
+      std::vector<unsigned> cords; // every point in a image
       png::image< png::rgba_pixel> img; // the og pnglib++ image structure
+      GLuint tex;
     }; 
-
+	  struct Font{
+        dtx_font* font; int size=0; std::string file;
+        Font(){}
+        Font(std::string File, int Size);
+        Font(std::string File) { file=File; }  Font(const char* File){ file=File; }
+    };
+    
     // the structure for a surface that can be drawn upon (window/pixmap ect)
     struct drawable{
       public:
@@ -70,6 +85,7 @@ namespace RSGL{
           XImage* data; // source Image struct
     };
 
+    struct winArgs{int gpu=1; bool resize=false, autoResize=false;};
     //Window structure
     struct window : drawable{
       private:
@@ -87,7 +103,6 @@ namespace RSGL{
         };
         char keyboard[32]; // 32 bit char of the keyboard status
         #ifndef RSGLNOOPENGL
-        GLXContext context;
         XVisualInfo* vInfo;
         #endif
         bool swapFlag=true;
@@ -100,6 +115,7 @@ namespace RSGL{
         RSGL::color color;
         #ifdef RSGLOPENGL
         GLXWindow glxWin;
+        GLXContext context;
         #endif
         int setColor(RSGL::color c); // changes the background color to c
         window(){}
@@ -112,7 +128,6 @@ namespace RSGL{
                     1 - openGL*/,
               bool resize = false, /* can the user resize the window?*/
               bool autoResize = false /* Should everything resize if the window size changes?*/); //inits the window with these values
-        
         void checkEvents(); // checks if any events have been sent (is required to get events)
         bool isPressed(unsigned long key); // checks if a key has been pressed (with key code)
         bool isPressed(std::string key);  // checks if a key has been pressed (with string of a key)
@@ -126,6 +141,7 @@ namespace RSGL{
     int CircleCollidePoint(RSGL::circle c, RSGL::point p); // if a circle collides with a point
     int CircleCollideRect(RSGL::circle c, RSGL::rect r); // if a circle collides with a rect
     int CircleCollide(RSGL::circle cir1,RSGL::circle cir2); // if a circle collides with another circle
+    int CircleCollideLine(RSGL::circle c,RSGL::point p1, RSGL::point p2);
     int RectCollidePoint(RSGL::rect r, RSGL::point p); // if a rect collides with a point
     int RectCollideRect(RSGL::rect r, RSGL::rect r2); // if a rect collides with another rect
     int PointCollide(RSGL::point p, RSGL::point p2); // if a point collides with another point
@@ -133,7 +149,7 @@ namespace RSGL{
     int ImageCollideCircle(RSGL::image img, RSGL::circle c); // if a image collides with a circle
     int ImageCollidePoint(RSGL::image img, RSGL::point p); // if a image collides with a point
     int ImageCollideImage(RSGL::image img, RSGL::image img2); // if a image collides with another image
-  
+    
     // structure for text
     struct Text{
       RSGL::circle rect; // the rectangular area/x/y of the text
@@ -146,26 +162,29 @@ namespace RSGL{
       Text(){}
     };
 
-    //drawing functions
+
+      //drawing functions
     void drawText(
-          std::string text /*the text*/, 
-          RSGL::circle r /*the source x/y/size of the text*/, 
-          const char* font /*the font of the text*/, 
-          RSGL::color c /*the color of the text*/, 
-          RSGL::drawable d=RSGL::root  /*what should it draw on*/); // draw text based on args
+                  std::string text,
+                  RSGL::circle c,
+                  RSGL::Font font,
+                  RSGL::color col,
+                  RSGL::window win=RSGL::root);
 
     int drawPoint(
           RSGL::point p /*the point to be draw*/, 
           color c /*the color of the point*/,
           RSGL::drawable win=root /*the window to draw on*/); // draws a point on the screen
     
-    void drawRect(
+      void drawRect(
           RSGL::rect r /*the rect to draw*/,
           color c /*the color rect*/, 
           bool fill=True /* fill or just outlines?*/, 
           bool dotted=false, /*is it a dotted rectangle?*/
           RSGL::drawable win=root /*the window to draw on*/); // draws a rect on the screen
-
+      struct rectArgs{bool fill=false, dotted=false; RSGL::drawable win=RSGL::root;};      
+      void drawRecta(RSGL::rect r, RSGL::color c, rectArgs args);
+      
     void drawLine(
             RSGL::point p1 /* the first point to draw */, 
             RSGL::point p2 /* the second point (where to stop)*/, 
@@ -177,15 +196,28 @@ namespace RSGL{
           color col /* the color of the circle*/, 
           bool fill=True /* fill or just outlines?*/, 
           RSGL::drawable win=root /*the window to draw on*/); // draws a cirlce on the screen
+    struct circleArgs{bool fill=false; RSGL::drawable win=RSGL::root;};      
+    void drawCirclea(RSGL::circle c, RSGL::color col, circleArgs args);
 
+    int drawTriangle(RSGL::triangle t, RSGL::color c, bool solid=true, RSGL::drawable win=RSGL::root);
+    struct TriArgs{bool solid=false; RSGL::drawable win=RSGL::root;};      
+    int drawTrianglea(RSGL::triangle t, RSGL::color c, TriArgs args);
+    
     void drawImage(
           std::string fileName /*the file to draw*/, 
           RSGL::rect r /*the width/length/x/y to put the image*/,
-          bool resize=true /*should the image resize if it needs to?*/,
-          RSGL::drawable d=RSGL::root /*the window to draw on*/); // draws a image on the screen
+          RSGL::window d=RSGL::root /*the window to draw on*/); // draws a image on the screen
+    int drawImage(RSGL::image r, RSGL::window win=RSGL::root);
 
-    std::vector<std::vector<RSGL::color>> resizeImage(std::vector<std::vector<RSGL::color>> image, RSGL::rect newSize, RSGL::rect ogsize); // resizes an image (.png) file to a resized 2d vector
-
+    void drawSVG(
+          std::string fileName /*the file to draw*/, 
+          RSGL::rect r /*the width/length/x/y to put the image*/,
+          RSGL::window d=RSGL::root /*the window to draw on*/); // draws a image on the screen
+    int drawSVG(RSGL::image r, RSGL::window win=RSGL::root);
+    
+    //draw with strokes 
+    void drawCircle(RSGL::circle c, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
+    void drawRect(RSGL::rect r, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
 
     std::vector<std::string> fileDialog(
         std::string title /*the title of the sub window*/,
