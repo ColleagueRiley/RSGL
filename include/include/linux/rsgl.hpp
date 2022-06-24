@@ -53,6 +53,7 @@ namespace RSGL{
       std::vector<unsigned> cords; // every point in a image
       png::image< png::rgba_pixel> img; // the og pnglib++ image structure
       GLuint tex;
+      image(){};
     }; 
 	  struct Font{
         dtx_font* font; int size=0; std::string file;
@@ -60,7 +61,7 @@ namespace RSGL{
         Font(std::string File, int Size);
         Font(std::string File) { file=File; }  Font(const char* File){ file=File; }
     };
-    
+
     // the structure for a surface that can be drawn upon (window/pixmap ect)
     struct drawable{
       public:
@@ -93,7 +94,7 @@ namespace RSGL{
         struct Event{ 
           int type; // which even has been sent?
           int button; // which mouse button has been clicked (0) left (1) middle (2) right
-          int x,y; // the x/y of the mouse
+          RSGL::point mouse; // the x/y of the mouse
           int keycode; // the source keycode of which key has been pressed
           std::string key; // a string of the key that has been pressed
           int ledState; // 0 : numlock, 1 : caps lock, 3 : small lock
@@ -106,6 +107,7 @@ namespace RSGL{
         XVisualInfo* vInfo;
         #endif
         bool swapFlag=true;
+        bool isRoot=false;
         //static void *event_helper(void *context){return ((RSGL::window *)context)->mouseEvent();}
       public:
         std::string name; // the name of the window
@@ -149,18 +151,7 @@ namespace RSGL{
     int ImageCollideCircle(RSGL::image img, RSGL::circle c); // if a image collides with a circle
     int ImageCollidePoint(RSGL::image img, RSGL::point p); // if a image collides with a point
     int ImageCollideImage(RSGL::image img, RSGL::image img2); // if a image collides with another image
-    
-    // structure for text
-    struct Text{
-      RSGL::circle rect; // the rectangular area/x/y of the text
-      RSGL::color c; // the color of the text
-      std::string text; // the text the text displays
-      const char* f; // the text's font
-      RSGL::window d=RSGL::root; // the window the text draws to
-      Text(std::string txt /*the text*/, RSGL::circle r /*the source x/y/size of the text*/, const char* font /*the font of the text*/, RSGL::color col /*the color of the text*/, bool draw=true /**should it draw or not*/, RSGL::drawable d=RSGL::root /*what should it draw on*/); // init the text struct
-      void draw(); // draws text using the text struct
-      Text(){}
-    };
+
 
 
       //drawing functions
@@ -175,7 +166,10 @@ namespace RSGL{
           RSGL::point p /*the point to be draw*/, 
           color c /*the color of the point*/,
           RSGL::drawable win=root /*the window to draw on*/); // draws a point on the screen
-    
+      
+      void drawPoints(std::vector<RSGL::point> p, RSGL::color c, RSGL::drawable win=RSGL::root);
+      void drawPoints(std::vector<RSGL::point> p,std::vector<RSGL::color> c, RSGL::drawable win=RSGL::root);
+      
       void drawRect(
           RSGL::rect r /*the rect to draw*/,
           color c /*the color rect*/, 
@@ -219,6 +213,10 @@ namespace RSGL{
     void drawCircle(RSGL::circle c, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
     void drawRect(RSGL::rect r, RSGL::color col, stroke s,bool fill=true, RSGL::window d=RSGL::root);
 
+    void drawBoundCircle(RSGL::circle c, RSGL::color col, RSGL::rect boundary={-1,-1,-1,-1},RSGL::rect noHIT={-1,-1,-1,-1},bool fill=true,RSGL::window win=RSGL::root);
+    
+    void drawRoundRect(RSGL::rect r,RSGL::color c,bool fill=true,RSGL::window win =RSGL::root); 
+
     std::vector<std::string> fileDialog(
         std::string title /*the title of the sub window*/,
         bool multiple=false /*one or more files?*/,
@@ -233,6 +231,69 @@ namespace RSGL{
     void messageBox(std::string message /*the message*/, 
         bool question=false /*is it a question?*/,
         bool error=false /*is it an error?*/); // sends a message box errors/questions
+    
+    namespace func{
+        void start( bool running , void (*gameLoop)(RSGL::window), void (*eventLoop)(int,RSGL::window), RSGL::window win = RSGL::root );
+        void start( bool* running , void (*gameLoop)(RSGL::window), void (*eventLoop)(int,RSGL::window), RSGL::window win = RSGL::root );
+    };
+    
+    enum Shape{ RECT, LINE, CIRCLE, IMAGE, TRIANGLE, TEXT, EMPTY };
+    struct Button{
+        Shape s; int event=0;
+        Button(){}
+        void draw(RSGL::window win = RSGL::root);
+        void checkEvents(RSGL::window win = RSGL::root);
+        void checkAndDraw(RSGL::window win = RSGL::root);
+        
+        std::vector<void(*)(void)> functions = {NULL,NULL,NULL,NULL};
+        void setOnIdle( void(*OnIdle)(void) ){ functions.at(0)=OnIdle; }
+        void setOnHover( void(*OnHover)(void) ){ functions.at(1)=OnHover; }
+        void setOnClick( void(*OnClick)(void) ){ functions.at(2)=OnClick; }
+        void setOnHold( void(*OnHold)(void) ){ functions.at(3)=OnHold; }
+        void setOnAll( void(*OnIdle)(void), void(*OnHover)(void), void(*OnClick)(void), void(*OnHold)(void) ){ functions.at(0)=OnIdle; functions.at(1)=OnHover; functions.at(2)=OnClick; functions.at(3)=OnHold;  }
+        void run(RSGL::window win = RSGL::root);
+
+        private:
+            RSGL::rect rect, imageRect, buttonRect;  RSGL::circle cir, textCir;
+            RSGL::Font font;  
+            std::string File, Text;
+            RSGL::color color, rectColor;
+            std::vector<Button> states;
+            bool Draw=true; bool pressed=false;
+
+            bool collideWithMouse(RSGL::window win);
+            void switchTo(int);
+
+        public:
+            Button(RSGL::rect r,RSGL::color col){ s=RECT; rect=r; color=col; }
+            Button(RSGL::circle c,RSGL::color col){ s=CIRCLE; cir=c; color=col; }
+            Button(const char* file, RSGL::rect imageR, RSGL::rect buttonR={0,0,0,0}, RSGL::color rColor={}){ rectColor=rColor; s=IMAGE; imageRect=imageR; buttonRect=buttonR; }
+            Button(const char* text, RSGL::Font f, RSGL::circle textC, RSGL::rect buttonR,RSGL::color textColor,RSGL::color rColor={0,0,0,0}){ color=textColor; rectColor=rColor; s=TEXT; textCir=textC; font=f; buttonRect=buttonR; Text=text; }
+            Button(std::vector<Button> buttons){ states=buttons; }
+    };
+
+    struct CheckBox{
+        CheckBox(){}
+        void draw(RSGL::window win = RSGL::root);
+        void checkEvents(RSGL::window win = RSGL::root);
+        void checkAndDraw(RSGL::window win = RSGL::root);
+        bool isPressed();
+
+        private:
+            RSGL::rect rect; RSGL::color c1, c2;
+            std::string File=""; std::string File2="";
+            bool pressed=false;
+
+        public:
+            CheckBox(RSGL::rect r,RSGL::color color1, RSGL::color color2){ rect=r; c1=color1; c2=color2; }
+            CheckBox(const char* file1, std::string file2, RSGL::rect r){ rect=r; File=file1; File2=file2; }
+    };
+
+    void scrollText(std::string text, RSGL::circle r, RSGL::Font font, RSGL::color col, int speed, int stopY=-1, RSGL::window win=RSGL::root);
+    void progressBar(RSGL::rect r, RSGL::color c, int pos,int dir=1, RSGL::color c2={0,0,0,0});
+    void progressBarAuto(RSGL::rect r, RSGL::color c, int speed=1, int ticks=0, int dir=1, RSGL::color c2={0,0,0,0});
+    void drawLink(std::string url,RSGL::circle c,RSGL::Font font,RSGL::color col,std::string text="",bool underLine=true,RSGL::window win=RSGL::root);
+
 #ifndef RSGLNAMESPACEEXTENTION
 };
 #endif
