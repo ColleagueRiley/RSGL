@@ -267,8 +267,8 @@ namespace RSGL{
         public:
             Button(RSGL::rect r,RSGL::color col){ s=RECT; rect=r; color=col; }
             Button(RSGL::circle c,RSGL::color col){ s=CIRCLE; cir=c; color=col; }
-            Button(const char* file, RSGL::rect imageR, RSGL::rect buttonR={0,0,0,0}, RSGL::color rColor={}){ rectColor=rColor; s=IMAGE; imageRect=imageR; buttonRect=buttonR; }
-            Button(const char* text, RSGL::Font f, RSGL::circle textC, RSGL::rect buttonR,RSGL::color textColor,RSGL::color rColor={0,0,0,0}){ color=textColor; rectColor=rColor; s=TEXT; textCir=textC; font=f; buttonRect=buttonR; Text=text; }
+            Button(const char* file, RSGL::rect imageR, RSGL::rect buttonR={0,0,0,0}, RSGL::color rColor={}){ rectColor=rColor; s=IMAGE; imageRect=imageR; rect=buttonR; }
+            Button(const char* text, RSGL::Font f, RSGL::circle textC, RSGL::rect buttonR,RSGL::color textColor,RSGL::color rColor={0,0,0,0}){ color=textColor; rectColor=rColor; s=TEXT; textCir=textC; font=f; rect=buttonR; Text=text; }
             Button(std::vector<Button> buttons){ states=buttons; }
     };
 
@@ -288,12 +288,14 @@ namespace RSGL{
             CheckBox(RSGL::rect r,RSGL::color color1, RSGL::color color2){ rect=r; c1=color1; c2=color2; }
             CheckBox(const char* file1, std::string file2, RSGL::rect r){ rect=r; File=file1; File2=file2; }
     };
+    void splashScreen(std::string file="res/images/logo.png",std::string font="res/fonts/SansPosterBold.ttf",int t=100,RSGL::window d=RSGL::root); 
 
     void scrollText(std::string text, RSGL::circle r, RSGL::Font font, RSGL::color col, int speed, int stopY=-1, RSGL::window win=RSGL::root);
     void progressBar(RSGL::rect r, RSGL::color c, int pos,int dir=1, RSGL::color c2={0,0,0,0});
     void progressBarAuto(RSGL::rect r, RSGL::color c, int speed=1, int ticks=0, int dir=1, RSGL::color c2={0,0,0,0});
     void drawLink(std::string url,RSGL::circle c,RSGL::Font font,RSGL::color col,std::string text="",bool underLine=true,RSGL::window win=RSGL::root);
-
+    void drawTypingText(std::string text,RSGL::circle c,RSGL::Font font,RSGL::color col,int speed=3,RSGL::window win=RSGL::root);
+    
 #ifndef RSGLNAMESPACEEXTENTION
 };
 #endif
