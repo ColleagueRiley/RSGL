@@ -1,9 +1,9 @@
 #ifndef RSGL
 #include "../../include/linux/rsgl.hpp" 
 #endif
-#include "deps/nanosvgrast.h"
+#include "deps/nanosvgrast.hpp"
 #define STB_IMAGE_IMPLEMENTATION
-#include "deps/stb_image.h"
+#include "deps/stb_image.hpp"
 
 RSGL::Font::Font(std::string File, int Size){ size=Size; file=File; if(!(font = dtx_open_font(file.c_str(), size))) fprintf(stderr, "failed to open font\n"); }
 
