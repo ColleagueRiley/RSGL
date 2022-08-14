@@ -1,7 +1,9 @@
 #ifndef RSGL
-#include "../../include/include/linux/rsgl.hpp" 
+#include "../../include/linux/rsgl.hpp" 
 #endif
-#include "nanosvgrast.h"
+#include "deps/nanosvgrast.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "deps/stb_image.h"
 
 RSGL::Font::Font(std::string File, int Size){ size=Size; file=File; if(!(font = dtx_open_font(file.c_str(), size))) fprintf(stderr, "failed to open font\n"); }
 
@@ -22,7 +24,7 @@ void RSGL::drawText(std::string text,RSGL::circle c,RSGL::Font font,RSGL::color 
 
 	glPushMatrix();
     c.x-=5;
-    c.y = win.r.length-abs(c.y+20);
+    c.y = win.r.length-(c.y+20);
 	glOrtho(0, win.r.width, 0, win.r.length, 0, 2);
 	glTranslatef(c.x,c.y , 0);
 	glColor4f(col.r/255.0, col.g/255.0, col.b/255.0,col.a/255.0);
@@ -31,7 +33,7 @@ void RSGL::drawText(std::string text,RSGL::circle c,RSGL::Font font,RSGL::color 
 }
 
 
-void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,bool t=false) {
+void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win,bool t=false) {
     if (t){
         DrawDottedLine({r.x,r.y,r.x+r.width,r.y},c,win);
         DrawDottedLine({r.x,r.y,r.x,r.y+r.length},c,win);
@@ -71,25 +73,7 @@ void DrawDottedLine(RSGL::rect r,RSGL::color c,RSGL::drawable win=RSGL::root,boo
 }
 
 void RSGL::drawRect(RSGL::rect r,color c, bool fill,bool dotted, RSGL::drawable win){
-    if (!win.GPU){
-        XSetForeground(win.display,XDefaultGC(win.display,XDefaultScreen(win.display)),
-        RSGLRGBTOHEX(c.r,c.g,c.b));
-        if (fill) XFillRectangle(win.display,win.d,XDefaultGC(win.display,XDefaultScreen(win.display)),r.x,r.y,r.width,r.length);
-        else{
-            RSGL::drawLine({r.x,r.y},{r.x,r.y+r.length},c);
-            RSGL::drawLine({r.x+r.width,r.y},{r.x+r.width,r.y+r.length},c);
-            RSGL::drawLine({r.x,r.x},{r.x+r.width,r.y},c);
-            RSGL::drawLine({r.x,r.y+r.length},{r.x+r.width,r.y+r.length},c);
-
-        }        
-    }
-    else if (win.GPU == 1){
-        float i = win.r.width/2*1.0f;
-        float  x = (r.x/i)-1.0f;
-        float  x2 =((r.x+r.width)/i)-1.0f;
-        i = win.r.length/2*1.0f;
-        float  y = (-(r.y)/i)+1.0f;
-        float  y2 =(-(r.y+r.length)/i)+1.0f;
+    if (win.GPU == 1){
         if (dotted){DrawDottedLine(r,c,win,true);}
         else{
             GLenum m=GL_POLYGON; if (!fill) m=GL_LINE_STRIP;
@@ -145,9 +129,9 @@ int RSGL::drawTriangle(RSGL::triangle t, RSGL::color c, bool solid/*=true*/, RSG
     if (solid) glBegin(GL_TRIANGLES); 
     else{ glBegin(GL_LINE_LOOP);}
         glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
-        glVertex3f(t.vertx.x, t.vertx.y, 0);
-        glVertex3f(t.x, t.y, 0);
-        glVertex3f(t.x+t.size, t.y, 0);
+        glVertex3f(t.points.at(2).x, t.points.at(2).y, 0);
+        glVertex3f(t.points.at(0).x, t.points.at(0).y, 0);
+        glVertex3f(t.points.at(1).x, t.points.at(1).y, 0);
     glEnd();
     glPopMatrix();
     return 1;
@@ -212,25 +196,19 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
     }
 
     if (xx==-1) {
-        png::image< png::rgba_pixel > image(r.file);
-        int w=image.get_width();
-        int h=image.get_height();
-        std::vector<unsigned> img;
-        for (png::uint_16 y=0; y < h; y++){  
-            for (png::uint_16 x=0; x < w; x++) {
-                img.insert(img.end(), image[y][x].alpha*0x1000000 +RSGLRGBTOHEX(image[y][x].blue, image[y][x].green, image[y][x].red));
-            }
-        }
+        int w,h,n;
+        unsigned char *data = stbi_load(r.file.c_str(), &w, &h, &n, 0);
         glGenTextures(1, &r.tex);
         glBindTexture(GL_TEXTURE_2D, r.tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, img.data());
-    
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        //stbi_image_free(data);
+
         glBindTexture(GL_TEXTURE_2D, 0);
         tex.insert(tex.end(), r);
         xx=tex.size()-1;
-        
+            
     }
     glPushMatrix();
     if (r.r.rotationAngle){
@@ -255,7 +233,7 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
     return 0;
 }
 
-void RSGL::drawImage(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawImage({r,fileName.data()},d); }
+void RSGL::drawImage(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::image img; img.r=r; img.file=fileName; RSGL::drawImage(img,d); }
 
 int RSGL::drawSVG(RSGL::image r, RSGL::window win){
     int xx=-1;
@@ -312,7 +290,7 @@ int RSGL::drawSVG(RSGL::image r, RSGL::window win){
 
     return 0;
 } 
-void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::drawSVG({r,fileName.c_str()},d); }
+void RSGL::drawSVG(std::string fileName, RSGL::rect r,RSGL::window d){ RSGL::image img; img.r=r; img.file=fileName; RSGL::drawSVG(img,d); }
 
 void RSGL::drawRect(RSGL::rect r, RSGL::color col, RSGL::stroke s,bool fill, RSGL::window d){
     if (fill == false && s.fill){
@@ -321,4 +299,91 @@ void RSGL::drawRect(RSGL::rect r, RSGL::color col, RSGL::stroke s,bool fill, RSG
         } RSGL::drawRect({r.x-s.size ,r.y-s.size,3,3,r.rotationAngle},{220,0,0},true);
     } else RSGL::drawRect({r.x-s.size,r.y-s.size,r.width+s.size*2,r.length+s.size*2,r.rotationAngle},s.color,s.fill,false,d);
     RSGL::drawRect(r,col,fill,false,d);
+}
+
+void RSGL::drawPoints(std::vector<RSGL::point> p, RSGL::color c, RSGL::drawable win){
+    glPushMatrix();
+    glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
+    glBegin(GL_POINTS);
+        glColor4f(c.r/255.0, c.g/255.0, c.b/255.0,c.a/255.0);
+        for (int i=0; i < p.size(); i++){
+            glVertex2f(p.at(i).x,p.at(i).y);
+        }
+    glEnd();
+    glPopMatrix();
+    glFlush();
+}
+
+void RSGL::drawPoints(std::vector<RSGL::point> p,std::vector<RSGL::color> c, RSGL::drawable win){
+    glPushMatrix();
+    glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
+    glBegin(GL_POINTS);
+        for (int i=0; i < p.size(); i++){
+            glColor4f(c.at(i).r/255.0, c.at(i).g/255.0, c.at(i).b/255.0,c.at(i).a/255.0);
+            glVertex2f(p.at(i).x,p.at(i).y);
+        }
+    glEnd();
+    glPopMatrix();
+    glFlush();
+}
+
+void RSGL::drawBoundCircle(RSGL::circle c, RSGL::color col, RSGL::rect boundary,RSGL::rect noHIT,bool fill,RSGL::window win){
+    bool noHit= noHIT.x+noHIT.y+noHIT.width+noHIT.length != -1;
+
+    c.radius /= 2; c.x+=c.radius; c.y+=c.radius;
+
+    float theta = 3.1415926 * 2 / float(50);
+    float tangetial_factor = tanf(theta);//calculate the tangential factor 
+
+    float radial_factor = cosf(theta);//calculate the radial factor 
+
+    glPushMatrix();
+    glLineWidth(2);
+    glOrtho(0, win.r.width, win.r.length, 0, 0, 2);
+
+    glBegin(GL_LINE_LOOP);
+    glColor4f(col.r/255.0,col.g/255.0,col.b/255.0,col.a/255.0);
+    for (int i=0; i < c.radius; i++){
+        float x = c.radius-i;
+        float y = 0;
+
+        for (int ii = 0; ii < 50; ii++)
+        {
+            int newX= x + c.x, newY=y + c.y;
+            if ( ( boundary.x == -1 ||  newX >= boundary.x) &&  
+            (boundary.y == -1 || newX <= boundary.y ) &&
+            ( boundary.width == -1 || ( newY >= boundary.width)) && 
+            (boundary.length == -1 || newY <= boundary.length ) &&
+            (!noHit || noHit && !RSGL::RectCollidePoint(noHIT,{newX,newY}))) glVertex2f(newX, newY);//output vertex 
+            
+            float tx = -y;
+            float ty = x;
+            
+            x += tx * tangetial_factor;
+            y += ty * tangetial_factor;
+            
+            x *= radial_factor;
+            y *= radial_factor;
+        } if (!fill) i=c.radius;
+    }
+    glEnd();
+    glLineWidth(1);
+    glPopMatrix();
+    glFlush(); 
+}
+
+void RSGL::drawRoundRect(RSGL::rect r,RSGL::color c,bool fill, RSGL::window win){
+    int radius=2;
+	if (fill)  RSGL::drawRect({r.x, r.y,r.width-1,r.length-1},c,true,false,win);
+
+    RSGL::drawLine({r.x + radius, r.y}, {r.x + r.width - (radius * 2), r.y},c,win);
+    RSGL::drawBoundCircle({r.x + r.width - (radius * 2)-2, r.y, radius+2 * 2},c, {r.x + r.width - (radius * 2),-1,-1,r.y+3},{-1,-1,-1,-1},false,win);
+    RSGL::drawLine({r.x + r.width, r.y + radius}, {r.x + r.width, r.y + r.length - (radius * 2)},c,win);
+    RSGL::drawBoundCircle({r.x + r.width - (radius * 2)-2 , r.y + r.length - (radius * 2)-2, radius+2 * 2},c,{r.x + r.width - (radius * 2) ,-1,r.y + r.length - (radius * 2),-1},{-1,-1,-1,-1},false,win);
+
+	RSGL::drawLine({r.x + r.width - (radius * 2), r.y + r.length}, {r.x + radius, r.y + r.length},c,win);
+    RSGL::drawBoundCircle({r.x, r.y + r.length - (radius * 2), radius * 2},c,{r.x,r.x+2, -1,-1},{-1,-1,-1,-1},false,win);
+
+    RSGL::drawLine({r.x,r.y+r.length - (radius*2)}, {r.x,r.y+radius}, c,win);
+    RSGL::drawBoundCircle({r.x-1,r.y,radius*2},c,{r.x,r.x+2,-1,r.y+2},{-1,-1,-1,-1},false,win);
 }

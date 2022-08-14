@@ -1,5 +1,5 @@
 #ifndef RSGL
-#include "../../include/include/linux/rsgl.hpp" 
+#include "../../include/linux/rsgl.hpp" 
 #endif
 
 void RSGL::notifiy(std::string title, std::string content ,std::string image){

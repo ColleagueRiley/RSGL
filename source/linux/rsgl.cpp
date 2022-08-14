@@ -1,13 +1,17 @@
 #ifndef RSGL
 #define GLX_GLXEXT_PROTOTYPES
-#include "../../include/include/linux/rsgl.hpp" // source headers
+#include "../../include/linux/rsgl.hpp" // source headers
+#define RSGLJOYSTICKNOSRC
+#include "../../include/linux/joystick.hpp"
 #endif
-#include "../../include/include/linux/deps/X11/Xutil.h"  // more xlib
+#include <X11/Xatom.h>
+#include <X11/Xutil.h> // more xlib
 #include <pthread.h> // pthread for threading
 float			TimeCounter, LastFrameTimeCounter, DT, prevTime = 0.0, FPS;
 struct timeval		tv, tv0;
 int			Frame = 1, FramesPerFPS;
 #include<sys/time.h>
+#include <cstring>
 
 int singleBufferAttributess[] = {
     GLX_RGBA,
@@ -42,6 +46,9 @@ static int attributeList[] = {
 static Bool WaitForNotify( Display *dpy, XEvent *event, XPointer arg ) {return (event->type == MapNotify) && (event->xmap.window == (Window) arg);}
 
 
+RSGL::window root; bool rootChosen=false;
+RSGL::window* RSGL::root(){ return &::root; }
+
 RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gpu, bool resize, bool autoResize){   
     areesize=autoResize;
     XInitThreads();
@@ -61,8 +68,7 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         | StructureNotifyMask;
        // | ResizeRedirectMask;
     if (!gpu){
-        Window parent = RootWindow(display, XDefaultScreen(display));
-        d = XCreateSimpleWindow(display, parent, winrect.x,winrect.y,winrect.width,winrect.length, 0,0,  RSGLRGBTOHEX(c.r,c.g,c.b));
+        d = XCreateSimpleWindow(display, NULL, winrect.x,winrect.y,winrect.width,winrect.length, 0,0,  RSGLRGBTOHEX(c.r,c.g,c.b));
 
         XSelectInput(display, d, event_mask);
         XMapWindow(display, d);
@@ -84,7 +90,8 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         XLockDisplay(display);
         XUnlockDisplay(display); 
     }
-    else if (gpu==1){
+    else if (abs(gpu)==1){
+	    gpu=1;
         int numReturned;
         //auto attributeList = doubleBufferAttributes;
 
@@ -121,44 +128,48 @@ RSGL::window::window(std::string wname,RSGL::rect winrect, RSGL::color c, int gp
         XSetWindowBackground(display,d,RSGLRGBTOHEX(c.r,c.g,c.b));
         glClearColor(color.r,color.g,color.b,color.a);
         name = wname; r = winrect; color = c;
-        dbuffer.d = XCreatePixmap(display,d,winrect.width,winrect.length,XDefaultDepth(display,XDefaultScreen(display)));
+        dbuffer.d = XCreatePixmap(display,d,winrect.width,winrect.length,XDefaultDepth(display,NULL));
         glEnable(GL_BLEND); //Enable blending.
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //Set blending function
 
     } XStoreName(display,d,wname.data());
-    if (!RSGL::root.d){root=*this;root.display=display;}
+    if (!rootChosen){ rootChosen=true; isRoot=true;  } 
 }
 
 bool pressed=false;
 void RSGL::window::checkEvents(){
-  LastFrameTimeCounter = TimeCounter;
-  gettimeofday(&tv, NULL);
-  TimeCounter = (float)(tv.tv_sec-tv0.tv_sec) + 0.000001*((float)(tv.tv_usec-tv0.tv_usec));
-  DT = TimeCounter - LastFrameTimeCounter;
- 
-  //calculate FPS
-  Frame ++;
-  if ((Frame%FramesPerFPS) == 0) {
-	FPS = ((float)(FramesPerFPS)) / (TimeCounter-prevTime);
-	prevTime = TimeCounter;
-  }
-  debug.fps=FPS;
-  XEvent E;
-  if (XEventsQueued(display,QueuedAlready) + XEventsQueued(display,QueuedAfterReading)) XNextEvent(display, &E);
-  event.type = E.type; int x, y,i; unsigned m; unsigned m2; Window root, child,w; 
-  switch (event.type){
+//    for (int i=0; i < joysticks.size(); i++) joysticks.at(i)->checkEvents();
+    glXMakeCurrent(display,d,context);
+    LastFrameTimeCounter = TimeCounter;
+    gettimeofday(&tv, NULL);
+    TimeCounter = (float)(tv.tv_sec-tv0.tv_sec) + 0.000001*((float)(tv.tv_usec-tv0.tv_usec));
+    DT = TimeCounter - LastFrameTimeCounter;
+    
+    //calculate FPS
+    Frame ++;
+    if ((Frame%FramesPerFPS) == 0) {
+        FPS = ((float)(FramesPerFPS)) / (TimeCounter-prevTime);
+        prevTime = TimeCounter;
+    }
+    debug.fps=FPS;
+    XEvent E;
+    if (XEventsQueued(display,QueuedAlready) + XEventsQueued(display,QueuedAfterReading)) XNextEvent(display, &E);
+    if ( E.type == ButtonPress) event.type = RSGL::MouseButtonPressed;
+    if ( E.type == ButtonRelease) event.type = RSGL::MouseButtonReleased;
+    event.type = E.type; int x, y,i; unsigned m; unsigned m2; Window root, child,w; 
+    switch (event.type){
         case 33: if (E.xclient.data.l[0] != (long int)XInternAtom(display, "WM_DELETE_WINDOW", true)) event.type=0;break;
         case 4: event.button = E.xbutton.button; 
             if (event.type==4) pressed=true;  else pressed=false;
             w=d; 
-            if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.x=x; event.y=y;} break;
+            if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.mouse.x=x; event.mouse.y=y;} break;
         case 5: event.button = E.xbutton.button; 
             if (event.type==4) pressed=true;  else pressed=false;
             w=d; 
-            if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.x=x; event.y=y;} break;
+            if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.mouse.x=x; event.mouse.y=y;} break;
         case 6:
            w=d; 
-            if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.x=x; event.y=y;} break;
+            if (XQueryPointer(display, w, &root, &child, &x, &y, &x, &y, &m)){event.mouse.x=x; event.mouse.y=y;} break;
         case 2: XQueryKeymap(display,keyboard); event.keycode = XKeycodeToKeysym(display,E.xkey.keycode,1); event.key=XKeysymToString(event.keycode); break;
         case 3: XQueryKeymap(display,keyboard); event.keycode = XKeycodeToKeysym(display,E.xkey.keycode,1); event.key=XKeysymToString(event.keycode); break;
         default:
@@ -174,12 +185,14 @@ void RSGL::window::checkEvents(){
                     pressed=!pressed;
                 }
             } break;
-  }
-  XWindowAttributes a;
-  XGetWindowAttributes(display,d,&a); 
-  if (r.width != a.width&& areesize || r.length != a.height  && areesize){ glViewport(0,0,a.width,a.height); } //std::cout << E.xresizerequest.width << " , " << E.xresizerequest.height << std::endl;}
-  r.width=a.width; r.length=a.height; r.x=a.x; r.y=a.y;
-  XKeyboardState keystate;
+    }
+    XWindowAttributes a;
+    XGetWindowAttributes(display,d,&a); 
+    if (r.width != a.width&& areesize || r.length != a.height  && areesize){ glViewport(0,0,a.width,a.height); } //std::cout << E.xresizerequest.width << " , " << E.xresizerequest.height << std::endl;}
+    r.width=a.width; r.length=a.height; r.x=a.x; r.y=a.y;
+    XKeyboardState keystate;
+    if (event.key == "ISO_Left_Tab") event.key = "Tab";
+    if (isRoot) ::root=*this; 
 }
 
 void RSGL::window::close(){
@@ -189,6 +202,7 @@ void RSGL::window::close(){
 void RSGL::window::clear(){
     if (!GPU) XClearWindow(display,d);
     else if (GPU==1){
+        glXMakeCurrent(display,d,context);
         glFlush();
         if (swapFlag) glXSwapBuffers( display, d );
         glClearColor(color.r/250.0,color.g/250.0,color.b/250.0,color.a/250.0);
@@ -211,22 +225,43 @@ bool RSGL::window::isPressed(unsigned long key) {
 }
 
 
-bool RSGL::window::isPressed(std::string key){ return isPressed(XStringToKeysym(key.data())); }
+bool RSGL::window::isPressed(std::string key){ 
+    if (key == "Tab") key = "ISO_Left_Tab";
+    if (key == "Shift") return (isPressed(XStringToKeysym("Shift_L")) || isPressed(XStringToKeysym("Shift_R")));
+    if (key == "Control") return (isPressed(XStringToKeysym("Control_L")) || isPressed(XStringToKeysym("Control_R")));
+    return isPressed(XStringToKeysym(key.data())); 
+}
 
 
 void RSGL::drawable::loadArea(RSGL::drawable& dsrc, RSGL::rect r, RSGL::point p){
-  XCopyArea(display,dsrc.d,d,XDefaultGC(display,XDefaultScreen(display)),
-    r.x,r.y,r.width,r.length,p.x,p.x);
+
 }
 
 
 RSGL::pixmap::pixmap(RSGL::drawable dr, RSGL::area a){
   display = dr.display;
-  d = XCreatePixmap(display,dr.d,a.width,a.length,XDefaultDepth(display,XDefaultScreen(display)));
-  data = XGetImage(display,dr.d,0,0,a.width,a.length,0,2);
-  memset(data->data,RSGLRGBTOHEX(dr.color.r,dr.color.g,dr.color.g),a.width*a.length*3);
-  XPutImage(display,d,XDefaultGC(display,XDefaultScreen(display)),
-    data,0,0,0,0,a.width,a.length);
 }
 
-namespace RSGL{RSGL::window root=root;};
+void RSGL::func::start(bool running , void (*gameLoop)(RSGL::window), void (*eventLoop)(int,RSGL::window), RSGL::window win){
+    while (running){
+        win.checkEvents();
+        eventLoop(win.event.type,win);
+        gameLoop(win);
+    }
+    win.close();
+}
+
+void RSGL::func::start(bool* running , void (*gameLoop)(RSGL::window), void (*eventLoop)(int,RSGL::window), RSGL::window win){
+    while (*running){
+        win.checkEvents();
+        eventLoop(win.event.type,win);
+        gameLoop(win);
+    }
+    win.close();
+}
+
+RSGL::rect RSGL::fullscreen(){
+    Display* disp = XOpenDisplay(NULL); 
+    Screen*  scrn = DefaultScreenOfDisplay(disp);  
+    return {0,0,scrn->width,scrn->height};
+}
