@@ -1,5 +1,6 @@
 GXX = g++
-LLIBS = source/linux/deps/drawtext/*.o source/linux/deps/X/*.o source/linux/deps/GLU/*.o
+LText = source/linux/deps/drawtext/*.o
+LLIBS = $(LText) -lX11 -lGLX -lGL -lfreetype
 LSOURCE = source/linux/*.cpp
 
 all:
@@ -18,10 +19,10 @@ buildLinuxFromSource:
 	$(GXX) -fPIC $(LSOURCE) -c
 
 buildLinuxFromObjStatic:
-	ar rcs libRSGL.a *.o $(LLIBS)
+	ar rcs libRSGL.a *.o $(LText)
 
 buildLinuxFromObjShared:
-	g++ -shared *.o source/linux/deps/libdrawtext.a -lX11 -lGLX -lGL  -lGLU -lfreetype -o libRSGL.so
+	g++ -shared *.o $(LLIBS) -o libRSGL.so
 
 installLinux:
 	cp libRSGL.so /usr/lib

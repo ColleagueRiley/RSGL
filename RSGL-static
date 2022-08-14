@@ -1,1 +1,1 @@
-echo "/usr/local/lib/libRSGL.a -lGL -lfreetype"
+echo "/usr/local/lib/libRSGL.a -lGL -lfreetype -lX11"
