@@ -28,3 +28,8 @@ make remove
   
   3. build RSGLWindows with 
 make buildWindows
+
+# libdrawtext
+  libdrawtext is the library RSGL uses for drawing text, all credits and thanks go to @jtsiomb 
+
+  repo : https://github.com/jtsiomb/libdrawtext
