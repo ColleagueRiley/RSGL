@@ -5,7 +5,7 @@
 #include <map> // standard library map struct std::map<>
 #include <X11/Xlib.h>
 #include "keys.hpp"
-#include "deps/drawtext.h"
+#include "deps/drawtext.hpp"
 #ifndef RSGLOPEGNL
   #ifndef RSGLNOOPENGL
       #define RSGLOPENGL 0x98342
