@@ -1,61 +1,42 @@
-ARGS = -Wall -fPIC -O -g
-OS = linux
-SOURCEDIR = source/$(OS)
-SOURCE = $(SOURCEDIR)/rsgl.cpp $(SOURCEDIR)/draw.cpp $(SOURCEDIR)/collide.cpp $(SOURCEDIR)/other.cpp
-LIBS =  $(SOURCEDIR)/deps/*.a $(SOURCEDIR)/deps/*.so $(SOURCEDIR)/deps/*.0 $(SOURCEDIR)/deps/*.3
-
 GXX = g++
-build:
-	@$(GXX) -c $(ARGS) $(SOURCE) -c --no-warnings
-	@$(GXX) -shared rsgl.o draw.o collide.o other.o  $(LIBS) -o libRSGL.so 
-	@rm rsgl.o draw.o collide.o other.o;	
-
-install:
-	@make build
-	@sudo cp libRSGL.so /usr/lib/libRSGL.so
-	@rm libRSGL.so
-	@mkdir ./RSGL
-	@cp -r include RSGL.hpp ./Examples ./RSGL
-	@sudo cp -r ./RSGL /usr/include/
-	@sudo rm -r ./RSGL
-	@sudo cp source/linux/deps/ffplay /usr/bin/
+LLIBS = source/linux/deps/drawtext/*.o source/linux/deps/X/*.o source/linux/deps/GLU/*.o
+LSOURCE = source/linux/*.cpp
 
 all:
-	build
-	install
+	make buildLinux
+	make installLinux
 
-uninstall:
-	rm /usr/lib/libRSGL.so
+buildLinux:
+	make buildLinuxFromSource
+	make buildLinuxFromObj
 
-update:
-	rm /usr/lib/libRSGL.so
-	@make install
+buildLinuxFromObj:
+	make buildLinuxFromObjStatic
+	make buildLinuxFromObjShared
 
-WARGS = -Wall -fPIC -O2 -Wno-unknown-pragmas -g
-WSOURCEDIR = source/windows
-WSOURCE = $(WSOURCEDIR)/rsgl.cpp $(WSOURCEDIR)/collide.cpp $(WSOURCEDIR)/device.cpp $(WSOURCEDIR)/draw.cpp $(WSOURCEDIR)/xinput.cpp
-WLIBS = -L"$(CURDIR)/source/windows/deps" -lcomdlg32 -lgdiplus -lgdi32 -lmsimg32 -ldiscord -lopengl32 -lxinput -lpng -ldpi
+buildLinuxFromSource:
+	$(GXX) -fPIC $(LSOURCE) -c
 
-windowsBuild: 
-	@$(GXX) -C $(WARGS) $(WSOURCE) -c --no-warnings
-	@$(GXX) $(WARGS) -shared rsgl.o draw.o collide.o device.o xinput.o $(WLIBS) -lmingw32 -static-libgcc -static-libstdc++ -static -o libRSGL.lib
-	@rm rsgl.o draw.o collide.o device.o  xinput.o;	
-windowsBuildRSGL: 
-	@$(GXX) -C $(WARGS) $(WSOURCEDIR)/rsgl.cpp -c --no-warnings
-	@$(GXX) $(WARGS) -shared rsgl.o draw.o collide.o device.o xinput.o $(WLIBS) -lmingw32 -static-libgcc -static-libstdc++ -static -o libRSGL.lib
-	make windowsCompile
-windowsBuildXinput: 
-	@$(GXX) -C $(WARGS) $(WSOURCEDIR)/xinput.cpp -c --no-warnings
-	@$(GXX) $(WARGS) -shared rsgl.o draw.o collide.o device.o xinput.o $(WLIBS) -lmingw32 -static-libgcc -static-libstdc++ -static -o libRSGL.lib
-	make windowsCompile
-windowsCompile:
-	@$(GXX) $(WARGS) source/main.cpp libRSGL.lib -o RSGL.exe
-	./RSGL.exe
-	
-help:
-	@echo "make help : runs this help tab"
-	@echo "make : runs both build and install"
-	@echo "make build : builds libRSGL.so in the local dir"
-	@echo "make install : installs the build into /usr/lib, then removes in, runs buld if it's not already build"
-	@echo "make update : update preexisting RSGL"
-	@echo "make uninstall : uninstall RSGL"
+buildLinuxFromObjStatic:
+	ar rcs libRSGL.a *.o $(LLIBS)
+
+buildLinuxFromObjShared:
+	g++ -shared *.o source/linux/deps/libdrawtext.a -lX11 -lGLX -lGL  -lGLU -lfreetype -o libRSGL.so
+
+installLinux:
+	cp libRSGL.so /usr/lib
+	cp libRSGL.a /usr/local/lib
+	mkdir RSGL
+	cp -r include RSGL.hpp RSGL 
+	cp -r RSGL/* /usr/include/RSGL
+	rm -r RSGL
+	chmod +x RSGL-static
+	cp RSGL-static /usr/bin 
+	make clean
+
+clean:
+	rm *.o *.a *.so
+
+
+buildWindows:
+	echo something lithuanian
