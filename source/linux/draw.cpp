@@ -197,19 +197,26 @@ int RSGL::drawImage(RSGL::image r, RSGL::window win){
 
     if (xx==-1) {
         int w,h,n;
+
         unsigned char *data = stbi_load(r.file.c_str(), &w, &h, &n, 0);
         glGenTextures(1, &r.tex);
         glBindTexture(GL_TEXTURE_2D, r.tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        //stbi_image_free(data);
+
+        if (!r.r.width && !r.r.length) r.r = {r.r.x,r.r.y,w,h};
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+        if (n==3) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h,0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        else if (n==4)  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h,0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        stbi_image_free(data);
 
         glBindTexture(GL_TEXTURE_2D, 0);
         tex.insert(tex.end(), r);
         xx=tex.size()-1;
-            
     }
+    
+    if (!r.r.width && !r.r.length) r.r = {r.r.x,r.r.y,tex[xx].r.width,tex[xx].r.length};
+
     glPushMatrix();
     if (r.r.rotationAngle){
         glRotatef(r.r.rotationAngle, 0, 0, 1);
