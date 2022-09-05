@@ -13,7 +13,6 @@ all:
 source/linux/deps/miniaudio.o:
 	gcc -c source/linux/deps/miniaudio.c -o source/linux/deps/miniaudio.o
 
-
 RSGLStatic:
 	cd RSGL-static && make
 
