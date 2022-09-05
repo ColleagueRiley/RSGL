@@ -46,6 +46,5 @@ installLinux:
 clean:
 	rm -r *.o *.a *.so source/linux/deps/drawtext
 
-
 buildWindows:
 	echo something lithuanian
