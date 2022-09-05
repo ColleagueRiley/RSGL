@@ -1,208 +1,407 @@
 #include "../../include/linux/rsgl.hpp" // source headers
 
+/* 
+    these functions should all be RSGL on RSGL, 
+    and therefor (hopefully) should work on all systems 
+    assuming the basic functions stay the same
+
+    - Colleague Riley 
+*/
+
 void RSGL::splashScreen(std::string file,std::string font,int t,RSGL::window win){
-    static bool running=true;
-    RSGL::color c = win.color; if (t < 100) t=100;
-    int cl=0;
+    bool running = true; // if the program is still running
+    RSGL::color c = win.color; // save the current background color
+    
+    if (t < 100) t = 100; // time be at least 100
+    
+    win.setColor({0, 0, 0}); // change the background to black
+    
     while (running){
-        win.checkEvents();  win.setColor({0,0,0}); cl++;
-        if (cl==t) running=false;
-        switch(win.event.type){
-            case RSGL::quit: running=false; win.close(); break;
-            default: break;
+        win.checkEvents();  
+        if (RSGL::timer(t)) 
+            running = false; // end when the time is up
+
+        if (win.event.type == RSGL::quit){
+            // if the window is closed, close the window/display and kill the program so there aren't any issues
+            win.close();
+            exit(0); 
         }
-        RSGL::drawImage(file,(RSGL::rect){win.r.width/6,win.r.length/6,win.r.width/1.5,win.r.length/1.5});
-        RSGL::drawText("Powered With",{win.r.width/6,win.r.length/9,win.r.width/20},font.data(),{255,0,0});
+        
+        RSGL::drawText("Powered With", {win.r.w/6, win.r.h/9, win.r.w/20}, font.data(), {255,0,0}); // draw "powered with" right above RSGL 
+        RSGL::drawImage(file, {win.r.w/6, win.r.h/6, (int)(win.r.w/1.5), (int)(win.r.h/1.5)}); // draw the image in the right area on the screen
+
         win.clear();
-    } win.setColor(c); running=false;
+    } 
+    
+    win.setColor(c); // set the color back to it's original color
 }
 
 
-void RSGL::Button::draw(RSGL::window win){
+void RSGL::button::draw(RSGL::window win){
     switch (s){
-        case RECT: RSGL::drawRect(rect,color,true,false,win); break;
-        case CIRCLE: RSGL::drawCircle(cir,color,true,win); break;
+        case RECT: 
+            RSGL::drawRect(rect, color, {.win=win}); 
+            break;
+        
+        case CIRCLE: 
+            RSGL::drawCircle(cir, color, {.win=win}); 
+            break;
+        
         case IMAGE:
-            RSGL::drawImage(File,imageRect,win);
-            if (buttonRect.x+buttonRect.y+buttonRect.length+buttonRect.width && Draw) RSGL::drawRect(rect,rectColor,true,false,win);
-            else{ Draw=false; buttonRect=imageRect; } break;
-        case TEXT: RSGL::drawRect(rect,rectColor,true,false,win); RSGL::drawText(Text,textCir,font,color); break;
+            RSGL::drawImage(File, imageRect, win);
+
+            // if there is a background rect, draw it
+            if (Draw && buttonRect.x+buttonRect.y+buttonRect.h+buttonRect.w) 
+                RSGL::drawRect(rect, rectColor, {.win=win});
+            
+            // else make sure, tell set draw to false, so it doesn't check that again
+            else{ 
+                Draw = false; 
+                buttonRect = imageRect; // and make sure the rect is right
+            } 
+
+            break;
+        
+        case TEXT: 
+            RSGL::drawRect(rect, rectColor, {.win=win}); 
+            RSGL::drawText(Text, textCir, font, color); 
+            break;
         default: break;
     }
 }
 
-bool RSGL::Button::collideWithMouse(RSGL::window win){
+bool RSGL::button::collideWithMouse(RSGL::window win){
+    // if it has a rect area, use rect collision
     if ( s == RECT || s == TEXT || s == IMAGE ){ 
-        if (!rect.x && imageRect.x ) rect=imageRect; if (!rect.x && buttonRect.x) rect=buttonRect;
-        imageRect=rect; buttonRect=rect;
-        return RSGL::RectCollidePoint(buttonRect,win.event.mouse); 
+        // make sure the rects are right
+        if (!rect.x && imageRect.x ) 
+            rect = imageRect; 
+        
+        if (!rect.x && buttonRect.x) rect = buttonRect;
+
+        imageRect=rect; 
+        buttonRect=rect;
+        
+        // check 
+        return RSGL::RectCollidePoint(buttonRect, win.event.mouse); 
     }
-    if ( s == CIRCLE ) return RSGL::CircleCollidePoint(cir,win.event.mouse); 
+    
+    // if it has a circle area, use circle collision
+    if (s == CIRCLE) 
+        return RSGL::CircleCollidePoint(cir, win.event.mouse); 
+    
+    // if it has neither :(
+    return false;
 }
 
-void RSGL::Button::switchTo(int next){
-    if (!(next < 0 || next > 3 || states.size() < next || states.empty()) ){
-        Button Next = states.at(next);
-        s=Next.s; 
-        rect=Next.rect; imageRect=Next.imageRect; buttonRect=Next.buttonRect;  
-        cir=Next.cir; textCir=Next.textCir;
-        font=Next.font;  
-        File=Next.File, Text=Next.Text;
-        color=Next.color, rectColor=Next.rectColor;
-        color=Next.color; Draw=Next.Draw;
+void RSGL::button::switchTo(int next){
+    // make sure it can be switched
+    if ( !(next < 0 || next > 3 || states.size() < next || states.empty()) ){
+        button Next = states.at(next); // grab the next button
+
+        // switch over the data ( using this = Next wouldn't switch everything over right )
+        s = Next.s;
+
+        // rights
+        rect = Next.rect; 
+        imageRect = Next.imageRect; 
+        buttonRect = Next.buttonRect;  
+        
+        // cirs
+        cir = Next.cir; 
+        textCir = Next.textCir;
+        
+        // font / file info
+        font = Next.font;  
+        File = Next.File, 
+        Text = Next.Text;
+        
+        // colors
+        color = Next.color, rectColor = Next.rectColor;
+        color = Next.color; 
+        
+        Draw = Next.Draw;
     }
 }
 
-void RSGL::Button::checkEvents(RSGL::window win){
+void RSGL::button::checkEvents(RSGL::window win){
     switch (win.event.type){
-        case RSGL::MouseButtonPressed: 
-            if (collideWithMouse(win) && win.event.button == 1){  event = 1; pressed=true; switchTo(1); } break;
-        case RSGL::MouseButtonReleased: 
-            if (collideWithMouse(win) && win.event.button == 1){ event = 2; pressed=false; switchTo(2); } break;
-        case RSGL::MousePosChanged: 
-            if (collideWithMouse(win) && !pressed){  event = 3; switchTo(3); } break;
-        default: 
-            if (!collideWithMouse(win)){event = 0; switchTo(0);} break;
+        case RSGL::mouseButtonPressed: 
+            if (collideWithMouse(win) && win.event.button == 1){  
+                event = 1; // send the event 
+                pressed=true;  // say it's pressed 
+                switchTo(1); // switch to that event's button
+            } 
+            break;
+        case RSGL::mouseButtonReleased: 
+            if (collideWithMouse(win) && win.event.button == 1){ 
+                event = 2; 
+                pressed=false; // say it's not pressed
+                switchTo(2); 
+            } 
+            break;
+        case RSGL::mousePosChanged: 
+            if (collideWithMouse(win) && !pressed){  
+                event = 3; 
+                switchTo(3); 
+            } break;
+        default:  
+            // switch to idle if there's no event
+            if (!collideWithMouse(win)){
+                event = 0; 
+                switchTo(0);
+            } 
+            break;
     }
 }
 
-void RSGL::Button::run(RSGL::window win){
-    checkEvents(win);
+// functional version for the hippies
+void RSGL::button::run(RSGL::window win){
+    checkEvents(win); // check the event
     switch(event){
-        case 1: functions.at(2)(); break;
-        case 2: functions.at(3)(); break;
-        case 3: functions.at(1)(); break;
-        default: functions.at(0)(); break;
+        case 1: 
+            functions.at(2)(); // run the proper function per event
+            break;
+        case 2: 
+            functions.at(3)(); 
+            break;
+        case 3: 
+            functions.at(1)(); 
+            break;
+        default: 
+            functions.at(0)(); 
+            break;
     }
+
+    draw(win); // draw on the proper window
+}
+
+void RSGL::button::checkAndDraw(RSGL::window win){ 
+    checkEvents(win); // check ..
+    draw(win);  // and draw
+}
+
+void RSGL::checkBox::draw(RSGL::window win){
+    if (File.empty()) 
+        RSGL::drawRect(rect, pressed ? c2 : c1, {.win=win}); // draw rect with the color based on if it's pressed or not
+    else 
+        RSGL::drawImage(pressed ? File2 : File, rect, win); // draw the image based on if it's pressed or not
+}
+
+void RSGL::checkBox::checkEvents(RSGL::window win){
+    // if it's pressed, switch
+    if (win.event.type == RSGL::mouseButtonPressed && RSGL::RectCollidePoint(rect, win.event.mouse)  && win.event.button == 1)
+        pressed = !pressed;
+}
+
+void RSGL::checkBox::checkAndDraw(RSGL::window win){ 
+    checkEvents(win); 
     draw(win); 
 }
 
-void RSGL::Button::checkAndDraw(RSGL::window win){ checkEvents(win); draw(win); }
-
-void RSGL::CheckBox::draw(RSGL::window win){
-    if (File.empty()) RSGL::drawRect(rect, pressed ? c2 : c1 );
-    else RSGL::drawImage(pressed ? File2 : File,rect);
-}
-
-void RSGL::CheckBox::checkEvents(RSGL::window win){
-    if (win.event.type == RSGL::MouseButtonPressed && RSGL::RectCollidePoint(rect,win.event.mouse)  && win.event.button == 1) pressed=!pressed;
-}
-
-
-void RSGL::CheckBox::checkAndDraw(RSGL::window win){ checkEvents(win); draw(win); }
-
-void RSGL::scrollText(std::string text, RSGL::circle r, RSGL::Font font, RSGL::color col, int speed, int stopY, RSGL::window win){
-    int nl=0;
-    for (int i=0; i < text.size(); i++) if (text.at(i) == '\n') nl++; 
-    static RSGL::circle c = r; 
-    if (stopY == -1) stopY=nl;
-    if ( abs(abs(c.y-r.y)/nl) <= stopY ) c.y--;
-    RSGL::drawText(text,{c.x,c.y,c.radius},font,{255,0,0});
-}
-
 void RSGL::progressBarAuto(RSGL::rect r, RSGL::color c, int speed, int ticks, int dir, RSGL::color c2){
-    static int tick=0;
-    static int pos=0; 
-    RSGL::drawRect(r,c);
-    if (dir==-1) RSGL::drawRect({r.x+r.width-pos,r.y,1+pos,r.length},c2);
-    if (dir==1) RSGL::drawRect({r.x,r.y,1+pos,r.length},c2);
-    if(r.x+r.width-pos > r.x && ticks == tick) pos+=speed; 
-    if (ticks != tick) tick++; else tick=0; 
+    static int pos = 0; // static pos for adding to
+
+    RSGL::drawRect(r, c); // draw rect 1
+    
+    // draw rect 2 based on the pos and dir 
+    if (dir == -1) 
+        RSGL::drawRect({r.x + (r.w - pos), r.y, pos+1, r.h}, c2);
+
+    else if (dir == 1) 
+        RSGL::drawRect({r.x, r.y, pos+1, r.h}, c2);
+    
+    if((r.x + r.w-pos) > r.x && RSGL::timer(ticks)) 
+        pos += speed; // make the pos go up by the speed per tick
 }
 
 void RSGL::progressBar(RSGL::rect r, RSGL::color c, int pos,int dir, RSGL::color c2){
-    RSGL::drawRect(r,c);
-    while (r.x+r.width-pos < r.x ) pos--;
-    if (dir==-1) RSGL::drawRect({r.x+r.width-pos,r.y,1+pos,r.length},c2);
-    if (dir==1) RSGL::drawRect({r.x,r.y,1+pos,r.length},c2);
+    RSGL::drawRect(r, c);
+
+    // get the actual pos if it is too little
+    while ((r.x + (r.w - pos)) < r.x) 
+        pos--;
+    
+    // deja vu?
+    if (dir == -1) 
+        RSGL::drawRect({r.x + r.w - pos, r.y, pos+1, r.h}, c2);
+    
+    else if (dir == 1) 
+        RSGL::drawRect({r.x, r.y, pos+1, r.h}, c2);
 }
 
-void RSGL::drawLink(std::string url,RSGL::circle c,RSGL::Font font,RSGL::color col,std::string text,bool underLine,RSGL::window win){
-    if (text.empty()) text=url;
-    RSGL::drawText(text,c,font,col,win);
-    if (underLine) RSGL::drawRect({c.x,c.y+c.radius,text.size()*(c.radius/1.87),1},col);
-    if (win.event.type == RSGL::MouseButtonPressed && RSGL::RectCollidePoint({c.x,c.y,text.size()*(c.radius/1.87),c.radius},win.event.mouse)){
-        std::string cmd = "xdg-open " + url; system(cmd.c_str());
-    }
-}
+RSGL::mouseMenu::mouseMenu(RSGL::rect r,RSGL::color c, std::vector<menu> ms,RSGL::window win){
+    // add the data
+    int yb = -(0.15 * r.h);
+    rect = r; 
+    color = c; 
+    menus = ms;
 
-void RSGL::drawTypingText(std::string text,RSGL::circle c,RSGL::Font font,RSGL::color col,int speed,RSGL::window win){
-      static int addTick=0; static std::string outputText="";
-      if (addTick >= speed && text.size() != outputText.size()){ addTick=0; outputText += text.at(outputText.size());}
-      RSGL::drawText(outputText,c,font,col);
-      addTick++;
-}
-
-RSGL::mouseMenu::mouseMenu(RSGL::rect r,RSGL::color c, std::vector<Menu> ms,RSGL::window win){
     for (int i=0; i < ms.size(); i++){
-        int yb=-(0.15*r.length);
-        rect=r; color = c; menus=ms;
-        RSGL::Button b={ms.at(i).text.c_str(), ms.at(i).font, {r.x+10,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.length/ms.size()/1.5}, {r.x,r.y+(r.length/ms.size()/1.25)*i,r.width,(r.length/ms.size()/1.25)}, ms.at(i).c, {0,0,0,0} }; 
+        // edit the button and add it to the list
+        RSGL::button b = { 
+                ms.at(i).text.c_str(), 
+                ms.at(i).font, 
+                // ajust rect sizes
+                {r.x + 10, r.y + ( r.h / (int)(ms.size()/1.25) ) * (i + 1) + yb, r.h / (int)(ms.size() / 1.5)}, 
+                {r.x, r.y + r.h / (int)(ms.size()/1.25) * i, r.w, r.h/ (int)(ms.size()/1.25)},  
+                ms.at(i).c, 
+                {0, 0, 0, 0} 
+        }; 
+
         bs.insert(bs.end(), b);
     }
 }   
 
 int RSGL::mouseMenu::draw(RSGL::window win){
-    if (win.event.type == RSGL::MouseButtonPressed && win.event.button==RSGL::mouseRight && tick >= 6 && !pressed ){ tick=0; pressed=true; p=win.event.mouse; }
-    if (pressed){
-        rect = {p.x,p.y,rect.width,rect.length};
-        RSGL::drawRect(rect,color);
-        for (int i=0; i < bs.size(); i++){ 
-            std::vector<Menu> ms=menus; RSGL::rect r=rect; 
-            int yb=-(0.15*r.length);
-            bs.at(i).checkAndDraw();
-            if (bs.at(i).event == 2 && tick >= 6){ pressed=false; return i+1;}
-            if (bs.at(i).event == 3) menus.at(i).c2 = ms.at(i).bgcolor;
-            else if (bs.at(i).event || !RSGL::RectCollidePoint({r.x,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.width,(r.length/ms.size()/1.25)},win.event.mouse)) menus.at(i).c2 = {0,0,0,0};
-            bs.at(i) = {ms.at(i).text.c_str(), ms.at(i).font, {r.x+10,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.length/ms.size()/1.5}, {r.x,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.width,(r.length/ms.size()/1.25)}, ms.at(i).c, ms.at(i).c2 }; 
-        }
-    } 
-    if (win.event.type == RSGL::MouseButtonReleased && tick >= 12 && pressed ){ tick=0; pressed=false; }
+
+    // if it's pressed and hasn't been logged yet, say it's pressed and log the current mouse point
+    if ( !pressed && win.event.type == RSGL::mouseButtonPressed && win.event.button == RSGL::mouseRight && RSGL::timer(6)){ 
+        pressed= true; 
+        p = win.event.mouse; 
+    }
     
-    tick++; return 0;
+    else if (pressed){
+        // change the rect x/y to the mouse x/y
+        rect = {p.x, p.y, rect.w, rect.h};
+
+        RSGL::drawRect(rect,color); // draw the rect
+        
+        for (int i=0; i < bs.size(); i++){ 
+            std::vector<menu> ms=menus; // the menus
+            int yb = -(0.15 * rect.h); // the button y
+
+            bs.at(i).checkAndDraw(); // check&draw the current button
+
+            if (bs.at(i).event == 2 && RSGL::timer(6)){ 
+                pressed=false; // flip pressed
+                return i+1; // return that bs[i] was pressed
+            }
+            if (bs.at(i).event == 3)  // change the color if it's hovered
+                menus.at(i).c2 = ms.at(i).bgcolor; 
+
+            else if (
+                bs.at(i).event ||  
+                !RSGL::RectCollidePoint(
+                        {rect.x, rect.y + rect.h/(int)(ms.size()/1.25) * (i + 1) + yb, rect.w, rect.h / (int)(ms.size() / 1.25)}
+                        ,win.event.mouse)
+            ) 
+                menus.at(i).c2 = {0,0,0,0};
+            
+            // update the button
+            bs.at(i) = {
+                    ms.at(i).text.c_str(), ms.at(i).font, 
+                    {rect.x + 10, rect.y + (int)( rect.h / ms.size() / 1.25) * (i + 1) + yb, rect.h / (int)(ms.size() / 1.5)}, 
+                    {rect.x, rect.y + rect.h/(int)(ms.size()/1.25) * (i + 1) + yb, rect.w, rect.h / (int)(ms.size() / 1.25)},
+                    ms.at(i).c, ms.at(i).c2 
+            };
+
+        }
+
+        if (win.event.type == RSGL::mouseButtonReleased && RSGL::timer(12)) 
+            pressed=false; // if the button is released, unpress
+    }
+
+    return 0;
 }
 
-RSGL::sideMenu::sideMenu(RSGL::rect r,RSGL::color c, std::vector<Menu> ms,RSGL::window win){
+RSGL::sideMenu::sideMenu(RSGL::rect r,RSGL::color c, std::vector<menu> ms,RSGL::window win){
     for (int i=0; i < ms.size(); i++){
-        int yb=-(0.15*r.length);
+        int yb=-(0.15*r.h);
         rect=r; color = c; menus=ms;
-        RSGL::Button b={ms.at(i).text.c_str(), ms.at(i).font, {r.x+10,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.length/ms.size()/1.5}, {r.x,r.y+(r.length/ms.size()/1.25)*i,r.width,(r.length/ms.size()/1.25)}, ms.at(i).c, {0,0,0,0} }; 
+        RSGL::button b={ms.at(i).text.c_str(), ms.at(i).font, {r.x+10,r.y+ (int)(r.h/ms.size()/1.25)*(i+1)+yb,r.h/ (int)(ms.size()/1.5)}, {r.x,r.y+ (int)(r.h/ms.size()/1.25)*i,r.w, (int)(r.h/ms.size()/1.25)}, ms.at(i).c, {0,0,0,0} }; 
         bs.insert(bs.end(), b);
     }
 }   
 
 int RSGL::sideMenu::draw(RSGL::window win){
-    RSGL::drawRect(rect,color);
+    RSGL::drawRect(rect, color);
     for (int i=0; i < bs.size(); i++){ 
-        std::vector<Menu> ms=menus; RSGL::rect r=rect; 
-        int yb=-(0.15*r.length);
-        bs.at(i).checkAndDraw();
-        if (bs.at(i).event == 2 && tick >= 6) return i+1;
-        if (bs.at(i).event == 3) menus.at(i).c2 = ms.at(i).bgcolor;
-        else if (bs.at(i).event || !RSGL::RectCollidePoint({r.x,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.width,(r.length/ms.size()/1.25)},win.event.mouse)) menus.at(i).c2 = {0,0,0,0};
-        bs.at(i) = {ms.at(i).text.c_str(), ms.at(i).font, {r.x+10,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.length/ms.size()/1.5}, {r.x,r.y+(r.length/ms.size()/1.25)*(i+1)+yb,r.width,(r.length/ms.size()/1.25)}, ms.at(i).c, ms.at(i).c2 }; 
+        std::vector<menu> ms=menus; // vector of menus 
+        int yb = -(0.15 * rect.h); // the button y
+
+        bs.at(i).checkAndDraw(); // check&draw the current button
+
+        if (bs.at(i).event == 2 && RSGL::timer(6)){ 
+            return i+1; // return that bs[i] was pressed
+        }
+        if (bs.at(i).event == 3)  // change the color if it's hovered
+            menus.at(i).c2 = ms.at(i).bgcolor; 
+
+        else if (
+            bs.at(i).event ||  
+            !RSGL::RectCollidePoint(
+                    {rect.x, rect.y + rect.h/(int)(ms.size()/1.25) * (i + 1) + yb, rect.w, rect.h / (int)(ms.size() / 1.25)}
+                    ,win.event.mouse)
+        ) 
+            menus.at(i).c2 = {0,0,0,0};
+        
+        // update the button
+        bs.at(i) = {
+                ms.at(i).text.c_str(), ms.at(i).font, 
+                {rect.x + 10, rect.y + (int)( rect.h / ms.size() / 1.25) * (i + 1) + yb, rect.h / (int)(ms.size() / 1.5)}, 
+                {rect.x, rect.y + rect.h/(int)(ms.size()/1.25) * (i + 1) + yb, rect.w, rect.h / (int)(ms.size() / 1.25)},
+                ms.at(i).c, ms.at(i).c2 
+        };
     }
-    tick++; return 0;
+    
+    return 0;
 }
 
 bool RSGL::timer(int ticks){
-    static int tick=0;
-    if (tick >= ticks){ tick=0; return true; }
-    tick++; return false;
+    static int tick = 0; // static tick for waiting 
+    
+    if (tick >= ticks){
+        // if the ticks have been passed, return true and 1 out the ticks 
+        tick=0; 
+        return true; 
+    }
+
+    // else add to the ticks and return false
+    tick++; 
+    return false;
 }
 
-RSGL::listEvent RSGL::List::draw(RSGL::window win){
-    RSGL::drawRect(r,bg);
+RSGL::listEvent RSGL::list::draw(RSGL::window win){
+    RSGL::drawRect(r, bg);
+
     for (int i=0; i < list.size(); i++){ 
-        RSGL::Button b({r.x,4+r.y+i*(r.length/(list.size()*2)+2),r.length,r.length/(list.size()*2)-2},{0,0,0,0});
+        // create the button and check/draw it
+        RSGL::button b({r.x, 4 + r.y + i * (int)(r.h/(list.size()*2) + 2) ,r.h , (int)(r.h/(list.size()) * 2) - 2},{0, 0, 0, 0});
         b.checkAndDraw();
-        if (b.event || (pressed && pressed-1 == i)){ b = {{r.x,4+r.y+i*(r.length/(list.size()*2)+2),r.length,r.length/(list.size()*2)-2},fc}; b.draw();}
-        if (RSGL::RectCollidePoint({r.x,4+r.y+i*(r.length/(list.size()*2)+2),r.length,r.length/(list.size()*2)-2},win.event.mouse) && win.event.type==RSGL::MouseButtonReleased) pressed=i+1; 
-        else if (win.event.type==RSGL::MouseButtonReleased && i==pressed-1) pressed=0;
-        if (i == pressed-1 && win.isPressed("Up") && RSGL::timer(6) ){ if (pressed > 1) pressed--; else pressed = list.size(); }
-        if (i == pressed-1 && win.isPressed("Down") && RSGL::timer(6)){ if (pressed < list.size()) pressed++; else pressed=1;  }
-        RSGL::drawText(list.at(i),{r.x,r.y+i*(r.length/(list.size()*2)+2), r.length/(list.size()*2) },font,c,win);
+
+        if (b.event || (pressed && pressed-1 == i)) { 
+            // update the button
+            b = {{r.x, 4 + r.y + i * (int)(r.h / (list.size()*2) + 2), r.h, (int)(r.h / (list.size() * 2)) - 2}, fc}; 
+            b.draw();
+        }
+
+        if (RSGL::RectCollidePoint({r.x, 4 + r.y + i * (int)(r.h/ (list.size() * 2) +2), r.h, (int)(r.h / (list.size() * 2)) -2},win.event.mouse) 
+        && win.event.type == RSGL::mouseButtonReleased)    
+            pressed=i+1; 
+    
+        else if (win.event.type == RSGL::mouseButtonReleased && i == pressed-1) 
+            pressed=0;
+        
+        if (i == pressed-1 && win.isPressed("Up") && RSGL::timer(6) ){ 
+            if (pressed > 1) 
+                pressed--; 
+ 
+            else 
+                pressed = list.size(); 
+        }
+        
+        if (i == pressed-1 && win.isPressed("Down") && RSGL::timer(6)){ 
+            if (pressed < list.size()) 
+                pressed++; 
+ 
+            else 
+                pressed=1;  
+        }
+        
+        RSGL::drawText(list.at(i),{r.x, r.y + i* (int)(r.h / (list.size()*2)+ 2), (int)(r.h / (list.size()*2)) }, font, c, {.win = win});
     }
-    RSGL::drawRect(r,oc,false);
-    return {(pressed > 0),pressed-1};
+    
+    RSGL::drawRect(r, oc, {.fill = false, .win = win});
+    return {(pressed > 0), pressed - 1};
 }

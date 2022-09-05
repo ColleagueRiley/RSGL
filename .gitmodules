@@ -1,0 +1,3 @@
+[submodule "RSGL-static"]
+	path = RSGL-static
+	url = https://github.com/RSGL/RSGL-static

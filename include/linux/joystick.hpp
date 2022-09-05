@@ -1,4 +1,5 @@
 #pragma once
+#ifdef RSGLBROKENJOY
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -73,4 +74,5 @@ RSGL::joystick::joystick(std::string Device, int global){
     if (js == -1) perror("Could not open joystick");
 //    if (global) joysticks.insert(joysticks.end(),this);
 }
+#endif
 #endif
