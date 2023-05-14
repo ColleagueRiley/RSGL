@@ -43,7 +43,7 @@
 
 namespace RSGL{
     struct audioData{
-        char* file;
+        RSGL::string file;
         ma_decoder decoder;
         ma_result result;
         ma_device device;
@@ -52,18 +52,18 @@ namespace RSGL{
     audioData* aData;
     size_t aDataSize = 0;
 
-    int str2num(char* f);
+    int str2num(RSGL::string f);
     void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 }
 
-void RSGL::audio::play(char* file){
-    if (!inited){
+void RSGL::audio::play(RSGL::string file){
+    if (file.size()) {
         aDataSize++;
         aData = (audioData*)realloc(aData, aDataSize * sizeof(audioData));
 
         this->file = file;
         aData[aDataSize - 1].file = file;
-        aData[aDataSize - 1].result = ma_decoder_init_file(file, NULL, &aData[aDataSize - 1].decoder);
+        aData[aDataSize - 1].result = ma_decoder_init_file(file.c_str(), NULL, &aData[aDataSize - 1].decoder);
         
         if (aData[aDataSize - 1].result != MA_SUCCESS)
             printf("Could not load file: %s\n", file);
@@ -86,8 +86,6 @@ void RSGL::audio::play(char* file){
             ma_device_uninit(&aData[aDataSize - 1].device);
             ma_decoder_uninit(&aData[aDataSize - 1].decoder);
         }
-
-        inited = true;
     }
     
     play();    
@@ -149,7 +147,7 @@ void RSGL::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
     ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
 }
 
-int RSGL::str2num(char* f){
+int RSGL::str2num(RSGL::string f){
     for (int i = 0; i < aDataSize; i++)
         if (f == aData[i].file)
             return i;

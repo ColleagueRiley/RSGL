@@ -38,20 +38,6 @@
 
 #include "deps/rlgl.h"
 
-#if defined(RSGL_PRELOAD_X11) && (!defined(__unix__) || defined(_WIN32))
-#undef RSGL_PRELOAD_X11
-#endif
-
-#ifdef RSGL_PRELOAD_X11
-
-#define XDL_IMPLEMENTATION
-#define XDL_NO_DEALLOCATE
-
-#include "deps/XDL.h"
-
-XDLModule RSGL_X11module = NULL;
-#endif
-
 #ifndef RSGL_H
 #include "../RSGL.hpp"
 #endif
@@ -60,11 +46,6 @@ XDLModule RSGL_X11module = NULL;
 #include "deps/RGFW.h"
 
 namespace RSGL {
-	// the root grab function
-
-	int frames = 0;
-	int prevTime = time(0);
-
 	RSGL::area REALcurrentWindowSize;
     
 	RSGL::area* currentWindowSize() {  
@@ -74,11 +55,7 @@ namespace RSGL {
 
 int windowsOpen = 0;
 
-RSGL::window::window(RSGL::string name, RSGL::rect rect, RSGL::color c, winArgs args) {
-	#ifdef RSGL_PRELOAD_X11
-	if (RSGL_X11module == NULL) 
-		RSGL_X11module = XDL_init();
-	#endif
+RSGL::window::window(const char* title, RSGL::rect rect, RSGL::color c, winArgs args) {
 
 	unsigned long RGFWargs = 0;
 
@@ -91,7 +68,9 @@ RSGL::window::window(RSGL::string name, RSGL::rect rect, RSGL::color c, winArgs 
 
     RGFW_setGLVersion(3, 3);
 
-    source = RGFW_createWindowPointer(name.src, rect.x, rect.y, rect.w, rect.h, RGFWargs);
+    source = RGFW_createWindowPointer((char*)title, rect.x, rect.y, rect.w, rect.h, RGFWargs);
+	
+	name = source->name;
 
     int* screenR = (int*)RGFW_getScreenSize(source);
 
@@ -101,9 +80,9 @@ RSGL::window::window(RSGL::string name, RSGL::rect rect, RSGL::color c, winArgs 
         r = (RSGL::rect) {((r.x + screenR[0]) / 2), ((r.y + screenR[0]) / 2), r.w, r.h };
 
     if (args.icon.data != NULL)
-        RGFW_setIcon(source, args.icon.data, args.icon.size.w, args.icon.size.h, args.icon.n);
+        RGFW_setIcon(source, args.icon.data, args.icon.size.w, args.icon.size.h, args.icon.channels);
 
-    if (args.icon.file.size())
+    if (args.icon.file)
         changeIcon(args.icon.file);
 
     if (args.autoResize)
@@ -111,7 +90,6 @@ RSGL::window::window(RSGL::string name, RSGL::rect rect, RSGL::color c, winArgs 
 
     this->r = rect;
     color = c;
-    name = name;
 
     RGFW_makeCurrent(source);
 
@@ -125,9 +103,9 @@ RSGL::window::window(RSGL::string name, RSGL::rect rect, RSGL::color c, winArgs 
 	windowsOpen++;
 }
 
-void RSGL::window::changeIcon(string icon) {
+void RSGL::window::changeIcon(const char* icon) {
     int w, h, n;
-    unsigned char* data = stbi_load(icon.src, &w, &h, &n, 0);
+    unsigned char* data = stbi_load(icon, &w, &h, &n, 0);
 
     changeIcon(data, w, h, n);
 
@@ -142,6 +120,7 @@ RSGL::event RSGL::window::checkEvents(bool setCurrentDrawingContext) {
     source->y = r.y;
     source->w = r.w;
     source->h = r.h;
+	source->name = (char*)name;
 	source->fpsCap = fpsCap;
 
     RGFW_checkEvents(source);
@@ -171,31 +150,8 @@ void RSGL::window::clear() {
 	glFlush();
 }
 
-bool RSGL::window::isPressed(RSGL::string key, bool onFocus /*=false*/) { return RGFW_isPressedS(onFocus ? source : NULL, key.src); }
+bool RSGL::window::isPressed(const char* key, bool onFocus /*=false*/) { return RGFW_isPressedS(onFocus ? source : NULL, (char*)key); }
 bool RSGL::window::isPressed(unsigned int key, bool onFocus /*=false*/) { return RGFW_isPressedI(onFocus ? source : NULL, key); }
-
-bool RSGL::window::isPressed(vector<unsigned int> key, bool onFocus /*=false*/, bool OR /*=false*/) { 
-	size_t size = sizeof(key)/sizeof(unsigned int);
-
-	for (unsigned int i = 0; i < size; i++) {
-		if (OR && isPressed(key[i], onFocus))
-			return true;
-		else if (!OR && !isPressed(key[i], onFocus)) /* AND */
-			return false;
-	}
-
-	return !OR; /* if it's OR, nothing passsed, if it's AND, everything passed */
-}
-
-bool RSGL::window::isPressed(RSGL::vector<string> key, bool onFocus /*=false*/, bool OR /*=false*/) { 
-	size_t size = sizeof(key)/sizeof(char*);
-	vector<unsigned int> keyS;
-
-	for (unsigned int i = 0; i < size; i++)
-		keyS.push_back(RGFW_keyStrToKeyCode(key[i].src));  
-
-	return isPressed(keyS, onFocus, OR);
-}
 
 RSGL::rect RSGL::window::fullscreen() {
     int* screenR = (int*)RGFW_getScreenSize(source);
@@ -213,24 +169,12 @@ bool RSGL::window::isOpen(bool autoClear, bool autoClose) {
 	if (autoClear)
 		clear();
 
-	if (checkEvents().type != RSGL::quit)
-		return true;
-
-	else {
-		if (autoClose)
-			close();
-		return false;
-	}
+	return (checkEvents().type != RSGL::quit);
 }
 
 void RSGL::window::close() {
     rlglClose();
     RGFW_closeWindow(source);
-
-	#ifdef RSGL_PRELOAD_X11
-	if (!windowsOpen)
-		XDL_close(RSGL_X11module);
-	#endif
 }
 
 RSGL::window::~window() { close(); }

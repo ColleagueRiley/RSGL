@@ -20,74 +20,15 @@
 *
 */
 
-#if defined(RGFW_CPP_STD) || defined(_GLIBCXX_VECTOR) /* use std::vector if it's asked for or if it's already in use anyway */
-#include <string>
-#include <vector>
-#else
-
-#include <stdlib.h>
-
-#ifndef _INITIALIZER_LIST /* don't use the slim version if the normal version is already in use*/
-namespace std {
-  template<class type>
-    struct initializer_list {
-      type* src;
-      size_t srcSize;
-
-      constexpr initializer_list(const type __a, size_t __l) : src(__a),  srcSize(__l) { }
-      constexpr initializer_list() noexcept : src(0),  srcSize(0) { }
-    };
-}
-#endif /* by default use (a super slim version of) initializer_list + our custom vector type to avoid c++ stl bloat */
-#endif
-
+#include "source/deps/RSTL.hpp"
 
 #ifndef RSGL_H
 
 struct RGFW_window;
+struct stbtt_fontinfo;
 
 namespace RSGL  {
-    #ifndef RGFW_CPP_STD
-    template<typename type>
-    struct vector {
-        type* src; /* source c-array */
-        size_t srcSize; /* size of the c-array */
-
-        void push_back(type data);
-
-        void push_back(vector<type> data);
-
-        void insert(int index, type data);
-
-        void insert(int begin, vector<type> data);
-
-        void erase(int index);
-
-        /* for backwards compatibility */
-        size_t size() { return srcSize; } 
-        type& at(int index) { return src[index]; }
-        type& back(){ return src[size() - 1]; }
-        int begin(){ return 0; } /* filler */
-
-        vector() {}
-
-        vector(type* data, size_t size);
-
-        vector(const char* string);
-
-        type& operator[](int index){ return at(index); }
-
-        ~vector() {  if (size())       free(src);  }
-
-        vector(std::initializer_list<type> list);
-        bool operator==(vector<type> vector2);
-    };
-
-    typedef vector<char> string;
-    #else
-    using std::string;
-    using std::vector;
-    #endif
+    using namespace RSTL;
 
     //! Event constants
     /** \addtogroup Events
@@ -138,75 +79,35 @@ namespace RSGL  {
     *  @{
     */
 
-    struct point {
-        bool operator==(point p) { return x == p.x && y == p.y; } //!< if one point == another point (same values)
-        bool operator!=(point p) { return !(p == *this); } //!< if one point != another point (diff values)
-        void operator+=(point p) {  x += p.x;   y += p.y;    }
-        void operator-=(point p) {  x -= p.x;     y -= p.y;  }
+    struct point { int x, y; };
+    struct area { int w, h; };
+    struct rect { int x, y, w, h; };
+    struct circle { int x, y, d; }; //!< d = diameter of the circle (radius * 2)
 
-        int x /*!< x*/, y /*!< y*/;
-    }; //!< a single points
+    typedef vector<RSGL::point, 3> triangle;
 
-    struct area {
-        bool operator==(area a) { return w == a.w && h == a.h; } //!< if one area == another area (same values)
-        bool operator!=(area a) { return w != a.w && h != a.h; } //!< if one area != another area (!same values)
-        void operator+=(area a){  w += a.w;      h += a.h; }
-        void operator-=(area a){  w -= a.w;      h -= a.h; }
-
-        int w /*!< w*/, h /*!< h*/;
-    }; //!< an width / height area
-
-    struct rect : point, area {
-        bool operator==(rect r) { return x == r.x && y == r.y && w == r.w && h == r.h; } //!< if one rect == another rect (same values)
-        bool operator!=(rect r) { return !(r == *this); }                                //!< if one rect != another rect (!same values)
-
-        rect() {}
-        rect(int X, int Y, int W, int H) {    x = X;     y = Y;     w = W;      h = H;     } //!< load with just ints
-    };                 //!< Rect is RSGL::point combined with RSGL::area
     typedef rect oval; //!< oval is the same thing as a rect struct
 
-    struct circle : point {                                                                          //!< circle as a child of point
-        int d; //!< diameter of the circle (radius * 2)
-
-        bool operator==(circle c) { return x == c.x && y == c.y && d == c.d; } //!< if one circle == another circle (same values)
-        bool operator!=(circle c) { return !(c == *this); }                    //!< if one cir != another cir (!same values)
-        void operator+=(circle c) {      x += c.x;      y += c.y;      d += c.d;     }
-        void operator-=(circle c) {      x -= c.x;      y -= c.y;      d -= c.d;     }
-
-        circle() {}
-        circle(int X, int Y, int D) {  x = X;   y = Y;    d = D;  } //!< load circle with circle values
-    };    //!< circle struct (made of x, y and d)
-
-    typedef RSGL::point triangle[3]; //!< Triangle type
     struct color {  
         unsigned char r, g, b, a; 
-        color(){} // mainly for c++98
-        color(unsigned char r, unsigned char g = 255, unsigned char b = 255, unsigned char a = 255) { this->r = r;      this->g = g;     this->b = b;      this->a = a;    }
+
+        /* mainly for c++98, allow alpha to be 255 by default */
+        color(){ } 
+        color(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255) { this->r = r;      this->g = g;     this->b = b;      this->a = a;    }
     }; //!< color structure
 
-    enum shape { RECT, LINE, CIRCLE, IMAGE, TRIANGLE, TEXT, EMPTY }; //!< shape constants
-
     struct bitmap {
-        string file;          //!< source file (Images only)
+        char* file;          //!< source file (Images only)
         RSGL::rect r;              //!< drawing rect size
         unsigned char* data;        //!< bitmap data
         unsigned int tex, ovalTex; //!< opengl texture and oval texture for adding textures to smooth ovals
         RSGL::area size;           //!< bitmap size
-        int n;                     // bitmap channels
+        int channels;                     // bitmap channels
 
-        ~bitmap();
+        ~bitmap(); /* auto free bitmap */
     }; //!< structure for bitmaps and images
 
     typedef bitmap image; //!< the image struct is the same thing as a bitmap struct
-
-    //!< font stucutre for font info
-    struct font {
-        string file; //!< font file
-        int size; //!< size of the font
-        font(string file, int size = 0) { this->file = file; this->size = size; } /* for c++98*/
-        font() {}
-    };  //!< font structure that can generally be used for a place-holder for string
-
 /** @}*/
 
 //!< window data structs/functions
@@ -221,7 +122,7 @@ namespace RSGL  {
         bool fullscreen = false; //!< if the window is full screen
         bool center = false;     //!< if the window x/y should be centered
         bool rgbaWindow = false; //!< enable this if you want your window background to have an alpha value OR if you want to make it so transparent shapes show behind the window if there's nothing behind it
-        bitmap icon = {0};        //!< custom icon (bitmap or file)
+        bitmap icon = {};        //!< custom icon (bitmap or file)
     };                           //!< args for creating a window
 
     struct event {
@@ -233,16 +134,16 @@ namespace RSGL  {
 
         unsigned keyCode; /*!< keycode of event*/
 
-        string keyName; /*!< key name of event */
+        char* keyName; /*!< key name of event */
 
         /*! drag and drop data */
         int droppedFilesCount; /*!< house many files were dropped */
-        vector<string> droppedFiles; /*!< dropped files*/
+        const char** droppedFiles; /*!< dropped files*/
 
         /*! joystick*/
         unsigned short joystick; /* which joystick this event applies to (if applicable to any) */
         unsigned char axisesCount; /* number of axises */
-        vector<string> axis; /*[4][2] array x, y of axises (-100 to 100) */
+        const char** axis; /*[4][2] array x, y of axises (-100 to 100) */
     };                                                       //!< event structure to handle events sent to a specific drawable
 
     struct debug {
@@ -252,7 +153,7 @@ namespace RSGL  {
     //! Window structure
 
     struct window {
-        string name;  //!< the name of the window
+        char* name;  //!< the name of the window
         RSGL::event event; //!< the source event struct
         RSGL::debug debug; //!< debug info for the window
         RSGL::color color; //!< the background color
@@ -269,25 +170,23 @@ namespace RSGL  {
         bool vbo;               //!< if vbo is supported or not
         bool focused = false;   //!< if the window is focused or not (updated by check events)
 
-        void setIcon(string file);                                                 //!< sets BMP! image to the icon
+        void setIcon(const char* file);                                                 //!< sets BMP! image to the icon
         RSGL::event checkEvents(bool setcurrentWindowSize = true); //!< checks if any events have been sent (is required to get events), returns an optional event struct as an alternative to win.event, this is mainly to pass the function to another function
-        bool isPressed(unsigned int keyCode, bool onFocus = false);                              //!< checks if a key has been pressed (works with key code or string)
-        bool isPressed(string keyName, bool onFocus = false);                      //!< checks if a key has been pressed (works with key code or string)
-        bool isPressed(vector<unsigned int> keys, bool onFocus = false, bool OR = false);                    //!< checks if a key has been pressed (works with key code or string)
-        bool isPressed(vector<string> keys, bool onFocus = false, bool OR = false);            //!< checks if a key has been pressed (works with key code or string)
+        bool isPressed(unsigned int keyCode, bool onFocus = false);                              //!< checks if a key has been pressed (works with key code or const char*)
+        bool isPressed(const char* keyName, bool onFocus = false);                      //!< checks if a key has been pressed (works with key code or const char*)
         void close();                                                                   //!< closes the window
         void clear();                                                                   //!< clears the display
         bool isOpen(bool autoClear = true, bool autoClose = true);    //!< clears the window (toggleable), returns true if the window hasn't been closed, if the window is cloesd (and autoClose is true), RSGL::window::close() is called
-        void changeIcon(string icon);
+        void changeIcon(const char* icon);
         void changeIcon(unsigned char* icon, int w, int h, int channels);
 
         /* global data */
         RSGL::point globalMouse(); //!< returns mouse x/y in the context of the screen
         RSGL::rect fullscreen();   //!< returns the size of the screen
 
-        window() {}
+        window() { }
         window(
-            string /*the name*/,
+            const char* /*the name*/,
             RSGL::rect /*the rect/size/x/y of the window*/,
             RSGL::color /*the background color*/,
             winArgs args = winArgs() /*other args*/
@@ -321,10 +220,6 @@ namespace RSGL  {
 
     void freeDraw(RSGL::area size = *RSGL::currentWindowSize());
 
-    /* The first index of drawArgs.gradient must hold the size of the array at the .r value (excluding the index itself)
-        ex. {{2}, {255, 0, 0, 255}, {0, 0, 255, 255}}
-    */
-
     //!< drawing functions
     struct drawArgs {
         //! general
@@ -334,17 +229,14 @@ namespace RSGL  {
         float flipVertical = 0;                      //!< how much it's flipped vertically
         float lineWidth = 0;                         //!< the width of the line
         int texture = -1;                            //!< draw a texture on it (from load/draw image/bitmap functions)
-        vector<RSGL::color> gradient = {};      //!< gradient to draw on the shapes
+        int glTexture = -1; /* actual opengl texture, (not RSGL texture from RSGL::tex) */
+        vector<RSGL::color> gradient = { };      //!< gradient to draw on the shapes
         bool vectorGraphics = true;                  // use vector graphics (textures) for circles, rounded rects or ovals
         RSGL::area windowSize = *currentWindowSize(); //!< window to write on
         //! rect/circle only
         //!< rect-only
-        bool dotted = false; //!< is it a dotted rectangle? (rect only)
         bool rounded = false;
-        RSGL::point roundPoint = {4, 4}; //!< where the rounding is : 4, 4 is good for a round rect, 24, 24 is a bean shape, 204, 204 is an oval
-        //! circle only
-        int segments = 30; //!< the amount of segments in a circle
-        bool ovalTex = false;
+        RSGL::point roundPoint = {10, 10}; //!< where the rounding is : 10, 10 is good for a round rect, 24, 24 is a bean shape, 204, 204 is an oval
         //! text only
         int scrollSpeed = 0; //!< scroll text speed, 0 for no scroll text
         int stopY = -1;      //!< scroll text stop y (-1, the end of the window)
@@ -355,17 +247,17 @@ namespace RSGL  {
      *  @{
      */
 
-    void loadFont(RSGL::font font, int size);
+    void loadFont(const char* font, int size);
 
     void drawText(
-        string text,  //!< the text to draw
+        char* text,  //!< the text to draw
         RSGL::circle c,    //!< the x, y and size the text
         RSGL::color col,   //!< the color
-        RSGL::font font,   //!< the font info
+        const char* font,   //!< the font info
         drawArgs args = drawArgs() //!< extra args
     );                     //!< function for drawing text
 
-    int textWidth(string text, RSGL::font font, int size);
+    int textWidth(const char* text, const char* font, int size);
 
     void drawPoint(
         RSGL::point p,     //!< the point to be draw
@@ -412,25 +304,24 @@ namespace RSGL  {
     );                           //!< draw polygon basd on given side count
 
     int drawImage(
-        string fileName /*the file to draw*/,
+        const char* fileName /*the file to draw*/,
         RSGL::rect r /*the width/heigth/x/y to put the image*/,
         drawArgs args = drawArgs()                            //!< extra args
     );                                                //!< draws a image on the screen (returns the index texture in the texture buffer)
     int drawImage(RSGL::image r, drawArgs args = drawArgs()); //!< draw image on screen based on image struct (returns the index texture in the texture buffer)
-
-    int loadImage(string file);                                      //!< loads a image into the texture buffer without drawing (returns the index texture in the texture buffer)
+    
     int loadBitmap(unsigned char *data, int channels, RSGL::area memsize); //!< load a bitmap into the texture buffer (no drawing) (returns the index texture in the texture buffer)
 
     void freeBitmap(unsigned int tex);
     void freeImage(unsigned int tex);
 
     void freeBitmap(unsigned char *data);
-    void freeImage(string file);
+    void freeImage(const char* file);
 
     int drawBitmap(
         unsigned char *data,                      //!< 1D bitmap
         RSGL::rect r,                            //!< size to draw
-        unsigned char channels,                            //!< channels in data
+        char channels,                            //!< channels in data
         RSGL::area memsize,                      //!< size of data
         RSGL::drawArgs args = drawArgs(),                //!< optional args for drawing
         RSGL::color color = (RSGL::color){255, 255, 255, 255} //!< optional forced color
@@ -451,11 +342,11 @@ namespace RSGL  {
 
 #ifndef RSGL_NO_AUDIO
     struct audio {
-        string file;
-        bool inited = false;
-        bool loop;
+        char* file = NULL;
 
-        void play(string file);
+        bool loop = 0;
+
+        void play(const char* file);
         void play();
         void pause();
         void stop();
@@ -480,9 +371,6 @@ namespace RSGL  {
 
 
 #ifdef RSGL_IMPLEMENTATION
-#include "source/vector.cpp"
-
-
 #include "source/rsgl.cpp"
 #include "source/draw.cpp"
 #include "source/collide.cpp"

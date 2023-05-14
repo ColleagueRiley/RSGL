@@ -22,11 +22,12 @@
 
 #ifndef RSGL_H
 #include "../include/RSGL.hpp"
+#endif
+
 #ifdef WINE
 #include <wine/math.h>
 #else
 #include <math.h>
-#endif
 #endif
 
 namespace RSGL {

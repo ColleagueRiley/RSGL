@@ -530,7 +530,7 @@ XDLModule XDL_init() {
     glXSwapIntervalEXTSrc =  (PFN_glXSwapIntervalEXT)dlsym(module[1], "glXSwapIntervalEXT"); 
     glXGetProcAddressSrc = (PFN_glXGetProcAddress)dlsym(module[1], "glXGetProcAddress"); 
     glXGetVisualFromFBConfigSrc = (PFN_glXGetVisualFromFBConfig)dlsym(module[1],"glXGetVisualFromFBConfig");
-    glXGetFBConfigAttribSrc = (PFN_glXGetFBConfigAttrib)dlsym(module[1],"glXGetFBConfigAttrib");
+    glXGetFBConfigAttribSrc == (PFN_glXGetFBConfigAttrib)dlsym(module[1],"glXGetFBConfigAttrib");
     glXGetProcAddressARBSrc = (PFN_glXGetProcAddressARB)dlsym(module[1],"glXGetProcAddressARB");
     glXChooseFBConfigSrc = (PFN_glXChooseFBConfig)dlsym(module[1],"glXChooseFBConfig");
     #endif

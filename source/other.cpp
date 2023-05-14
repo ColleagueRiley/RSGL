@@ -24,6 +24,7 @@
 #include "../include/RSGL.hpp" 
 #endif
 
+#include <ctime>
 
 bool RSGL::timerT(int ticks){
     static int i = 0, tickLimit = 0;

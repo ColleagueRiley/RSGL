@@ -39,130 +39,100 @@
 
 #define glTexCoord2iXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
 #define glTexCoord2fXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
-#define glColor4iFF(args, index) if (args.gradient.size() > index) rlColor4ub((args.gradient)[index].r, (args.gradient)[index].g, (args.gradient)[index].b, (args.gradient)[index].a);
+#define glColor4iFF(args, index) \
+    if (args.gradient.size() > index) \
+        rlColor4ub(args.gradient[index].r, args.gradient[index].g, args.gradient[index].b, args.gradient[index].a);
 
 namespace RSGL {
     extern RSGL::area REALcurrentWindowSize;
 
     void glPrerequisites(RSGL::rect r, RSGL::color c, RSGL::drawArgs arg = drawArgs(), RSGL::point customTranslate = (RSGL::point){-1, -1}, bool startFromDown = false);
 
-    void drawDottedLine(RSGL::rect r,RSGL::color c, RSGL::drawArgs args, bool t = false);
-    void drawRoundRect(RSGL::rect rect, RSGL::color c, RSGL::drawArgs args = drawArgs());
     void drawSoftOval(RSGL::rect oval, RSGL::color c, RSGL::drawArgs args = drawArgs());
 
     vector<RSGL::image> tex; // cache for loading images
     size_t texSize = 0;
     // vector of cached loaded fonts
-    RSGL::font* fonts;
+
   
-    void loadFont(RSGL::font font, int size) {
+    void loadFont(const char* font, int size) {
 
     }
 
-    void drawText(RSGL::string text, RSGL::circle c, color color, RSGL::font font, RSGL::drawArgs args/* = {}*/) {    
+    void drawText(const char* text, RSGL::circle c, color color, const char* font, RSGL::drawArgs args/* = {}*/) {    
         REALcurrentWindowSize = args.windowSize;
 
     }
 
-    // draw a doted line function
-    void drawDottedLine(RSGL::rect r,RSGL::color c, RSGL::drawArgs args, bool t) {
-        if (t) {
-            RSGL::drawDottedLine(rect(r.x, r.y, r.x+r.w, r.y), c, args);
-            RSGL::drawDottedLine(rect(r.x, r.y, r.x, r.y+r.h), c, args);
-            RSGL::drawDottedLine(rect(r.x+ r.w, r.y, r.x+r.w, r.y+r.h), c, args);
-
-            RSGL::drawDottedLine(rect(r.x, r.y+r.h, r.x+r.w ,r.y+r.h), c, args);
-        }   
-        else{
-            int x0 = r.x, y0 = r.y, x1 = r.w, y1 = r.h;
-            int dx =  abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-            int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-            int err = dx + dy, e2;
-            int count = 0;
-
-            glPrerequisites(r, c, args);
-
-            float vbo[r.w + r.h/10];
-            //glVboON = args.win.vbo;
-
-            rlBegin(RL_LINES); 
-            while (x0 != x1 && y0 != y1) {
-                if (count < 10) {
-                    float x2 = x0;
-                    float y2 = y0;
-                    rlColor4ub(c.r, c.g, c.b, c.a);
-                    rlVertex2f(x2, y2);
-                }
-                if (x0 == x1 && y0 == y1) break;
-
-                e2 = 2*err;
-                if (e2 > dy) { 
-                    err += dy; 
-                    x0 += sx; 
-                }
-                else if (e2 < dx) { 
-                    err += dx; 
-                    y0 += sy; 
-                }
-                
-                count = (count + 1) % 20;
-            }
-            rlEnd();
-            rlPopMatrix();
-            glFlush();
-        }
-    }
+    void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs d);
 
     void drawRect(RSGL::rect r,color c, drawArgs args/*={}*/) {
         REALcurrentWindowSize = args.windowSize;
 
         // rounded rect
         if (args.rounded)
-        RSGL::drawRoundRect(r, c, args);
-
-        // dotted rect
-        else if (args.dotted)
-            RSGL::drawDottedLine(r, c, args, true);
+            RSGL::drawRoundRect(r, c, args);
 
         // draw rect with opengl
         else {
-            unsigned int m = (args.fill) ? RL_TRIANGLES :  RL_LINES; // switch the draw type if it's not filled
+            unsigned int m = (args.fill) ? RL_QUADS :  RL_LINES; // switch the draw type if it's not filled
 
-            if (args.texture != -1) {
+            
+            if (args.texture != -1 || args.glTexture != -1) {
                 c.r = c.g = c.b = c.a = 255; // for c++ 98 
 
-                glEnable(GL_TEXTURE_2D);
+                glEnable(GL_TEXTURE_2D);    
 
-                if (args.ovalTex)
-                    glBindTexture(GL_TEXTURE_2D, RSGL::tex[args.texture].ovalTex);
-                else
-                    glBindTexture(GL_TEXTURE_2D, RSGL::tex[args.texture].tex);
+                rlSetTexture(args.texture != -1 ?   RSGL::tex[args.texture].tex   :   args.glTexture);
             }
 
-                   
             glPrerequisites(r, c, args);   
-        
-            rlBegin(m); // start drawing the rect
-                    glColor4iFF(args, 0); glTexCoord2iXX(0, 0, args.texture);
-                    rlVertex2f(r.x, r.y);
-                    glColor4iFF(args, 3); glTexCoord2iXX(1, 1, args.texture);
-                    rlVertex2f(r.x + r.w, r.y + r.h);
-                    glColor4iFF(args, 1); glTexCoord2iXX(0, 1, args.texture);
-                    rlVertex2f(r.x + r.w, r.y);
+                rlBegin(m); // start drawing the rect
+                    if (args.fill) {
+                        RSGL::glPrerequisites(r, c);
+                        rlBegin(RL_QUADS);
+                            glColor4iFF(args, 0); 
+                            glTexCoord2iXX(0, 0, args.texture);
+                            rlVertex2f(r.x, r.y);
 
-                    glColor4iFF(args, 0); glTexCoord2iXX(0, 0, args.texture);
-                    rlVertex2f(r.x, r.y);
-                    glColor4iFF(args, 2); glTexCoord2iXX(0, 1, args.texture);
-                    rlVertex2f(r.x, r.y + r.h);
-                    glColor4iFF(args, 3); glTexCoord2iXX(1, 1, args.texture);
-                    rlVertex2f(r.x + r.w, r.y + r.h);
-            rlEnd();
+                            glColor4iFF(args, 2); 
+                            glTexCoord2iXX(0, 1, args.texture);
+                            rlVertex2f(r.x, r.y + r.h);
+
+                            glColor4iFF(args, 3); 
+                            glTexCoord2iXX(1, 1, args.texture);
+                            rlVertex2f(r.x + r.w, r.y + r.h);
+                                
+                            glColor4iFF(args, 1); 
+                            glTexCoord2iXX(1, 0, args.texture);
+                            rlVertex2f(r.x + r.w, r.y);
+                        rlEnd();
+                        rlPopMatrix();
+                    } else {
+                        glColor4iFF(args, 0);
+                        rlVertex2f(r.x, r.y);
+                        rlVertex2f(r.x + r.w, r.y);
+
+                        glColor4iFF(args, 3);
+                        rlVertex2f(r.x + r.w, r.y);
+                        rlVertex2f(r.x + r.w, r.y + r.h);
+
+                        glColor4iFF(args, 1);
+                        rlVertex2f(r.x + r.w, r.y + r.h);
+                        rlVertex2f(r.x, r.y + r.h);
+                        
+                        glColor4iFF(args, 2);
+                        rlVertex2f(r.x, r.y + r.h);
+                        rlVertex2f(r.x, r.y);
+                    }
+                rlEnd();
 
             rlPopMatrix(); // end of matrix
-            
+
             if (args.texture != -1) {
                 glDisable(GL_TEXTURE_2D);
-                glBindTexture(GL_TEXTURE_2D, 0); 
+
+                rlSetTexture(0);
             }
         }
     }
@@ -172,7 +142,7 @@ namespace RSGL {
 
         glPrerequisites((rect){p1.x, p1.y, abs(p1.x - p2.x), abs(p1.y - p2.y)}, c, args);   
 
-            rlBegin(RL_LINES); // start drawing the line
+            rlBegin(RL_QUADS); // start drawing the line
                 rlColor4ub(c.r, c.g, c.b, c.a); // set the color of the line
 
                 rlVertex2f(p1.x, p1.y);
@@ -185,30 +155,54 @@ namespace RSGL {
         REALcurrentWindowSize = args.windowSize;
             
         RSGL::point cen = (point){
-            (t[0].x + t[1].x + t[2].x) / 3,
-            (t[0].y + t[1].y + t[2].y) / 3
+            (t[0].x+ t[1].x + t[2].x) / 3,
+            (t[0].y+ t[1].y + t[2].y) / 3
         };
 
         int xx = args.texture; 
 
         if (xx != -1) {
             glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, RSGL::tex[xx].tex);
+            rlSetTexture(RSGL::tex[xx].tex);
             c.r = c.g = c.b = c.a = 255; // for c++ 98 
         }
 
-        glPrerequisites(rect(t[1].x, t[2].y, abs(t[1].x - t[0].x), abs(t[1].y - t[2].y)), c, args, cen);
-            unsigned int m = (args.fill) ? GL_TRIANGLES :  GL_LINE_LOOP; // switch the draw type if it's not filled
+        glPrerequisites((rect){t[1].x, t[2].y, abs(t[1].x - t[0].x), abs(t[1].y - t[2].y)}, c, args, cen);
+            unsigned int m = (args.fill) ? RL_QUADS :  GL_LINES; // switch the draw type if it's not filled
 
             rlBegin(m); // start drawing
-                glColor4iFF(args, 0);
-                glTexCoord2fXX(0.5, 0, xx); rlVertex2f(t[2].x, t[2].y);
-                glColor4iFF(args, 1);
-                glTexCoord2iXX(0, 1, xx); rlVertex2f(t[0].x, t[0].y);
-                glColor4iFF(args, 2);
-                glTexCoord2iXX(1, 1, xx); rlVertex2f(t[1].x, t[1].y);
+                if (args.fill) {
+                    glColor4iFF(args, 0);
+                    glTexCoord2fXX(1, 1, xx); 
+                    rlVertex2f(t[2].x, t[2].y);
+                    
+                    glColor4iFF(args, 1);
+                    glTexCoord2iXX(0, 0, xx); 
+                    rlVertex2f(t[0].x, t[0].y);
 
-                // {{200, 400}, {400, 400}, {300, 200};
+                    glColor4iFF(args, 1);
+
+                    if ((float)(t[2].x - t[0].x)/t[1].x < 1)
+                        glTexCoord2iXX((float)(t[2].x - t[0].x)/t[1].x, 0, xx); 
+                    rlVertex2f(t[0].x, t[0].y);
+                    
+                    glColor4iFF(args, 0);
+                    glTexCoord2iXX(0, 1, xx); 
+                    rlVertex2f(t[1].x, t[1].y);
+                }
+                else {
+                    glColor4iFF(args, 0);
+                    rlVertex2f(t[2].x, t[2].y);
+                    rlVertex2f(t[0].x, t[0].y);
+
+                    glColor4iFF(args, 1);
+                    rlVertex2f(t[0].x, t[0].y);
+                    rlVertex2f(t[1].x, t[1].y);
+
+                    glColor4iFF(args, 2);
+                    rlVertex2f(t[1].x, t[1].y);
+                    rlVertex2f(t[2].x, t[2].y);
+                }
             rlEnd(); // end drawing
         
         rlPopMatrix(); // end of opengl matrix
@@ -220,15 +214,15 @@ namespace RSGL {
     }
 
     void drawPoint(RSGL::point p, color c, RSGL::drawArgs args) { 
-        RSGL::drawRect(rect(p.x, p.y, 1, 1), c, args); // just draw a 1x1 rect  
+        RSGL::drawRect((rect){p.x, p.y, 1, 1}, c, args); // just draw a 1x1 rect  
     }
 
     void drawCircle(RSGL::circle c, RSGL::color color, RSGL::drawArgs args) {
-        RSGL::drawOval(rect(c.x, c.y, c.d, c.d), color, args);
+        RSGL::drawOval((rect){c.x, c.y, c.d, c.d}, color, args);
     }
 
     void drawOval(RSGL::oval o, RSGL::color c, RSGL::drawArgs args) {
-        if (args.gradient[0].r)
+        if (args.vectorGraphics)
             return RSGL::drawSoftOval(o, c, args);
         else 
             return RSGL::drawPolygon(o, c, 360, args);
@@ -246,31 +240,38 @@ namespace RSGL {
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, RSGL::tex[xx].tex);
         }
+
+        o.w /= 2;
+        o.h /=2;
+
+        o.x += o.w;
+        o.y += o.h;
+        float centralAngle = args.rotationAngle;
         
         glPrerequisites(o, color, args);
-        rlBegin(args.fill ? RL_TRIANGLES : RL_LINES);
+        rlBegin(args.fill ? RL_QUADS : RL_LINES);
+            for (int i = 0; i < sides; i++) {
+                rlColor4ub(color.r, color.g, color.b, color.a);
 
-        int j = 0;
+                if (args.fill) {
+                    rlTexCoord2f(0, 0);
+                    rlVertex2f(o.x, o.y);
 
-        for(i = 0; i < 3; i++) {
-            float rad = (360 / args.segments * i) * (M_PI / 180.0);
+                    rlTexCoord2f(0, (sinf(DEG2RAD*centralAngle)*o.w)/o.w);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
 
-            float xcos = (float)cos(rad);
-            float ysin = (float)sin(rad);
-            float ztan = (float)tanf(rad);
-            
-            float tx = xcos * 0.5 + 0.5;
-            float ty = ysin * 0.5 + 0.5;
-            float tz = ztan * 0.5 + 0.5;
-            
-            /*glColor4iFF(args, (int)(ty*10))
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
 
-            glTexCoord2fXX(tx, ty, xx);*/
-
-            rlVertex2f( o.x + xcos, o.y + ysin);
-
-        }
-
+                    centralAngle += 360.0f/(float)sides;
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
+                } else {
+                    glColor4iFF(args, 0);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.w);
+                    centralAngle += 360.0f/(float)sides;
+                    glColor4iFF(args, 1);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
+                }
+            }
         rlEnd();
         rlPopMatrix();
 
@@ -280,7 +281,7 @@ namespace RSGL {
         }
     }
 
-    int drawBitmap(unsigned char* data, RSGL::rect rect, unsigned char channels, RSGL::area memsize, RSGL::drawArgs args, RSGL::color color) {
+    int drawBitmap(unsigned char* data, RSGL::rect rect, char channels, RSGL::area memsize, RSGL::drawArgs args, RSGL::color color) {
         REALcurrentWindowSize = args.windowSize;
 
         int xx = -1; // check indexs of texs this is
@@ -295,12 +296,40 @@ namespace RSGL {
         }
 
         if (xx == -1) {    
-            unsigned int texture = rlLoadTexture(data, memsize.w, memsize.h, (channels == 3) ? RL_PIXELFORMAT_COMPRESSED_DXT1_RGB : RL_PIXELFORMAT_COMPRESSED_DXT1_RGBA, 1);
+            unsigned int texture;
+
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+
+            unsigned int c = channels > 0 ? GL_RGBA : GL_BGRA;
+            
+            switch (channels) {
+                case -3: c = GL_ALPHA; break;
+                case -2: c = GL_GREEN; break;
+                case -1: c = GL_BLUE; break;
+                case 1: c = GL_RED; break;
+                case 2: c = GL_RG; break;
+                case 3: c = GL_RGB; break;
+                case 4: c = GL_RGBA; break;
+                default: break;
+            }
+
+
+            glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, data);
+            
+
+            glBindTexture(GL_TEXTURE_2D, 0);
 
             texSize++;
             tex.push_back(RSGL::image());
 
-            xx = texture - 1;
+            xx = tex.size() - 1;
 
             tex[xx].data = data;
             tex[xx].tex = texture;
@@ -316,7 +345,7 @@ namespace RSGL {
 
     int drawImage(RSGL::image r, RSGL::drawArgs args/*={}*/) { return drawImage(r.file, r.r, args); }
 
-    int drawImage(RSGL::string file, RSGL::rect r, RSGL::drawArgs args/*={}*/) { 
+    int drawImage(const char* file, RSGL::rect r, RSGL::drawArgs args/*={}*/) { 
         int xx = -1;
        
         for (int i = 0; i < texSize; i++) /* check if the file has already been loaded */
@@ -326,13 +355,13 @@ namespace RSGL {
         if (xx == -1) {
             int w, h, c; /* else load the file */
             
-            unsigned char* data = stbi_load(file.src, &w, &h, &c, 0);
+            unsigned char* data = stbi_load((char*)file, &w, &h, &c, 0);
 
             xx = drawBitmap(data, (rect){0, 0, 0, 0}, c, (area){w, h}, args);
-        
-            tex[xx].file = file;
-        }
 
+            tex[xx].file = (char*)file;
+        }
+        
         args.texture = xx;
 
         RSGL::color c;
@@ -346,26 +375,24 @@ namespace RSGL {
     void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs d) {
         d.rounded = false;
 
-        RSGL::drawRect(RSGL::rect(r.x + (d.roundPoint.x/2), r.y, r.w - d.roundPoint.x, r.h), c, d);
-        RSGL::drawRect(RSGL::rect(r.x, r.y + (d.roundPoint.y/2), r.w,  r.h - d.roundPoint.y), c, d);
+        RSGL::drawRect((RSGL::rect){r.x + (d.roundPoint.x/2), r.y, r.w - d.roundPoint.x, r.h}, c, d);
+        RSGL::drawRect((RSGL::rect){r.x, r.y + (d.roundPoint.y/2), r.w,  r.h - d.roundPoint.y}, c, d);
 
-        RSGL::drawOval(RSGL::rect(r.x, r.y, d.roundPoint.x, d.roundPoint.y), c, d);
-        RSGL::drawOval(RSGL::rect(r.x + (r.w - d.roundPoint.x), r.y, d.roundPoint.x, d.roundPoint.y), c, d);
-        RSGL::drawOval(RSGL::rect(r.x + (r.w - d.roundPoint.x), r.y  + (r.h - d.roundPoint.y), d.roundPoint.x, d.roundPoint.y), c, d);
-        RSGL::drawOval(RSGL::rect(r.x, r.y  + (r.h - d.roundPoint.y),  d.roundPoint.x, d.roundPoint.y), c, d);
+        RSGL::drawOval((RSGL::rect){r.x, r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect){r.x + (r.w - d.roundPoint.x), r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect){r.x + (r.w - d.roundPoint.x), r.y  + (r.h - d.roundPoint.y), d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect){r.x, r.y  + (r.h - d.roundPoint.y),  d.roundPoint.x, d.roundPoint.y}, c, d);
     }
 
     void drawSoftOval(RSGL::rect rect, RSGL::color c, RSGL::drawArgs args) {
         REALcurrentWindowSize = args.windowSize;
 
-        RSGL::image r;
-        r.r = rect;
 
         int xx = -1; // check indexs of texs this is
 
         // try to find if the rect has been preloaded
-        if (texSize && args.texture == -1) { 
-            for (int i=0; i < texSize; i++) { 
+        if (tex.size() && args.texture == -1) { 
+            for (int i=0; i < tex.size(); i++) { 
                 if (RSGL::tex[i].file == (char*)"RSGLOVAL" && RSGL::tex[i].r.w == rect.w && RSGL::tex[i].r.h == rect.h) {
                     xx = i;
                     break;
@@ -375,41 +402,37 @@ namespace RSGL {
 
         if (xx==-1 && args.texture == -1) { // load the image if it has not been preloaded
             int w, h, n = 4;
-            r.n = 4;
-            
-            char* file;
+            unsigned char channels = 4;
+
+            char file[165];
             sprintf(file, "<rect\nfill=\"rgb(255, 255, 255)\"\nwidth=\" %i \"\nheight=\" %i \"\nstroke=\"rgb(255, 255, 255)\"\n"
                             "stroke-width=\" %i \"\nfill-opacity=\" %i \"\nstroke-opacity=\"1\"\nrx=\"204\"\nry=\"204\">",
                     rect.w, rect.h, (!args.fill) + args.lineWidth, args.fill
             );
-
+            
             NSVGimage* image = nsvgParse(file, "px", 96); // load the file
             
             // grab width/height
-            r.size = RSGL::rect(0, 0, (int)image->width, (int)image->height);
+            RSGL::area size = {(int)image->width, (int)image->height};
 
             NSVGrasterizer* rast = nsvgCreateRasterizer(); // create rasterzing object for "flattening"
 
-            r.data = (unsigned char*)malloc(image->width*image->height*4); // make data with room for the image
+            unsigned char* data = (unsigned char*)malloc(image->width*image->height*4); // make data with room for the image
 
-        
-            nsvgRasterize(rast, image, 0,0,1, r.data, image->width,image->height, image->width*4); // load the flattened image into the data
-            RSGL::drawBitmap(r.data, r.r, n, r.size, args);
+            nsvgRasterize(rast, image, 0,0,1, data, image->width,image->height, image->width*4); // load the flattened image into the data
+            xx = RSGL::drawBitmap(data, RSGL::rect(), n, size, args);
 
             // free data
             nsvgDelete(image);
             nsvgDeleteRasterizer(rast);
             
-            RSGL::tex[texSize - 1].file = (char*)"RSGLOVAL";
-            RSGL::tex[texSize - 1].r = rect;
-            xx = texSize - 1;
+            RSGL::tex[xx].file = (char*)"RSGLOVAL";
+            RSGL::tex[xx].r = rect;
         }
 
-        else{
+        else {
             if (args.texture == -1)
                 args.texture = xx;
-            else
-                args.ovalTex = true;
 
             if (!sizeof(args.gradient))
                 args.gradient[0] = c;
@@ -420,12 +443,12 @@ namespace RSGL {
         }
     }
 
-    int loadImage(RSGL::string file) { 
-        return RSGL::drawImage(file, rect(0, 0, 0, 0)); 
+    int loadImage(const char* file) { 
+        return RSGL::drawImage((char*)file, (rect){0, 0, 0, 0}); 
     }
 
     int loadBitmap(unsigned char* data, int channels, RSGL::area memsize) {
-         return RSGL::drawBitmap(data, rect(0, 0, 0, 0), channels, memsize);
+         return RSGL::drawBitmap(data, (rect){0, 0, 0, 0}, channels, memsize);
     }
 
     void freeBitmap(int tex) {
@@ -445,7 +468,7 @@ namespace RSGL {
             } 
     }
 
-    void freeImage(RSGL::string file) { 
+    void freeImage(const char* file) { 
         for (int i=0; i < texSize; i++)
             if (RSGL::tex[i].file == file) {
                 RSGL::freeImage(i);
