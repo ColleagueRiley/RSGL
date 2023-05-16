@@ -35,7 +35,8 @@
 #endif
 #include "deps/stb_image.h"
 
-#include <GL/gl.h>
+#include "deps/fontstash.h"
+#include "deps/glfontstash.h"
 
 #define glTexCoord2iXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
 #define glTexCoord2fXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
@@ -44,6 +45,8 @@
         rlColor4ub(args.gradient[index].r, args.gradient[index].g, args.gradient[index].b, args.gradient[index].a);
 
 namespace RSGL {
+    FONScontext* FONSfs = NULL;
+
     extern RSGL::area REALcurrentWindowSize;
 
     void glPrerequisites(RSGL::rect r, RSGL::color c, RSGL::drawArgs arg = drawArgs(), RSGL::point customTranslate = (RSGL::point){-1, -1}, bool startFromDown = false);
@@ -51,17 +54,106 @@ namespace RSGL {
     void drawSoftOval(RSGL::rect oval, RSGL::color c, RSGL::drawArgs args = drawArgs());
 
     vector<RSGL::image> tex; // cache for loading images
-    size_t texSize = 0;
-    // vector of cached loaded fonts
+    vector<RSGL::font> fonts; // vector of cached loaded fonts
 
-  
-    void loadFont(const char* font, int size) {
+    RSGL::font::font(const char* File, int Size){ 
+        size = Size; 
+        file = (char*)File; 
 
+        if (FONSfs == NULL)
+            FONSfs = glfonsCreate(500, 500, 1);
+
+        fonsFont = fonsAddFont(FONSfs, "sans", File);
+        
+        if(fonsFont == FONS_INVALID) 
+            printf("failed to open font\n"); 
     }
 
-    void drawText(const char* text, RSGL::circle c, color color, const char* font, RSGL::drawArgs args/* = {}*/) {    
-        REALcurrentWindowSize = args.windowSize;
+    int textWidth(const char* text, RSGL::font font, int size){
+        fonsSetSize(FONSfs, size);
+        fonsSetFont(FONSfs, font.fonsFont);
+        return fonsTextBounds(FONSfs, 0, 0, text, NULL, NULL);
+    }
 
+    void loadFont(RSGL::font font, int size){
+        bool loaded = false; 
+
+
+        for (int i = 0; i < fonts.size(); i++){ 
+            if (fonts[i].file == font.file){ 
+                font = fonts[i];
+                loaded = true; 
+                break; 
+            }
+        } // check if the font is in fonts
+
+        if (!loaded){ // if it's not in fonts, load the font into fonts
+            font = RSGL::font(font.file, size);
+            fonts.push_back(font); 
+        } 
+    }
+
+    void drawText(const char* text, RSGL::circle c, color color, RSGL::font font, RSGL::drawArgs args/* = {}*/){    
+        RSGL::font Font; // current font
+
+        bool loaded = false; 
+
+
+        for (int i = 0; i < fonts.size(); i++){ 
+            if (fonts[i].file == font.file){ 
+                Font = fonts[i];
+                loaded = true; 
+                break; 
+            }
+        } // check if the font is in fonts
+    
+        if (!loaded){ // if it's not in fonts, load the font into fonts
+            Font = RSGL::font(font.file, c.d);
+            fonts.push_back(Font); 
+        } 
+
+        int w = fonsTextBounds(FONSfs, c.x, c.y, text, NULL, NULL);
+
+        fonsClearState(FONSfs);
+
+        fonsSetSize(FONSfs, c.d);
+        fonsSetFont(FONSfs, Font.fonsFont);
+
+        glPrerequisites({c.x, c.y + (c.d - (c.d/4)), w, c.d}, color, args);
+  
+        fonsSetColor(FONSfs, glfonsRGBA(color.r, color.b, color.g, color.a));
+
+        RSGL::vector<char*> texts = {" "};
+        texts.erase(0);
+
+        char* col = (char*)malloc(0);
+        size_t strSize = 0;
+        
+        for (int i = 0; i < strlen(text); i++) {        
+            strSize++;
+            col = (char*)realloc(col, strSize);
+            col[strSize - 1] = text[i];
+            
+            if (i == strlen(text) - 1) {
+                //printf("%s\n", col);
+                texts.push_back(col);
+                //printf("%s\n", texts[texts.size() - 1]);
+
+                //free(col);
+                //col = (char*)realloc(col, 0);
+            }
+        }
+
+        //free(col);
+
+        int nly = 0;
+        
+        for (int i = 0; i < texts.size(); i++) {
+            fonsDrawText(FONSfs, c.x, c.y + (c.d - (c.d/4)) + nly, texts[i], NULL);
+            nly += c.d;
+        } 
+
+        rlPopMatrix();
     }
 
     void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs d);
@@ -287,8 +379,8 @@ namespace RSGL {
         int xx = -1; // check indexs of texs this is
 
         // try to find if the image has been preloaded
-        if (texSize) { 
-            for (int i=0; i < texSize; i++)
+        if (tex.size() && args.preLoad) { 
+            for (int i=0; i < tex.size(); i++)
                 if (sizeof(data) == sizeof(RSGL::tex[i].data) && !memcmp(data, RSGL::tex[i].data, sizeof(data))) {
                     xx = i;
                     break;
@@ -305,7 +397,8 @@ namespace RSGL {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+            //glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
 
             unsigned int c = channels > 0 ? GL_RGBA : GL_BGRA;
             
@@ -326,7 +419,6 @@ namespace RSGL {
 
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            texSize++;
             tex.push_back(RSGL::image());
 
             xx = tex.size() - 1;
@@ -348,7 +440,7 @@ namespace RSGL {
     int drawImage(const char* file, RSGL::rect r, RSGL::drawArgs args/*={}*/) { 
         int xx = -1;
        
-        for (int i = 0; i < texSize; i++) /* check if the file has already been loaded */
+        for (int i = 0; i < tex.size(); i++) /* check if the file has already been loaded */
             if (file == tex[i].file) 
                 xx = i;
 
@@ -454,7 +546,7 @@ namespace RSGL {
     void freeBitmap(int tex) {
         RSGL::tex[tex].~bitmap();
 
-        for (int i = tex; i < RSGL::texSize; i++)
+        for (int i = tex; i < RSGL::tex.size(); i++)
             RSGL::tex[i] = RSGL::tex[i+1];
     }
 
@@ -469,7 +561,7 @@ namespace RSGL {
     }
 
     void freeImage(const char* file) { 
-        for (int i=0; i < texSize; i++)
+        for (int i=0; i < tex.size(); i++)
             if (RSGL::tex[i].file == file) {
                 RSGL::freeImage(i);
                 break;

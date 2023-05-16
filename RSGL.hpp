@@ -108,6 +108,19 @@ namespace RSGL  {
     }; //!< structure for bitmaps and images
 
     typedef bitmap image; //!< the image struct is the same thing as a bitmap struct
+
+    //!< font stucutre for font info
+	struct font{
+        char* file; //!< font file
+
+        int size; //!< size of the font
+        int fonsFont; //!< source fons font
+        
+        font(){ size = 0; }
+        //!< functions for loading a font, with a string/data
+        font(const char* File, int Size);  //!< load font
+        font(const char* File){ file = (char*)File; }  //!< set font with char*
+    }; //!< font structure that can generally be used for a place-holder for std::string
 /** @}*/
 
 //!< window data structs/functions
@@ -230,6 +243,7 @@ namespace RSGL  {
         float lineWidth = 0;                         //!< the width of the line
         int texture = -1;                            //!< draw a texture on it (from load/draw image/bitmap functions)
         int glTexture = -1; /* actual opengl texture, (not RSGL texture from RSGL::tex) */
+        bool preLoad = true; /* load bitmap from RSGL::tex if it's already loaded (might cause issues with simular bitmaps, toggleable for if you want to manage it yourself) */
         vector<RSGL::color> gradient = { };      //!< gradient to draw on the shapes
         bool vectorGraphics = true;                  // use vector graphics (textures) for circles, rounded rects or ovals
         RSGL::area windowSize = *currentWindowSize(); //!< window to write on
@@ -250,10 +264,10 @@ namespace RSGL  {
     void loadFont(const char* font, int size);
 
     void drawText(
-        char* text,  //!< the text to draw
+        const char* text,  //!< the text to draw
         RSGL::circle c,    //!< the x, y and size the text
         RSGL::color col,   //!< the color
-        const char* font,   //!< the font info
+        RSGL::font font,   //!< the font info
         drawArgs args = drawArgs() //!< extra args
     );                     //!< function for drawing text
 
