@@ -31,7 +31,7 @@
 #endif
 
 namespace RSGL {
-  int circleCollide(circle cir,circle cir2){
+  int circleCollide(circle cir,circle cir2) {
     float distanceBetweenCircles = (float) sqrt(
       (cir2.x - cir.x) * (cir2.x - cir.x) + 
       (cir2.y - cir.y) * (cir2.y - cir.y)
@@ -40,7 +40,7 @@ namespace RSGL {
     return !(distanceBetweenCircles > (cir.d/2) + (cir2.d/2)); // check if there is a collide
   }
 
-  int circleCollideRect(circle c, rect r){
+  int circleCollideRect(circle c, rect r) {
     // test cords
     float testX = c.x; 
     float testY = c.y;
@@ -63,8 +63,8 @@ namespace RSGL {
   }
 
 
-  int circleCollidePoint(circle c, point p){
-      return circleCollideRect(c, (rect){p.x, p.y, 1, 1});
+  int circleCollidePoint(circle c, point p) {
+      return circleCollideRect(c, (rect) {p.x, p.y, 1, 1});
   }
 
   int circleCollideLine(circle c,point p1, point p2) {
@@ -77,31 +77,15 @@ namespace RSGL {
     if ((float)(sqrt( (distX*distX) + (distY*distY) )) <= (c.d/2)) return true; return false;
   }
 
-  int rectCollidePoint(rect r, point p){
+  int rectCollidePoint(rect r, point p) {
       return (p.x >= r.x &&  p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h);
   }
 
-  int pointCollide(point p, point p2){
+  int pointCollide(point p, point p2) {
     return (p.x == p2.x && p.y == p2.y);
   }
 
-  int rectCollideRect(rect r, rect r2){
+  int rectCollideRect(rect r, rect r2) {
       return (r.x + r.w >= r2.x && r.x <= r2.x + r2.w && r.y + r.h >= r2.y && r.y <= r2.y + r2.h);
-  }
-
-  int imageCollideRect(image img, rect r){
-      return 0; // not done yet
-  }
-
-  int imageCollideCircle(image img, circle c){ 
-    return 0; // not done yet
-  }
-
-  int imageCollidePoint(image img, point p){
-    return 0; // not done yet
-  }
-
-  int imageCollideImage(image img, image img2){
-    return 0; // not done yet
   }
 }

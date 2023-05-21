@@ -47,13 +47,15 @@ namespace RSGL{
         ma_result result;
         ma_device device;
 
-        bool free = true;
+        bool free;
+
+        audioData() { free = true; } /* for c++98 */
     };
 
     void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 }
 
-void RSGL::audio::play(const char* file){
+void RSGL::audio::play(const char* file) {
     if (strlen(file) && !isPlaying()) {
         data = (audioData*)malloc(sizeof(audioData));
         data->free = false;
@@ -87,48 +89,48 @@ void RSGL::audio::play(const char* file){
     play();    
 }
 
-void RSGL::audio::play(){
+void RSGL::audio::play() {
     ma_device_start(&data->device);
     if (position() == length())
         seek(0);
 }
 
-void RSGL::audio::pause(){
+void RSGL::audio::pause() {
     ma_device_stop(&data->device);
 }
 
-void RSGL::audio::seek(int pos){
+void RSGL::audio::seek(int pos) {
     data->result = ma_decoder_seek_to_pcm_frame(&data->decoder, pos * 44100);
 }
 
-void RSGL::audio::stop(){
+void RSGL::audio::stop() {
     pause();
     ma_device_uninit(&data->device);
     ma_decoder_uninit(&data->decoder);
 }
 
 
-void RSGL::audio::setVolume(int vol){
+void RSGL::audio::setVolume(int vol) {
     data->result = ma_device_set_master_volume(&data->device, vol/100.0f);
 }
 
-int RSGL::audio::volume(){
+int RSGL::audio::volume() {
     float volume;
     data->result = ma_device_get_master_volume(&data->device, &volume);
     return volume*100;
 }
 
-unsigned int RSGL::audio::position(){
+unsigned int RSGL::audio::position() {
     long long unsigned int pos;
     ma_decoder_get_cursor_in_pcm_frames(&data->decoder, &pos);
     return pos/44100;
 }
 
-bool RSGL::audio::isPlaying(){
+bool RSGL::audio::isPlaying() {
     return ma_device_is_started(&data->device);
 }
 
-int RSGL::audio::length(){
+int RSGL::audio::length() {
     long long unsigned int len;
     ma_decoder_get_length_in_pcm_frames(&data->decoder, &len);
     return len/44100;
@@ -140,7 +142,7 @@ RSGL::audio::~audio() {
     data->free = true;
 }
 
-void RSGL::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){    
+void RSGL::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {    
     ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
     if (pDecoder == NULL) {
         return;

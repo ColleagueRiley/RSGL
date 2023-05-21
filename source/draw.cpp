@@ -34,10 +34,14 @@
 #define GRAPHICS_API_OPENGL_11
 #include "deps/rlgl.h"
 #endif
+
+#ifndef STBI_INCLUDE_STB_IMAGE_H
 #include "deps/stb_image.h"
+#endif
 
 #include "deps/fontstash.h"
 #include "deps/rglfontstash.h"
+
 
 #define glTexCoord2iXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
 #define glTexCoord2fXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
@@ -49,7 +53,7 @@ namespace RSGL {
     template<typename type>
     struct vector {
         type* src;
-        size_t size = 0;
+        size_t size;
 
         void push(type data) {
             size++;
@@ -59,20 +63,23 @@ namespace RSGL {
 
         type& operator[](size_t i) { return src[i]; }
 
-        vector() { src = (type*)malloc(0); }
+        vector() { 
+            src = (type*)malloc(0); 
+            size = 0;
+        }
         ~vector() { free(src); }
     };
 
     extern RSGL::area REALcurrentWindowSize;
 
-    void glPrerequisites(RSGL::rect r, RSGL::color c, RSGL::drawArgs arg = drawArgs(), RSGL::point customTranslate = (RSGL::point){-1, -1}, bool startFromDown = false);
+    void glPrerequisites(RSGL::rect r, RSGL::color c, RSGL::drawArgs arg = drawArgs(), RSGL::point customTranslate = (RSGL::point) {-1, -1}, bool startFromDown = false);
 
     void drawSoftOval(RSGL::rect oval, RSGL::color c, RSGL::drawArgs args = drawArgs());
 
     vector<RSGL::image> tex; // cache for loading images
     vector<RSGL::font> fonts; // vector of cached loaded fonts
 
-    RSGL::font::font(const char* File, int Size){ 
+    RSGL::font::font(const char* File, int Size) { 
         size = Size; 
         file = (char*)File; 
 
@@ -98,39 +105,38 @@ namespace RSGL {
         return fonsTextBounds(font.ctx, 0, 0, text, NULL, NULL);
     }
 
-    void loadFont(RSGL::font font, int size){
+    void loadFont(RSGL::font font, int size) {
         bool loaded = false; 
 
-
-        for (int i = 0; i < fonts.size; i++){ 
-            if (fonts[i].file == font.file){ 
+        for (int i = 0; i < fonts.size; i++) { 
+            if (fonts[i].file == font.file) { 
                 font = fonts[i];
                 loaded = true; 
                 break; 
             }
         } // check if the font is in fonts
 
-        if (!loaded){ // if it's not in fonts, load the font into fonts
+        if (!loaded) { // if it's not in fonts, load the font into fonts
             font = RSGL::font(font.file, size);
             fonts.push(font); 
         } 
     }
 
-    void drawText(const char* text, RSGL::circle c, color color, RSGL::font font, RSGL::drawArgs args/* = {}*/){    
+    void drawText(const char* text, RSGL::circle c, color color, RSGL::font font, RSGL::drawArgs args/* = {}*/) {    
         RSGL::font Font; // current font
 
         bool loaded = false; 
 
 
-        for (int i = 0; i < fonts.size; i++){ 
-            if (fonts[i].file == font.file){ 
+        for (int i = 0; i < fonts.size; i++) { 
+            if (fonts[i].file == font.file) { 
                 Font = fonts[i];
                 loaded = true; 
                 break; 
             }
         } // check if the font is in fonts
     
-        if (!loaded){ // if it's not in fonts, load the font into fonts
+        if (!loaded) { // if it's not in fonts, load the font into fonts
             Font = RSGL::font(font.file, c.d);
             fonts.push(Font); 
         } 
@@ -142,7 +148,7 @@ namespace RSGL {
         fonsSetSize(font.ctx, c.d);
         fonsSetFont(font.ctx, Font.fonsFont);
 
-        glPrerequisites({c.x, c.y + (c.d - (c.d/4)), w, c.d}, color, args);
+        glPrerequisites((RSGL::rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color, args);
   
         fonsSetColor(font.ctx, glfonsRGBA(color.r, color.b, color.g, color.a));
 
@@ -180,7 +186,7 @@ namespace RSGL {
         int nly = 0;
         
         for (int i = 0; i < textsSize; i++) {
-            fonsDrawText(font.ctx, c.x, c.y + (c.d - (c.d/4)) + nly, texts[i], NULL);
+            fonsDrawText(font.ctx, c.x, c.y + (c.d - (c.d / 4)) + nly, texts[i], NULL);
             
             if (textsSize > 1)
                 free(texts[i]);
@@ -267,7 +273,7 @@ namespace RSGL {
     void drawLine(RSGL::point p1, RSGL::point p2, RSGL::color c, RSGL::drawArgs args) {
         REALcurrentWindowSize = args.windowSize;
 
-        glPrerequisites((rect){p1.x, p1.y, abs(p1.x - p2.x), abs(p1.y - p2.y)}, c, args);   
+        glPrerequisites((rect) {p1.x, p1.y, abs(p1.x - p2.x), abs(p1.y - p2.y)}, c, args);   
 
             rlBegin(RL_QUADS); // start drawing the line
                 rlColor4ub(c.r, c.g, c.b, c.a); // set the color of the line
@@ -281,7 +287,7 @@ namespace RSGL {
     void drawTriangle(RSGL::triangle t, RSGL::color c, drawArgs args/*={}*/) {
         REALcurrentWindowSize = args.windowSize;
             
-        RSGL::point cen = (point){
+        RSGL::point cen = (point) {
             (t[0].x+ t[1].x + t[2].x) / 3,
             (t[0].y+ t[1].y + t[2].y) / 3
         };
@@ -294,7 +300,7 @@ namespace RSGL {
             c.r = c.g = c.b = c.a = 255; // for c++ 98 
         }
 
-        glPrerequisites((rect){t[1].x, t[2].y, abs(t[1].x - t[0].x), abs(t[1].y - t[2].y)}, c, args, cen);
+        glPrerequisites((rect) {t[1].x, t[2].y, abs(t[1].x - t[0].x), abs(t[1].y - t[2].y)}, c, args, cen);
             unsigned int m = (args.fill) ? RL_QUADS :  GL_LINES; // switch the draw type if it's not filled
 
             rlBegin(m); // start drawing
@@ -310,7 +316,7 @@ namespace RSGL {
                     glColor4iFF(args, 1);
 
                     if ((float)(t[2].x - t[0].x)/t[1].x < 1)
-                        glTexCoord2iXX((float)(t[2].x - t[0].x)/t[1].x, 0, xx); 
+                        glTexCoord2iXX((float)(t[2].x - t[0].x) / t[1].x, 0, xx); 
                     rlVertex2f(t[0].x, t[0].y);
                     
                     glColor4iFF(args, 0);
@@ -341,10 +347,10 @@ namespace RSGL {
     }
 
     void drawPoint(RSGL::point p, color c, RSGL::drawArgs args) { 
-        RSGL::drawRect((rect){p.x, p.y, 1, 1}, c, args); // just draw a 1x1 rect  
+        RSGL::drawRect((rect) {p.x, p.y, 1, 1}, c, args); // just draw a 1x1 rect  
     }
 
-    void drawCircle(RSGL::circle c, RSGL::color color, RSGL::drawArgs args) { RSGL::drawOval((rect){c.x, c.y, c.d, c.d}, color, args); }
+    void drawCircle(RSGL::circle c, RSGL::color color, RSGL::drawArgs args) { RSGL::drawOval((rect) {c.x, c.y, c.d, c.d}, color, args); }
 
     void drawOval(RSGL::oval o, RSGL::color c, RSGL::drawArgs args) { RSGL::drawPolygon(o, c, 360, args); }
 
@@ -382,20 +388,20 @@ namespace RSGL {
                     rlVertex2f(o.x, o.y);
 
                     rlTexCoord2f(0, t);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
 
                     rlTexCoord2f(t, t);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
 
                     centralAngle += 360.0f/(float)sides;
                     rlTexCoord2f(t, 0);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
                 } else {
                     glColor4iFF(args, 0);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.w);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.w);
                     centralAngle += 360.0f/(float)sides;
                     glColor4iFF(args, 1);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
                 }
             }
         rlEnd();
@@ -427,7 +433,6 @@ namespace RSGL {
             glGenTextures(1, &texture);
             glBindTexture(GL_TEXTURE_2D, texture);
 
-
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             
@@ -449,7 +454,6 @@ namespace RSGL {
 
 
             glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, data);
-            
 
             glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -483,7 +487,7 @@ namespace RSGL {
             
             unsigned char* data = stbi_load((char*)file, &w, &h, &c, 0);
 
-            xx = drawBitmap(data, (rect){0, 0, 0, 0}, c, (area){w, h}, args);
+            xx = drawBitmap(data, (rect) {0, 0, 0, 0}, c, (area) {w, h}, args);
 
             free(data);
 
@@ -504,28 +508,28 @@ namespace RSGL {
     void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs d) {
         d.rounded = false;
 
-        RSGL::drawRect((RSGL::rect){r.x + (d.roundPoint.x/2), r.y, r.w - d.roundPoint.x, r.h}, c, d);
-        RSGL::drawRect((RSGL::rect){r.x, r.y + (d.roundPoint.y/2), r.w,  r.h - d.roundPoint.y}, c, d);
+        RSGL::drawRect((RSGL::rect) {r.x + (d.roundPoint.x/2), r.y, r.w - d.roundPoint.x, r.h}, c, d);
+        RSGL::drawRect((RSGL::rect) {r.x, r.y + (d.roundPoint.y/2), r.w,  r.h - d.roundPoint.y}, c, d);
 
-        RSGL::drawOval((RSGL::rect){r.x, r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
-        RSGL::drawOval((RSGL::rect){r.x + (r.w - d.roundPoint.x), r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
-        RSGL::drawOval((RSGL::rect){r.x + (r.w - d.roundPoint.x), r.y  + (r.h - d.roundPoint.y), d.roundPoint.x, d.roundPoint.y}, c, d);
-        RSGL::drawOval((RSGL::rect){r.x, r.y  + (r.h - d.roundPoint.y),  d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect) {r.x, r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect) {r.x + (r.w - d.roundPoint.x), r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect) {r.x + (r.w - d.roundPoint.x), r.y  + (r.h - d.roundPoint.y), d.roundPoint.x, d.roundPoint.y}, c, d);
+        RSGL::drawOval((RSGL::rect) {r.x, r.y  + (r.h - d.roundPoint.y),  d.roundPoint.x, d.roundPoint.y}, c, d);
     }
 
     int loadImage(const char* file) { 
-        return RSGL::drawImage((char*)file, (rect){0, 0, 0, 0}); 
+        return RSGL::drawImage((char*)file, (rect) {0, 0, 0, 0}); 
     }
 
     int loadBitmap(unsigned char* data, int channels, RSGL::area memsize) {
-         return RSGL::drawBitmap(data, (rect){0, 0, 0, 0}, channels, memsize);
+         return RSGL::drawBitmap(data, (rect) {0, 0, 0, 0}, channels, memsize);
     }
 
     void freeBitmap(int tex) {
         RSGL::tex[tex].~bitmap();
 
         for (int i = tex; i < RSGL::tex.size; i++)
-            RSGL::tex[i] = RSGL::tex[i+1];
+            RSGL::tex[i] = RSGL::tex[ i + 1];
     }
 
     void freeImage(int tex) { RSGL::freeBitmap(tex); }
@@ -553,19 +557,17 @@ namespace RSGL {
         rlLoadIdentity();
         rlPushMatrix();
 
-
-
         if (!startFromDown) rlOrtho(0, args.windowSize.w, args.windowSize.h, 0, -args.windowSize.w, args.windowSize.w);
         else rlOrtho(0, args.windowSize.w, 0, args.windowSize.h, -args.windowSize.w, args.windowSize.w);
 
-        rlTranslatef((r.x + (r.w/2)), (r.x + (r.h/2)), 0);
+        rlTranslatef((r.x + (r.w / 2)), (r.x + (r.h / 2)), 0);
             
         rlRotatef(args.rotationAngle,  0, 0, 1);
         rlRotatef(args.flipHorizontal, 0, 1, 0);
         rlRotatef(args.flipVertical, 1, 0, 0);
 
-        rlTranslatef(-(r.x + (r.w/2)), -(r.x + (r.h/2)), 0);
-        
+        rlTranslatef(-(r.x + (r.w / 2)), -(r.x + (r.h / 2)), 0);
+
         rlMatrixMode(RL_MODELVIEW);
 
         glLineWidth(args.lineWidth);

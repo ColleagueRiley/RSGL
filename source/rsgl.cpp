@@ -35,153 +35,186 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define RLGL_IMPLEMENTATION
 
-#include "deps/rlgl.h"
-
 #ifndef RSGL_H
 #include "../RSGL.hpp"
 #endif
 
-#include "deps/stb_image.h"
+#include "deps/rlgl.h"
 #include "deps/RGFW.h"
+#include "deps/stb_image.h"
 
 namespace RSGL {
 	RSGL::area REALcurrentWindowSize;
     
-	RSGL::area* currentWindowSize() {  
-        return &REALcurrentWindowSize; 
-    }
+	RSGL::area* currentWindowSize() {   return &REALcurrentWindowSize;   }
 
     RSGL::point glVersion = {3, 3};
-};
 
-int windowsOpen = 0;
+    int windowsOpen = 0;
 
-void RSGL::setGLVersion(int major, int minor) { glVersion = {major, minor}; }
+    void setGLVersion(int major, int minor) { glVersion = (RSGL::point){major, minor}; }
 
-RSGL::window::window(const char* title, RSGL::rect rect, RSGL::color c, winArgs args) {
-    RGFW_setGLVersion(glVersion.x, glVersion.y);
+    window::window(const char* title, RSGL::rect rect, RSGL::color c, winArgs args) {
+        RGFW_setGLVersion(glVersion.x, glVersion.y);
 
-    source = RGFW_createWindowPointer((char*)title, rect.x, rect.y, rect.w, rect.h, args);
-	
-    rect = {source->x, source->y, source->w, source->h}; 
+        source = RGFW_createWindowPointer((char*)title, rect.x, rect.y, rect.w, rect.h, args);
+        
+        rect = (RSGL::rect){source->x, source->y, source->w, source->h}; 
 
-	name = source->name;
+        name = source->name;
 
-    int* screenR = (int*)RGFW_getScreenSize(source);
+        int* screenR = (int*)RGFW_getScreenSize(source);
 
-    if (center & args)
-        rect = (RSGL::rect) {(screenR[0] - rect.w) / 2, (screenR[1] - rect.h) / 2, r.w, r.h };
-    if (autoResize & args)
-        areaSize = (RSGL::area) {r.w, r.h};
-    if (noSwapInterval & args)
-        RGFW_swapInterval(source, 0);
+        areaSize = (RSGL::area) {-1, -1};
+        focused = false;
 
-    this->r = rect;
-    color = c;
+        if (center & args)
+            rect = (RSGL::rect) {(screenR[0] - rect.w) / 2, (screenR[1] - rect.h) / 2, r.w, r.h };
+        if (autoResize & args)
+            areaSize = (RSGL::area) {r.w, r.h};
+        if (noSwapInterval & args)
+            RGFW_swapInterval(source, 0);
 
-    RGFW_makeCurrent(source);
+        this->r = rect;
+        color = c;
 
-    rlLoadExtensions((void*)RGFW_getProcAddress);
-    
-    rlglInit(r.w, r.h);
+        RGFW_makeCurrent(source);
 
-    rlClearColor(245, 245, 245, 255);
-    rlEnableDepthTest();
+        rlLoadExtensions((void*)RGFW_getProcAddress);
+        
+        rlglInit(r.w, r.h);
 
-	windowsOpen++;
-}
+        rlClearColor(c.r, c.g, c.b, c.a);
+        rlEnableDepthTest(); /* for 3D stuff */
 
-void RSGL::window::changeIcon(const char* icon) {
-    int w, h, n;
-    unsigned char* data = stbi_load(icon, &w, &h, &n, 0);
+        windowsOpen++;
+    }
 
-    changeIcon(data, w, h, n);
-    free(data);
-}
+    void RSGL::window::changeIcon(const char* icon) {
+        int w, h, n;
+        unsigned char* data = stbi_load(icon, &w, &h, &n, 0);
 
-void RSGL::window::changeIcon(unsigned char* icon, int w, int h, int channels) { RGFW_setIcon(source, icon, w, h, channels); }
+        changeIcon(data, w, h, n);
+        free(data);
+    }
+
+    void RSGL::window::changeIcon(unsigned char* icon, int w, int h, int channels) { RGFW_setIcon(source, icon, w, h, channels); }
 
 
-RSGL::event RSGL::window::checkEvents(bool setCurrentDrawingContext) {
-    source->x = r.x;
-    source->y = r.y;
-    source->w = r.w;
-    source->h = r.h;
-	source->name = (char*)name;
-	source->fpsCap = fpsCap;
+    RSGL::event RSGL::window::checkEvents(bool setCurrentDrawingContext) {
+        source->x = r.x;
+        source->y = r.y;
+        source->w = r.w;
+        source->h = r.h;
+        source->name = (char*)name;
+        source->fpsCap = fpsCap;
 
-    RGFW_checkEvents(source);
+        RGFW_checkEvents(source);
 
-    fps = source->fps;
-    r = (RSGL::rect) {source->x, source->y, source->w, source->h};
-    
-    event = *(RSGL::event*)&source->event; 
+        fps = source->fps;
+        focused = source->inFocus;
+        r = (RSGL::rect) {source->x, source->y, source->w, source->h};
+        
+        event = *(RSGL::event*)&source->event; 
 
-    if (source->event.droppedFilesCount)
-        event.type = RSGL::dnd;
+        if (source->event.droppedFilesCount)
+            event.type = RSGL::dnd;
 
-	if (setCurrentDrawingContext) {
-		REALcurrentWindowSize = (area){r.w, r.h};
-		// make this window the current glx context
-		RGFW_makeCurrent(source);
-	}
+        if (setCurrentDrawingContext) {
+            REALcurrentWindowSize = (area){r.w, r.h};
+            // make this window the current glx context
+            RGFW_makeCurrent(source);
+        }
 
-    if (areaSize.w != -1 || areaSize.h != -1)
-	    rlViewport(0, 0, r.w, r.h);
+        if (areaSize.w != -1 || areaSize.h != -1)
+            rlViewport(0, 0, r.w, r.h);
 
-	return event;
-}
+        return event;
+    }
 
-void RSGL::window::clear() {
-	rlClearScreenBuffers();
-	rlDrawRenderBatchActive();
-	
-	RGFW_swapBuffers(source);
+    void RSGL::window::clear() {
+        rlClearScreenBuffers();
+        rlDrawRenderBatchActive();
+        
+        RGFW_swapBuffers(source);
 
-    rlClearColor(color.r, color.g, color.b, color.a);   
-	glFlush();
-}
+        rlClearColor(color.r, color.g, color.b, color.a);   
+        glFlush();
+    }
 
-bool RSGL::window::isPressed(const char* key, bool onFocus /*=false*/) { return RGFW_isPressedS(onFocus ? source : NULL, (char*)key); }
-bool RSGL::window::isPressed(unsigned int key, bool onFocus /*=false*/) { return RGFW_isPressedI(onFocus ? source : NULL, key); }
+    bool RSGL::window::isPressed(const char* key, bool onFocus /*=false*/) { return RGFW_isPressedS(onFocus ? source : NULL, (char*)key); }
+    bool RSGL::window::isPressed(unsigned int key, bool onFocus /*=false*/) { return RGFW_isPressedI(onFocus ? source : NULL, key); }
 
-void RSGL::window::registerJoystick(int joyStickNum) {  RGFW_registerJoystick(source, joyStickNum); }
+    void RSGL::window::registerJoystick(int joyStickNum) {  RGFW_registerJoystick(source, joyStickNum); }
 
-bool RSGL::window::isPressedJS(unsigned short controller, unsigned char button) { return RGFW_isPressedJS(source, controller, button); }
+    bool RSGL::window::isPressedJS(unsigned short controller, unsigned char button) { return RGFW_isPressedJS(source, controller, button); }
 
-RSGL::rect RSGL::window::fullscreen() {
-    int* screenR = (int*)RGFW_getScreenSize(source);
+    RSGL::rect RSGL::window::fullscreen() {
+        int* screenR = (int*)RGFW_getScreenSize(source);
 
-	return (RSGL::rect) {0, 0, screenR[0], screenR[1]};
-}
+        return (RSGL::rect) {0, 0, screenR[0], screenR[1]};
+    }
 
-RSGL::point RSGL::window::globalMouse() {
-	int* point = RGFW_getGlobalMousePoint(source);
+    RSGL::point RSGL::window::globalMouse() {
+        int* point = RGFW_getGlobalMousePoint(source);
 
-	return (RSGL::point) {point[0], point[1]};
-}
+        return (RSGL::point) {point[0], point[1]};
+    }
 
-const char* RSGL::window::readClipboard() { return RGFW_readClipboard(source); }
-void RSGL::window::writeClipboard(const char* str) { RGFW_writeClipboard(source, (char*)str); }
+    const char* RSGL::window::readClipboard() { return RGFW_readClipboard(source); }
+    void RSGL::window::writeClipboard(const char* str) { RGFW_writeClipboard(source, (char*)str); }
 
-bool RSGL::window::isOpen(bool autoClear, bool autoClose) {
-	if (autoClear)
-		clear();
+    bool RSGL::window::isOpen(bool autoClear, bool autoClose) {
+        if (autoClear)
+            clear();
 
-	return (checkEvents().type != RSGL::quit);
-}
+        return (checkEvents().type != RSGL::quit);
+    }
 
-void RSGL::window::close() {
-    rlglClose();
-    RGFW_closeWindow(source);
-}
+    void RSGL::window::close() {
+        if (windowsOpen == 1)
+            rlglClose();
+        RGFW_closeWindow(source);
 
-RSGL::window::~window() { close(); }
+        windowsOpen--;
+    }
 
-/*! NOTE! (for X11/linux) : if you define a window in a thread, it must be run after the original thread's window is created or else there will be a memory error */
-namespace RSGL {
+    RSGL::window::~window() { close(); }
+
+    /* other */
+
+    /*! NOTE! (for X11/linux) : if you define a window in a thread, it must be run after the original thread's window is created or else there will be a memory error */
     thread createThread(void* (*function_ptr)(void*), void* args) { return RGFW_createThread(function_ptr, args); } /*!< create a thread*/
     void cancelThread(thread thread) { RGFW_cancelThread(thread); }  /*!< cancels a thread*/
     void joinThread(thread thread) { RGFW_joinThread(thread); } /*!< join thread to current thread */
     void setThreadPriority(thread thread, unsigned char priority) { RGFW_setThreadPriority(thread, priority); } /*!< sets the priority priority  */
-}
+
+
+    bool timerT(int ticks){
+        static int i = 0, tickLimit = 0;
+        
+        if (ticks > tickLimit)
+            tickLimit = ticks;
+
+        if (i > tickLimit)
+            i = 0;
+
+        i++;
+
+        return !(i % ticks);
+    }
+
+    bool timerM(int milliseconds) {
+        static int start_time = time(0), miliLimit = 0;
+
+        if (milliseconds > miliLimit)
+            miliLimit = milliseconds;
+
+        int passed = time(0) - start_time;
+
+        if (passed > miliLimit)
+            start_time = time(0);
+
+        return !(passed % milliseconds) && passed;
+    }
+};

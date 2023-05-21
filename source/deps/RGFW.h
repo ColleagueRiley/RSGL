@@ -440,9 +440,7 @@ void RGFW_initVulkan(RGFW_window* win, void* inst) {
 #ifdef _WIN32
 
 #include <windows.h>
-#ifdef WGL
-static void* RGFW_getProcAddress(const char* procname) { return wglGetProcAddress(procname); }
-#endif
+static void* RGFW_getProcAddress(const char* procname) { return (void*)wglGetProcAddress(procname); }
 #endif
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 const char* RGFW_keyStrings[128] = {"a", "s", "d", "f", "h", "g", "z", "x", "c", "v", "0", "b", "q", "w", "e", "r", "y", "t", "1", "2", "3", "4", "6", "5", "Equals", "9", "7", "Minus", "8", "0", "CloseBracket", "o", "u", "Bracket", "i", "p", "Return", "l", "j", "Apostrophe", "k", "Semicolon", "BackSlash", "Comma", "Slash", "n", "m", "Period", "Tab", "Space", "Backtick", "BackSpace", "0", "Escape", "0", "Super", "Shift", "CapsLock", "Alt", "Control", "0", "0", "0", "0", "0", "KP_Period", "0", "KP_Minus", "0", "0", "0", "0", "Numlock", "0", "0", "0", "KP_Multiply", "KP_Return", "0", "0", "0", "0", "KP_Slash", "KP_0", "KP_1", "KP_2", "KP_3", "KP_4", "KP_5", "KP_6", "KP_7", "0", "KP_8", "KP_9", "0", "0", "0", "F5", "F6", "F7", "F3", "F8", "F9", "0", "F11", "0", "F13", "0", "F14", "0", "F10", "0", "F12", "0", "F15", "Insert", "Home", "PageUp", "Delete", "F4", "End", "F2", "PageDown", "Left", "Right", "Down", "Up", "F1"};
@@ -2419,17 +2417,11 @@ bool performDragOperation(id self, SEL cmd, NSDraggingInfo* sender) {
 
 	si_array_free(array);
 
-	/*
-	yes, I tried memset, it didn't work eiehter
-	*/
-	unsigned int x, y;
 
-	for (y = 0; y < RGFW_windows[i]->event.droppedFilesCount; y++){
-		RGFW_windows[i]->event.droppedFiles[y] = (char*)malloc(strlen(droppedFiles[y]) * sizeof(char));
+	unsigned int y;
 
-		for (x = 0; x < strlen(droppedFiles[y]); x++)
-			RGFW_windows[i]->event.droppedFiles[y][x] = droppedFiles[y][x];
-	}
+	for (y = 0; y < RGFW_windows[i]->event.droppedFilesCount; y++)
+		RGFW_windows[i]->event.droppedFiles[y] = strdup(droppedFiles[y]);
 
 	RGFW_windows[i]->event.type = RGFW_dnd;
 
