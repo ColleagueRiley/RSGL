@@ -5311,7 +5311,7 @@ static FILE *stbi__fopen(char const *filename, char const *mode)
 STBIDEF stbi_uc *stbi_load(char const *filename, int *x, int *y, int *comp, int req_comp){
    unsigned char *result;
 
-/*   if (strstr(filename, ".svg")) {
+   if (strstr(filename, ".svg")) {
       NSVGimage* image = nsvgParseFromFile(filename, "px", 96.0f); // load the file
       
       *x = (int)image->width; 
@@ -5320,13 +5320,13 @@ STBIDEF stbi_uc *stbi_load(char const *filename, int *x, int *y, int *comp, int 
 
       NSVGrasterizer* rast = nsvgCreateRasterizer();
 
-      result = (stbi_uc*)malloc(image->width*image->height*4);
+      result = (stbi_uc*)malloc(sizeof(unsigned char) * image->width*image->height*4);
       
       nsvgRasterize(rast, image, 0,0,1, result, image->width,image->height, image->width*4); 
 
       nsvgDelete(image);
       nsvgDeleteRasterizer(rast);
-   } else*/ {
+   } else {
       FILE *f = stbi__fopen(filename, "rb");
       if (!f) return stbi__errpuc("can't fopen", "Unable to open file");
       result = stbi_load_from_file(f,x,y,comp,req_comp);

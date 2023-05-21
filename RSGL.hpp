@@ -20,30 +20,39 @@
 *
 */
 
-#include "source/deps/RSTL.hpp"
+/*
+DEFINES
+
+VERSIONING (RSGL::setGLVersion should also be run to load that version with your opengl loader (GLX/WGL/NGL))
+GRAPHICS_API_OPENGL_11 (not supported)
+GRAPHICS_API_OPENGL_21
+GRAPHICS_API_OPENGL_33
+GRAPHICS_API_OPENGL_43
+GRAPHICS_API_OPENGL_ES2
+
+RSGL_IMPLEMENTATION - includes the source headers at the end of the file
+*/
 
 #ifndef RSGL_H
 
 struct RGFW_window;
-struct stbtt_fontinfo;
+struct FONScontext;
 
 namespace RSGL  {
-    using namespace RSTL;
-
     //! Event constants
     /** \addtogroup Events
      *  @{
      */
-    unsigned char keyPressed = 2; /*!< a key has been pressed*/
-    unsigned char keyReleased = 3; /*!< a key has been released*/
-    unsigned char mouseButtonPressed = 4; /*!< a mouse button has been pressed (left,middle,right)*/
-    unsigned char mouseButtonReleased = 5; /*!< a mouse button has been released (left,middle,right)*/
-    unsigned char mousePosChanged = 6; /*!< the position of the mouse has been changed*/
-    unsigned char jsButtonPressed = 7; /*!< a joystick button was pressed */
-    unsigned char jsButtonReleased = 8; /*!< a joystick button was released */
-    unsigned char jsAxisMove = 9; /*!< an axis of a joystick was moved*/
-    unsigned char quit = 33; /*!< the user clicked the quit button*/
-    unsigned char dnd = 34; /*!< a file has been dropped into the window*/
+    const unsigned char keyPressed = 2; /*!< a key has been pressed*/
+    const unsigned char keyReleased = 3; /*!< a key has been released*/
+    const unsigned char mouseButtonPressed = 4; /*!< a mouse button has been pressed (left,middle,right)*/
+    const unsigned char mouseButtonReleased = 5; /*!< a mouse button has been released (left,middle,right)*/
+    const unsigned char mousePosChanged = 6; /*!< the position of the mouse has been changed*/
+    const unsigned char jsButtonPressed = 7; /*!< a joystick button was pressed */
+    const unsigned char jsButtonReleased = 8; /*!< a joystick button was released */
+    const unsigned char jsAxisMove = 9; /*!< an axis of a joystick was moved*/
+    const unsigned char quit = 33; /*!< the user clicked the quit button*/
+    const unsigned char dnd = 34; /*!< a file has been dropped into the window*/
     /** @}*/
 
     //! mouse constants : win.event.button
@@ -84,7 +93,11 @@ namespace RSGL  {
     struct rect { int x, y, w, h; };
     struct circle { int x, y, d; }; //!< d = diameter of the circle (radius * 2)
 
-    typedef vector<RSGL::point, 3> triangle;
+    struct triangle {
+        RSGL::point p1, p2, p3;
+
+        RSGL::point operator[](int index) { return (index == 0) ? p1 : (index == 1) ? p2 : p3; }
+    };
 
     typedef rect oval; //!< oval is the same thing as a rect struct
 
@@ -100,7 +113,7 @@ namespace RSGL  {
         char* file;          //!< source file (Images only)
         RSGL::rect r;              //!< drawing rect size
         unsigned char* data;        //!< bitmap data
-        unsigned int tex, ovalTex; //!< opengl texture and oval texture for adding textures to smooth ovals
+        unsigned int tex = -1; //!< opengl texture and oval texture for adding textures to smooth ovals
         RSGL::area size;           //!< bitmap size
         int channels;                     // bitmap channels
 
@@ -116,10 +129,14 @@ namespace RSGL  {
         int size; //!< size of the font
         int fonsFont; //!< source fons font
         
+        FONScontext* ctx = NULL; /* fons font context */ 
+
         font(){ size = 0; }
         //!< functions for loading a font, with a string/data
         font(const char* File, int Size);  //!< load font
         font(const char* File){ file = (char*)File; }  //!< set font with char*
+    
+        ~font(); /* free fonsFont */
     }; //!< font structure that can generally be used for a place-holder for std::string
 /** @}*/
 
@@ -127,17 +144,6 @@ namespace RSGL  {
 /** \addtogroup Window_Data_and_Managment
  *  @{
  */
-
-    struct winArgs {
-        bool resize = true;      /* can the user resize the window?*/
-        bool autoResize = false; //!< Should everything resize if the window size changes?
-        bool noBorder = false;   //!< if there is not a boardernn
-        bool fullscreen = false; //!< if the window is full screen
-        bool center = false;     //!< if the window x/y should be centered
-        bool rgbaWindow = false; //!< enable this if you want your window background to have an alpha value OR if you want to make it so transparent shapes show behind the window if there's nothing behind it
-        bitmap icon = {};        //!< custom icon (bitmap or file)
-    };                           //!< args for creating a window
-
     struct event {
         unsigned char type; /*!< which event has been sen t?*/
         unsigned char button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed OR which joystick axis was moved*/
@@ -155,20 +161,29 @@ namespace RSGL  {
 
         /*! joystick*/
         unsigned short joystick; /* which joystick this event applies to (if applicable to any) */
-        unsigned char axisesCount; /* number of axises */
-        const char** axis; /*[4][2] array x, y of axises (-100 to 100) */
+        char axis[4][16]; /*[4][2] array x, y of axises (-100 to 100) */
     };                                                       //!< event structure to handle events sent to a specific drawable
 
-    struct debug {
-        int fps;
-    }; //!< struct for debug info per window
-
     //! Window structure
+
+    /* this must be run before the window is created or the window will use whatever the last-set (or default) version is */
+    void setGLVersion(int major, int minor);
+
+    /* extra window arguments */
+    typedef unsigned int winArgs;
+
+    const unsigned int noBorder		= (1L<<3); /*!< If the window doesn't have border*/
+    const unsigned int noResize		= (1L<<4); /*!< If the window cannot be resized  by the user*/
+    const unsigned int allowDnd     = (1L<<5); /*!< if the window supports drag and drop*/
+    const unsigned int hideMouse = (1L<<6); /* if the window should hide the mouse or not (can be toggled later on)*/
+    const unsigned int fullscreen = (1L<<8); /* if the window should be fullscreen by default or not */
+    const unsigned int center = (1L<<10);
+    const unsigned int autoResize = (1L<<11);
+    const unsigned int noSwapInterval = (1L<<12);
 
     struct window {
         char* name;  //!< the name of the window
         RSGL::event event; //!< the source event struct
-        RSGL::debug debug; //!< debug info for the window
         RSGL::color color; //!< the background color
         RSGL::rect r;      //!< the size/x/y of the window
 
@@ -179,19 +194,26 @@ namespace RSGL  {
 
         int GPU;                //!< the GPU option selection
         int fpsCap;
+        unsigned int fps; 
         unsigned int sourceVBO; //!< source vbo object
         bool vbo;               //!< if vbo is supported or not
         bool focused = false;   //!< if the window is focused or not (updated by check events)
 
-        void setIcon(const char* file);                                                 //!< sets BMP! image to the icon
         RSGL::event checkEvents(bool setcurrentWindowSize = true); //!< checks if any events have been sent (is required to get events), returns an optional event struct as an alternative to win.event, this is mainly to pass the function to another function
         bool isPressed(unsigned int keyCode, bool onFocus = false);                              //!< checks if a key has been pressed (works with key code or const char*)
         bool isPressed(const char* keyName, bool onFocus = false);                      //!< checks if a key has been pressed (works with key code or const char*)
+        
+        void registerJoystick(int joyStickNum);
+        bool isPressedJS(unsigned short controller, unsigned char button);
+                
         void close();                                                                   //!< closes the window
         void clear();                                                                   //!< clears the display
         bool isOpen(bool autoClear = true, bool autoClose = true);    //!< clears the window (toggleable), returns true if the window hasn't been closed, if the window is cloesd (and autoClose is true), RSGL::window::close() is called
         void changeIcon(const char* icon);
         void changeIcon(unsigned char* icon, int w, int h, int channels);
+
+        const char* readClipboard();
+        void writeClipboard(const char*);
 
         /* global data */
         RSGL::point globalMouse(); //!< returns mouse x/y in the context of the screen
@@ -202,7 +224,7 @@ namespace RSGL  {
             const char* /*the name*/,
             RSGL::rect /*the rect/size/x/y of the window*/,
             RSGL::color /*the background color*/,
-            winArgs args = winArgs() /*other args*/
+            winArgs args = 0 /*other args*/
         );                    //!< inits the window with these values
 
         ~window();
@@ -223,15 +245,21 @@ namespace RSGL  {
     int rectCollidePoint(RSGL::rect r, RSGL::point p);                     //!< if a rect collides with a point
     int rectCollideRect(RSGL::rect r, RSGL::rect r2);                      //!< if a rect collides with another rect
     int pointCollide(RSGL::point p, RSGL::point p2);                       //!< if a point collides with another point
-    int imageCollideRect(RSGL::image img, RSGL::rect r);                   //!< if a image collides with a rect
-    int imageCollideCircle(RSGL::image img, RSGL::circle c);               //!< if a image collides with a circle
-    int imageCollidePoint(RSGL::image img, RSGL::point p);                 //!< if a image collides with a point
-    int imageCollideImage(RSGL::image img, RSGL::image img2);              //!< if a image collides with another image
     /** @}*/
 
-    extern bool vboON;
+    void freeDraw();
 
-    void freeDraw(RSGL::area size = *RSGL::currentWindowSize());
+    struct gradient {
+        RSGL::color color0, color1, color2, color3;
+
+        int size = 0;
+        
+        gradient() { }
+        gradient(RSGL::color c) { color0 = c; size = 1;}
+        gradient(RSGL::color c, RSGL::color c1) { color0 = c; color1 = c1; size = 2;}
+        gradient(RSGL::color c, RSGL::color c1, RSGL::color c2) { color0 = c; color1 = c1; color2 = c2; size = 3;}
+        gradient(RSGL::color c, RSGL::color c1, RSGL::color c2, RSGL::color c3) { color0 = c; color1 = c1; color2 = c2; color3 = c3; size = 3;}
+    };
 
     //!< drawing functions
     struct drawArgs {
@@ -244,24 +272,18 @@ namespace RSGL  {
         int texture = -1;                            //!< draw a texture on it (from load/draw image/bitmap functions)
         int glTexture = -1; /* actual opengl texture, (not RSGL texture from RSGL::tex) */
         bool preLoad = true; /* load bitmap from RSGL::tex if it's already loaded (might cause issues with simular bitmaps, toggleable for if you want to manage it yourself) */
-        vector<RSGL::color> gradient = { };      //!< gradient to draw on the shapes
-        bool vectorGraphics = true;                  // use vector graphics (textures) for circles, rounded rects or ovals
+        RSGL::gradient gradient = { };      //!< gradient to draw on the shapes
         RSGL::area windowSize = *currentWindowSize(); //!< window to write on
-        //! rect/circle only
         //!< rect-only
         bool rounded = false;
         RSGL::point roundPoint = {10, 10}; //!< where the rounding is : 10, 10 is good for a round rect, 24, 24 is a bean shape, 204, 204 is an oval
-        //! text only
-        int scrollSpeed = 0; //!< scroll text speed, 0 for no scroll text
-        int stopY = -1;      //!< scroll text stop y (-1, the end of the window)
-        int typeSpeed = 0;   //!< speed of the "typing" out of the text, 0 : no typing
     };                       //!< general args for drawing
 
     /** \addtogroup drawing-functions
      *  @{
      */
 
-    void loadFont(const char* font, int size);
+    void loadFont(RSGL::font font, int size);
 
     void drawText(
         const char* text,  //!< the text to draw
@@ -271,7 +293,7 @@ namespace RSGL  {
         drawArgs args = drawArgs() //!< extra args
     );                     //!< function for drawing text
 
-    int textWidth(const char* text, const char* font, int size);
+    int textWidth(const char* text, RSGL::font font, int size);
 
     void drawPoint(
         RSGL::point p,     //!< the point to be draw
@@ -326,12 +348,6 @@ namespace RSGL  {
     
     int loadBitmap(unsigned char *data, int channels, RSGL::area memsize); //!< load a bitmap into the texture buffer (no drawing) (returns the index texture in the texture buffer)
 
-    void freeBitmap(unsigned int tex);
-    void freeImage(unsigned int tex);
-
-    void freeBitmap(unsigned char *data);
-    void freeImage(const char* file);
-
     int drawBitmap(
         unsigned char *data,                      //!< 1D bitmap
         RSGL::rect r,                            //!< size to draw
@@ -342,23 +358,15 @@ namespace RSGL  {
     );                                           //!< draw a bitmap on the screen (returns the index texture in the texture buffer)
 /** @}*/
 
-//!< widgets
-/** \addtogroup widgets
- *  @{
- */
-#ifndef RSGL_NO_WIDGETS
-
-    /* widget rewrite later */
-
-
-
-#endif
-
 #ifndef RSGL_NO_AUDIO
+
+    struct audioData;
+
     struct audio {
         char* file = NULL;
-
         bool loop = 0;
+        
+        audioData* data;
 
         void play(const char* file);
         void play();
@@ -371,12 +379,21 @@ namespace RSGL  {
         int volume();
         unsigned int position();
         bool isPlaying();
+
+        ~audio(); /* free audioData's init malloc */
     };
 #endif
     /** @}*/
 
     bool timerT(int ticks);       //!< return true after tick amount of time has passed
     bool timerM(int miliseconds); //!< return true after milisecond amount of time has passed
+
+    typedef unsigned long thread;
+
+    thread createThread(void* (*function_ptr)(void*), void* args);
+    void cancelThread(thread thread);
+    void joinThread(thread thread);
+    void setThreadPriority(thread thread, unsigned char priority);
 };
 
 #endif /*RSGL_H*/

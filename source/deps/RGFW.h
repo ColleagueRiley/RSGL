@@ -230,6 +230,8 @@ void RGFW_setIcon(RGFW_window* win, /*!< source window */
 				 int channels /*!< how many channels the bitmap has (rgb : 3, rgba : 4) */
 			); /*!< image resized by default */
 
+void RGFW_defaultIcon(RGFW_window* win); /* sets the mouse to the default mouse image */
+
 void RGFW_setMouse(RGFW_window* win, unsigned char* image, int width, int height, int channels); /*!< sets mouse to bitmap (very simular to RGFW_setIcon)*/
 /*!< image NOT resized by default */
 void RGFW_setMouseDefault(RGFW_window* win); /* sets the mouse to the default mouse image */
@@ -438,7 +440,9 @@ void RGFW_initVulkan(RGFW_window* win, void* inst) {
 #ifdef _WIN32
 
 #include <windows.h>
-static void* RGFW_getProcAddress(const char* procname) { return (void*)wglGetProcAddress(procname); }
+#ifdef WGL
+static void* RGFW_getProcAddress(const char* procname) { return wglGetProcAddress(procname); }
+#endif
 #endif
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 const char* RGFW_keyStrings[128] = {"a", "s", "d", "f", "h", "g", "z", "x", "c", "v", "0", "b", "q", "w", "e", "r", "y", "t", "1", "2", "3", "4", "6", "5", "Equals", "9", "7", "Minus", "8", "0", "CloseBracket", "o", "u", "Bracket", "i", "p", "Return", "l", "j", "Apostrophe", "k", "Semicolon", "BackSlash", "Comma", "Slash", "n", "m", "Period", "Tab", "Space", "Backtick", "BackSpace", "0", "Escape", "0", "Super", "Shift", "CapsLock", "Alt", "Control", "0", "0", "0", "0", "0", "KP_Period", "0", "KP_Minus", "0", "0", "0", "0", "Numlock", "0", "0", "0", "KP_Multiply", "KP_Return", "0", "0", "0", "0", "KP_Slash", "KP_0", "KP_1", "KP_2", "KP_3", "KP_4", "KP_5", "KP_6", "KP_7", "0", "KP_8", "KP_9", "0", "0", "0", "F5", "F6", "F7", "F3", "F8", "F9", "0", "F11", "0", "F13", "0", "F14", "0", "F10", "0", "F12", "0", "F15", "Insert", "Home", "PageUp", "Delete", "F4", "End", "F2", "PageDown", "Left", "Right", "Down", "Up", "F1"};
@@ -561,7 +565,7 @@ void RGFW_createOpenGLContext(RGFW_window* win) {
 	eglDestroySurfaceSource = (PFNEGLDESTROYSURFACEPROC)  eglGetProcAddress("eglDestroySurface");
 	#endif
 
-    win->EGL_display = eglGetDisplay((EGLDisplay*)win->display);
+    win->EGL_display = eglGetDisplay((EGLNativeDisplayType)win->display);
 
     EGLint major, minor;
 	
@@ -597,7 +601,7 @@ void RGFW_createOpenGLContext(RGFW_window* win) {
 	eglSwapInterval(win->EGL_display, 1);
 }
 
-void* RGFW_getProcAddress(const char* procname) { return eglGetProcAddress(procname); }
+void* RGFW_getProcAddress(const char* procname) { return (void*)eglGetProcAddress(procname); }
 
 void RGFW_closeEGL(RGFW_window* win) {
     eglDestroySurface(win->EGL_display, win->EGL_surface);
@@ -667,14 +671,16 @@ Atom XdndAware, XdndTypeList,     XdndSelection,    XdndEnter,        XdndPositi
 #ifdef RGFW_OSMESA
 XImage* RGFW_omesa_ximage;
 #endif
-
+#ifndef RGFW_NO_X11_CURSOR
 typedef XcursorImage* (* PFN_XcursorImageCreate)(int,int);
 typedef void (* PFN_XcursorImageDestroy)(XcursorImage*);
 typedef Cursor (* PFN_XcursorImageLoadCursor)(Display*,const XcursorImage*);
+#endif
 #ifdef RGFW_GL
 typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
 #endif
 
+#ifndef RGFW_NO_X11_CURSOR
 PFN_XcursorImageLoadCursor XcursorImageLoadCursorSrc = NULL;
 PFN_XcursorImageCreate XcursorImageCreateSrc = NULL;
 PFN_XcursorImageDestroy XcursorImageDestroySrc = NULL;
@@ -684,6 +690,7 @@ PFN_XcursorImageDestroy XcursorImageDestroySrc = NULL;
 #define XcursorImageDestroy XcursorImageDestroySrc
 
 void* X11Cursorhandle = NULL;
+#endif
 
 unsigned int RGFW_windowsOpen = 0;
 
@@ -698,6 +705,7 @@ static void* RGFW_getProcAddress(const char* procname) { return (void*)glXGetPro
 #endif
 
 RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, unsigned long args) {
+	#ifndef RGFW_NO_X11_CURSOR
 	if (X11Cursorhandle == NULL) {
 		#if defined(__CYGWIN__)
 			X11Cursorhandle = dlopen("libXcursor-1.so", RTLD_LAZY | RTLD_LOCAL);
@@ -711,6 +719,7 @@ RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, un
 		XcursorImageDestroySrc = (PFN_XcursorImageDestroy)dlsym(X11Cursorhandle, "XcursorImageDestroy");
         XcursorImageLoadCursorSrc = (PFN_XcursorImageLoadCursor)dlsym(X11Cursorhandle, "XcursorImageLoadCursor");
 	}
+	#endif
 
 	RGFW_window* win = (RGFW_window*)malloc(sizeof(RGFW_window)); /* make a new RGFW struct */
 
@@ -935,8 +944,8 @@ unsigned int* RGFW_getScreenSize(RGFW_window* win) {
 	if (RGFW_ValidWindowCheck) (unsigned int[2]) {0, 0};
 	Screen* scrn = DefaultScreenOfDisplay((Display*)win->display);
 
-	RGFWScreen[0] = scrn->height;
-	RGFWScreen[1] = scrn->width;
+	RGFWScreen[0] = scrn->width;
+	RGFWScreen[1] = scrn->height;
 
 	return RGFWScreen;
 }
@@ -1256,6 +1265,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 			RGFW_setMouseDefault(win);
 			break;
 		case ConfigureNotify:
+			#ifndef RGFW_NO_X11_WINDOW_ATTRIB
 			XWindowAttributes a;
 			XGetWindowAttributes((Display *)win->display, (Window)win->window, &a);
 
@@ -1263,6 +1273,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 			win->srcY = win->y = a.y;
 			win->srcW = win->w = a.width;
 			win->srcH = win->h = a.height; 
+			#endif
 			break;
 		default:
 			#ifdef __linux__
@@ -1358,11 +1369,13 @@ void RGFW_closeWindow(RGFW_window* win) {
 			XCloseDisplay((Display *)win->display); /* kill the display*/
 	}
 
+	#ifndef RGFW_NO_X11_CURSOR
 	if (X11Cursorhandle != NULL && !RGFW_windowsOpen) {
 		dlclose(X11Cursorhandle);
 
 		X11Cursorhandle = NULL;
 	}
+	#endif
 
 	/* set cleared display / window to NULL for error checking */
 	win->display = (Display*)0;
@@ -1433,6 +1446,7 @@ void RGFW_setIcon(RGFW_window* win, unsigned char* src, int width, int height, i
 }
 
 void RGFW_setMouse(RGFW_window* win, unsigned char* image, int width, int height, int channels) {
+	#ifndef RGFW_NO_X11_CURSOR
 	/* free the previous cursor */
 	if (win->cursor != NULL && win->cursor != (void*)-1)
 		XFreeCursor((Display*)win->display, (Cursor)win->cursor);
@@ -1456,6 +1470,7 @@ void RGFW_setMouse(RGFW_window* win, unsigned char* image, int width, int height
 	win->cursorChanged = 1;
     win->cursor = (void*)XcursorImageLoadCursor((Display*)win->display, native);
 	XcursorImageDestroy(native);
+	#endif
 }
 
 void RGFW_setMouseDefault(RGFW_window* win) {
@@ -2301,8 +2316,6 @@ void RGFW_writeClipboard(RGFW_window* win, char* text) {
 }
 
 unsigned short RGFW_registerJoystick(RGFW_window* win, int jsNumber) {
-
-
 	return RGFW_registerJoystickF(win, (char*)"");
 }
 

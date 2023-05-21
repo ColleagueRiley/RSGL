@@ -31,21 +31,37 @@
 #include "../RSGL.hpp"
 #endif
 #ifndef RLGL_H
+#define GRAPHICS_API_OPENGL_11
 #include "deps/rlgl.h"
 #endif
 #include "deps/stb_image.h"
 
 #include "deps/fontstash.h"
-#include "deps/glfontstash.h"
+#include "deps/rglfontstash.h"
 
 #define glTexCoord2iXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
 #define glTexCoord2fXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
 #define glColor4iFF(args, index) \
-    if (args.gradient.size() > index) \
-        rlColor4ub(args.gradient[index].r, args.gradient[index].g, args.gradient[index].b, args.gradient[index].a);
+    if (args.gradient.size > index) \
+        rlColor4ub(args.gradient.color##index.r, args.gradient.color##index.g, args.gradient.color##index.b, args.gradient.color##index.a);
 
 namespace RSGL {
-    FONScontext* FONSfs = NULL;
+    template<typename type>
+    struct vector {
+        type* src;
+        size_t size = 0;
+
+        void push(type data) {
+            size++;
+            src = (type*)realloc(src, sizeof(type) * size);
+            src[size - 1] = data;
+        }
+
+        type& operator[](size_t i) { return src[i]; }
+
+        vector() { src = (type*)malloc(0); }
+        ~vector() { free(src); }
+    };
 
     extern RSGL::area REALcurrentWindowSize;
 
@@ -60,26 +76,33 @@ namespace RSGL {
         size = Size; 
         file = (char*)File; 
 
-        if (FONSfs == NULL)
-            FONSfs = glfonsCreate(500, 500, 1);
+        if (ctx == NULL)
+            ctx = glfonsCreate(500, 500, 1);
 
-        fonsFont = fonsAddFont(FONSfs, "sans", File);
+        fonsFont = fonsAddFont(ctx, "sans", File);
         
         if(fonsFont == FONS_INVALID) 
             printf("failed to open font\n"); 
     }
 
-    int textWidth(const char* text, RSGL::font font, int size){
-        fonsSetSize(FONSfs, size);
-        fonsSetFont(FONSfs, font.fonsFont);
-        return fonsTextBounds(FONSfs, 0, 0, text, NULL, NULL);
+    font::~font() { 
+        if (ctx == NULL)
+            glfonsDelete(ctx); 
+        
+        ctx = NULL;
+    }
+
+    int textWidth(const char* text, RSGL::font font, int size) {
+        fonsSetSize(font.ctx, size);
+        fonsSetFont(font.ctx, font.fonsFont);
+        return fonsTextBounds(font.ctx, 0, 0, text, NULL, NULL);
     }
 
     void loadFont(RSGL::font font, int size){
         bool loaded = false; 
 
 
-        for (int i = 0; i < fonts.size(); i++){ 
+        for (int i = 0; i < fonts.size; i++){ 
             if (fonts[i].file == font.file){ 
                 font = fonts[i];
                 loaded = true; 
@@ -89,7 +112,7 @@ namespace RSGL {
 
         if (!loaded){ // if it's not in fonts, load the font into fonts
             font = RSGL::font(font.file, size);
-            fonts.push_back(font); 
+            fonts.push(font); 
         } 
     }
 
@@ -99,7 +122,7 @@ namespace RSGL {
         bool loaded = false; 
 
 
-        for (int i = 0; i < fonts.size(); i++){ 
+        for (int i = 0; i < fonts.size; i++){ 
             if (fonts[i].file == font.file){ 
                 Font = fonts[i];
                 loaded = true; 
@@ -109,50 +132,62 @@ namespace RSGL {
     
         if (!loaded){ // if it's not in fonts, load the font into fonts
             Font = RSGL::font(font.file, c.d);
-            fonts.push_back(Font); 
+            fonts.push(Font); 
         } 
 
-        int w = fonsTextBounds(FONSfs, c.x, c.y, text, NULL, NULL);
+        int w = fonsTextBounds(font.ctx, c.x, c.y, text, NULL, NULL);
 
-        fonsClearState(FONSfs);
+        fonsClearState(font.ctx);
 
-        fonsSetSize(FONSfs, c.d);
-        fonsSetFont(FONSfs, Font.fonsFont);
+        fonsSetSize(font.ctx, c.d);
+        fonsSetFont(font.ctx, Font.fonsFont);
 
         glPrerequisites({c.x, c.y + (c.d - (c.d/4)), w, c.d}, color, args);
   
-        fonsSetColor(FONSfs, glfonsRGBA(color.r, color.b, color.g, color.a));
+        fonsSetColor(font.ctx, glfonsRGBA(color.r, color.b, color.g, color.a));
 
-        RSGL::vector<char*> texts = {" "};
-        texts.erase(0);
+        size_t textsSize = 1;
+        for (int i = 0; i < strlen(text); i++)
+            if (text[i] == '\n')
+                textsSize++;
 
-        char* col = (char*)malloc(0);
-        size_t strSize = 0;
-        
-        for (int i = 0; i < strlen(text); i++) {        
-            strSize++;
-            col = (char*)realloc(col, strSize);
-            col[strSize - 1] = text[i];
-            
-            if (i == strlen(text) - 1) {
-                //printf("%s\n", col);
-                texts.push_back(col);
-                //printf("%s\n", texts[texts.size() - 1]);
+        char* texts[textsSize];
 
-                //free(col);
-                //col = (char*)realloc(col, 0);
-            }
+        for (int i = 0; i < textsSize; i++) {
+            texts[i] = (char*)malloc(strlen(text) * sizeof(char*));
+
+            memset(texts[i], 0, strlen(text) * sizeof(char));
         }
 
-        //free(col);
+        if (textsSize == 1) 
+            texts[0] = (char*)text;
 
+        else {
+            int x = 0, y = 0;
+
+            for (int i = 0; i < strlen(text); i++) {
+                if (text[i] == '\n') {
+                    x++;
+                    y = 0;
+                }
+                else {
+                    texts[x][y] = text[i];
+                    y++;
+                }
+            }
+        }
+        
         int nly = 0;
         
-        for (int i = 0; i < texts.size(); i++) {
-            fonsDrawText(FONSfs, c.x, c.y + (c.d - (c.d/4)) + nly, texts[i], NULL);
-            nly += c.d;
+        for (int i = 0; i < textsSize; i++) {
+            fonsDrawText(font.ctx, c.x, c.y + (c.d - (c.d/4)) + nly, texts[i], NULL);
+            
+            if (textsSize > 1)
+                free(texts[i]);
+            nly += c.d; 
         } 
-
+        
+        
         rlPopMatrix();
     }
 
@@ -309,16 +344,9 @@ namespace RSGL {
         RSGL::drawRect((rect){p.x, p.y, 1, 1}, c, args); // just draw a 1x1 rect  
     }
 
-    void drawCircle(RSGL::circle c, RSGL::color color, RSGL::drawArgs args) {
-        RSGL::drawOval((rect){c.x, c.y, c.d, c.d}, color, args);
-    }
+    void drawCircle(RSGL::circle c, RSGL::color color, RSGL::drawArgs args) { RSGL::drawOval((rect){c.x, c.y, c.d, c.d}, color, args); }
 
-    void drawOval(RSGL::oval o, RSGL::color c, RSGL::drawArgs args) {
-        if (args.vectorGraphics)
-            return RSGL::drawSoftOval(o, c, args);
-        else 
-            return RSGL::drawPolygon(o, c, 360, args);
-    }
+    void drawOval(RSGL::oval o, RSGL::color c, RSGL::drawArgs args) { RSGL::drawPolygon(o, c, 360, args); }
 
     void drawPolygon(RSGL::oval o, RSGL::color color, int sides, RSGL::drawArgs args) {
         REALcurrentWindowSize = args.windowSize;
@@ -340,21 +368,27 @@ namespace RSGL {
         o.y += o.h;
         float centralAngle = args.rotationAngle;
         
+
+        double t = 0;
         glPrerequisites(o, color, args);
         rlBegin(args.fill ? RL_QUADS : RL_LINES);
             for (int i = 0; i < sides; i++) {
                 rlColor4ub(color.r, color.g, color.b, color.a);
 
                 if (args.fill) {
+                    t = (i/360.0f);
+
                     rlTexCoord2f(0, 0);
                     rlVertex2f(o.x, o.y);
 
-                    rlTexCoord2f(0, (sinf(DEG2RAD*centralAngle)*o.w)/o.w);
+                    rlTexCoord2f(0, t);
                     rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
 
+                    rlTexCoord2f(t, t);
                     rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
 
                     centralAngle += 360.0f/(float)sides;
+                    rlTexCoord2f(t, 0);
                     rlVertex2f(o.x + sinf(DEG2RAD*centralAngle)*o.w, o.y + cosf(DEG2RAD*centralAngle)*o.h);
                 } else {
                     glColor4iFF(args, 0);
@@ -379,8 +413,8 @@ namespace RSGL {
         int xx = -1; // check indexs of texs this is
 
         // try to find if the image has been preloaded
-        if (tex.size() && args.preLoad) { 
-            for (int i=0; i < tex.size(); i++)
+        if (tex.size && args.preLoad) { 
+            for (int i=0; i < tex.size; i++)
                 if (sizeof(data) == sizeof(RSGL::tex[i].data) && !memcmp(data, RSGL::tex[i].data, sizeof(data))) {
                     xx = i;
                     break;
@@ -419,9 +453,9 @@ namespace RSGL {
 
             glBindTexture(GL_TEXTURE_2D, 0);
 
-            tex.push_back(RSGL::image());
+            tex.push(RSGL::image());
 
-            xx = tex.size() - 1;
+            xx = tex.size - 1;
 
             tex[xx].data = data;
             tex[xx].tex = texture;
@@ -440,7 +474,7 @@ namespace RSGL {
     int drawImage(const char* file, RSGL::rect r, RSGL::drawArgs args/*={}*/) { 
         int xx = -1;
        
-        for (int i = 0; i < tex.size(); i++) /* check if the file has already been loaded */
+        for (int i = 0; i < tex.size; i++) /* check if the file has already been loaded */
             if (file == tex[i].file) 
                 xx = i;
 
@@ -451,7 +485,10 @@ namespace RSGL {
 
             xx = drawBitmap(data, (rect){0, 0, 0, 0}, c, (area){w, h}, args);
 
+            free(data);
+
             tex[xx].file = (char*)file;
+            tex[xx].data = NULL;
         }
         
         args.texture = xx;
@@ -476,65 +513,6 @@ namespace RSGL {
         RSGL::drawOval((RSGL::rect){r.x, r.y  + (r.h - d.roundPoint.y),  d.roundPoint.x, d.roundPoint.y}, c, d);
     }
 
-    void drawSoftOval(RSGL::rect rect, RSGL::color c, RSGL::drawArgs args) {
-        REALcurrentWindowSize = args.windowSize;
-
-
-        int xx = -1; // check indexs of texs this is
-
-        // try to find if the rect has been preloaded
-        if (tex.size() && args.texture == -1) { 
-            for (int i=0; i < tex.size(); i++) { 
-                if (RSGL::tex[i].file == (char*)"RSGLOVAL" && RSGL::tex[i].r.w == rect.w && RSGL::tex[i].r.h == rect.h) {
-                    xx = i;
-                    break;
-                } 
-            }
-        }
-
-        if (xx==-1 && args.texture == -1) { // load the image if it has not been preloaded
-            int w, h, n = 4;
-            unsigned char channels = 4;
-
-            char file[165];
-            sprintf(file, "<rect\nfill=\"rgb(255, 255, 255)\"\nwidth=\" %i \"\nheight=\" %i \"\nstroke=\"rgb(255, 255, 255)\"\n"
-                            "stroke-width=\" %i \"\nfill-opacity=\" %i \"\nstroke-opacity=\"1\"\nrx=\"204\"\nry=\"204\">",
-                    rect.w, rect.h, (!args.fill) + args.lineWidth, args.fill
-            );
-            
-            NSVGimage* image = nsvgParse(file, "px", 96); // load the file
-            
-            // grab width/height
-            RSGL::area size = {(int)image->width, (int)image->height};
-
-            NSVGrasterizer* rast = nsvgCreateRasterizer(); // create rasterzing object for "flattening"
-
-            unsigned char* data = (unsigned char*)malloc(image->width*image->height*4); // make data with room for the image
-
-            nsvgRasterize(rast, image, 0,0,1, data, image->width,image->height, image->width*4); // load the flattened image into the data
-            xx = RSGL::drawBitmap(data, RSGL::rect(), n, size, args);
-
-            // free data
-            nsvgDelete(image);
-            nsvgDeleteRasterizer(rast);
-            
-            RSGL::tex[xx].file = (char*)"RSGLOVAL";
-            RSGL::tex[xx].r = rect;
-        }
-
-        else {
-            if (args.texture == -1)
-                args.texture = xx;
-
-            if (!sizeof(args.gradient))
-                args.gradient[0] = c;
-
-            args.rounded = false;
-            
-            RSGL::drawRect(rect, c, args);
-        }
-    }
-
     int loadImage(const char* file) { 
         return RSGL::drawImage((char*)file, (rect){0, 0, 0, 0}); 
     }
@@ -546,7 +524,7 @@ namespace RSGL {
     void freeBitmap(int tex) {
         RSGL::tex[tex].~bitmap();
 
-        for (int i = tex; i < RSGL::tex.size(); i++)
+        for (int i = tex; i < RSGL::tex.size; i++)
             RSGL::tex[i] = RSGL::tex[i+1];
     }
 
@@ -561,7 +539,7 @@ namespace RSGL {
     }
 
     void freeImage(const char* file) { 
-        for (int i=0; i < tex.size(); i++)
+        for (int i=0; i < tex.size; i++)
             if (RSGL::tex[i].file == file) {
                 RSGL::freeImage(i);
                 break;
@@ -593,12 +571,13 @@ namespace RSGL {
         glLineWidth(args.lineWidth);
     }
 
-    bitmap::~bitmap() { freeBitmap(data); }
+    bitmap::~bitmap() { 
+        if (data != NULL)
+            free(data);
+        if (tex != -1)
+            glDeleteTextures(1, &tex);
 
-    void freeBitmap(unsigned int tex) { 
-        if (RSGL::tex[tex].data != NULL)
-            free(RSGL::tex[tex].data); 
-
-        RSGL::tex[tex].data = NULL;
+        data = NULL;
+        tex = -1;
     }
 }

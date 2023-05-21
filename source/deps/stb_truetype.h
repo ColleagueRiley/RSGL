@@ -460,8 +460,10 @@ int main(int arg, char **argv)
    #endif
 
    // #define your own functions "STBTT_malloc" / "STBTT_free" to avoid malloc.h
+   #ifndef STBTT_malloc
    #define STBTT_malloc(x,u)  ((void)(u),malloc(x))
    #define STBTT_free(x,u)    ((void)(u),free(x))
+   #endif
    #endif
 
    #ifndef STBTT_assert

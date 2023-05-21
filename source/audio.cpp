@@ -42,49 +42,45 @@
 #include "deps/miniaudio.h"
 
 namespace RSGL{
-    struct audioData{
-        RSGL::string file;
+    struct audioData {
         ma_decoder decoder;
         ma_result result;
         ma_device device;
+
+        bool free = true;
     };
 
-    audioData* aData;
-    size_t aDataSize = 0;
-
-    int str2num(RSGL::string f);
     void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 }
 
-void RSGL::audio::play(RSGL::string file){
-    if (file.size()) {
-        aDataSize++;
-        aData = (audioData*)realloc(aData, aDataSize * sizeof(audioData));
+void RSGL::audio::play(const char* file){
+    if (strlen(file) && !isPlaying()) {
+        data = (audioData*)malloc(sizeof(audioData));
+        data->free = false;
 
-        this->file = file;
-        aData[aDataSize - 1].file = file;
-        aData[aDataSize - 1].result = ma_decoder_init_file(file.c_str(), NULL, &aData[aDataSize - 1].decoder);
+        this->file = (char*)file;
+        data->result = ma_decoder_init_file(file, NULL, &data->decoder);
         
-        if (aData[aDataSize - 1].result != MA_SUCCESS)
+        if (data->result != MA_SUCCESS)
             printf("Could not load file: %s\n", file);
 
         ma_device_config deviceConfig;
         deviceConfig = ma_device_config_init(ma_device_type_playback);
-        deviceConfig.playback.format   = aData[aDataSize - 1].decoder.outputFormat;
-        deviceConfig.playback.channels = aData[aDataSize - 1].decoder.outputChannels;
-        deviceConfig.sampleRate        = aData[aDataSize - 1].decoder.outputSampleRate;
+        deviceConfig.playback.format   = data->decoder.outputFormat;
+        deviceConfig.playback.channels = data->decoder.outputChannels;
+        deviceConfig.sampleRate        = data->decoder.outputSampleRate;
         deviceConfig.dataCallback      = data_callback;
-        deviceConfig.pUserData         = &aData[aDataSize - 1].decoder;
+        deviceConfig.pUserData         = &data->decoder;
 
-        if (ma_device_init(NULL, &deviceConfig, &aData[aDataSize - 1].device) != MA_SUCCESS) {
+        if (ma_device_init(NULL, &deviceConfig, &data->device) != MA_SUCCESS) {
             printf("Failed to open playback device.\n");
-            ma_decoder_uninit(&aData[aDataSize - 1].decoder);
+            ma_decoder_uninit(&data->decoder);
         }
 
-        if (ma_device_start(&aData[aDataSize - 1].device) != MA_SUCCESS) {
+        if (ma_device_start(&data->device) != MA_SUCCESS) {
             printf("Failed to start playback device.\n");
-            ma_device_uninit(&aData[aDataSize - 1].device);
-            ma_decoder_uninit(&aData[aDataSize - 1].decoder);
+            ma_device_uninit(&data->device);
+            ma_decoder_uninit(&data->decoder);
         }
     }
     
@@ -92,50 +88,56 @@ void RSGL::audio::play(RSGL::string file){
 }
 
 void RSGL::audio::play(){
-    ma_device_start(&aData[str2num(file)].device);
+    ma_device_start(&data->device);
     if (position() == length())
         seek(0);
 }
 
 void RSGL::audio::pause(){
-    ma_device_stop(&aData[str2num(file)].device);
+    ma_device_stop(&data->device);
 }
 
 void RSGL::audio::seek(int pos){
-    aData[str2num(file)].result = ma_decoder_seek_to_pcm_frame(&aData[str2num(file)].decoder, pos * 44100);
+    data->result = ma_decoder_seek_to_pcm_frame(&data->decoder, pos * 44100);
 }
 
 void RSGL::audio::stop(){
     pause();
-    ma_device_uninit(&aData[str2num(file)].device);
-    ma_decoder_uninit(&aData[str2num(file)].decoder);
+    ma_device_uninit(&data->device);
+    ma_decoder_uninit(&data->decoder);
 }
 
 
 void RSGL::audio::setVolume(int vol){
-    aData[str2num(file)].result = ma_device_set_master_volume(&aData[str2num(file)].device, vol/100.0f);
+    data->result = ma_device_set_master_volume(&data->device, vol/100.0f);
 }
 
 int RSGL::audio::volume(){
     float volume;
-    aData[str2num(file)].result = ma_device_get_master_volume(&aData[str2num(file)].device, &volume);
+    data->result = ma_device_get_master_volume(&data->device, &volume);
     return volume*100;
 }
 
 unsigned int RSGL::audio::position(){
     long long unsigned int pos;
-    ma_decoder_get_cursor_in_pcm_frames(&aData[str2num(file)].decoder, &pos);
+    ma_decoder_get_cursor_in_pcm_frames(&data->decoder, &pos);
     return pos/44100;
 }
 
 bool RSGL::audio::isPlaying(){
-    return ma_device_is_started(&aData[str2num(file)].device);
+    return ma_device_is_started(&data->device);
 }
 
 int RSGL::audio::length(){
     long long unsigned int len;
-    ma_decoder_get_length_in_pcm_frames(&aData[str2num(file)].decoder, &len);
+    ma_decoder_get_length_in_pcm_frames(&data->decoder, &len);
     return len/44100;
+}
+
+RSGL::audio::~audio() {
+    if (data->free)
+        free(data);
+    data->free = true;
 }
 
 void RSGL::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount){    
@@ -145,11 +147,4 @@ void RSGL::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, 
     }
     
     ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
-}
-
-int RSGL::str2num(RSGL::string f){
-    for (int i = 0; i < aDataSize; i++)
-        if (f == aData[i].file)
-            return i;
-    return 0;
 }
