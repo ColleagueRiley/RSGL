@@ -70,21 +70,23 @@ namespace RSGL  {
 /** @}*/
 
     /*! joystick button codes (based on xbox/playstation), you may need to change these values per controller */
-    unsigned char JS_A = 0; /* or PS X button */
-    unsigned char JS_B = 1; /* or PS circle button */
-    unsigned char JS_Y = 2; /* or PS triangle button */
-    unsigned char JS_X = 3; /* or PS square button */
-    unsigned char JS_START = 9; /* start button */
-    unsigned char JS_SELECT = 8; /* select button */
-    unsigned char JS_HOME = 10; /* home button */
-    unsigned char JS_UP = 13; /* dpad up */
-    unsigned char JS_DOWN = 14; /* dpad down*/
-    unsigned char JS_LEFT = 15; /* dpad left */
-    unsigned char JS_RIGHT = 16; /* dpad right */
-    unsigned char JS_L1 = 4; /* left bump */
-    unsigned char JS_L2 = 5; /* left trigger*/
-    unsigned char JS_R1 = 6; /* right bumper */
-    unsigned char JS_R2 = 7; /* right trigger */
+    enum joystick_constants {
+        JS_A = 0, /* or PS X button */
+        JS_B = 1, /* or PS circle button */
+        JS_Y = 2, /* or PS triangle button */
+        JS_X = 3, /* or PS square button */
+        JS_START = 9, /* start button */
+        JS_SELECT = 8, /* select button */
+        JS_HOME = 10, /* home button */
+        JS_UP = 13, /* dpad up */
+        JS_DOWN = 14, /* dpad down*/
+        JS_LEFT = 15, /* dpad left */
+        JS_RIGHT = 16, /* dpad right */
+        JS_L1 = 4, /* left bump */
+        JS_L2 = 5, /* left trigger*/
+        JS_R1 = 6, /* right bumper */
+        JS_R2 = 7 /* right trigger */
+    };
 
     //! shape/draw structures
     /** \addtogroup shape-structs
@@ -285,16 +287,18 @@ namespace RSGL  {
         //!< rect-only
         bool rounded = false;
         RSGL::point roundPoint = (RSGL::point){10, 10}; //!< where the rounding is : 10, 10 is good for a round rect, 24, 24 is a bean shape, 204, 204 is an oval
+        //!< polygon / circle only
+        RSGL::point arc = (RSGL::point){0, -1}; /* arc open/close (0 - 360 (circles)), 0, -1 = default */
         #else /* c++98 doesn't mind this */
         bool fill, preLoad, rounded;
         float rotationAngle, flipHorizontal, flipVertical,lineWidth;
         int texture, glTexture;
         RSGL::gradient gradient;
         RSGL::area windowSize;
-        RSGL::point roundPoint;
+        RSGL::point roundPoint, arc;
 
         drawArgs() { /* this is compressed because this information is already included + it just adds extra text */
-            fill = true;          rotationAngle = 0;            flipHorizontal = 0;          flipVertical = 0;         lineWidth = 0;       texture = -1;          glTexture = -1;              preLoad = true;           gradient = (RSGL::gradient){ };            windowSize = *currentWindowSize();        rounded = false;          roundPoint = (RSGL::point){10, 10};
+            fill = true;          rotationAngle = 0;            flipHorizontal = 0;          flipVertical = 0;         lineWidth = 0;       texture = -1;          glTexture = -1;              preLoad = true;           gradient = RSGL::gradient();            windowSize = *currentWindowSize();        rounded = false;          roundPoint = (RSGL::point){10, 10};              arc =  (RSGL::point){0, -1};
         }
         #endif
     };                       //!< general args for drawing
@@ -374,7 +378,7 @@ namespace RSGL  {
         char channels,                            //!< channels in data
         RSGL::area memsize,                      //!< size of data
         RSGL::drawArgs args = drawArgs(),                //!< optional args for drawing
-        RSGL::color color = (RSGL::color){255, 255, 255, 255} //!< optional forced color
+        RSGL::color color = RSGL::color(255, 255, 255, 255) //!< optional forced color
     );                                           //!< draw a bitmap on the screen (returns the index texture in the texture buffer)
 /** @}*/
 
@@ -409,6 +413,43 @@ namespace RSGL  {
 #endif
     /** @}*/
 
+    enum buttonEvent { hovered, held, released, none };
+
+    struct button {
+        RSGL::rect r;
+        buttonEvent event;
+
+        button(){ event = none; }
+        button(RSGL::rect rect){ r = rect;          event = none; }
+
+        buttonEvent& checkEvent(RSGL::event e);
+        void draw(RSGL::color c, drawArgs d = drawArgs());
+    };
+
+    struct slider {
+        RSGL::rect bar;
+        RSGL::button tick;
+
+        int checkEvent(RSGL::event e);
+        void draw(RSGL::color c, RSGL::color c1, drawArgs d = drawArgs(), drawArgs d2 = drawArgs()); 
+    };
+
+    struct textbox {
+        char* text; /* source text */
+        RSGL::button box; /* text box */
+
+        void checkEvent(RSGL::event e); /* fills in `text` when a key is pressed */
+
+        /*  cir.x/cir.y offsets box.x/box.y, 
+            if (cir.d == 0) font size is based on the box size + text length 
+        */
+        void draw(RSGL::circle cir, RSGL::font font, RSGL::color col, drawArgs args = drawArgs()); /* draws text */
+    };
+
+    /* 
+        menus : just use an array of RSGL::button(s) 
+    */
+
     bool timerT(int ticks);       //!< return true after tick amount of time has passed
     bool timerM(int miliseconds); //!< return true after milisecond amount of time has passed
 
@@ -429,6 +470,7 @@ namespace RSGL  {
 #include "source/rsgl.cpp"
 #include "source/draw.cpp"
 #include "source/collide.cpp"
+#include "source/widgets.cpp"
 
 #ifndef RSGL_NO_AUDIO
 #include "source/audio.cpp"
