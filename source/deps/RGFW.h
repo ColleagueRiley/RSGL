@@ -1273,7 +1273,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 			win->srcH = win->h = a.height; 
 			#endif
 			break;
-		default:
+		default: {
 			#ifdef __linux__
 			unsigned char i;
 			for (i = 0; i < win->joystickCount; i++) {
@@ -1315,6 +1315,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 			#endif
 
 			break;
+		}
 	}
 
 	if ((win->srcX != win->x) || (win->srcY != win->y)) {

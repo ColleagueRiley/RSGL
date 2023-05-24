@@ -31,7 +31,6 @@
 #include "../RSGL.hpp"
 #endif
 #ifndef RLGL_H
-#define GRAPHICS_API_OPENGL_11
 #include "deps/rlgl.h"
 #endif
 

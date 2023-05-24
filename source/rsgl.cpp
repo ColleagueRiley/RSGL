@@ -36,7 +36,7 @@
 #define RLGL_IMPLEMENTATION
 
 #ifndef RSGL_H
-#include "../RSGL.hpp"
+#include "RSGL.hpp"
 #endif
 
 #include "deps/rlgl.h"

@@ -35,7 +35,7 @@
 
 
 #ifndef RSGL_H
-#include "../RSGL.hpp"
+#include "RSGL.hpp"
 #endif
 
 #define MINIAUDIO_IMPLEMENTATION

@@ -21,7 +21,7 @@
 */
 
 #ifndef RSGL_H
-#include "../include/RSGL.hpp"
+#include "RSGL.hpp"
 #endif
 
 #ifdef WINE
