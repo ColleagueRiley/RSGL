@@ -413,6 +413,7 @@ namespace RSGL  {
 #endif
     /** @}*/
 
+#ifndef RSGL_NO_WIDGETS
     enum buttonEvent { hovered, held, released, none };
 
     struct button {
@@ -445,6 +446,7 @@ namespace RSGL  {
         */
         void draw(RSGL::circle cir, RSGL::font font, RSGL::color col, drawArgs args = drawArgs()); /* draws text */
     };
+#endif
 
     /* 
         menus : just use an array of RSGL::button(s) 
@@ -464,13 +466,15 @@ namespace RSGL  {
 #endif /*RSGL_H*/
 
 #define RSGL_H
-
+#define RSGL_SILICON
 
 #ifdef RSGL_IMPLEMENTATION
 #include "source/rsgl.cpp"
 #include "source/draw.cpp"
 #include "source/collide.cpp"
+#ifndef RSGL_NO_WIDGETS
 #include "source/widgets.cpp"
+#endif
 
 #ifndef RSGL_NO_AUDIO
 #include "source/audio.cpp"

@@ -2350,7 +2350,12 @@ void RGFW_setThreadPriority(RGFW_thread thread, unsigned char priority) { SetThr
 
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 #define GL_SILENCE_DEPRECATION
+
+#ifdef RSGL_SILICON
+#include "Silicon/Silicon.h"	
+#else
 #include <Silicon/silicon.h>
+#endif
 #include <OpenGL/gl.h>
 	
 void* RGFWnsglFramework = NULL; 
