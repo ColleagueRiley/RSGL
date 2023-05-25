@@ -2,12 +2,11 @@ all:
 	@make build
 	@make install install
 
-INSTALL_PATH = usr
+INSTALL_PATH = /usr
 
 build:
 	@if [ $(CXX)false = false ]; then\
 		CXX=g++;\
-		echo hi'\
 		echo $(CXX);\
 	fi
 
@@ -27,9 +26,9 @@ build:
 	fi
 
 install:
-	@if [ $(INSTALL_PATH)t = usrt ] && [ `uname` = Windows_NT ]; then\
+	@if [ $(INSTALL_PATH)TRUE = /usrTRUE ] && [ `uname` =  Windows_NT ]; then\
 		echo If you want to install RSGL on linux you have to manually set your install path;\
-		echo you can do this by adding INSTALL_PATH=<path> to your make command;\
+		echo "you can do this by adding INSTALL_PATH=<path> to your make command";\
 		echo your install path is the folder that olds your /lib and /include folders;\
 		echo ex. /usr on linux;\
 		exit 1;\
