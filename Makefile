@@ -1,23 +1,47 @@
-all3:
-	@make Build
-	#@make install install
+all:
+	@make build
+	@make install install
 
-Build:
+INSTALL_PATH = usr
+
+build:
+	@if [ $(CXX)false = false ]; then\
+		CXX=g++;\
+		echo hi'\
+		echo $(CXX);\
+	fi
+
 	@mkdir -p build build/include build/include/RSGL
 	@cp RSGL.hpp build/include/RSGL
-	@if [ $(HEADERS-ONLY)false = falsefalse ]; then\
+	@if [ $(HEADERS-ONLY)false = false ]; then\
 		cp -r ./source build/include/RSGL;\
 	fi
 	
 	@if [ $(COMPILE)true = true ]; then\
 		mkdir -p build/obj build/lib;\
 		cp RSGL.hpp RSGL.cpp;\
-		g++ -fPIC -c RSGL.cpp -D RSGL_IMPLEMENTATION -o ./build/obj/RSGL.o;\
+		$(CXX) -fPIC -c RSGL.cpp -D RSGL_IMPLEMENTATION -o ./build/obj/RSGL.o;\
 		rm RSGL.cpp;\
-		g++ -shared ./build/obj/RSGL.o -o ./build/lib/libRSGL.so;\
+		$(CXX) -shared ./build/obj/RSGL.o -o ./build/lib/libRSGL.so;\
 		ar rcs ./build/lib/libRSGL.a ./build/obj/RSGL.o;\
 	fi
 
 install:
+	@if [ $(INSTALL_PATH)t = usrt ] && [ `uname` = Windows_NT ]; then\
+		echo If you want to install RSGL on linux you have to manually set your install path;\
+		echo you can do this by adding INSTALL_PATH=<path> to your make command;\
+		echo your install path is the folder that olds your /lib and /include folders;\
+		echo ex. /usr on linux;\
+		exit 1;\
+	fi;\
+
 	@echo installing RSGL headers
-	@cp build/include/* -r /usr/include
+	@cp build/include/* -r $(INSTALL_PATH)/include
+	
+	@if [ $(COMPILE)true = true ]; then\
+		cp build/lib/libRSGL.so $(INSTALL_PATH)/lib;\
+		cp build/lib/libRSGL.a $(INSTALL_PATH)/local/lib;\
+	fi
+
+clean:
+	rm -r build
