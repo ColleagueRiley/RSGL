@@ -4,26 +4,18 @@
 
 ![alt text](https://github.com/ColleagueRiley/RSGL/blob/main/logo.png?raw=true)
 
-A simple GUI library currently for Linux and Windows
+A simple GUI library currently for Linux, Windows and MacOS
 
 # Building
-  to built simply run `./configure && make`
+  to built simply run `make build`
 
-  to customize the build you can put pre-defined vars before ./configure 
+  to customize the build you can put pre-defined vars after `make build`
   ex.
   
-  `WINDIR="this is what comes before the /lib /include, /lib (ex. /usr for linux)" OS="(Linux or WindowsNT)" LIBA="this is where the .a file goes, ex. local/lib" LIB=this is where the .so/dll goes, ex. /lib" BIN="ex. /bin" INCLUDE="ex. include" CCEXT="this goes before g++ or gcc, ex. wine" ./configure` 
+  `make GXX=g++(c++ compiler) COMPILE=false (just install headers) HEADERS-ONLY=false (don't move source files with headers (don't support installed header-only option)` 
 
-# MACOS / GLFW
-  RSGL does not have direct support for macos via (RGFW), to use RSGL for macos, you must install the GLFW-Backend branch of RSGL
-
-  Even if RSGL supports your system, you can install the GLFW-Backend if you want to for whatever reason.
-  Though the GLFW backend works essentally the same as the RGFW backend except it's bigger in size.
-
-# single-header
-  When you build RSGL, it by default makes a single header file, if you want to use that file a lone, after you build the file is in `./build/include`
-
-  To "link" RSGL with the single header file simply add `#define RSGL_IMPLEMENTATION` before you include RSGL ex.
+# header-only
+  To "link" RSGL with the header-only option simply add `#define RSGL_IMPLEMENTATION` before you include RSGL ex.
 
   ```cpp
   #define RSGL_IMPLEMENTATION
@@ -38,6 +30,12 @@ A simple GUI library currently for Linux and Windows
 
   to install with the make file run `make install` or `sudo make install`, if you're on linux and need the perms
 
+  installing also has the custom variable `INSTALL_PATH`, this var is required if you're using windows
+
+  ex.
+
+  `make install INSTALL_PATH=/usr(where to find lib and include folder)`
+
   to install by hand simply,
     move ./build/lib/*.a to the proper *.a lib folder (ex. /usr/local/lib)
     `cp ./build/lib/*.a /usr/local/lib`
@@ -51,41 +49,11 @@ A simple GUI library currently for Linux and Windows
     `cp ./build/bin/* /usr/bin`
 
 # Modules 
-  RSGL also has optional modules inwhich you can include specific modules alone, for example
-
-  RSGL_CORE - window handling
-
-  RSGL_SHAPES - sturcts shape and collision handling
-
-  RSGL_GL - RSGL Graphics Library, draw functions
-
-  RSGL_WIDGETS - Widgets
-
-  RSGL_OTHER - Other non-gui functions
-
-  RSGL_AUDIO - Audio functions
-
-  you can select specific modules by using `#define MOUDLE` before including RSGL
-
-  ex. 
-
-  ```cpp
-  #define RSGL_GL
-  #include <RSGL.hpp>
-  ```
+  #define  RSGL_NO_WIDGETS (makes it so RSGL doesn't include widget functions)
+  #define  RSGL_NO_AUDIO (makes it so RSGL doesn't include audio functions)
 
 # Dependencies
-  Almost all of RSGL's dependencies are built-in, 
-  
-  depencies :
-
-  opengl
-
-  linux:
-    libX11 (xlib) - (not reqired if you're doing a glfw build)
-
-  windows:
-   libgdi, win32 api headers
+  All of RSGL's (non-native) dependencies are built-in, 
 
 # compiling
   you can compile two ways, with the shared library, which is as simple as linking `libRSGL.so` or `-lRSGL` (if it's installed), you can also do `$((pkg-config RSGL -libs)`
@@ -109,9 +77,12 @@ A simple GUI library currently for Linux and Windows
 
   RGFW is considered apart of the "RSGL Project".
 
-
-
 # credits
+
+# RLGL
+  RLGL is an OpenGL abstraction layer that makes opengl version managing and rendering a lot easier. 
+
+  It allows RSGL render using a simplified pipeline system while raylib does advanced shader and preformance work in the background
 
 # stb_image 
   stb_image is an public domain single header image loader library, RSGL uses this for loading images
@@ -133,18 +104,24 @@ A simple GUI library currently for Linux and Windows
 
   miniaudio webpage : https://miniaud.io/
 
-# GLFW
-  RSGL uses GLFW as an optional backend on a seperate branch. Though RSGL for MacOS requires the GLFW Branch. This may change in the future if and when MacOS support is added to RGFW
+# Silicon
+  Silicon is a C binding for MacOS's Cocoas library. This library makes working with apple's API a lot better because you don't have to directly work with Objective-C.
+  
+  RSGL uses silicon via RGFW
+
+  ![https://github.com/EimaMei/Silicon](Silicon Github)
 
 # Raylib
   Because this project was created and the majority of features were created before my learning of Raylib, I am very surprised to see how simular Raylib is to RSGL. 
   Raylib and it's community seems to have a very simular view of what a good GUI library should be like as RSGL does. So thank you Raylib for showing me that RSGL is not alone.
 
-  However, some newer additions were inspired by Raylib including it's modular design and verbos examples. 
+  However, some newer additions were inspired by Raylib including it's modular design, use of RLGL (which is created for raylib) and verbos examples. 
 
 # Eima
   Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project, has helped with coming up with ideas for the project, has helped when debating new featues of the project
   and even has contributed some code to the project. 
+
+  Eima also made Silicon, without Silicon RSGL/RGFW probably would not support native macOS
 
   ![Eima's own programming launage for HOI 4](https://github.com/EimaMei/HPL/)
   
