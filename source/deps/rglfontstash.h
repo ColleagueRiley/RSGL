@@ -140,6 +140,7 @@ static void glfons__renderDraw(void* userPtr, const float* verts, const float* t
 	glEnable(GL_TEXTURE_2D);
 	rlSetTexture(gl->tex);
 
+	rlPushMatrix();
 	rlBegin(GL_QUADS);
 	for (int i = 0; i < nverts * 2; i += 6){	
 		rlTexCoord2f(tcoords[i], tcoords[i + 1]);
@@ -152,8 +153,10 @@ static void glfons__renderDraw(void* userPtr, const float* verts, const float* t
 		rlTexCoord2f(tcoords[i + 4], tcoords[i + 5]);
 		rlVertex2f(verts[i + 4], verts[i + 5]);
 	}
-	
+
 	rlEnd();
+	rlPopMatrix();
+
 	rlSetTexture(0);
 	glDisable(GL_TEXTURE_2D);
 }
