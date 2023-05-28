@@ -220,8 +220,6 @@ namespace RSGL {
 
         // draw rect with opengl
         else {
-            unsigned int m = (args.fill) ? RL_QUADS :  RL_LINES; // switch the draw type if it's not filled
-
             glEnable(GL_TEXTURE_2D);    
 
             if (args.texture != -1 || args.glTexture != -1) {
@@ -232,7 +230,7 @@ namespace RSGL {
                 rlSetTexture(1);
 
             glPrerequisites(r, c, args);   
-                rlBegin(m); // start drawing the rect
+                rlBegin((args.fill) ? RL_QUADS :  RL_LINES); // start drawing the rect
                     if (args.fill) {
                         RSGL::glPrerequisites(r, c);
                         rlBegin(RL_QUADS);
@@ -283,14 +281,13 @@ namespace RSGL {
     }
 
     void drawLine(RSGL::point p1, RSGL::point p2, RSGL::color c, RSGL::drawArgs args) {
-        REALcurrentWindowSize = args.windowSize;
+        REALcurrentWindowSize = args.windowSize;    
 
-        glPrerequisites((rect) {p1.x, p1.y, abs(p1.x - p2.x), abs(p1.y - p2.y)}, c, args);   
-
-            rlBegin(RL_QUADS); // start drawing the line
+        glPrerequisites((rect) {p1.x, p1.y, abs(p2.x - p1.x), abs(p2.y - p1.y)}, c, args);   
+            rlBegin(RL_LINES); // start drawing the line
                 rlColor4ub(c.r, c.g, c.b, c.a); // set the color of the line
 
-                rlVertex2f(p1.x, p1.y);
+                rlVertex2f(p1.x, p1.y); 
                 rlVertex2f(p2.x, p2.y); // ending point
             rlEnd();
         rlPopMatrix(); // start of opengl matrix
@@ -306,8 +303,10 @@ namespace RSGL {
 
         int xx = args.texture; 
 
+        glEnable(GL_TEXTURE_2D);
+        rlSetTexture(1);
+            
         if (xx != -1) {
-            glEnable(GL_TEXTURE_2D);
             rlSetTexture(RSGL::tex[xx].tex);
             c.r = c.g = c.b = c.a = 255; // for c++ 98 
         } 
@@ -317,23 +316,22 @@ namespace RSGL {
 
             rlBegin(m); // start drawing
                 if (args.fill) {
-                    glColor4iFF(args, 0);
-                    glTexCoord2fXX(1, 1); 
-                    rlVertex2f(t[2].x, t[2].y);
+                    glColor4iFF(args, 1);
+                    if ((float)(t[2].x - t[0].x)/t[1].x < 1)
+                        glTexCoord2fXX((float)(t[2].x - t[0].x) / t[1].x, 0);
+                    rlVertex2f(t[0].x, t[0].y);
                     
                     glColor4iFF(args, 1);
                     glTexCoord2fXX(0, 0); 
-                    rlVertex2f(t[0].x, t[0].y);
+                    rlVertex2f(t[1].x, t[1].y);
 
-                    glColor4iFF(args, 1);
-
-                    if ((float)(t[2].x - t[0].x)/t[1].x < 1)
-                        glTexCoord2fXX((float)(t[2].x - t[0].x) / t[1].x, 0); 
-                    rlVertex2f(t[0].x, t[0].y);
+                    glColor4iFF(args, 0);
+                    glTexCoord2fXX(0, 1);  
+                    rlVertex2f(t[1].x, t[1].y);
                     
                     glColor4iFF(args, 0);
-                    glTexCoord2fXX(0, 1); 
-                    rlVertex2f(t[1].x, t[1].y);
+                    glTexCoord2fXX(1, 1); 
+                    rlVertex2f(t[2].x, t[2].y);
                 }
                 else {
                     glColor4iFF(args, 0);
@@ -372,10 +370,10 @@ namespace RSGL {
         int i;
         int xx = args.texture;
 
+   
         if (xx != -1) {
             color.r = color.g = color.b = color.a = 255; // for c++ 98 
 
-            glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, RSGL::tex[xx].tex);
         }
 
@@ -391,7 +389,7 @@ namespace RSGL {
 
         double t = 0;
         glPrerequisites(o, color, args);
-        rlBegin(args.fill ? RL_QUADS : RL_LINES);
+        rlBegin(args.fill ? ((xx != -1) ? RL_QUADS :  RL_TRIANGLES) : RL_LINES);
             for (int i = 0; i < args.arc.y; i++) {
                 rlColor4ub(color.r, color.g, color.b, color.a);
 
@@ -410,23 +408,25 @@ namespace RSGL {
 
                     glTexCoord2fXX(ty, 0);
                     glColor4iFF(args, 2);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
 
-                    glTexCoord2fXX(ty, tx);
-                    glColor4iFF(args, 2);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
+                    if (xx != -1) {
+                        glTexCoord2fXX(ty, tx);
+                        glColor4iFF(args, 2);
+                        rlVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
+                    }
 
                     centralAngle += 360.0f/(float)sides;
 
                     glTexCoord2fXX(ty, tx);
                     glColor4iFF(args, 3);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
                 } else {
                     glColor4iFF(args, 0);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.w);
+                    rlVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.w);
                     centralAngle += 360.0f/(float)sides;
                     glColor4iFF(args, 1);
-                    rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
+                    rlVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
                 }
             }
         rlEnd();
