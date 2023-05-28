@@ -440,7 +440,9 @@ void RGFW_initVulkan(RGFW_window* win, void* inst) {
 #ifdef _WIN32
 
 #include <windows.h>
-static void* RGFW_getProcAddress(const char* procname) { return (void*)wglGetProcAddress(procname); }
+#ifdef WGL
+static void* RGFW_getProcAddress(const char* procname) { return wglGetProcAddress(procname); }
+#endif
 #endif
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 const char* RGFW_keyStrings[128] = {"a", "s", "d", "f", "h", "g", "z", "x", "c", "v", "0", "b", "q", "w", "e", "r", "y", "t", "1", "2", "3", "4", "6", "5", "Equals", "9", "7", "Minus", "8", "0", "CloseBracket", "o", "u", "Bracket", "i", "p", "Return", "l", "j", "Apostrophe", "k", "Semicolon", "BackSlash", "Comma", "Slash", "n", "m", "Period", "Tab", "Space", "Backtick", "BackSpace", "0", "Escape", "0", "Super", "Shift", "CapsLock", "Alt", "Control", "0", "0", "0", "0", "0", "KP_Period", "0", "KP_Minus", "0", "0", "0", "0", "Numlock", "0", "0", "0", "KP_Multiply", "KP_Return", "0", "0", "0", "0", "KP_Slash", "KP_0", "KP_1", "KP_2", "KP_3", "KP_4", "KP_5", "KP_6", "KP_7", "0", "KP_8", "KP_9", "0", "0", "0", "F5", "F6", "F7", "F3", "F8", "F9", "0", "F11", "0", "F13", "0", "F14", "0", "F10", "0", "F12", "0", "F15", "Insert", "Home", "PageUp", "Delete", "F4", "End", "F2", "PageDown", "Left", "Right", "Down", "Up", "F1"};
@@ -942,8 +944,8 @@ unsigned int* RGFW_getScreenSize(RGFW_window* win) {
 	if (RGFW_ValidWindowCheck) (unsigned int[2]) {0, 0};
 	Screen* scrn = DefaultScreenOfDisplay((Display*)win->display);
 
-	RGFWScreen[0] = scrn->width;
-	RGFWScreen[1] = scrn->height;
+	RGFWScreen[0] = scrn->height;
+	RGFWScreen[1] = scrn->width;
 
 	return RGFWScreen;
 }
@@ -1769,7 +1771,8 @@ wglChoosePixelFormatARB_type *wglChoosePixelFormatARB;
 #define WGL_FULL_ACCELERATION_ARB                 0x2027
 #define WGL_TYPE_RGBA_ARB                         0x202B
 
-void RGFW_loadWGLARB() {
+void init_opengl(RGFW_window* win) {
+	/* create/load dummy window for loading ARB version */
 	WNDCLASSA window_class = {
 		.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
 		.lpfnWndProc = DefWindowProcA,
@@ -1777,7 +1780,7 @@ void RGFW_loadWGLARB() {
 		.lpszClassName = "Dummy_WGL_djuasiodwa",
 	};
 
-	if (!RegisterClassA(&window_class));
+    if (!RegisterClassA(&window_class));
 
 	HWND dummy_window = CreateWindowA(window_class.lpszClassName, "Dummy OpenGL Window", 0, 0, 0, 0, 0, 0, 0, window_class.hInstance, 0);
 	
@@ -1800,20 +1803,17 @@ void RGFW_loadWGLARB() {
 	wglDeleteContext(dummy_context);
 	ReleaseDC(dummy_window, dummy_dc);
 	DestroyWindow(dummy_window);
-}
-
-void init_opengl(RGFW_window* win) {
-	RGFW_loadWGLARB();
 	
+
+	/* use dummy window to load ARB version */
     int pixel_format_attribs[] = {WGL_DRAW_TO_WINDOW_ARB,     GL_TRUE,           WGL_SUPPORT_OPENGL_ARB,     GL_TRUE,WGL_DOUBLE_BUFFER_ARB,      GL_TRUE,           WGL_ACCELERATION_ARB,       WGL_FULL_ACCELERATION_ARB,             WGL_PIXEL_TYPE_ARB,         WGL_TYPE_RGBA_ARB,             WGL_COLOR_BITS_ARB,         32,                     WGL_DEPTH_BITS_ARB,         24,                 WGL_STENCIL_BITS_ARB,       8,            0                       };
 
-    int pixel_format;
     UINT num_formats;
     wglChoosePixelFormatARB((HDC)win->window, pixel_format_attribs, 0, 1, &pixel_format, &num_formats);
 
-    PIXELFORMATDESCRIPTOR pfd;
-    DescribePixelFormat((HDC)win->window, pixel_format, sizeof(pfd), &pfd);
-    SetPixelFormat((HDC)win->window, pixel_format, &pfd);
+    PIXELFORMATDESCRIPTOR npfd;
+    DescribePixelFormat((HDC)win->window, pixel_format, sizeof(npfd), &npfd);
+    SetPixelFormat((HDC)win->window, pixel_format, &npfd);
 
 	int context_attribs[5] = {0, 0, 0, 0, 0};
 
@@ -2350,12 +2350,7 @@ void RGFW_setThreadPriority(RGFW_thread thread, unsigned char priority) { SetThr
 
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 #define GL_SILENCE_DEPRECATION
-
-#ifdef RSGL_SILICON
-#include "Silicon/Silicon.h"	
-#else
 #include <Silicon/silicon.h>
-#endif
 #include <OpenGL/gl.h>
 	
 void* RGFWnsglFramework = NULL; 
@@ -2423,8 +2418,7 @@ bool performDragOperation(id self, SEL cmd, NSDraggingInfo* sender) {
 
 	si_array_free(array);
 
-
-	unsigned int y;
+	unsigned int x, y;
 
 	for (y = 0; y < RGFW_windows[i]->event.droppedFilesCount; y++)
 		RGFW_windows[i]->event.droppedFiles[y] = strdup(droppedFiles[y]);
