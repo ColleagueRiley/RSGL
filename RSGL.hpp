@@ -135,12 +135,12 @@ namespace RSGL  {
         int size; //!< size of the font
         int fonsFont; //!< source fons font
         
-        FONScontext* ctx; /* fons font context */ 
+        FONScontext* ctx = (FONScontext*)0; /* fons font context */ 
 
-        font(){ size = 0; ctx = 0; } /* for c++98 */
+        font(){ size = 0; ctx = (FONScontext*)0; } /* for c++98 */
         //!< functions for loading a font, with a string/data
         font(const char* File, int Size);  //!< load font
-        font(const char* File){ file = (char*)File; }  //!< set font with char*
+        font(const char* File){ file = (char*)File; font(); }  //!< set font with char*
     
         ~font(); /* free fonsFont */
     }; //!< font structure that can generally be used for a place-holder for std::string
@@ -370,6 +370,7 @@ namespace RSGL  {
     );                                                //!< draws a image on the screen (returns the index texture in the texture buffer)
     int drawImage(RSGL::image r, drawArgs args = drawArgs()); //!< draw image on screen based on image struct (returns the index texture in the texture buffer)
     
+    int loadImage(const char* file);
     int loadBitmap(unsigned char *data, int channels, RSGL::area memsize); //!< load a bitmap into the texture buffer (no drawing) (returns the index texture in the texture buffer)
 
     int drawBitmap(
@@ -436,10 +437,24 @@ namespace RSGL  {
     };
 
     struct textbox {
-        char* text; /* source text */
         RSGL::button box; /* text box */
+        char* text; /* source text */
+        unsigned long textSize;
+        
+        RSGL::point p;
+        bool inUse;
 
-        void checkEvent(RSGL::event e); /* fills in `text` when a key is pressed */
+        textbox();
+        textbox(RSGL::rect rect) { this->textSize = 0; box.r = rect; inUse = false; }
+        ~textbox();
+
+        void addChar(char ch);
+        void eraseChar();
+        void checkEvent(
+                RSGL::event e, 
+                bool tab = true, /* if tabs are handled (3 spaces) */
+                bool enterNL = true /* if enter/return should be handled as a newline */
+        ); /* fills in `text` when a key is pressed */
 
         /*  cir.x/cir.y offsets box.x/box.y, 
             if (cir.d == 0) font size is based on the box size + text length 
