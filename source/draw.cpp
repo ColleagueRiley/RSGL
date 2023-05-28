@@ -25,7 +25,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #define FONTSTASH_IMPLEMENTATION
 #define GLFONTSTASH_IMPLEMENTATION
-#define RSGLDEP
 
 #ifndef RSGL_H
 #include "../RSGL.hpp"
@@ -161,7 +160,10 @@ namespace RSGL {
         fonsSetFont(font.ctx, font.fonsFont);
 
         glPrerequisites((RSGL::rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color, args);
-  
+        
+        fonsSetSpacing(font.ctx, args.spacing);
+        fonsSetBlur(font.ctx, args.blur);
+
         fonsSetColor(font.ctx, glfonsRGBA(color.r, color.b, color.g, color.a));
 
         size_t textsSize = 1;

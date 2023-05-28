@@ -289,16 +289,19 @@ namespace RSGL  {
         RSGL::point roundPoint = (RSGL::point){10, 10}; //!< where the rounding is : 10, 10 is good for a round rect, 24, 24 is a bean shape, 204, 204 is an oval
         //!< polygon / circle only
         RSGL::point arc = (RSGL::point){0, -1}; /* arc open/close (0 - 360 (circles)), 0, -1 = default */
+        /*!< text only */
+        float spacing = 0; /* oh far letters are spaced out */
+        float blur = 0; /* blur effect on text */ 
         #else /* c++98 doesn't mind this */
         bool fill, preLoad, rounded;
-        float rotationAngle, flipHorizontal, flipVertical,lineWidth;
+        float rotationAngle, flipHorizontal, flipVertical,lineWidth, spacing, blur;
         int texture, glTexture;
         RSGL::gradient gradient;
         RSGL::area windowSize;
         RSGL::point roundPoint, arc;
 
         drawArgs() { /* this is compressed because this information is already included + it just adds extra text */
-            fill = true;          rotationAngle = 0;            flipHorizontal = 0;          flipVertical = 0;         lineWidth = 0;       texture = -1;          glTexture = -1;              preLoad = true;           gradient = RSGL::gradient();            windowSize = *currentWindowSize();        rounded = false;          roundPoint = (RSGL::point){10, 10};              arc =  (RSGL::point){0, -1};
+            fill = true;          rotationAngle = 0;            flipHorizontal = 0;          flipVertical = 0;         lineWidth = 0;       texture = -1;          glTexture = -1;              preLoad = true;           gradient = RSGL::gradient();            windowSize = *currentWindowSize();        rounded = false;          roundPoint = (RSGL::point){10, 10};              arc =  (RSGL::point){0, -1};          spacing = 0;           blur = 0;
         }
         #endif
     };                       //!< general args for drawing
