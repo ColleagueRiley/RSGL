@@ -41,7 +41,7 @@
 #include "deps/fontstash.h"
 #include "deps/rglfontstash.h"
 
-#define glTexCoord2fXX(x, y, xx) if (xx != -1) rlTexCoord2f(x, y);
+#define glTexCoord2fXX(x, y) rlTexCoord2f(x, y);
 #define glColor4iFF(args, index) \
     if (args.gradient.size > index) \
         rlColor4ub(args.gradient.color##index.r, args.gradient.color##index.g, args.gradient.color##index.b, args.gradient.color##index.a);
@@ -80,7 +80,7 @@ namespace RSGL {
         size = Size; 
         file = (char*)File; 
 
-        if (ctx == NULL)
+        if (ctx == (FONScontext*)0)
             ctx = glfonsCreate(500, 500, 1);
 
         fonsFont = fonsAddFont(ctx, "sans", File);
@@ -97,6 +97,21 @@ namespace RSGL {
     }
 
     int textWidth(const char* text, RSGL::font font, int size) {
+        bool loaded = false; 
+
+        for (int i = 0; i < fonts.size; i++)
+            if (!strcmp(fonts[i].file, font.file)) { 
+                font = fonts[i];
+                loaded = true; 
+                break; 
+            }
+
+        // check if the font is in fonts
+        if (!loaded) { // if it's not in fonts, load the font into fonts
+            font = RSGL::font(font.file, size); 
+            fonts.push(font); 
+        } 
+
         fonsSetSize(font.ctx, size);
         fonsSetFont(font.ctx, font.fonsFont);
         return fonsTextBounds(font.ctx, 0, 0, text, NULL, NULL);
@@ -106,7 +121,7 @@ namespace RSGL {
         bool loaded = false; 
 
         for (int i = 0; i < fonts.size; i++) { 
-            if (fonts[i].file == font.file) { 
+            if (!strcmp(fonts[i].file, font.file)) { 
                 font = fonts[i];
                 loaded = true; 
                 break; 
@@ -120,30 +135,30 @@ namespace RSGL {
     }
 
     void drawText(const char* text, RSGL::circle c, color color, RSGL::font font, RSGL::drawArgs args/* = {}*/) {    
-        RSGL::font Font; // current font
-
         bool loaded = false; 
 
-
-        for (int i = 0; i < fonts.size; i++) { 
-            if (fonts[i].file == font.file) { 
-                Font = fonts[i];
+        for (int i = 0; i < fonts.size; i++)
+            if (!strcmp(fonts[i].file, font.file)) { 
+                font = fonts[i];
                 loaded = true; 
                 break; 
             }
-        } // check if the font is in fonts
-    
+
+        // check if the font is in fonts
         if (!loaded) { // if it's not in fonts, load the font into fonts
-            Font = RSGL::font(font.file, c.d);
-            fonts.push(Font); 
+            font = RSGL::font(font.file, c.d); 
+            fonts.push(font); 
         } 
+
+        if (!strlen(text))
+            return;
 
         int w = fonsTextBounds(font.ctx, c.x, c.y, text, NULL, NULL);
 
         fonsClearState(font.ctx);
 
         fonsSetSize(font.ctx, c.d);
-        fonsSetFont(font.ctx, Font.fonsFont);
+        fonsSetFont(font.ctx, font.fonsFont);
 
         glPrerequisites((RSGL::rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color, args);
   
@@ -181,7 +196,7 @@ namespace RSGL {
         }
         
         int nly = 0;
-        
+       
         for (int i = 0; i < textsSize; i++) {
             fonsDrawText(font.ctx, c.x, c.y + (c.d - (c.d / 4)) + nly, texts[i], NULL);
             
@@ -207,14 +222,14 @@ namespace RSGL {
         else {
             unsigned int m = (args.fill) ? RL_QUADS :  RL_LINES; // switch the draw type if it's not filled
 
-            
+            glEnable(GL_TEXTURE_2D);    
+
             if (args.texture != -1 || args.glTexture != -1) {
                 c.r = c.g = c.b = c.a = 255; // for c++ 98 
 
-                glEnable(GL_TEXTURE_2D);    
-
                 rlSetTexture(args.texture != -1 ?   RSGL::tex[args.texture].tex   :   args.glTexture);
-            }
+            } else 
+                rlSetTexture(1);
 
             glPrerequisites(r, c, args);   
                 rlBegin(m); // start drawing the rect
@@ -222,19 +237,19 @@ namespace RSGL {
                         RSGL::glPrerequisites(r, c);
                         rlBegin(RL_QUADS);
                             glColor4iFF(args, 0); 
-                            glTexCoord2fXX(0, 0, args.texture);
+                            glTexCoord2fXX(0, 0);
                             rlVertex2f(r.x, r.y);
 
                             glColor4iFF(args, 2); 
-                            glTexCoord2fXX(0, 1, args.texture);
+                            glTexCoord2fXX(0, 1);
                             rlVertex2f(r.x, r.y + r.h);
 
                             glColor4iFF(args, 3); 
-                            glTexCoord2fXX(1, 1, args.texture);
+                            glTexCoord2fXX(1, 1);
                             rlVertex2f(r.x + r.w, r.y + r.h);
                                 
                             glColor4iFF(args, 1); 
-                            glTexCoord2fXX(1, 0, args.texture);
+                            glTexCoord2fXX(1, 0);
                             rlVertex2f(r.x + r.w, r.y);
                         rlEnd();
                         rlPopMatrix();
@@ -295,7 +310,7 @@ namespace RSGL {
             glEnable(GL_TEXTURE_2D);
             rlSetTexture(RSGL::tex[xx].tex);
             c.r = c.g = c.b = c.a = 255; // for c++ 98 
-        }
+        } 
 
         glPrerequisites((rect) {t[1].x, t[2].y, abs(t[1].x - t[0].x), abs(t[1].y - t[2].y)}, c, args, cen);
             unsigned int m = (args.fill) ? RL_QUADS :  GL_LINES; // switch the draw type if it's not filled
@@ -303,21 +318,21 @@ namespace RSGL {
             rlBegin(m); // start drawing
                 if (args.fill) {
                     glColor4iFF(args, 0);
-                    glTexCoord2fXX(1, 1, xx); 
+                    glTexCoord2fXX(1, 1); 
                     rlVertex2f(t[2].x, t[2].y);
                     
                     glColor4iFF(args, 1);
-                    glTexCoord2fXX(0, 0, xx); 
+                    glTexCoord2fXX(0, 0); 
                     rlVertex2f(t[0].x, t[0].y);
 
                     glColor4iFF(args, 1);
 
                     if ((float)(t[2].x - t[0].x)/t[1].x < 1)
-                        glTexCoord2fXX((float)(t[2].x - t[0].x) / t[1].x, 0, xx); 
+                        glTexCoord2fXX((float)(t[2].x - t[0].x) / t[1].x, 0); 
                     rlVertex2f(t[0].x, t[0].y);
                     
                     glColor4iFF(args, 0);
-                    glTexCoord2fXX(0, 1, xx); 
+                    glTexCoord2fXX(0, 1); 
                     rlVertex2f(t[1].x, t[1].y);
                 }
                 else {
@@ -389,21 +404,21 @@ namespace RSGL {
                     float tx = (float)cos(rad) * 0.5 + 0.5;
                     float ty = (float)sin(rad) * 0.5 + 0.5;
 
-                    glTexCoord2fXX(xx, 0.5f, 0.5f);
+                    glTexCoord2fXX(0.5f, 0.5f);
                     glColor4iFF(args, 0);
                     rlVertex2f(o.x, o.y);
 
-                    glTexCoord2fXX(xx, ty, 0);
+                    glTexCoord2fXX(ty, 0);
                     glColor4iFF(args, 2);
                     rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
 
-                    glTexCoord2fXX(xx, ty, tx);
+                    glTexCoord2fXX(ty, tx);
                     glColor4iFF(args, 2);
                     rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
 
                     centralAngle += 360.0f/(float)sides;
 
-                    glTexCoord2fXX(xx, ty, tx);
+                    glTexCoord2fXX(ty, tx);
                     glColor4iFF(args, 3);
                     rlVertex2f(o.x + sinf(DEG2RAD*centralAngle) * o.w, o.y + cosf(DEG2RAD*centralAngle) * o.h);
                 } else {
