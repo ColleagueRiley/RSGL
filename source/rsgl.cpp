@@ -171,16 +171,20 @@ namespace RSGL {
         return (checkEvents().type != RSGL::quit);
     }
 
-    void RSGL::window::close() {
-        if (windowsOpen == 1)
-            rlglClose();
-        RGFW_closeWindow(source);
+    void RSGL::window::close() { this->~window(); }
 
-        windowsOpen--;
+    RSGL::window::~window() { 
+        if (source != NULL) {
+            if (windowsOpen == 1)
+                rlglClose();
+            RGFW_closeWindow(source);
+
+            windowsOpen--;
+        }
+
+        source = NULL;
     }
-
-    RSGL::window::~window() { close(); }
-
+    
     /* other */
 
     /*! NOTE! (for X11/linux) : if you define a window in a thread, it must be run after the original thread's window is created or else there will be a memory error */
