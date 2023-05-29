@@ -221,4 +221,57 @@ namespace RSGL {
 
         return !(passed % milliseconds) && passed;
     }
+
+    char keyStrToChar(const char* keyName, bool enterNL /* = true */) {
+        char ch = keyName[0];
+
+        if (strlen(keyName) > 1) {                
+            if (!strcmp(keyName, "asciitilde")) ch = '`';
+            else if (!strcmp(keyName, "grave")) ch = '~';
+            else if (!strcmp(keyName, "exclam")) ch = '!';
+            else if (!strcmp(keyName, "at")) ch = '@';
+            else if (!strcmp(keyName, "numbersign")) ch = '#';
+            else if (!strcmp(keyName, "dollar")) ch = '$';
+            else if (!strcmp(keyName, "percent")) ch = '%';
+            else if (!strcmp(keyName, "asciicircum")) ch = '^';
+            else if (!strcmp(keyName, "ampersand")) ch = '&';
+            else if (!strcmp(keyName, "asterisk")) ch = '*';    
+            else if (!strcmp(keyName, "parenleft")) ch = '(';
+            else if (!strcmp(keyName, "parenright"))  ch = ')';
+
+            else if (!strcmp(keyName, "underscore"))  ch = '_';
+            else if (!strcmp(keyName, "minus"))  ch = '-';
+            else if (!strcmp(keyName, "plus"))  ch = '+';
+            else if (!strcmp(keyName, "equal"))  ch = '=';
+
+            else if (!strcmp(keyName, "braceleft")) ch = '{';
+            else if (!strcmp(keyName, "bracketleft")) ch = '[';
+            else if (!strcmp(keyName, "bracketright")) ch = ']';
+            else if (!strcmp(keyName, "braceright")) ch = '}';
+
+            else if (!strcmp(keyName, "colon")) ch = ':';
+            else if (!strcmp(keyName, "semicolon")) ch = ';';
+            else if (!strcmp(keyName, "quotedbl")) ch = '"';
+            else if (!strcmp(keyName, "apostrophe")) ch = '\'';
+            else if (!strcmp(keyName, "bar")) ch = '|';
+            else if (!strcmp(keyName, "backslash")) ch = '\\';
+
+            else if (!strcmp(keyName, "less")) ch = '<';
+            else if (!strcmp(keyName, "comma")) ch = ',';
+            else if (!strcmp(keyName, "greater")) ch = '>';
+            else if (!strcmp(keyName, "period")) ch = '.';
+            else if (!strcmp(keyName, "question")) ch = '?';
+            else if (!strcmp(keyName, "slash")) ch = '/';
+            
+            else if (!strcmp(keyName, "space")) ch = ' ';
+            else if (!strcmp(keyName, "Return") && enterNL) ch = '\n';
+
+            /* Tab and BackSpace are not handled */
+        }
+        
+        else
+            return ch;
+
+        return '\0';
+    }
 };
