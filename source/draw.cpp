@@ -40,7 +40,7 @@
 #include "deps/fontstash.h"
 #include "deps/rglfontstash.h"
 
-#define glTexCoord2fXX(x, y) rlTexCoord2f(x, y);
+#define glTexCoord2fXX(X, Y) rlTexCoord2f(X + args.texOffX, Y + args.texOffY);
 #define glColor4iFF(args, index) \
     if (args.gradient.size > index) \
         rlColor4ub(args.gradient.color##index.r, args.gradient.color##index.g, args.gradient.color##index.b, args.gradient.color##index.a);
@@ -63,7 +63,7 @@ namespace RSGL {
             src = (type*)malloc(0); 
             size = 0;
         }
-        ~vector() { free(src); }
+        ~vector() { if (src != NULL) free(src); src = NULL; }
     };
 
     extern RSGL::area REALcurrentWindowSize;
@@ -211,7 +211,7 @@ namespace RSGL {
         rlPopMatrix();
     }
 
-    void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs d);
+    void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs args);
 
     void drawRect(RSGL::rect r,color c, drawArgs args/*={}*/) {
         REALcurrentWindowSize = args.windowSize;
@@ -280,6 +280,38 @@ namespace RSGL {
                 rlSetTexture(0);
             }
         }
+    }
+
+    void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs args) {
+        args.rounded = false;
+
+        if (args.fill) {
+            args.texOffX = 0.001;
+            RSGL::drawRect((RSGL::rect) {r.x + (args.roundPoint.x/2), r.y, r.w - args.roundPoint.x, r.h}, c, args);
+
+            args.texOffX = 0;
+            args.texOffY = 0.00f;
+            RSGL::drawRect((RSGL::rect) {r.x, r.y + (args.roundPoint.y/2), r.w,  r.h - args.roundPoint.y}, c, args);
+
+            args.texOffY = 0;
+        } else {
+            RSGL::drawRect((RSGL::rect) {r.x + (args.roundPoint.x/2), r.y, r.w - args.roundPoint.x, 1}, c, args);
+            RSGL::drawRect((RSGL::rect) {r.x + (args.roundPoint.x/2), r.y + r.h, r.w - args.roundPoint.x, 1}, c, args);
+            
+            RSGL::drawRect((RSGL::rect) {r.x, r.y + (args.roundPoint.y/2), 1,  r.h - args.roundPoint.y}, c, args);
+            RSGL::drawRect((RSGL::rect) {r.x + r.w, r.y + (args.roundPoint.y/2), 1,  r.h - args.roundPoint.y}, c, args);
+        }
+
+        args.rounded = true;
+
+        args.arc = {180, 270};
+        RSGL::drawOval((RSGL::rect) {r.x, r.y, args.roundPoint.x, args.roundPoint.y}, c, args);
+        args.arc = {90, 180};
+        RSGL::drawOval((RSGL::rect) {r.x + (r.w - args.roundPoint.x), r.y, args.roundPoint.x, args.roundPoint.y}, c, args);
+        args.arc = {0, 90};
+        RSGL::drawOval((RSGL::rect) {r.x + (r.w - args.roundPoint.x), r.y  + (r.h - args.roundPoint.y), args.roundPoint.x, args.roundPoint.y}, c, args);
+        args.arc = {270, 360};
+        RSGL::drawOval((RSGL::rect) {r.x, r.y  + (r.h - args.roundPoint.y),  args.roundPoint.x, args.roundPoint.y}, c, args);
     }
 
     void drawLine(RSGL::point p1, RSGL::point p2, RSGL::color c, RSGL::drawArgs args) {
@@ -404,6 +436,13 @@ namespace RSGL {
                     float tx = (float)cos(rad) * 0.5 + 0.5;
                     float ty = (float)sin(rad) * 0.5 + 0.5;
 
+                    if (args.rounded) {
+                        tx /= 10;
+                        ty /= 10;
+
+                        glTexCoord2fXX(0.5f/10.0f, 0.5f/10.0f);
+                    } else 
+
                     glTexCoord2fXX(0.5f, 0.5f);
                     glColor4iFF(args, 0);
                     rlVertex2f(o.x, o.y);
@@ -520,6 +559,7 @@ namespace RSGL {
             xx = drawBitmap(data, (rect) {0, 0, 0, 0}, c, (area) {w, h}, args);
 
             free(data);
+            data = NULL;
 
             tex[xx].file = (char*)file;
             tex[xx].data = NULL;
@@ -533,30 +573,6 @@ namespace RSGL {
         RSGL::drawRect(r, c, args);
 
         return xx;
-    }
-
-    void drawRoundRect(RSGL::rect r, RSGL::color c, RSGL::drawArgs d) {
-        d.rounded = false;
-
-        if (d.fill) {
-            RSGL::drawRect((RSGL::rect) {r.x + (d.roundPoint.x/2), r.y, r.w - d.roundPoint.x, r.h}, c, d);
-            RSGL::drawRect((RSGL::rect) {r.x, r.y + (d.roundPoint.y/2), r.w,  r.h - d.roundPoint.y}, c, d);
-        } else {
-            RSGL::drawRect((RSGL::rect) {r.x + (d.roundPoint.x/2), r.y, r.w - d.roundPoint.x, 1}, c, d);
-            RSGL::drawRect((RSGL::rect) {r.x + (d.roundPoint.x/2), r.y + r.h, r.w - d.roundPoint.x, 1}, c, d);
-            
-            RSGL::drawRect((RSGL::rect) {r.x, r.y + (d.roundPoint.y/2), 1,  r.h - d.roundPoint.y}, c, d);
-            RSGL::drawRect((RSGL::rect) {r.x + r.w, r.y + (d.roundPoint.y/2), 1,  r.h - d.roundPoint.y}, c, d);
-        }
-
-        d.arc = {180, 270};
-        RSGL::drawOval((RSGL::rect) {r.x, r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
-        d.arc = {90, 180};
-        RSGL::drawOval((RSGL::rect) {r.x + (r.w - d.roundPoint.x), r.y, d.roundPoint.x, d.roundPoint.y}, c, d);
-        d.arc = {0, 90};
-        RSGL::drawOval((RSGL::rect) {r.x + (r.w - d.roundPoint.x), r.y  + (r.h - d.roundPoint.y), d.roundPoint.x, d.roundPoint.y}, c, d);
-        d.arc = {270, 360};
-        RSGL::drawOval((RSGL::rect) {r.x, r.y  + (r.h - d.roundPoint.y),  d.roundPoint.x, d.roundPoint.y}, c, d);
     }
 
     int loadImage(const char* file) { 
