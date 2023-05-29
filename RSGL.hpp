@@ -240,6 +240,13 @@ namespace RSGL  {
 
     RSGL::area* currentWindowSize(); //!< the current drawing context
 
+    /* 
+        converts a key string to a char (if the keyStr is only a char by default it just returns keyName[0]) 
+        returns 0 if the key is invalid or unhandled
+        "BackSpace" and "Tab" are both unhandled
+    */
+    char keyStrToChar(const char* keyName, bool enterNL = true /*if "Return" should be handled as \n*/);
+
 /** @}*/
 
     //!< collition functions
@@ -282,6 +289,8 @@ namespace RSGL  {
         int texture = -1;                            //!< draw a texture on it (from load/draw image/bitmap functions)
         int glTexture = -1; /* actual opengl texture, (not RSGL texture from RSGL::tex) */
         bool preLoad = true; /* load bitmap from RSGL::tex if it's already loaded (might cause issues with simular bitmaps, toggleable for if you want to manage it yourself) */
+        float texOffX = 0; 
+        float texOffY = 0; /* texture offset */
         RSGL::gradient gradient = (RSGL::gradient){ };      //!< gradient to draw on the shapes
         RSGL::area windowSize = *currentWindowSize(); //!< window to write on
         //!< rect-only
@@ -294,14 +303,14 @@ namespace RSGL  {
         float blur = 0; /* blur effect on text */ 
         #else /* c++98 doesn't mind this */
         bool fill, preLoad, rounded;
-        float rotationAngle, flipHorizontal, flipVertical,lineWidth, spacing, blur;
+        float rotationAngle, flipHorizontal, flipVertical,lineWidth, spacing, blur, texOffX, texOffY;
         int texture, glTexture;
         RSGL::gradient gradient;
         RSGL::area windowSize;
         RSGL::point roundPoint, arc;
 
         drawArgs() { /* this is compressed because this information is already included + it just adds extra text */
-            fill = true;          rotationAngle = 0;            flipHorizontal = 0;          flipVertical = 0;         lineWidth = 0;       texture = -1;          glTexture = -1;              preLoad = true;           gradient = RSGL::gradient();            windowSize = *currentWindowSize();        rounded = false;          roundPoint = (RSGL::point){10, 10};              arc =  (RSGL::point){0, -1};          spacing = 0;           blur = 0;
+            fill = true;          rotationAngle = 0;            flipHorizontal = 0;          flipVertical = 0;         lineWidth = 0;       texture = -1;          glTexture = -1;              preLoad = true;     texOffX = 0;   texOffY = 0;         gradient = RSGL::gradient();            windowSize = *currentWindowSize();        rounded = false;          roundPoint = (RSGL::point){10, 10};              arc =  (RSGL::point){0, -1};          spacing = 0;           blur = 0;
         }
         #endif
     };                       //!< general args for drawing
