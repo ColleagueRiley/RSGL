@@ -78,7 +78,6 @@ namespace RSGL {
         tick.draw(c1, d2);
     }
 
-
     void textbox::addChar(char ch)  {
         int xx = textSize++;
         text = (char*)realloc(text, (textSize + 1) * sizeof(char));
@@ -89,7 +88,7 @@ namespace RSGL {
             p.x++;
         else
             p.y++;
-    
+
         if (textSize && strlen(text) > textSize)
             text[strlen(text) - 1] = 0;
     }
@@ -118,65 +117,16 @@ namespace RSGL {
         
         if (e.type == RSGL::keyPressed && inUse) {
             bool wrote = false;
+            char ch = keyStrToChar((const char*)e.keyName);
 
-            if (strlen(e.keyName) > 1) {                
-                if (!strcmp(e.keyName, "asciitilde")) addChar('`');
-                else if (!strcmp(e.keyName, "grave")) addChar('~');
-                else if (!strcmp(e.keyName, "exclam")) addChar('!');
-                else if (!strcmp(e.keyName, "at")) addChar('@');
-                else if (!strcmp(e.keyName, "numbersign")) addChar('#');
-                else if (!strcmp(e.keyName, "dollar")) addChar('$');
-                else if (!strcmp(e.keyName, "percent")) addChar('%');
-                else if (!strcmp(e.keyName, "asciicircum")) addChar('^');
-                else if (!strcmp(e.keyName, "ampersand")) addChar('&');
-                else if (!strcmp(e.keyName, "asterisk")) addChar('*');    
-                else if (!strcmp(e.keyName, "parenleft")) addChar('(');
-                else if (!strcmp(e.keyName, "parenright"))  addChar(')');
-
-                else if (!strcmp(e.keyName, "underscore"))  addChar('_');
-                else if (!strcmp(e.keyName, "minus"))  addChar('-');
-                else if (!strcmp(e.keyName, "plus"))  addChar('+');
-                else if (!strcmp(e.keyName, "equal"))  addChar('=');
-
-                else if (!strcmp(e.keyName, "braceleft")) addChar('{');
-                else if (!strcmp(e.keyName, "bracketleft")) addChar('[');
-                else if (!strcmp(e.keyName, "bracketright")) addChar(']');
-                else if (!strcmp(e.keyName, "braceright")) addChar('}');
-
-                else if (!strcmp(e.keyName, "colon")) addChar(':');
-                else if (!strcmp(e.keyName, "semicolon")) addChar(';');
-                else if (!strcmp(e.keyName, "quotedbl")) addChar('"');
-                else if (!strcmp(e.keyName, "apostrophe")) addChar('\'');
-                else if (!strcmp(e.keyName, "bar")) addChar('|');
-                else if (!strcmp(e.keyName, "backslash")) addChar('\\');
-
-                else if (!strcmp(e.keyName, "less")) addChar('<');
-                else if (!strcmp(e.keyName, "comma")) addChar(',');
-                else if (!strcmp(e.keyName, "greater")) addChar('>');
-                else if (!strcmp(e.keyName, "period")) addChar('.');
-                else if (!strcmp(e.keyName, "question")) addChar('?');
-                else if (!strcmp(e.keyName, "slash")) addChar('/');
-                
-                else if (!strcmp(e.keyName, "space")) addChar(' ');
-
-                else if (!strcmp(e.keyName, "Tab") && tab) 
+            if (!ch) {
+                if (!strcmp(e.keyName, "Tab") && tab) 
                     for (int i = 0; i < 3; i++) addChar(' ');
 
-                else if (!strcmp(e.keyName, "Return") && enterNL) addChar('\n');
-
                 if (!strcmp(e.keyName, "BackSpace")) eraseChar();
+            } 
             
-                else if (!strcmp(e.keyName, "Left") && p.x)
-                    p.x--;
-                else if (!strcmp(e.keyName, "Right"))
-                    p.x++;
-                else if (!strcmp(e.keyName, "Up") && p.y)
-                    p.y--;
-                else if (!strcmp(e.keyName, "Down"))
-                    p.y++;
-            }
-            else 
-                addChar(e.keyName[0]);
+            else addChar(ch); 
         }
     }
 
