@@ -14,6 +14,7 @@ namespace RSGL {
                     event = held;
                 break;
             case RSGL::mouseButtonReleased:
+                if (event == held)
                     event = released;
                 break;
             case RSGL::mousePosChanged:
@@ -78,22 +79,48 @@ namespace RSGL {
         tick.draw(c1, d2);
     }
 
-    void textbox::addChar(char ch)  {
-        int xx = textSize++;
-        text = (char*)realloc(text, (textSize + 1) * sizeof(char));
+    void textbox::addChar(char ch, size_t index)  {
+        if (textSize == index) {
+            int xx = textSize++;
+        
+            text = (char*)realloc(text, (textSize + 1) * sizeof(char));
 
-        text[textSize - 1] = ch; 
+            text[textSize] = '\0';
+            text[textSize - 1] = ch;
+        } 
+        else {
+            char* oText = (char*)malloc((textSize + 1) * sizeof(char));
+            oText[textSize + 1] = 0;
+            
+            size_t size = 0;
+
+            for (int i = 0; i < textSize; i++, size++) {
+                if (i == index) { 
+                    oText[size] = ch;
+
+                    size++;
+                } 
+                
+                oText[size] = text[i];
+            }  
+
+            printf("%c\n", oText);
+
+            free(text);
+            text = strdup(oText);
+            
+            free(oText);
+        }
 
         if (ch != '\n')
             p.x++;
-        else
+        else {
             p.y++;
-
-        if (textSize && strlen(text) > textSize)
-            text[strlen(text) - 1] = 0;
+            p.x = 0;
+        }
     }
 
-    void textbox::eraseChar() {
+    void textbox::eraseChar(size_t index) {
         if (textSize) {
             textSize--;
         
@@ -101,9 +128,27 @@ namespace RSGL {
                 p.x--;
             else
                 p.y--;
-        
-            text[textSize] = 0;
-            text = (char*)realloc(text, (textSize + 1) * sizeof(char));
+
+            if (index == textSize) {
+                text[textSize] = 0;
+                text = (char*)realloc(text, (textSize + 1) * sizeof(char));
+            } else { 
+                char* nText = strdup(text);
+                
+                free(text);
+                text = (char*)malloc(0);
+                
+                size_t size = textSize;
+                textSize = 0;
+
+                for (int i = 0; i < (size + (size != (textSize - 1))); i++) {
+                    if (i == index) i++;
+
+                    addChar(nText[i], textSize);
+                }
+
+                free(nText);
+            }
         }
     }
 
@@ -115,18 +160,20 @@ namespace RSGL {
         else if (e.type == RSGL::mouseButtonPressed)
             inUse = false;
         
-        if (e.type == RSGL::keyPressed && inUse) {
+        if (e.type == RSGL::keyPressed && inUse) { 
             bool wrote = false;
-            char ch = keyStrToChar((const char*)e.keyName);
+            char ch = keyStrToChar((const char*)e.keyName, true);
 
-            if (!ch) {
+
+            if (ch == '\0') {
                 if (!strcmp(e.keyName, "Tab") && tab) 
-                    for (int i = 0; i < 3; i++) addChar(' ');
+                    for (int i = 0; i < 3; i++) addChar(' ', textSize);
 
-                if (!strcmp(e.keyName, "BackSpace")) eraseChar();
+                if (!strcmp(e.keyName, "BackSpace"))
+                    eraseChar(textSize - 1);
             } 
-            
-            else addChar(ch); 
+
+            else addChar(ch, textSize); 
         }
     }
 
@@ -138,19 +185,19 @@ namespace RSGL {
         
         if (textSize) {
             RSGL::drawText(text, cir, col, font, args);
-            
-            textList texts = getTextList(text);
 
-            char* lineText = (char*)malloc(sizeof(char) * p.x);
-            
-            lineText = (char*)memset(lineText, 0, 5);
+            if (p.x) {
+                textList texts = getTextList(text);
 
-            for (int i = 0; i < p.x; i++)
-                lineText[i] = texts.text[p.y][i];
+                char* lineText = strdup(texts.text[p.y]);
 
-            w = RSGL::textWidth(lineText, font, cir.d);
+                w = RSGL::textWidth(lineText, font, cir.d);
+                
+                if (w > box.r.w)
+                    eraseChar(textSize - 1);
 
-            free(lineText);
+                free(lineText);
+            }
         }
         
         if (inUse)
