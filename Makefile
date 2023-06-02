@@ -12,7 +12,7 @@ build:
 		cp -r ./source build/include/RSGL;\
 	fi
 	
-	@if [ $(COMPILE)true = true ]; then\
+	@if [ $(COMPILE)true = true ] && [ $(shell uname) != Darwin ]; then\
 		cp RSGL.hpp ./build/RSGL.cpp;\
 		mkdir -p build/obj build/lib;\
 		$(CXX) -I./ -fPIC -c ./build/RSGL.cpp -D RSGL_IMPLEMENTATION -o ./build/obj/RSGL.o;\
@@ -21,12 +21,18 @@ build:
 	fi
 
 	@if [ $(shell uname) = Windows_NT ] && [ $(COMPILE)true = true ] ; then\
-		$(CXX) -shared -lopengl32 -lshell32 -lgdi32 ./build/obj/RSGL.o -o ./build/lib/libRSGL.so;\
+		$(CXX) -shared -lopengl32 -lshell32 -lgdi32 ./build/obj/RSGL.o -o ./build/lib/libRSGL.dll;\
 	fi
 
 	@if [ $(shell uname) = Darwin ] && [ $(COMPILE)true = true ]; then\
+		cp RSGL.hpp ./build/RSGL.cpp;\
+		mkdir -p build/obj build/lib;\
+		gcc ./source/deps/RGFW.h -D RSGL_IMPLEMENTATION -I./source/deps -o ./build/obj/RGFW.o
+		$(CXX) -I./ -fPIC -c ./build/RSGL.cpp ./build/obj/RGFW.o -o ./build/obj/RSGL.o;\
+		rm ./build/RSGL.cpp;\
+		ar rcs ./build/lib/libRSGL.a ./build/obj/RSGL.o;\
 		make silicon;\
-		$(CXX) -shared  -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo ./build/obj/*.o -o ./build/lib/libRSGL.so;\
+		$(CXX) -shared  -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo ./build/obj/*.o -o ./build/lib/libRSGL.dynlib;\
 		ar rcs ./build/lib/libRSGL.a ./build/obj/*.o;\
 	fi
 
