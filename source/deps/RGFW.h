@@ -192,7 +192,11 @@ typedef struct RGFW_window {
 	RGFW_Event event; /*!< current event */
 } RGFW_window; /*!< Window structure for managing the window */
 
-typedef unsigned long RGFW_thread; /*thread type (to be defined per (unix/windows))*/
+#ifdef __unix__
+typedef unsigned long RGFW_thread; /* thread type unix */
+#else
+typedef void* RGFW_thread; /* thread type for window */
+#endif
 
 RGFW_window* RGFW_createWindowPointer(
 	char* name, /* name of the window */
@@ -939,8 +943,9 @@ RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, un
     return win; /*return newly created window*/
 }
 
-unsigned int RGFWScreen[2];
 unsigned int* RGFW_getScreenSize(RGFW_window* win) {
+	static unsigned int RGFWScreen[2];
+
 	if (RGFW_ValidWindowCheck) (unsigned int[2]) {0, 0};
 	Screen* scrn = DefaultScreenOfDisplay((Display*)win->display);
 
@@ -950,8 +955,9 @@ unsigned int* RGFW_getScreenSize(RGFW_window* win) {
 	return RGFWScreen;
 }
 
-int RGFWMouse[2];
 int* RGFW_getGlobalMousePoint(RGFW_window* win) {
+	static int RGFWMouse[2];
+
 	int x, y;
 	unsigned int z;
 	Window window1, window2;
@@ -1773,12 +1779,12 @@ wglChoosePixelFormatARB_type *wglChoosePixelFormatARB;
 
 void init_opengl(RGFW_window* win) {
 	/* create/load dummy window for loading ARB version */
-	WNDCLASSA window_class = {
-		.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
-		.lpfnWndProc = DefWindowProcA,
-		.hInstance = GetModuleHandle(0),
-		.lpszClassName = "Dummy_WGL_djuasiodwa",
-	};
+	WNDCLASSA window_class;
+	
+	window_class.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	window_class.lpfnWndProc = DefWindowProcA;
+	window_class.hInstance = GetModuleHandle(0);
+	window_class.lpszClassName = "Dummy_WGL_djuasiodwa";
 
     if (!RegisterClassA(&window_class));
 
@@ -1829,9 +1835,9 @@ void init_opengl(RGFW_window* win) {
     wglMakeCurrent((HDC)win->window, (HGLRC)win->glWin);
 }
 
-char RGFW_trashed = 0;
-
 RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, unsigned long args) {
+	static char RGFW_trashed = 0;
+
     #ifdef RGFW_WGL_LOAD
 	if (wglinstance == NULL) { 
 		wglinstance = LoadLibraryA("opengl32.dll");
@@ -1949,17 +1955,18 @@ RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, un
 }
 
 
-unsigned int RGFW_ScreenSize[2];
-
 unsigned int* RGFW_getScreenSize(RGFW_window* win) {
+	static unsigned int RGFW_ScreenSize[2];
+
 	RGFW_ScreenSize[0] = GetDeviceCaps(GetDC(NULL), HORZRES);
 	RGFW_ScreenSize[1] = GetDeviceCaps(GetDC(NULL), VERTRES);
 
 	return RGFW_ScreenSize;
 }
 
-int RGFWMouse[2];
 int* RGFW_getGlobalMousePoint(RGFW_window* win) {
+	int RGFWMouse[2];
+
 	POINT p; 
 	GetCursorPos(&p);
 
@@ -2342,7 +2349,9 @@ char* createUTF8FromWideStringWin32(const WCHAR* source) {
     return target;
 }
 
-RGFW_thread RGFW_createThread(void* (*function_ptr)(void*), void* args) { return (long unsigned int)CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)*function_ptr, args, 0, NULL);  }
+
+
+RGFW_thread RGFW_createThread(void* (*function_ptr)(void*), void* args) { return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)*function_ptr, args, 0, NULL);  }
 void RGFW_cancelThread(RGFW_thread thread) { CloseHandle((HANDLE)thread);  }
 void RGFW_joinThread(RGFW_thread thread) { WaitForSingleObject((HANDLE)thread, INFINITE); }
 void RGFW_setThreadPriority(RGFW_thread thread, unsigned char priority) { SetThreadPriority((HANDLE)thread, priority); }
@@ -2432,9 +2441,10 @@ bool performDragOperation(id self, SEL cmd, NSDraggingInfo* sender) {
     return true;
 }
 
-unsigned char RGFW_loaded = 0;
 
 RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, unsigned long args){
+	static unsigned char RGFW_loaded = 0;
+	
 	RGFW_window* win = malloc(sizeof(RGFW_window));
 
 	if (RGFW_FULLSCREEN & args){
@@ -2567,9 +2577,9 @@ RGFW_window* RGFW_createWindowPointer(char* name, int x, int y, int w, int h, un
 	return win;
 }
 
-unsigned int RGFW_SreenSize[2];
-
 unsigned int* RGFW_getScreenSize(RGFW_window* win){
+	static unsigned int RGFW_SreenSize[2];
+
 	if (!RGFW_ValidWindowCheck(win, (char*)"RGFW_getScreenSize")) return (unsigned int[2]){0, 0};
 
 	NSRect r = NSScreen_frame(NSScreen_mainScreen());
@@ -2580,9 +2590,11 @@ unsigned int* RGFW_getScreenSize(RGFW_window* win){
 	return (unsigned int[2]){r.size.width, r.size.height};
 }
 
-int RGFW_mousePoint[2];
-
 int* RGFW_getGlobalMousePoint(RGFW_window* win) {
+	int RGFW_mousePoint[2];
+`	RGFW_mousePoint[0] = win->event.x;
+`	RGFW_mousePoint[1] = win->event.y;
+
 	return RGFW_mousePoint; /* the point is loaded during event checks */
 }
 
@@ -2600,7 +2612,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 	win->inFocus = NSWindow_isKeyWindow(win->window);
 
 	/* NOTE(EimaMei): This is super janky code, THANKS APPLE. For some reason it takes a few frames AFTER becoming focused to allow setting the cursor. */
-	if (win->inFocus && win->cursor != NULL && win->cursor != -1 && (win->cursorChanged != 2 || NSCursor_currentCursor() != win->cursor)) {
+	if (win->inFocus && win->cursor != NULL && win->cursor != NULL && (win->cursorChanged != 2 || NSCursor_currentCursor() != win->cursor)) {
 		if (win->cursorChanged != 2)
 			win->cursorChanged++;
 
@@ -2610,10 +2622,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 
 	NSEvent* e = NSApplication_nextEventMatchingMask(NSApp, NSEventMaskAny, NULL, 0, true);
 
-	NSPoint point = NSEvent_mouseLocation(win->e);
-
-	RGFW_mousePoint[0] = point.x;
-	RGFW_mousePoint[1] = point.y;
+	NSPoint point = NSEvent_mouseLocation(e);
 
 	if (NSEvent_window(e) == win->window) {
 		unsigned char button = 0, i;
@@ -2689,7 +2698,7 @@ RGFW_Event* RGFW_checkEvents(RGFW_window* win) {
 		}
 
 		if (win->cursorChanged && NSPointInRect(NSEvent_mouseLocation(e), NSWindow_frame(win->window))) {
-			if (win->cursor == -1)
+			if (win->cursor == NULL)
 				CGDisplayHideCursor(kCGDirectMainDisplay);
 			else {
 				CGDisplayShowCursor(kCGDirectMainDisplay);
@@ -2771,7 +2780,7 @@ void RGFW_setMouse(RGFW_window* win, unsigned char* image, int width, int height
 		return ;
 	}
 
-	if (win->cursor != NULL && win->cursor != -1)
+	if (win->cursor != NULL && win->cursor != NULL)
 		release(win->cursor);
 
 	/* NOTE(EimaMei): Code by yours truly. */
@@ -2795,7 +2804,7 @@ void RGFW_setMouse(RGFW_window* win, unsigned char* image, int width, int height
 }
 
 void RGFW_hideMouse(RGFW_window* win) {
-	if (win->cursor != NULL && win->cursor != -1)
+	if (win->cursor != NULL && win->cursor != NULL)
 		release(win->cursor);
 	
 	win->cursor = -1;
@@ -2803,7 +2812,7 @@ void RGFW_hideMouse(RGFW_window* win) {
 }
 
 void RGFW_setMouseDefault(RGFW_window* win) {
-	if (win->cursor != NULL && win->cursor != -1)
+	if (win->cursor != NULL && win->cursor != NULL)
 		release(win->cursor);
 	
 	win->cursor = NULL;
@@ -2848,7 +2857,7 @@ void RGFW_closeWindow(RGFW_window* win){
 
 	release(win->view);
 
-	if (win->cursor != NULL && win->cursor != -1)
+	if (win->cursor != NULL && win->cursor != NULL)
 		release(win->cursor);
 
 	unsigned int i;
