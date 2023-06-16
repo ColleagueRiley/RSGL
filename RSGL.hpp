@@ -460,8 +460,8 @@ namespace RSGL  {
         textbox(RSGL::rect rect) { this->textSize = 0; box.r = rect; inUse = false; }
         ~textbox();
 
-        void addChar(char ch, unsigned long index);
-        void eraseChar(unsigned long index);
+        void addChar(char ch, __SIZE_TYPE__ index);
+        void eraseChar(__SIZE_TYPE__ index);
         void checkEvent(
                 RSGL::event e, 
                 bool tab = true, /* if tabs are handled (3 spaces) */

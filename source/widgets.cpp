@@ -104,8 +104,6 @@ namespace RSGL {
                 oText[size] = text[i];
             }  
 
-            printf("%c\n", oText);
-
             free(text);
             text = strdup(oText);
             
