@@ -27,7 +27,7 @@ build:
 	@if [ $(shell uname) = Darwin ] && [ $(COMPILE)true = true ]; then\
 		cp RSGL.hpp ./build/RSGL.cpp;\
 		mkdir -p build/obj build/lib;\
-		gcc ./source/deps/RGFW.h -D RSGL_IMPLEMENTATION -I./source/deps -o ./build/obj/RGFW.o
+		gcc ./source/deps/RGFW.h -D RSGL_IMPLEMENTATION -I./source/deps -o ./build/obj/RGFW.o;\
 		$(CXX) -I./ -fPIC -c ./build/RSGL.cpp ./build/obj/RGFW.o -o ./build/obj/RSGL.o;\
 		rm ./build/RSGL.cpp;\
 		ar rcs ./build/lib/libRSGL.a ./build/obj/RSGL.o;\
