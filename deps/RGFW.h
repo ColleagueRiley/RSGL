@@ -2121,8 +2121,9 @@ RGFW_window* RGFW_createWindow(const char* name, int x, int y, int w, int h, uns
 
     int pf;
 
+	unsigned int* r = RGFW_window_screenSize(win);
+
 	if (RGFW_FULLSCREEN & args) {
-		unsigned int* r = RGFW_window_screenSize(win);
 		x = 0;
 		y = 0;
 		w = r[0];
@@ -2130,22 +2131,22 @@ RGFW_window* RGFW_createWindow(const char* name, int x, int y, int w, int h, uns
 	}
 
 	if (RGFW_CENTER & args) {
-		x = (screenR[0] - w) / 1.1;
-		y = (screenR[1] - h) / 4;
+		x = (r[0] - w) / 1.1;
+		y = (r[1] - h) / 4;
 	}
 
 	#ifndef RGFW_RECT
-	win->srcX = win->x = a.x;
-	win->srcY = win->y = a.y;
-	win->srcW = win->w = a.width;
-	win->srcH = win->h = a.height; 
+	win->srcX = win->x = x;
+	win->srcY = win->y = y;
+	win->srcW = win->w = w;
+	win->srcH = win->h = h; 
 	#else
-	win->srcR = win->r = (RGFW_RECT){a.x, a.y, a.width, a.height};
+	win->srcR = win->r = (RGFW_RECT){x, y, w, h};
 	#endif
 
 	win->valid = 245;
 
-	win->srcName = win->name = name;
+	win->srcName = win->name = (char*)name;
 	win->fpsCap = 0;
 	win->inFocus = 1;
 	win->joystickCount = 0;
@@ -2737,8 +2738,9 @@ RGFW_window* RGFW_createWindow(const char* name, int x, int y, int w, int h, uns
 	
 	RGFW_window* win = malloc(sizeof(RGFW_window));
 
+	unsigned int* r = RGFW_window_screenSize(win);
+
 	if (RGFW_FULLSCREEN & args){
-		unsigned int* r = RGFW_window_screenSize(win);
 		x = 0;
 		y = 0;
 		w = r[0];
@@ -2746,8 +2748,8 @@ RGFW_window* RGFW_createWindow(const char* name, int x, int y, int w, int h, uns
 	}
 
 	if (RGFW_CENTER & args) {
-		x = (screenR[0] - w) / 1.1;
-		y = (screenR[1] - h) / 4;
+		x = (r[0] - w) / 1.1;
+		y = (r[1] - h) / 4;
 	}
 
 	#ifndef RGFW_RECT
@@ -2759,7 +2761,7 @@ RGFW_window* RGFW_createWindow(const char* name, int x, int y, int w, int h, uns
 	win->srcR = win->r = {x, y, w, h};
 	#endif 
 
-	win->srcName = win->name = name;
+	win->srcName = win->name = (char*)name;
 	win->fpsCap = 0;
 	win->inFocus = 0;
 	win->hideMouse = 0;
