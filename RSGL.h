@@ -30,9 +30,13 @@ typedef struct RSGL_rect {
 
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
 
+#ifndef RSGL_NO_WINDOW
 #define RGFW_RECT RSGL_rect
 #define RGFW_EXTRA_CONTEXT
 #include "deps/RGFW.h"
+#else
+typedef struct {unsigned int type, x, y;} RGFW_Event;
+#endif
 
 
 #include <stdbool.h>
@@ -83,9 +87,10 @@ RSGL_window
 *******
 */
 
+#ifndef RSGL_NO_WINDOW
 typedef RGFW_window RSGL_window;
 
-RSGL_window* RSGL_window_create(const char* name, RSGL_rect r, unsigned long args);
+RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args);
 
 inline void RSGL_window_setIconImage(RSGL_window* win, const char* image); 
 #define RGFW_window_setIcon RSGL_window_setIcon
@@ -97,6 +102,19 @@ void RSGL_window_makeCurrent(RSGL_window* win);
 inline void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 
 inline void RSGL_window_close(RSGL_window* win);
+#else /* RSGL_NO_WINDOW */
+
+/* 
+*********************
+RSGL_GRAPHICS_CONTEXT
+*********************
+*/
+
+void RSGL_initGraphics(RSGL_area r, void* loader);
+void RSGL_graphics_clear(RSGL_color c);
+void RSGL_graphics_free();
+
+#endif /* RSGL_GRAPHICS_CONTEXT / !RSGL_NO_WINDOW */
 
 /* 
 *******
@@ -155,6 +173,8 @@ RSGL_widgets
 *******
 */
 
+#ifndef RGFW_NO_WIDGETS
+
 typedef enum {
     RSGL_none = 0,
     RSGL_hovered,
@@ -190,6 +210,7 @@ inline void RSGL_slider_update(
     RGFW_Event e
 );
 
+#ifndef RSGL_NO_TEXT
 typedef struct RSGL_textbox {
     char* text;
     RSGL_rect r;
@@ -199,6 +220,9 @@ typedef struct RSGL_textbox {
 
 inline void RSGL_textbox_update(RSGL_textbox* texbox, RGFW_Event e);
 inline void RSGL_textbox_draw(RSGL_textbox textBox, int font, RSGL_color c, RSGL_color cursorColor);
+#endif /* RSGL_NO_TEXT */
+
+#endif /* RGFW_NO_WIDGETS */
 
 /* 
 *******
@@ -256,22 +280,30 @@ inline bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
 
 #endif /* ndef RSGL_H */
 
+#include <assert.h>
+
 #ifdef RSGL_IMPLEMENTATION
 
 #define RGFW_IMPLEMENTATION
-#define FONTSTASH_IMPLEMENTATION
-#define GLFONTSTASH_IMPLEMENTATION
 #define RLGL_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "deps/rlgl.h"
 
+#ifndef RSGL_NO_WINDOW
 #define RGFW_EXTRA_CONTEXT
 #include "deps/RGFW.h"
+#endif
 
+#ifndef RSGL_NO_TEXT
+#define FONTSTASH_IMPLEMENTATION
+#define GLFONTSTASH_IMPLEMENTATION
 #include "deps/rglfontstash.h"
+#endif /* RSGL_NO_TEXT */
 
 #include "deps/stb_image.h"
+
+#include <time.h>
 
 #ifndef RSGL_NO_AUDIO
 
@@ -352,7 +384,11 @@ void RSGL_BASIC_DRAW(unsigned int RL_TYPE, RSGL_pointF points[], RSGL_pointF tex
     RSGL_window
 */
 
+#ifndef RSGL_NO_TEXT
 FONScontext* RSGL_fonsContext;
+#endif /* RSGL_NO_TEXT */
+
+#ifndef RSGL_NO_WINDOW
 
 RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args) {
     RGFW_window* win = RGFW_createWindow(name, r.x, r.y, r.w, r.h, args);
@@ -361,8 +397,9 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args
         rlLoadExtensions((void*)RGFW_getProcAddress);
         rlglInit(win->r.w, win->r.h);
         rlEnableDepthTest();
-
+        #ifndef RSGL_NO_TEXT
         RSGL_fonsContext = glfonsCreate(500, 500, 1);
+        #endif
     }
 
     assert(win != NULL);
@@ -400,7 +437,9 @@ void RSGL_window_close(RSGL_window* win) {
     RSGL_windowsOpen--;
 
     if (RSGL_windowsOpen == 0) {
+        #ifndef RSGL_NO_TEXT
         fonsDeleteInternal(RSGL_fonsContext);
+        #endif
         rlglClose();
 
         if (images != NULL)
@@ -409,6 +448,45 @@ void RSGL_window_close(RSGL_window* win) {
 
     RGFW_window_close(win);
 }
+
+#else /* !RGFW_NO_WINDOW */
+
+/* 
+*********************
+RSGL_GRAPHICS_CONTEXT
+*********************
+*/
+
+
+void RSGL_initGraphics(RSGL_area r, void* loader) {
+    rlLoadExtensions(loader);
+    rlglInit(r.w, r.h);
+    rlEnableDepthTest();
+
+    RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
+
+    #ifndef RSGL_NO_TEXT
+    RSGL_fonsContext = glfonsCreate(500, 500, 1);
+    #endif
+}
+
+void RSGL_graphics_clear(RSGL_color color) {
+    rlClearScreenBuffers();
+    rlDrawRenderBatchActive();
+    
+    rlClearColor(color.r, color.g, color.b, color.a);
+}
+
+void RSGL_graphics_free() {
+    #ifndef RSGL_NO_TEXT
+    fonsDeleteInternal(RSGL_fonsContext);
+    #endif
+    rlglClose();
+
+    if (images != NULL)
+        free(images);
+}
+#endif /* RSGL_GRAPHICS_CONTEXT / !RGFW_NO_WINDOW */
 
 /* 
 ****
@@ -522,6 +600,8 @@ void RSGL_drawPolygonPro(RSGL_rect o, unsigned int sides, RSGL_point arc, RSGL_c
     }
     rlEnd();
     rlPopMatrix();
+
+    if (RSGL_argsClear) RSGL_clearArgs();
 }
 
 void RSGL_drawPolygon(RSGL_rect o, unsigned int sides, RSGL_color c) { RSGL_drawPolygonPro(o, sides, (RSGL_point){0, (int)sides}, c); }
@@ -664,7 +744,7 @@ unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
             }
         }
     }
-    #endif
+    #endif /* RSGL_NO_SAVE_IMAGE */
 
     if (!texture) {
         int x, y, c;
@@ -695,6 +775,7 @@ unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
     return texture;
 }
 
+#ifndef RSGL_NO_TEXT
 unsigned int RSGL_loadFont(const char* font) {
     static struct { const char* font_ttf; int font; } fonts[300];
     static size_t fontSize = 0;
@@ -731,6 +812,7 @@ void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_colo
 unsigned int RSGL_textWidth(const char* text, size_t textEnd, unsigned int font, unsigned int fontSize) {
     return fonsTextWidth(RSGL_fonsContext, font, fontSize, text, textEnd);
 }
+#endif /* RSGL_NO_TEXT */
 
 void glPrerequisites(RSGL_rect r, RSGL_color c) {
     rlColor4ub(c.r, c.g, c.b, c.a);
@@ -757,6 +839,7 @@ RSGL_widgets
 ******
 */
 
+#if !defined(RGFW_NO_WIDGETS) && defined (RGFW_mouseButtonPressed)
 void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     switch (e.type) {
         case RGFW_mouseButtonPressed:
@@ -816,6 +899,7 @@ void RSGL_slider_update(RSGL_button* b, RSGL_rect limits, RGFW_Event e) {
         b->r.y = e.y;
 }
 
+#if !defined(RSGL_NO_TEXT) && defined(RGFW_keyPressed)
 void RSGL_textbox_update(RSGL_textbox* textBox, RGFW_Event e) {
     switch (e.type) {
         case RGFW_keyPressed:
@@ -837,6 +921,9 @@ void RSGL_textbox_draw(RSGL_textbox textBox, int font, RSGL_color c, RSGL_color 
 
     RSGL_drawLine(cursor, (RSGL_point){cursor.x, cursor.y + textBox.textSize}, 1, cursorColor);
 }
+#endif /* RSGL_NO_TEXT */
+
+#endif /*  RGFW_NO_WIDGETS */
 
 /*
 ******
