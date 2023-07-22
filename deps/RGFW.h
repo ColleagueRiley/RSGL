@@ -389,7 +389,7 @@ int main() {
 		glClearColor(0xFF, 0XFF, 0xFF, 0xFF);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-        if (win->event.type == RGFW_quit || RGFW_isPressedS(win, (char*)"Escape"))
+        if (win->event.type == RGFW_quit || RGFW_isPressedI(win, RGFW_Escape))
             break;
     }
 
