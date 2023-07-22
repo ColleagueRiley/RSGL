@@ -20,6 +20,27 @@
 *
 */
 
+/*
+    define args
+    (MAKE SURE RSGL_IMPLEMENTATION is in at least one header or you use -DRSGL_IMPLEMENTATION)
+	#define RSGL_IMPLEMENTATION - makes it so source code is included with header
+    
+    #define RSGL_NO_WINDOW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]
+    #define RSGL_NO_TEXT - do not include text rendering functions
+    #define RGFW_NO_WIDGETS - do not include widgets
+    #define RSGL_NO_AUDIO - do not include audio functions
+    #define RSGL_NO_MINIAUDIO_IMPLEMENTATION - do not have `#define MINIAUDIO_IMPLEMENTATION` in this header (you'll have to link miniaudio some other way to use audio)
+    #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), 
+                                    RSGL_drawImage saves the file name + texture so it can load it
+                                    when you ask for it later. This disables that
+
+    RGFW (more defines / RGFW documentation in RGFW.h):
+    #define RGFW_PRINT_ERRORS - (optional) makes it so RGFW prints errors when they're found
+	#define RGFW_X11 (optional) (unix only) if X11 should be used. This option is turned on by default by unix systems except for MacOS
+	#define RGFW_WGL_LOAD (optional) (windows only) if WGL should be loaded dynamically during runtime
+*/
+
+
 #ifndef RSGL_H
 #define RSGL_H
 
@@ -280,7 +301,86 @@ inline bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
 
 #endif /* ndef RSGL_H */
 
-#include <assert.h>
+/*
+(Notes on how to manage Silicon (macos) included)
+
+Example to get you started :
+
+linux : gcc main.c -lX11 -lXcursor -lGL
+windows : gcc main.c -lopengl32 -lshell32 -lgdi32
+macos:
+	<Silicon> can be replaced to where you have the Silicon headers stored
+	<libSilicon.a> can be replaced to wherever you have libSilicon.a
+	clang main.c -I<Silicon> <libSilicon.a> -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+
+	NOTE(EimaMei): If you want the MacOS experience to be fully single header, then I'd be best to install Silicon (after compiling)
+	by going to the `Silicon` folder and running `make install`. After this you can easily include Silicon via `#include <Silicon/silicon.h>'
+	and link it by doing `-lSilicon`
+
+#define RSGL_NO_AUDIO
+#define RSGL_IMPLEMENTATION
+#include "RSGL.h"
+
+int main() {
+    RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, 0);
+
+
+    for (;;) {
+        RSGL_window_checkEvent(win); // NOTE: checking events outside of a while loop may cause input lag 
+
+        if (win->event.type == RGFW_quit || RGFW_isPressedI(win, RGFW_Escape))
+            break;
+
+        RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 255, 255))
+        RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
+    }
+
+    RSGL_window_close(win);
+}
+
+	compiling :
+
+	if you wish to compile the library all you have to do is create a new file with this in it
+
+	RSGL.c
+	#define RSGL_IMPLEMENTATION
+	#include "RSGL.h"
+
+	then you can use gcc (or whatever compile you wish to use) to compile the library into object file
+
+	ex. gcc -c RSGL.c -fPIC
+
+	after you compile the library into an object file, you can also turn the object file into an static or shared library
+
+	(commands ar and gcc can be replaced with whatever equivalent your system uses)
+	static : ar rcs RSGL.a RSGL.o
+	shared :
+		windows:
+			gcc -shared RSGL.o  -lshell32 -lgdi32 -o RSGL.dll
+		linux:
+			gcc -shared RSGL.o -lX11 -lXcursor -o RSGL.so
+		macos:
+			<Silicon/include> can be replaced to where you have the Silicon headers stored
+			<libSilicon.a> can be replaced to wherever you have libSilicon.a
+			gcc -shared RSGL.o -framework Foundation <libSilicon.a> -framework AppKit -framework CoreVideo -I<Silicon/include>
+
+	installing/building silicon (macos)
+
+	Silicon does not need to be installde per se.
+	I personally recommended that you use the Silicon included using RGFW
+
+	to build this version of Silicon simplly run
+
+	cd Silicon && make
+
+	you can then use Silicon/include and libSilicon.a for building RGFW projects
+
+	ex.
+	gcc main.c -framework Foundation -lSilicon -framework AppKit -framework CoreVideo -ISilicon/include
+
+	I also suggest you compile Silicon (and RGFW if applicable)
+	per each time you compile your application so you know that everything is compiled for the same architecture.
+*/
 
 #ifdef RSGL_IMPLEMENTATION
 
@@ -288,10 +388,11 @@ inline bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
 #define RLGL_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 
+#include <assert.h>
+
 #include "deps/rlgl.h"
 
 #ifndef RSGL_NO_WINDOW
-#define RGFW_EXTRA_CONTEXT
 #include "deps/RGFW.h"
 #endif
 
