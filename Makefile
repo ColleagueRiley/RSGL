@@ -1,5 +1,11 @@
 INSTALL_PATH = /usr
 
+ifeq ($(OS),Windows_NT)
+OS = Windows_NT
+else
+OS = linux
+endif
+
 build:
 	@if [ $(CXX)false = false ]; then\
 		CXX := g++;\
@@ -7,36 +13,37 @@ build:
 	fi
 
 	@mkdir -p build build/include build/include/RSGL
-	@cp RSGL.hpp build/include/RSGL
+	@cp RSGL.h build/include/RSGL
 	@if [ $(HEADERS-ONLY)false = false ]; then\
 		cp -r ./source build/include/RSGL;\
 	fi
 	
 	@if [ $(COMPILE)true = true ] && [ $(shell uname) != Darwin ]; then\
-		cp RSGL.hpp ./build/RSGL.cpp;\
+		cp RSGL.h ./build/RSGL.c;\
 		mkdir -p build/obj build/lib;\
-		$(CXX) -I./ -fPIC -c ./build/RSGL.cpp -D RSGL_IMPLEMENTATION -o ./build/obj/RSGL.o;\
-		rm ./build/RSGL.cpp;\
+		$(CXX) -I./ -fPIC -c ./build/RSGL.c -D RSGL_IMPLEMENTATION -o ./build/obj/RSGL.o;\
+		rm ./build/RSGL.c;\
 		ar rcs ./build/lib/libRSGL.a ./build/obj/RSGL.o;\
 	fi
 
-	@if [ $(shell uname) = Windows_NT ] && [ $(COMPILE)true = true ] ; then\
+	@if [ $(OS) = Windows_NT ] && [ $(COMPILE)true = true ] ; then\
 		$(CXX) -shared -lopengl32 -lshell32 -lgdi32 ./build/obj/RSGL.o -o ./build/lib/libRSGL.dll;\
 	fi
 
 	@if [ $(shell uname) = Darwin ] && [ $(COMPILE)true = true ]; then\
-		cp RSGL.hpp ./build/RSGL.cpp;\
+		cp RSGL.h ./build/RSGL.c;\
 		mkdir -p build/obj build/lib;\
 		gcc ./source/deps/RGFW.h -D RSGL_IMPLEMENTATION -I./source/deps -o ./build/obj/RGFW.o;\
-		$(CXX) -I./ -fPIC -c ./build/RSGL.cpp ./build/obj/RGFW.o -o ./build/obj/RSGL.o;\
-		rm ./build/RSGL.cpp;\
+		$(CXX) -I./ -fPIC -c ./build/RSGL.c ./build/obj/RGFW.o -o ./build/obj/RSGL.o;\
+		rm ./build/RSGL.c;\
 		ar rcs ./build/lib/libRSGL.a ./build/obj/RSGL.o;\
 		make silicon;\
 		$(CXX) -shared  -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo ./build/obj/*.o -o ./build/lib/libRSGL.dynlib;\
 		ar rcs ./build/lib/libRSGL.a ./build/obj/*.o;\
 	fi
 
-	@if [ $(shell uname) != Windows_NT ] && [ $(shell uname -s) != Darwin ] && [ $(COMPILE)true = true ]; then\
+	@if [ $(OS) != Windows_NT ] && [ $(shell uname -s) != Darwin ] && [ $(COMPILE)true = true ]; then\
+		echo hi;\
 		$(CXX) -shared -lX11 -lGLX ./build/obj/RSGL.o -o ./build/lib/libRSGL.so;\
 	fi
 
