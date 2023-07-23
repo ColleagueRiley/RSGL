@@ -690,7 +690,11 @@ void RGFW_setGLVersion(int major, int minor) {
 	RGFW_minorVersion = minor;
 }
 
+#ifndef __APPLE__
 #include <GL/gl.h>
+#else
+#include <OpenGL/gl.h>
+#endif
 
 unsigned char* RGFW_getMaxGLVersion() {
     RGFW_window* dummy = RGFW_createWindow("dummy", 0, 0, 1, 1, 0);
