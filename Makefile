@@ -7,15 +7,15 @@ all:
 	fi
 
 	@if [ $(shell uname) = Darwin ]; then\
-		cd deps/Silicon/source && make\
+		$(CC) -c ./deps/Silicon/source/*m -I./deps/Silicon/;\
 		$(CC) -I./deps/Silicon ../deps/Silicon/source/*.o -shared -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo RSGL.o -o libRSGL.dynlib;\
 	fi
 
 	@if [ $(shell uname) != Windows_NT ] && [ $(shell uname -s) != Darwin ]; then\
-		$(CC) -shared -lX11 -lGLX RSGL.o -o libRSGL.so;\
+		$(CC) -shared -lX11 -lGLX RSGL.o -I/deps/Silicon/ -o libRSGL.so;\
 	fi
 
-	cp RSGL.o libRSGL.a
+	ar rcs libRSGL.a *.o
 
 RSGL.o:
 	cp RSGL.h RSGL.c
@@ -23,7 +23,7 @@ RSGL.o:
 	rm RSGL.c
 
 clean:
-	rm libRSGL.so RSGL.o
+	rm libRSGL.so RSGL.o libRSGL.a
 
 install:
 	sudo cp libRSGL.so /usr/lib
