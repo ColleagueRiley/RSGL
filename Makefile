@@ -7,7 +7,7 @@ all:
 	fi
 
 	@if [ $(shell uname) = Darwin ]; then\
-		cd deps/Silicon/source && make
+		cd deps/Silicon/source && make\
 		$(CC) -shared -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo RSGL.o -o libRSGL.dynlib;\
 	fi
 
