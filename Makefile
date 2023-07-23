@@ -8,7 +8,7 @@ all:
 
 	@if [ $(shell uname) = Darwin ]; then\
 		cd deps/Silicon/source && make\
-		$(CC) -shared -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo RSGL.o -o libRSGL.dynlib;\
+		$(CC) -I./deps/Silicon ../deps/Silicon/source/*.o -shared -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo RSGL.o -o libRSGL.dynlib;\
 	fi
 
 	@if [ $(shell uname) != Windows_NT ] && [ $(shell uname -s) != Darwin ]; then\
@@ -28,3 +28,4 @@ clean:
 install:
 	sudo cp libRSGL.so /usr/lib
 	sudo cp libRSGL.a /usr/local/lib
+	sudo cp RSGL.h /usr/include
