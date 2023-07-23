@@ -2415,7 +2415,7 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 		RECT a;
 
 		if (GetWindowRect((HWND)win->display, &a))
-			win->srcR = win->r = {a.left, a.top, a.right - a.left, a.bottom - a.top};
+			win->srcR = win->r = (RSGL_rect){a.left, a.top, a.right - a.left, a.bottom - a.top};
 	}
 	#endif
 
@@ -2758,7 +2758,7 @@ RGFW_window* RGFW_createWindow(const char* name, int x, int y, int w, int h, uns
 	win->srcW = win->w = w;
 	win->srcH = win->h = h;
 	#else
-	win->srcR = win->r = {x, y, w, h};
+	win->srcR = win->r = (RSGL_rect){x, y, w, h};
 	#endif 
 
 	win->srcName = win->name = (char*)name;
@@ -3040,7 +3040,7 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 	}
 	#else 
 	if (r.origin.x != win->srcR.x || r.origin.y != win->srcR.y || r.size.width != win->srcR.w || r.size.height != win->srcR.h)
-		win->srcR = win->r = {r.origin.x, r.origin.y, r.size.width, r.size.height};
+		win->srcR = win->r = (RSGL_rect){r.origin.x, r.origin.y, r.size.width, r.size.height};
 	
 
 	else if (win->r.x != win->srcR.x || win->r.y != win->srcR.y ||
