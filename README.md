@@ -6,24 +6,45 @@
 
 A simple GUI library currently for Linux, Windows and MacOS
 
-# Building
-  to built simply run `make build`
-
-  to customize the build you can put pre-defined vars after `make build`
-  ex.
-  
-  `make GXX=g++(c++ compiler) COMPILE=false (just install headers) HEADERS-ONLY=false (don't move source files with headers (don't support installed header-only option)` 
 
 # header-only
-  To "link" RSGL with the header-only option simply add `#define RSGL_IMPLEMENTATION` before you include RSGL ex.
-
-  ```cpp
+  In order to "link" RSGL you must add the line 
+  ```c
   #define RSGL_IMPLEMENTATION
-  #include <RSGL.hpp>
   ```
+  before you include RSGL
 
-  However, compiling a code like this takes a lot longer, so it may be a good idea to link compiled sources instead. 
+  you can also use the command line argument `-DRSGL_IMPLEMENTATION`
 
+  or have RSGL's defined in a seperate file\
+  which I would suggest you do if you're going to use any optimization args\
+  or compile with miniaudio
+
+# compiling without RSGL_audio
+If you want to compile without RSGL_AUDIO you have to add the line
+
+```c
+#define RSGL_NO_AUDIO
+```
+
+before you include RSGL\
+however, if you're not linking audio because it is compiling slower
+
+I'd suggest you add `#define RSGL_NO_MINIAUDIO_IMPLEMENTATION`\
+and then link miniaudio in your own way\
+OR, add `  #define RSGL_IMPLEMENTATION` to a seperate source file and link RSGL on it's own
+
+or building RSGL...
+
+# Building
+  Building RSGL isn't required in any sense
+
+  but if you wanted to, here's how
+
+  ```sh
+  ./configure
+  make
+  ```
 
 # installing
   There's two ways to install, either using the Makefile or by hand, installing by hand is a good idea if you're crosscompiling
@@ -49,25 +70,66 @@ A simple GUI library currently for Linux, Windows and MacOS
     `cp ./build/bin/* /usr/bin`
 
 # Modules 
-  #define  RSGL_NO_WIDGETS (makes it so RSGL doesn't include widget functions)
-  #define  RSGL_NO_AUDIO (makes it so RSGL doesn't include audio functions)
+  #define  RSGL_NO_WIDGETS (makes it so RSGL doesn't include widget functions)\
+  #define  RSGL_NO_AUDIO (makes it so RSGL doesn't include audio functions)\
+  #define RSGL_NO_WINDOW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]\
+  #define RSGL_NO_TEXT - do not include text rendering functions\
+  #define RGFW_NO_WIDGETS - do not include widgets\
+  #define RSGL_NO_AUDIO - do not include audio functions\
+  #define RSGL_NO_MINIAUDIO_IMPLEMENTATION - do not have `#define MINIAUDIO_IMPLEMENTATION` in this header (you'll have to link miniaudio some other way to use audio)\
+  #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), \
+                                  RSGL_drawImage saves the file name + texture so it can load it\
+                                  when you ask for it later. This disables that\
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in, 
 
 # compiling
-  you can compile two ways, with the shared library, which is as simple as linking `libRSGL.so` or `-lRSGL` (if it's installed), you can also do `$((pkg-config RSGL -libs)`
+if you wish to compile the library all you have to do is create a new file with this in it
 
-  to compile statically, you can either link with `libRSGL.a` with the proper dependencies yourself or with RSGL-static
+RSGL.c
+#define RSGL_IMPLEMENTATION
+#include "RSGL.h"
 
-  linking statically with pkg-config is as simple as adding `$(pkg-config RSGL -libs -static)` to your compiler command
+then you can use gcc (or whatever compile you wish to use) to compile the library into object file
 
-  ex. `g++ main.cpp $(pkg-config RSGL -libs -static)`
+ex. gcc -c RSGL.c -fPIC
 
-  in a Makefile, you can simply add a line such as `LIBS = $(pkg-config RSGL -libs -static)` and link with `$(LIBS)`
+after you compile the library into an object file, you can also turn the object file into an static or shared library
+
+(commands ar and gcc can be replaced with whatever equivalent your system uses)
+static : ar rcs RSGL.a RSGL.o
+shared :
+  windows:
+    gcc -shared RSGL.o  -lshell32 -lgdi32 -o RSGL.dll
+  linux:
+    gcc -shared RSGL.o -lX11 -lXcursor -o RSGL.so
+  macos:
+    <Silicon/include> can be replaced to where you have the Silicon headers stored
+    <libSilicon.a> can be replaced to wherever you have libSilicon.a
+    gcc -shared RSGL.o -framework Foundation <libSilicon.a> -framework AppKit -framework CoreVideo -I<Silicon/include>
+
+installing/building silicon (macos)
+
+Silicon does not need to be installde per se.
+I personally recommended that you use the Silicon included using RGFW
+
+to build this version of Silicon simplly run
+
+cd Silicon && make
+
+you can then use Silicon/include and libSilicon.a for building RGFW projects
+
+ex.
+gcc main.c -framework Foundation -lSilicon -framework AppKit -framework CoreVideo -ISilicon/include
+
+I also suggest you compile Silicon (and RGFW if applicable)
+per each time you compile your application so you know that everything is compiled for the same architecture.
 
 # RGFW
-  RGFW, Riley's Gui library FrameWork is used as a backend for RSGL.
+  RGFW, Riley's Gui library FrameWork.
+
+  RSGL's window management is built off of RGFW!
 
   RGFW is made as an very small, single-header-file alternative to GLFW. \
   RGFW also tries to be even more flexable than GLFW. 
