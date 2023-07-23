@@ -7,13 +7,8 @@ all:
 	fi
 
 	@if [ $(shell uname) = Darwin ]; then\
-		cp RSGL.hpp ./build/RSGL.cpp;\
-		mkdir -p build/obj build/lib;\
-		gcc ./source/deps/RGFW.h -D RSGL_IMPLEMENTATION -I./source/deps -o ./build/obj/RGFW.o;\
-		$(CC) -I./ -fPIC -c ./build/RSGL.cpp ./build/obj/RGFW.o -o RSGL.o;\
-		rm ./build/RSGL.cpp;\
-		make silicon;\
-		$(CC) -shared  -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo ./build/obj/*.o -o libRSGL.dynlib;\
+		cd deps/Silicon/source && make
+		$(CC) -shared -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo RSGL.o -o libRSGL.dynlib;\
 	fi
 
 	@if [ $(shell uname) != Windows_NT ] && [ $(shell uname -s) != Darwin ]; then\
@@ -23,7 +18,9 @@ all:
 	cp RSGL.o libRSGL.a
 
 RSGL.o:
+	cp RSGL.h RSGL.c
 	$(CC) -c RSGL.c -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
+	rm RSGL.c
 
 clean:
 	rm libRSGL.so RSGL.o

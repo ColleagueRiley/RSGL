@@ -1,2 +1,5 @@
 build:
-	cd ../build/obj && gcc ../../../Silicon/*.m 
+	gcc -c *.m -I../
+
+clean:
+	rm *.o
