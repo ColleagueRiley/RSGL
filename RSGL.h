@@ -72,6 +72,7 @@ RSGL_[shape]
 typedef struct RSGL_point {
     int x, y;
 } RSGL_point;
+#define RSGL_POINT(x, y) (RSGL_point){x, y}
 
 typedef struct RSGL_pointF {
     float x, y;
@@ -81,17 +82,22 @@ typedef struct RSGL_point3D {
     int x, y, z;
 } RSGL_point3D;
 
+#define RSGL_POINT3D(x, y, z) (RSGL_point3D){x, y, z}
+
 typedef struct RSGL_area {
     int w, h;
 } RSGL_area;
+#define RSGL_AREA(w, h) (RSGL_area){w, h}
 
 typedef struct RSGL_circle {
     int x, y, d;
 } RSGL_circle;
+#define RSGL_CIRCLE(x, y, d) (RSGL_circle){x, y, d}
 
 typedef struct RSGL_triangle {
     RSGL_point p1, p2, p3;
 } RSGL_triangle;
+#define RSGL_TRIANGLE(p1, p2, p3) (RSGL_triangle){p1, p2, p3}
 
 #define RSGL_createTriangle(x1, y1, x2, y2, x3, y3) (RSGL_triangle){{x1, y1}, {x2, y2}, {x3, y3}}
 
@@ -145,13 +151,13 @@ RSGL_draw
 
 
 /* RSGL_draw args */
-void RSGL_rotate(RSGL_point3D rotate);
-void RSGL_loadTexture(unsigned int texture);
-void RSGL_loadGradient(RSGL_color gradient[], size_t len);
+inline void RSGL_rotate(RSGL_point3D rotate);
+inline void RSGL_loadTexture(unsigned int texture);
+inline void RSGL_loadGradient(RSGL_color gradient[], size_t len);
 
 /* args clear after a draw function by default, this toggles that */
-void RSGL_defaultClearArgs(); /* toggles if args are cleared by default or not */
-void RSGL_clearArgs(); /* clears the args */
+inline void RSGL_defaultClearArgs(); /* toggles if args are cleared by default or not */
+inline void RSGL_clearArgs(); /* clears the args */
 
 void RSGL_drawPoint(RSGL_point p, RSGL_color c);
 void RSGL_drawTriangle(RSGL_triangle t, RSGL_color c);
@@ -177,13 +183,15 @@ void RSGL_drawCircleOutline(RSGL_circle c, unsigned int thickness, RSGL_color co
 void RSGL_drawOvalOutline(RSGL_rect o, unsigned int thickness, RSGL_color c);
 
 #ifndef RSGL_NO_TEXT
-unsigned int RSGL_loadFont(const char* font);
+inline unsigned int RSGL_loadFont(const char* font);
+#define RSGL_FONT(str) RSGL_loadFont(str)
+
 void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_color color);
 
-unsigned int RSGL_textWidth(const char* text, size_t textEnd, unsigned int font, unsigned int fontSize);
+inline unsigned int RSGL_textWidth(const char* text, unsigned int font, unsigned int fontSize, size_t textEnd);
 #endif /* RSGL_NO_TEXT */
 
-unsigned int RSGL_drawCreateTexture(unsigned char* bitmap, RSGL_area memsize, unsigned char channels);
+inline unsigned int RSGL_createTexture(unsigned char* bitmap, RSGL_area memsize, unsigned char channels);
 unsigned int RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) RSGL_drawImage(image, (RSGL_rect){})
@@ -236,7 +244,10 @@ typedef struct RSGL_textbox {
     char* text;
     RSGL_rect r;
     unsigned int textSize;
-    RSGL_point cursor;    
+    RSGL_point cursor;
+
+    /* info about the string */
+    size_t len, capacity;       
 } RSGL_textbox;
 
 inline void RSGL_textbox_update(RSGL_textbox* texbox, RGFW_Event e);
@@ -264,20 +275,20 @@ typedef struct RSGL_audio {
 } RSGL_audio;
 
 void RSGL_audio_playFile(RSGL_audio* a, const char* file);
-void RSGL_audio_play(RSGL_audio a);
-void RSGL_audio_pause(RSGL_audio a);
-void RSGL_audio_stop(RSGL_audio a);
-void RSGL_audio_free(RSGL_audio a);
+inline void RSGL_audio_play(RSGL_audio a);
+inline void RSGL_audio_pause(RSGL_audio a);
+inline void RSGL_audio_stop(RSGL_audio a);
+inline void RSGL_audio_free(RSGL_audio a);
 
 /* write audio info */
-void RSGL_audio_setVolume(RSGL_audio a, unsigned int);
-void RSGL_audio_seek(RSGL_audio a, unsigned int position);
+inline void RSGL_audio_setVolume(RSGL_audio a, unsigned int);
+inline void RSGL_audio_seek(RSGL_audio a, unsigned int position);
 
 /* get audio info */
-unsigned int RSGL_audio_len(RSGL_audio a);
-unsigned int RSGL_audio_volume(RSGL_audio a);
-unsigned int RSGL_audio_position(RSGL_audio a);
-bool RSGL_audio_isPlaying(RSGL_audio a);
+inline unsigned int RSGL_audio_len(RSGL_audio a);
+inline unsigned int RSGL_audio_volume(RSGL_audio a);
+inline unsigned int RSGL_audio_position(RSGL_audio a);
+inline bool RSGL_audio_isPlaying(RSGL_audio a);
 
 #endif /* RSGL_NO_AUDIO */
 
@@ -288,8 +299,8 @@ extra
 */
 
 /* wait functions */
-bool RSGL_wait(unsigned int miliseconds);
-bool RSGL_wait_frames(unsigned int frames);
+inline bool RSGL_wait(unsigned int miliseconds);
+inline bool RSGL_wait_frames(unsigned int frames);
 
 /* ** collision functions ** */
 inline bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
@@ -397,8 +408,6 @@ int main() {
 #endif
 
 #ifndef RSGL_NO_TEXT
-#define FONTSTASH_IMPLEMENTATION
-#define GLFONTSTASH_IMPLEMENTATION
 #include "deps/rglfontstash.h"
 #endif /* RSGL_NO_TEXT */
 
@@ -499,7 +508,7 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args
         rlglInit(win->r.w, win->r.h);
         rlEnableDepthTest();
         #ifndef RSGL_NO_TEXT
-        RSGL_fonsContext = glfonsCreate(500, 500, 1);
+        RSGL_fonsContext = fonsCreateInternal(500, 500, 1);
         #endif
     }
 
@@ -878,22 +887,12 @@ unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
 
 #ifndef RSGL_NO_TEXT
 unsigned int RSGL_loadFont(const char* font) {
-    static struct { const char* font_ttf; int font; } fonts[300];
-    static size_t fontSize = 0;
+    int loaded = fonsGetFontByName(RSGL_fonsContext, font);    
 
-    int i;
-    for (i = 0; i < fontSize; i++)
-        if (RSGL_cstr_equal(fonts[i].font_ttf, font))
-            return fonts[i].font;
-
-    
-    int fonsFont = fonsAddFont(RSGL_fonsContext, "sans", font);
-    
-    fonts[fontSize].font_ttf = font;
-    fonts[fontSize].font = fonsFont; 
-    fontSize++;
-
-    return fonsFont;
+    if (loaded == -1)
+        return fonsAddFont(RSGL_fonsContext, font);
+    else 
+        return loaded;
 }
 
 void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_color color) {
@@ -910,7 +909,7 @@ void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_colo
     rlPopMatrix();
 }
 
-unsigned int RSGL_textWidth(const char* text, size_t textEnd, unsigned int font, unsigned int fontSize) {
+unsigned int RSGL_textWidth(const char* text, unsigned int font, unsigned int fontSize, size_t textEnd) {
     return fonsTextWidth(RSGL_fonsContext, font, fontSize, text, textEnd);
 }
 #endif /* RSGL_NO_TEXT */
@@ -966,7 +965,7 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     }
 }
 
-void RSGL_ratio_button_update(RSGL_button* bArray, size_t len, RGFW_Event e) {
+void RSGL_ratio_button_update(RSGL_button* bArray, size_t len, RGFW_Event e) { 
     RSGL_button* b;
     int i;
 
@@ -1001,6 +1000,34 @@ void RSGL_slider_update(RSGL_button* b, RSGL_rect limits, RGFW_Event e) {
 }
 
 #if !defined(RSGL_NO_TEXT) && defined(RGFW_keyPressed)
+
+void RSGL_textbox_insert(RSGL_textbox* textBox, int index, char ch) {
+	size_t previous_len = textBox->len;
+	size_t before_index_len = previous_len - 1;
+
+	textBox->len++;
+
+	if (textBox->capacity < textBox->len) {
+        size_t new_size = (textBox->len + 1) + 1;
+
+        textBox->text = (char*)realloc(textBox->text, new_size * sizeof(char));
+        textBox->capacity++;
+    }
+
+	char* ptr = (char*)memcpy(textBox->text + textBox->len - before_index_len, textBox->text + index, before_index_len);
+	memcpy(textBox->text + index, textBox->text, previous_len);
+	ptr[before_index_len] = '\0';
+}
+
+void RSGL_textbox_erase(RSGL_textbox* textBox, int index) {
+	size_t after_index_len = textBox->len - 1;
+
+	char* ptr = (char*)memcpy(textBox->text + index, textBox->text + after_index_len, textBox->len - after_index_len);
+	ptr[textBox->len - after_index_len] = '\0';
+
+    textBox->len--;
+}
+
 void RSGL_textbox_update(RSGL_textbox* textBox, RGFW_Event e) {
     switch (e.type) {
         case RGFW_keyPressed:
@@ -1008,6 +1035,9 @@ void RSGL_textbox_update(RSGL_textbox* textBox, RGFW_Event e) {
                 textBox->cursor.x--;
             else if (e.keyCode == RGFW_Right)
                 textBox->cursor.x++;
+            else {
+                
+            }
             break;
         default: break;
     }
