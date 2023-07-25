@@ -1004,45 +1004,47 @@ FONS_DEF float fonsTextWidth(FONScontext* stash,
 {
 	float x = 0, y = 0;
 	unsigned int codepoint;
-	unsigned int utf8state = 0;
 	FONSquad q;
 	FONSglyph* glyph = NULL;
 	int prevGlyphIndex = -1;
 	short isize = (short)(size*10.0f);
-	float scale;
 	FONSfont* font;
-	float startx, advance;
-	float minx, miny, maxx, maxy;
 
-	if (stash == NULL) return 0;
-	if (Font < 0 || Font >= stash->nfonts) return 0;
+	if (stash == NULL || Font < 0 || Font >= stash->nfonts) return 0;
+
 	font = stash->fonts[Font];
 	if (font->data == NULL) return 0;
 
-	scale = stbtt_ScaleForPixelHeight(&font->font, (float)isize/10.0f);
-
-	minx = maxx = x;
-	miny = maxy = y;
-	startx = x;
+	float scale = stbtt_ScaleForPixelHeight(&font->font, (float)isize/10.0f);
 
 	const char* str1 = str;
-	tSize = 1;
+	if (tSize > 1) {
+		tSize--;
 
-	for (; *str != '\0' && ((tSize == 0) || ((str - str1) < (tSize))); ++str) {
-		glyph = fons__getGlyph(stash, font, codepoint, isize);
-		if (glyph != NULL) {
-			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, 0, &x, &y, &q);
-			if (q.x0 < minx) minx = q.x0;
-			if (q.x1 > maxx) maxx = q.x1;
-			if (q.y0 < miny) miny = q.y0;
-			if (q.y1 > maxy) maxy = q.y1;
+		float startx = x;
+
+		for (; *str != '\0' && ((tSize == 0) || ((str - str1) < (tSize))); ++str) {
+			glyph = fons__getGlyph(stash, font, codepoint, isize);
+			if (glyph != NULL)
+				fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, 0, &x, &y, &q);
+			prevGlyphIndex = glyph != NULL ? glyph->index : -1;
 		}
-		prevGlyphIndex = glyph != NULL ? glyph->index : -1;
+
+		return x - startx;
+	} else if (tSize == 1) {
+		int x0, y0, x1, y1;
+		if (!stbtt_GetGlyphBox(&font->font, stbtt_FindGlyphIndex(&font->font, str[0]), &x0, &y0, &x1, &y1))
+			return 0;
+
+
+		int ix0, ix1;
+		ix0 = STBTT_ifloor(x0 * scale);
+		ix1 = STBTT_iceil (x1 * scale);
+
+		return (ix1 - ix0);
 	}
 
-	advance = x - startx;
-
-	return advance;
+	return 0;
 }
 
 
