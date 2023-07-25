@@ -146,6 +146,8 @@ per each time you compile your application so you know that everything is compil
 
   It allows RSGL render using a simplified pipeline system while raylib does advanced shader and preformance work in the background
 
+  RSGL uses a version of RLGL I heavily motified for better performance and to reduce bloat.
+
 # stb_image 
   stb_image is an public domain single header image loader library, RSGL uses this for loading images
 
@@ -157,11 +159,6 @@ per each time you compile your application so you know that everything is compil
   RSGL uses a version of fontstash I heavily motified for better performance and to reduce bloat.
 
   repo : https://github.com/memononen/fontstash
-
-# nanosvgrast
-  nanosvgrast is a library for simply parsing rasterizing .SVG files, RSGL uses this for drawing SVG files as well as for loading any other vector graphics
-
-  repo : https://github.com/memononen/nanosvg
 
 # miniaudio
   mini audio is an public domain audio playback and capture library. RSGL uses this for playing/loading music
