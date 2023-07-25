@@ -154,6 +154,8 @@ per each time you compile your application so you know that everything is compil
 # fontstatsh
   Fontstash is light-weight font texture atlas and text rendering. RSGL uses this for text rendering
 
+  RSGL uses a version of fontstash I heavily motified for better performance and to reduce bloat.
+
   repo : https://github.com/memononen/fontstash
 
 # nanosvgrast
