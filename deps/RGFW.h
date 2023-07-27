@@ -352,8 +352,6 @@ void RGFW_window_swapInterval(RGFW_window* win, int swapInterval);
 void RGFW_window_checkFPS(RGFW_window* win); /*!< updates fps / sets fps to cap (ran by RGFW_window_checkEvent)*/
 unsigned char RGFW_ValidWindowCheck(RGFW_window* win, char* event); /*!< returns true if the window is valid (and prints an error and where it took place if it can)*/
 
-unsigned int RGFW_OS_BASED_VALUE(unsigned int Linux, unsigned int Windows, unsigned int Macos);
-
 #endif /* RGFW_HEADER */
 
 /*
@@ -3384,23 +3382,19 @@ void RGFW_window_checkFPS(RGFW_window* win) {
 		startTime[1] = time(0);
 	}
 }
-
-unsigned int RGFW_OS_BASED_VALUE(unsigned int Linux, unsigned int Windows, unsigned int Macos) {
-	#ifdef RGFW_X11
-	return Linux;
-	#endif
-
-	#ifdef RGFW_WINDOWS
-	
-	return Windows;
-	#endif
-
-	#ifdef __APPLE__
-	return Macos;
-	#endif
-}
-
 #endif /*RGFW_IMPLEMENTATION*/
+
+
+
+#ifdef RGFW_X11
+#define RGFW_OS_BASED_VALUE(l, w, m) l
+#endif
+#ifdef RGFW_WINDOWS
+#define RGFW_OS_BASED_VALUE(l, w, m) w
+#endif
+#ifdef __APPLE__
+#define RGFW_OS_BASED_VALUE(l, w, m) m
+#endif
 
 #define RGFW_Escape RGFW_OS_BASED_VALUE(0xff1b, 0x1B, 53)
 #define RGFW_F1 RGFW_OS_BASED_VALUE(0xffbe, 0x70, 127)
