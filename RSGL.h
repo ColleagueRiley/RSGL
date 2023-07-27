@@ -39,7 +39,7 @@
 	#define RGFW_X11 (optional) (unix only) if X11 should be used. This option is turned on by default by unix systems except for MacOS
 	#define RGFW_WGL_LOAD (optional) (windows only) if WGL should be loaded dynamically during runtime
 */
-
+#define RSGL_NO_AUDIO
 
 #ifndef RSGL_H
 #define RSGL_H
@@ -47,7 +47,7 @@
 typedef struct RSGL_rect {
     int x, y, w, h;
 } RSGL_rect;
-
+#define RSGL_RECT(x, y, w, h) (RSGL_rect){x, y, w, h}
 
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
 
@@ -117,14 +117,14 @@ RSGL_window
 #ifndef RSGL_NO_WINDOW
 typedef RGFW_window RSGL_window;
 
-RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args);
+inline RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args);
 
 inline void RSGL_window_setIconImage(RSGL_window* win, const char* image); 
 #define RGFW_window_setIcon RSGL_window_setIcon
 
 #define RSGL_window_checkEvent RGFW_window_checkEvent
 
-void RSGL_window_makeCurrent(RSGL_window* win);
+inline void RSGL_window_makeCurrent(RSGL_window* win);
 
 inline void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 
@@ -137,9 +137,9 @@ RSGL_GRAPHICS_CONTEXT
 *********************
 */
 
-void RSGL_initGraphics(RSGL_area r, void* loader);
-void RSGL_graphics_clear(RSGL_color c);
-void RSGL_graphics_free();
+inline void RSGL_initGraphics(RSGL_area r, void* loader);
+inline void RSGL_graphics_clear(RSGL_color c);
+inline void RSGL_graphics_free();
 
 #endif /* RSGL_GRAPHICS_CONTEXT / !RSGL_NO_WINDOW */
 
@@ -152,8 +152,8 @@ RSGL_draw
 
 /* RSGL_draw args */
 inline void RSGL_rotate(RSGL_point3D rotate);
-inline void RSGL_loadTexture(unsigned int texture);
-inline void RSGL_loadGradient(RSGL_color gradient[], size_t len);
+inline void RSGL_setTexture(unsigned int texture);
+inline void RSGL_setGradient(RSGL_color gradient[], size_t len);
 
 /* args clear after a draw function by default, this toggles that */
 inline void RSGL_defaultClearArgs(); /* toggles if args are cleared by default or not */
@@ -192,7 +192,7 @@ inline unsigned int RSGL_textWidth(const char* text, unsigned int font, unsigned
 #endif /* RSGL_NO_TEXT */
 
 inline unsigned int RSGL_createTexture(unsigned char* bitmap, RSGL_area memsize, unsigned char channels);
-unsigned int RSGL_drawImage(const char* image, RSGL_rect r);
+inline unsigned int RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) RSGL_drawImage(image, (RSGL_rect){})
 
@@ -242,16 +242,21 @@ inline void RSGL_slider_update(
 #ifndef RSGL_NO_TEXT
 typedef struct RSGL_textbox {
     char* text;
+
     RSGL_rect r;
     unsigned int textSize;
     RSGL_point cursor;
 
     /* info about the string */
-    size_t len, capacity;       
+    size_t index, len, capacity;       
 } RSGL_textbox;
 
+inline RSGL_textbox* RSGL_createTextbox(const char* text, unsigned int textSize, RSGL_rect box, RSGL_point cursor);
+
 inline void RSGL_textbox_update(RSGL_textbox* texbox, RGFW_Event e);
-inline void RSGL_textbox_draw(RSGL_textbox textBox, int font, RSGL_color c, RSGL_color cursorColor);
+inline void RSGL_textbox_draw(RSGL_textbox* textBox, int font, RSGL_color c, RSGL_color cursorColor);
+
+inline void RSGL_textbox_free(RSGL_textbox* tb);
 #endif /* RSGL_NO_TEXT */
 
 #endif /* RGFW_NO_WIDGETS */
@@ -301,6 +306,7 @@ extra
 /* wait functions */
 inline bool RSGL_wait(unsigned int miliseconds);
 inline bool RSGL_wait_frames(unsigned int frames);
+inline char RSGL_keyCodeToKeyChar(unsigned int keycode);
 
 /* ** collision functions ** */
 inline bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
@@ -446,7 +452,8 @@ bool RSGL_argsClear = true;
 unsigned int RSGL_windowsOpen = 0;
 
 typedef struct { const char* img; unsigned int tex;} RSGL_image;
-RSGL_image* images = NULL; 
+RSGL_image* RSGL_images = NULL;
+size_t RSGL_images_len = 0;
 
 inline void glPrerequisites(RSGL_rect r, RSGL_color c);
 
@@ -506,7 +513,7 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, unsigned long args
     if (RSGL_windowsOpen == 0) {
         rlLoadExtensions((void*)RGFW_getProcAddress);
         rlglInit(win->r.w, win->r.h);
-        rlEnableDepthTest();
+        glEnable(GL_DEPTH_TEST);
         #ifndef RSGL_NO_TEXT
         RSGL_fonsContext = fonsCreateInternal(500, 500, 1);
         #endif
@@ -534,13 +541,13 @@ void RSGL_window_makeCurrent(RSGL_window* win) {
 }
 
 void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
-    rlClearScreenBuffers();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     rlDrawRenderBatchActive();
 
     RSGL_window_makeCurrent(win);
     RGFW_window_swapBuffers(win);
     
-    rlClearColor(color.r, color.g, color.b, color.a);
+    glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
 }
 
 void RSGL_window_close(RSGL_window* win) {
@@ -552,8 +559,9 @@ void RSGL_window_close(RSGL_window* win) {
         #endif
         rlglClose();
 
-        if (images != NULL)
-            free(images);
+        int i;
+        for (i = 0; i < RSGL_images_len; i++)
+            glDeleteTextures(1, &RSGL_images[i].tex);
     }
 
     RGFW_window_close(win);
@@ -593,8 +601,12 @@ void RSGL_graphics_free() {
     #endif
     rlglClose();
 
-    if (images != NULL)
+    if (images != NULL) {
+        int i;
+        for (i = 0; i < RSGL_images_len; i++)
+            glDeleteTextures(1, RSGL_images[i]);
         free(images);
+    }
 }
 #endif /* RSGL_GRAPHICS_CONTEXT / !RGFW_NO_WINDOW */
 
@@ -609,10 +621,10 @@ RSGL_draw
 void RSGL_rotate(RSGL_point3D rotate){
     RSGL_args.rotate = rotate;
 }
-void RSGL_loadTexture(unsigned int texture) {
+void RSGL_setTexture(unsigned int texture) {
     RSGL_args.texture = texture;
 }
-void RSGL_loadGradient(RSGL_color gradient[], size_t len) {
+void RSGL_setGradient(RSGL_color gradient[], size_t len) {
     RSGL_args.gradient_len = len;
     
     int i;
@@ -725,25 +737,25 @@ outlines
 */
 
 void RSGL_drawLine(RSGL_point p1, RSGL_point p2, unsigned int thickness, RSGL_color c) {
-    glLineWidth(thickness);
+    rlLineWidth(thickness);
     RSGL_pointF points[] = {{p1.x, p1.y}, {p2.x, p2.y}};
     RSGL_pointF texPoints[] = {{0, 0}, {0, 0}};
 
     RSGL_rect r = {p1.x, p1.y, (p2.x - p1.x), (p2.y - p1.y)};
 
     RSGL_BASIC_DRAW(RL_LINES, (RSGL_pointF*)points, (RSGL_pointF*)texPoints, r, c, sizeof(points)/sizeof(RSGL_point));
-    glLineWidth(1);
+    rlLineWidth(1);
 }
 
 void RSGL_drawTriangleOutline(RSGL_triangle t, unsigned int thickness, RSGL_color c) {
-    glLineWidth(thickness);
+    rlLineWidth(thickness);
     RSGL_pointF points[] = {{t.p3.x, t.p3.y}, {t.p1.x, t.p1.y}, {t.p1.x, t.p1.y}, {t.p2.x, t.p2.y}, {t.p2.x, t.p2.y}, {t.p3.x, t.p3.y}};
     RSGL_pointF texPoints[] = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}};
 
     RSGL_rect r = {t.p2.x, t.p3.y, abs(t.p2.x - t.p1.x), abs(t.p2.y - t.p3.y)};
 
     RSGL_BASIC_DRAW(RL_LINES, (RSGL_pointF*)points, (RSGL_pointF*)texPoints, r, c, sizeof(points)/sizeof(RSGL_point));
-    glLineWidth(1);
+    rlLineWidth(1);
 }
 void RSGL_drawRectOutline(RSGL_rect r, unsigned int thickness, RSGL_color c) {
     RSGL_drawLine((RSGL_point){r.x, r.y}, (RSGL_point){r.x + r.w, r.y}, thickness, c);
@@ -787,69 +799,43 @@ void RSGL_drawPolygonOutlinePro(RSGL_rect o, unsigned int sides, RSGL_point arc,
 }
 
 void RSGL_drawPolygonOutline(RSGL_rect o, unsigned int sides, unsigned int thickness, RSGL_color c) {
-    glLineWidth(thickness);
+    rlLineWidth(thickness);
     RSGL_drawPolygonOutlinePro(o, sides, (RSGL_point){0, (int)sides}, c);
 }
 void RSGL_drawArcOutline(RSGL_rect o, RSGL_point arc, unsigned int thickness, RSGL_color color) {
-    glLineWidth(thickness);
+    rlLineWidth(thickness);
     RSGL_drawPolygonOutlinePro(o, 360, arc, color);
 }
 void RSGL_drawCircleOutline(RSGL_circle c, unsigned int thickness, RSGL_color color) {
-    glLineWidth(thickness);
+    rlLineWidth(thickness);
     RSGL_drawPolygonOutlinePro((RSGL_rect){c.x, c.y, c.d, c.d}, 360, (RSGL_point){0, 360}, color);
 }
 void RSGL_drawOvalOutline(RSGL_rect o, unsigned int thickness, RSGL_color c) {
-    glLineWidth(thickness);
+    rlLineWidth(thickness);
     RSGL_drawPolygonOutlinePro(o, 360, (RSGL_point){0, 360}, c);
 }
 
 /* textures / images */
 unsigned int RSGL_createTexture(unsigned char* bitmap, RSGL_area memsize, unsigned char channels) {
-    unsigned int texture;
-
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
-    
-    unsigned int c;
-
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
-
-
-    glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return texture;
+    return rlLoadTexture(bitmap, memsize.w, memsize.h, channels);
 }
 
 unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
     unsigned int texture = 0;
 
     #ifndef RSGL_NO_SAVE_IMAGE
-    static size_t images_len = 0, images_comp = 0;
+    static size_t images_comp = 0;
 
     if (images_comp == 0) {
-        images = (RSGL_image*)malloc(sizeof(RSGL_image) * 20);
+        RSGL_images = (RSGL_image*)malloc(sizeof(RSGL_image) * 20);
         images_comp = 20;
     }
 
-    if (images_len) {
+    if (RSGL_images_len) {
         int i; 
-        for (i = 0; i < images_len; i++) {
-            if (RSGL_cstr_equal(image, images[i].img)) {
-                texture = images[i].tex;
+        for (i = 0; i < RSGL_images_len; i++) {
+            if (RSGL_cstr_equal(image, RSGL_images[i].img)) {
+                texture = RSGL_images[i].tex;
                 break;
             }
         }
@@ -863,19 +849,19 @@ unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
         texture = RSGL_createTexture(bitmap, (RSGL_area){x, y}, c);
 
         #ifndef RSGL_NO_SAVE_IMAGE
-        if (images_len + 1 > images_comp) {
-            images = (RSGL_image*)realloc(images, sizeof(RSGL_image) * (10 + images_comp));
+        if (RSGL_images_len + 1 > images_comp) {
+            RSGL_images = (RSGL_image*)realloc(RSGL_images, sizeof(RSGL_image) * (10 + images_comp));
             images_comp += 10;
         }
 
-        images[images_len] = (RSGL_image){image, texture};
-        images_len++;
+        RSGL_images[RSGL_images_len] = (RSGL_image){image, texture};
+        RSGL_images_len++;
         #endif
     }
 
     if (r.w || r.h) {
         unsigned int tex = RSGL_args.texture;
-        RSGL_loadTexture(texture);
+        RSGL_setTexture(texture);
 
         RSGL_drawRect(r, RSGL_RGB(255, 255, 255));
 
@@ -1001,57 +987,126 @@ void RSGL_slider_update(RSGL_button* b, RSGL_rect limits, RGFW_Event e) {
 
 #if !defined(RSGL_NO_TEXT) && defined(RGFW_keyPressed)
 
-void RSGL_textbox_insert(RSGL_textbox* textBox, int index, char ch) {
-	size_t previous_len = textBox->len;
-	size_t before_index_len = previous_len - 1;
+RSGL_textbox* RSGL_createTextbox(const char* text, unsigned int textSize, RSGL_rect box, RSGL_point cursor) {
+    unsigned char* t;
+    for (t = (unsigned char*)text; *t; t++);
 
-	textBox->len++;
+    RSGL_textbox* tb = (RSGL_textbox*)malloc(sizeof(RSGL_textbox));
+    tb->capacity = tb->len = t - (unsigned char*)text;
+
+    if (tb->len)
+        tb->text = strdup(text);
+    else
+        tb->text = (char*)malloc(sizeof(char));
+
+    tb->textSize = textSize;
+    tb->r = box;
+    tb->cursor = cursor;
+
+    return tb;
+}
+
+void RSGL_textbox_insert(RSGL_textbox* textBox, char ch) {
+	size_t previous_len = textBox->len;
+	size_t before_index_len = previous_len - textBox->index;
+
+	textBox->len += 1;
 
 	if (textBox->capacity < textBox->len) {
-        size_t new_size = (textBox->len + 1) + 1;
+        textBox->text = (char*)realloc(textBox->text, textBox->len + 1);
 
-        textBox->text = (char*)realloc(textBox->text, new_size * sizeof(char));
-        textBox->capacity++;
-    }
+        textBox->capacity += 1;
+	}
 
-	char* ptr = (char*)memcpy(textBox->text + textBox->len - before_index_len, textBox->text + index, before_index_len);
-	memcpy(textBox->text + index, textBox->text, previous_len);
+	char* cur_str = textBox->text;
+
+	char* ptr = (char*)memcpy(cur_str + textBox->len - before_index_len, cur_str + textBox->index, before_index_len);
+	memcpy(cur_str + textBox->index, &ch, 1);
 	ptr[before_index_len] = '\0';
 }
 
-void RSGL_textbox_erase(RSGL_textbox* textBox, int index) {
-	size_t after_index_len = textBox->len - 1;
+void RSGL_textbox_erase(RSGL_textbox* textBox) {
+	char* cur_str = textBox->text;
 
-	char* ptr = (char*)memcpy(textBox->text + index, textBox->text + after_index_len, textBox->len - after_index_len);
+	size_t after_index_len = textBox->index + 1;
+
+	char* ptr = (char*)memcpy(cur_str + textBox->index, cur_str + after_index_len, textBox->len - after_index_len);
 	ptr[textBox->len - after_index_len] = '\0';
 
-    textBox->len--;
+    free(textBox->text);
+    textBox->text = strdup(cur_str);
+
+	textBox->len--;
 }
 
 void RSGL_textbox_update(RSGL_textbox* textBox, RGFW_Event e) {
     switch (e.type) {
         case RGFW_keyPressed:
-            if (e.keyCode == RGFW_Left)
-                textBox->cursor.x--;
-            else if (e.keyCode == RGFW_Right)
-                textBox->cursor.x++;
-            else {
-                
+            switch (e.keyCode) {
+                case RGFW_Left:
+                    if (textBox->cursor.x) {
+                        textBox->cursor.x--;
+                        textBox->index--;
+                    }
+                    break;
+                case RGFW_Right:
+                    if (textBox->index < textBox->len) {
+                        textBox->cursor.x++;
+                        textBox->index++;
+                    }
+                    break;
+                case RGFW_Up:
+                    textBox->cursor = RSGL_POINT(0, textBox->cursor.y - 1);
+                    break;
+                case RGFW_Down:
+                    textBox->cursor = RSGL_POINT(0, textBox->cursor.y + 1);
+                    break;
+                case RGFW_BackSpace:
+                    if (textBox->text[textBox->index] == '\n')
+                        textBox->cursor = RSGL_POINT(0, textBox->cursor.y - 1);
+                    else
+                        textBox->cursor.x--;
+
+                    RSGL_textbox_erase(textBox);
+                    textBox->index--;
+                    break;
+                default: {
+                    char ch;
+                    if (e.keyName[1] == '\0')
+                        ch = e.keyName[0];
+                    else
+                        ch = RSGL_keyCodeToKeyChar(e.keyCode);
+
+                    RSGL_textbox_insert(textBox, ch);
+
+                    if (ch == '\n')
+                        textBox->cursor = RSGL_POINT(0, textBox->cursor.y + 1);
+                    else
+                        textBox->cursor.x++;
+
+                    textBox->index++;
+                    break;
+                }
             }
             break;
         default: break;
     }
 }
-void RSGL_textbox_draw(RSGL_textbox textBox, int font, RSGL_color c, RSGL_color cursorColor) {
-    RSGL_drawText(textBox.text, font, (RSGL_circle){textBox.r.x, textBox.r.y, textBox.textSize}, c);
+void RSGL_textbox_draw(RSGL_textbox* textBox,   int font, RSGL_color c, RSGL_color cursorColor) {
+    RSGL_drawText(textBox->text, font, (RSGL_circle){textBox->r.x, textBox->r.y, textBox->textSize}, c);
 
     RSGL_point cursor = {
-            textBox.r.x + (textBox.cursor.x ? RSGL_textWidth(textBox.text, textBox.cursor.x, font, textBox.textSize) : 0), 
-            textBox.r.y + (textBox.cursor.y) * textBox.textSize
+            textBox->r.x + (textBox->cursor.x ? RSGL_textWidth(textBox->text, font, textBox->textSize, textBox->cursor.x) : 0), 
+            textBox->r.y + (textBox->cursor.y) * textBox->textSize
         };
 
-    RSGL_drawLine(cursor, (RSGL_point){cursor.x, cursor.y + textBox.textSize}, 1, cursorColor);
+    RSGL_drawLine(cursor, (RSGL_point){cursor.x, cursor.y + textBox->textSize}, 1, cursorColor);
 }
+void RSGL_textbox_free(RSGL_textbox* tb) {
+    free(tb->text);
+    free(tb);
+}
+
 #endif /* RSGL_NO_TEXT */
 
 #endif /*  RGFW_NO_WIDGETS */
@@ -1203,6 +1258,40 @@ bool RSGL_wait_frames(unsigned int frames) {
     i++;
 
     return !(i % frames);
+}
+
+char RSGL_keyCodeToKeyChar(unsigned int keycode) {
+    switch (keycode) {  
+        case RGFW_Backtick: return '`';
+        case RGFW_Minus: return '-';
+        case RGFW_Equals: return '=';
+        case RGFW_Space: return ' ';
+        case RGFW_Period: return '.';
+        case RGFW_Comma: return ',';
+        case RGFW_Slash: return '/';
+        case RGFW_Bracket: return '{';
+        case RGFW_CloseBracket: return '}';
+        case RGFW_Semicolon: return ';';
+        case RGFW_Return: return '\n';
+        case RGFW_Quote: return '\"';
+        case RGFW_BackSlash: return '\\';
+        case RGFW_KP_Slash: return '/';
+        case RGFW_Multiply: return '*';
+        case RGFW_KP_Minus: return '-';
+        case RGFW_KP_1: return '1';
+        case RGFW_KP_2: return '2';
+        case RGFW_KP_3: return '3';
+        case RGFW_KP_4: return '4';
+        case RGFW_KP_5: return '5';
+        case RGFW_KP_6: return '6';
+        case RGFW_KP_7: return '7';
+        case RGFW_KP_8: return '8';
+        case RGFW_KP_9: return '9';
+        case RGFW_KP_0: return '0';
+        case RGFW_KP_Period: return '.';
+        case RGFW_KP_Return: return '\n';
+        default: return '\0';
+    }
 }
 
 /* collision detection */
