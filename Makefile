@@ -1,15 +1,24 @@
+OS = linux
+
+ifeq ($(detected_OS),Windows)
+    os := windows
+endif
+ifeq ($(detected_OS),Darwin)        # Mac OS X
+    os := macos
+endif
+
 all:
 	make RSGL.o	
 
-	@if [ $(shell uname) = Windows_NT ] ; then\
+	@if [ $(OS) = Windows_NT ] ; then\
 		gcc RSGL.o -shared -O3 -I./include -lopengl32 -lshell32 -lgdi32 -lm -o libRSGL.dll;\
 	fi
 
-	@if [ $(shell uname) = Darwin ]; then\
+	@if [ $(OS) = Darwin ]; then\
 		gcc RSGL.o -shared -O3 -I./include -I./include/deps/Silicon *.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o libRSGL.dylib;\
 	fi
 
-	@if [ $(shell uname) != Windows_NT ] && [ $(shell uname -s) != Darwin ]; then\
+	@if [ $(OS) != Windows_NT ] && [ $(OS) != Darwin ]; then\
 		gcc RSGL.o -shared -O3 -I./include -lX11 -lGLX -lm -o libRSGL.so;\
 	fi
 
