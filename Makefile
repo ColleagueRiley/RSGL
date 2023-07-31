@@ -37,7 +37,7 @@ clean:
 	rm libRSGL.so RSGL.o libRSGL.a
 
 deps/Silicon/source/mac.o:
-	cd deps/Silicon/source/ && gcc -c *.m
+	cd deps/Silicon/source/ && gcc -c *.m -I../
 
 install:
 	sudo cp libRSGL.so /usr/lib
