@@ -36,6 +36,12 @@
     #define RSGL_INIT_FONTS [number of fonts] - set how much room should be pre-allocated for fonts by fontstash
                                                 this avoids performance issues related to realloc
                                                 RSGL_INIT_FONTS = 4 by default
+    #define RSGL_INIT_IMAGES [number of fonts] - set how much room should be pre-allocated for images by RSGL
+                                                this avoids performance issues related to realloc
+                                                RSGL_INIT_IMAGES = 20 by default
+    #define RSGL_NEW_IMAGES [number of fonts] - set how much room should be reallocated at a time for images by RSGL
+                                                this avoids performance issues related to realloc
+                                                RSGL_NEW_IMAGES 10 by default
 
     RGFW (more RGFW documentation in RGFW.h):
     
@@ -55,12 +61,15 @@
 #define RSGL_NO_AUDIO
 
 #ifndef RSGL_INIT_FONTS
-/* 
-    number of fonts allocated by default by fontstash
-    (to avoid unnecessary reallocation)
-*/
 #define RSGL_INIT_FONTS 4
 #endif
+#ifndef RSGL_INIT_IMAGES
+#define RSGL_INIT_IMAGES 20
+#endif
+#ifndef RSGL_NEW_IMAGES
+#define RSGL_NEW_IMAGES 10
+#endif
+
 
 #ifndef RSGL_H
 #define RSGL_H
@@ -841,15 +850,15 @@ unsigned int RSGL_createTexture(unsigned char* bitmap, RSGL_area memsize, unsign
     return rlLoadTexture(bitmap, memsize.w, memsize.h, channels);
 }
 
-unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
+unsigned int s(const char* image, RSGL_rect r) {
     unsigned int texture = 0;
 
     #ifndef RSGL_NO_SAVE_IMAGE
     static size_t images_comp = 0;
 
     if (images_comp == 0) {
-        RSGL_images = (RSGL_image*)malloc(sizeof(RSGL_image) * 20);
-        images_comp = 20;
+        RSGL_images = (RSGL_image*)malloc(sizeof(RSGL_image) * RSGL_INIT_IMAGES);
+        images_comp = RSGL_INIT_IMAGES;
     }
 
     if (RSGL_images_len) {
@@ -871,8 +880,8 @@ unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
 
         #ifndef RSGL_NO_SAVE_IMAGE
         if (RSGL_images_len + 1 > images_comp) {
-            RSGL_images = (RSGL_image*)realloc(RSGL_images, sizeof(RSGL_image) * (10 + images_comp));
-            images_comp += 10;
+            RSGL_images = (RSGL_image*)realloc(RSGL_images, sizeof(RSGL_image) * (RSGL_NEW_IMAGES + images_comp));
+            images_comp += RSGL_NEW_IMAGES;
         }
 
         RSGL_images[RSGL_images_len] = (RSGL_image){image, texture};
