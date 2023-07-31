@@ -2,15 +2,15 @@ all:
 	make RSGL.o	
 
 	@if [ $(shell uname) = Windows_NT ] ; then\
-		gcc rsgl.o -shared -O3 -I./include -lopengl32 -lshell32 -lgdi32 -lm -o libRSGL.dll;\
+		gcc RSGL.o -shared -O3 -I./include -lopengl32 -lshell32 -lgdi32 -lm -o libRSGL.dll;\
 	fi
 
 	@if [ $(shell uname) = Darwin ]; then\
-		gcc rsgl.o -shared -O3 -I./include -I./include/deps/Silicon *.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o libRSGL.dylib;\
+		gcc RSGL.o -shared -O3 -I./include -I./include/deps/Silicon *.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o libRSGL.dylib;\
 	fi
 
 	@if [ $(shell uname) != Windows_NT ] && [ $(shell uname -s) != Darwin ]; then\
-		gcc rsgl.o -shared -O3 -I./include -lX11 -lGLX -lm -o libRSGL.so;\
+		gcc RSGL.o -shared -O3 -I./include -lX11 -lGLX -lm -o libRSGL.so;\
 	fi
 
 	ar rcs libRSGL.a *.o
