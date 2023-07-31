@@ -33,13 +33,34 @@
     #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), 
                                     RSGL_drawImage saves the file name + texture so it can load it
                                     when you ask for it later. This disables that
+    #define RSGL_INIT_FONTS [number of fonts] - set how much room should be pre-allocated for fonts by fontstash
+                                                this avoids performance issues related to realloc
+                                                RSGL_INIT_FONTS = 4 by default
 
-    RGFW (more defines / RGFW documentation in RGFW.h):
-    #define RGFW_PRINT_ERRORS - (optional) makes it so RGFW prints errors when they're found
+    RGFW (more RGFW documentation in RGFW.h):
+    
+	#define RGFW_PRINT_ERRORS - (optional) makes it so RGFW prints errors when they're found
+	#define RGFW_OSMESA - (optional) use OSmesa as backend (instead of system's opengl api + regular opengl)
+	#define RGFW_BUFFER - (optional) just draw directly to (RGFW) window pixel buffer that is drawn to screen
+	#define RGFW_EGL - (optional) use EGL for loading an OpenGL context (instead of the system's opengl api)
+	#define RGFW_OPENGL_ES - (optional) use EGL to load and use Opengl ES for backend rendering (instead of the system's opengl api)
+	#define VULKAN - (optional) use vulkan for the rendering backend (rather than opengl)
+
+	#define RGFW_LINK_EGL (optional) (windows only) if EGL is being used, if EGL functions should be defined dymanically (using GetProcAddress)
+	#define RGFW_LINK_OSMESA (optional) (windows only) if EGL is being used, if OS Mesa functions should be defined dymanically  (using GetProcAddress)
+
 	#define RGFW_X11 (optional) (unix only) if X11 should be used. This option is turned on by default by unix systems except for MacOS
 	#define RGFW_WGL_LOAD (optional) (windows only) if WGL should be loaded dynamically during runtime
 */
 #define RSGL_NO_AUDIO
+
+#ifndef RSGL_INIT_FONTS
+/* 
+    number of fonts allocated by default by fontstash
+    (to avoid unnecessary reallocation)
+*/
+#define RSGL_INIT_FONTS 4
+#endif
 
 #ifndef RSGL_H
 #define RSGL_H

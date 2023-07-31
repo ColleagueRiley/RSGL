@@ -124,7 +124,7 @@ inline void fons_renderDraw(FONSRenderContext* userPtr, const float* verts, cons
 #	define FONS_HASH_LUT_SIZE 256
 #endif
 #ifndef FONS_INIT_FONTS
-#	define FONS_INIT_FONTS 4
+#	define FONS_INIT_FONTS RSGL_INIT_FONTS
 #endif
 #ifndef FONS_INIT_GLYPHS
 #	define FONS_INIT_GLYPHS 256
