@@ -21,6 +21,9 @@ ifeq ($(detected_OS),Linux)
 endif
 
 all:
+	@if [ $(shell uname) = Darwin ]; then\
+		make deps/Silicon/source/mac.o;\
+	fi
 	make RSGL.o	
 	gcc RSGL.o -shared -O3 -I./include $(LIBS) -o libRSGL.$(EXT)
 	ar rcs libRSGL.a *.o
@@ -32,6 +35,9 @@ RSGL.o:
 
 clean:
 	rm libRSGL.so RSGL.o libRSGL.a
+
+deps/Silicon/source/mac.o:
+	cd deps/Silicon/source/ && gcc -c *.m
 
 install:
 	sudo cp libRSGL.so /usr/lib
