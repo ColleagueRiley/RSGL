@@ -1,4 +1,4 @@
-name: linux
+name: windows
 
 on:
   push:
@@ -9,11 +9,9 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
-    - name: apt
-      run: sudo apt-get install mesa-common-dev libglx-dev libxcursor-dev      
     - name: make
       run: make
