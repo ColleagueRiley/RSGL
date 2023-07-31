@@ -1,27 +1,28 @@
-OS = linux
+ifeq '$(findstring ;,$(PATH))' ';'
+    detected_OS := Windows
+else
+    detected_OS := $(shell uname 2>/dev/null || echo Unknown)
+    detected_OS := $(patsubst CYGWIN%,Cygwin,$(detected_OS))
+    detected_OS := $(patsubst MSYS%,MSYS,$(detected_OS))
+    detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
+endif
 
 ifeq ($(detected_OS),Windows)
-    os := windows
+	LIBS := -lopengl32 -lshell32 -lgdi32 -lm
+	EXT = dll
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
-    os := macos
+	LIBS := -I./include -I./include/deps/Silicon *.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+	EXT = dylib
+endif
+ifeq ($(detected_OS),Linux)
+    LIBS := -I./include -lX11 -lGLX -lm
+	EXT = so
 endif
 
 all:
 	make RSGL.o	
-
-	@if [ $(OS) = windows] ; then\
-		gcc RSGL.o -shared -O3 -I./include -lopengl32 -lshell32 -lgdi32 -lm -o libRSGL.dll;\
-	fi
-
-	@if [ $(OS) = macos ]; then\
-		gcc RSGL.o -shared -O3 -I./include -I./include/deps/Silicon *.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o libRSGL.dylib;\
-	fi
-
-	@if [ $(OS) == linux ]; then\
-		gcc RSGL.o -shared -O3 -I./include -lX11 -lGLX -lm -o libRSGL.so;\
-	fi
-
+	gcc RSGL.o -shared -O3 -I./include $(LIBS) -o libRSGL.$(EXT)
 	ar rcs libRSGL.a *.o
 
 RSGL.o:
