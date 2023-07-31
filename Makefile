@@ -10,15 +10,15 @@ endif
 all:
 	make RSGL.o	
 
-	@if [ $(OS) = Windows_NT ] ; then\
+	@if [ $(OS) = windows] ; then\
 		gcc RSGL.o -shared -O3 -I./include -lopengl32 -lshell32 -lgdi32 -lm -o libRSGL.dll;\
 	fi
 
-	@if [ $(OS) = Darwin ]; then\
+	@if [ $(OS) = macos ]; then\
 		gcc RSGL.o -shared -O3 -I./include -I./include/deps/Silicon *.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o libRSGL.dylib;\
 	fi
 
-	@if [ $(OS) != Windows_NT ] && [ $(OS) != Darwin ]; then\
+	@if [ $(OS) == linux ]; then\
 		gcc RSGL.o -shared -O3 -I./include -lX11 -lGLX -lm -o libRSGL.so;\
 	fi
 
