@@ -6,6 +6,10 @@
 
 A simple GUI library currently for Linux, Windows and MacOS
 
+# Build statuses
+![cplus workflow](https://github.com/ColleagueRiley/c-plus/actions/workflows/linux.yml/badge.svg)
+![cplus workflow windows](https://github.com/ColleagueRiley/c-plus/actions/workflows/windows.yml/badge.svg)
+![cplus workflow windows](https://github.com/ColleagueRiley/c-plus/actions/workflows/macos.yml/badge.svg)
 
 # header-only
   In order to "link" RSGL you must add the line 
