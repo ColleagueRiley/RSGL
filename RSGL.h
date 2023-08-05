@@ -32,7 +32,7 @@
     #define RSGL_NO_MINIAUDIO_IMPLEMENTATION - do not have `#define MINIAUDIO_IMPLEMENTATION` in this header (you'll have to link miniaudio some other way to use audio)
     #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), 
                                     RSGL_drawImage saves the file name + texture so it can load it
-                                    when you ask for it later. This disables that
+                                    when you ask for it later. This disables that 
     #define RSGL_INIT_FONTS [number of fonts] - set how much room should be pre-allocated for fonts by fontstash
                                                 this avoids performance issues related to realloc
                                                 RSGL_INIT_FONTS = 4 by default
@@ -850,7 +850,7 @@ unsigned int RSGL_createTexture(unsigned char* bitmap, RSGL_area memsize, unsign
     return rlLoadTexture(bitmap, memsize.w, memsize.h, channels);
 }
 
-unsigned int s(const char* image, RSGL_rect r) {
+unsigned int RSGL_drawImage(const char* image, RSGL_rect r) {
     unsigned int texture = 0;
 
     #ifndef RSGL_NO_SAVE_IMAGE
@@ -914,7 +914,7 @@ unsigned int RSGL_loadFont(const char* font) {
 void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_color color) {
     if (text == NULL || text[0] == '\0')
         return;
-    int w = fonsTextWidth(RSGL_fonsContext, font, c.d, text, 0);
+    int w = fonsTextWidth(RSGL_fonsContext, font, c.d, text, strlen(text));
 
     glPrerequisites((RSGL_rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color);
   
