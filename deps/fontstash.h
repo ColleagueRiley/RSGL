@@ -236,21 +236,11 @@ static void* fons__tmpalloc(size_t size, void* up)
 	// 16-byte align the returned pointer
 	size = (size + 0xf) & ~0xf;
 
-	if (stash->nscratch + (int)size > FONS_SCRATCH_BUF_SIZE) {
-		if (stash->handleError)
-			stash->handleError(stash->errorUptr, FONS_SCRATCH_FULL, stash->nscratch + (int)size);
+	if (stash->nscratch + (int)size > FONS_SCRATCH_BUF_SIZE)
 		return NULL;
-	}
 	ptr = stash->scratch + stash->nscratch;
 	stash->nscratch += (int)size;
 	return ptr;
-}
-
-static void fons__tmpfree(void* ptr, void* up)
-{
-	(void)ptr;
-	(void)up;
-	// empty
 }
 
 #endif // STB_TRUETYPE_IMPLEMENTATION
@@ -771,11 +761,6 @@ static FONSglyph* fons__getGlyph(FONScontext* stash, FONSfont* font, unsigned in
 
 	// Find free spot for the rect in the atlas
 	added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
-	if (added == 0 && stash->handleError != NULL) {
-		// Atlas is full, let the user to resize the atlas (or not), and try again.
-		stash->handleError(stash->errorUptr, FONS_ATLAS_FULL, 0);
-		added = fons__atlasAddRect(stash->atlas, gw, gh, &gx, &gy);
-	}
 	if (added == 0) return NULL;
 
 	// Init glyph.
@@ -891,7 +876,7 @@ FONS_DEF float fonsDrawText(FONScontext* stash,
 				int Font,
 				float x, float y, float size,
 				unsigned int color,
-				const char* str
+				const char* s
 			)
 {
 	unsigned int codepoint;
@@ -916,84 +901,47 @@ FONS_DEF float fonsDrawText(FONScontext* stash,
 	*/
 
 	int ogX = x;
+	char* str = (char*)s;
+	
+	int i;
+	for (i = 0; i < 2; i++) { /* 
+									this is a really dumb fix 
+									gotta find out what's really wrong with the code
+									some other time
+								*/
+		for (; *str != '\0'; ++str) {
+			if (*str == '\n') {
+				x = ogX;
+				y += size;
+				continue;
+			}
 
-	for (; *str != '\0'; ++str) {
-		if (*str == '\n') {
-			x = ogX;
-			y += size;
-			continue;
+			if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
+				continue;
+			glyph = fons__getGlyph(stash, font, codepoint, isize);
+			if (glyph != NULL) {
+				fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, 0, &x, &y, &q);
+				
+				if (stash->nverts+6 > FONS_VERTEX_COUNT)
+					fons__flush(stash);
+
+				fons__vertex(stash, q.x0, q.y0, q.s0, q.t0, color);
+				fons__vertex(stash, q.x1, q.y1, q.s1, q.t1, color);
+				fons__vertex(stash, q.x1, q.y0, q.s1, q.t0, color);
+
+				fons__vertex(stash, q.x0, q.y0, q.s0, q.t0, color);
+				fons__vertex(stash, q.x0, q.y1, q.s0, q.t1, color);
+				fons__vertex(stash, q.x1, q.y1, q.s1, q.t1, color);
+			}
+			prevGlyphIndex = glyph != NULL ? glyph->index : -1;
 		}
 
-		if (fons__decutf8(&utf8state, &codepoint, *(const unsigned char*)str))
-			continue;
-		glyph = fons__getGlyph(stash, font, codepoint, isize);
-		if (glyph != NULL) {
-			fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, 0, &x, &y, &q);
-
-			if (stash->nverts+6 > FONS_VERTEX_COUNT)
-				fons__flush(stash);
-
-			fons__vertex(stash, q.x0, q.y0, q.s0, q.t0, color);
-			fons__vertex(stash, q.x1, q.y1, q.s1, q.t1, color);
-			fons__vertex(stash, q.x1, q.y0, q.s1, q.t0, color);
-
-			fons__vertex(stash, q.x0, q.y0, q.s0, q.t0, color);
-			fons__vertex(stash, q.x0, q.y1, q.s0, q.t1, color);
-			fons__vertex(stash, q.x1, q.y1, q.s1, q.t1, color);
-		}
-		prevGlyphIndex = glyph != NULL ? glyph->index : -1;
+		if (i == 0)
+			str = "   ";
 	}
 	fons__flush(stash);
 
 	return x;
-}
-
-FONS_DEF void fonsDrawDebug(FONScontext* stash, float x, float y)
-{
-	int i;
-	int w = stash->width;
-	int h = stash->height;
-	float u = w == 0 ? 0 : (1.0f / w);
-	float v = h == 0 ? 0 : (1.0f / h);
-
-	if (stash->nverts+6+6 > FONS_VERTEX_COUNT)
-		fons__flush(stash);
-
-	// Draw background
-	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+0, u, v, 0x0fffffff);
-
-	fons__vertex(stash, x+0, y+0, u, v, 0x0fffffff);
-	fons__vertex(stash, x+0, y+h, u, v, 0x0fffffff);
-	fons__vertex(stash, x+w, y+h, u, v, 0x0fffffff);
-
-	// Draw texture
-	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
-	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
-	fons__vertex(stash, x+w, y+0, 1, 0, 0xffffffff);
-
-	fons__vertex(stash, x+0, y+0, 0, 0, 0xffffffff);
-	fons__vertex(stash, x+0, y+h, 0, 1, 0xffffffff);
-	fons__vertex(stash, x+w, y+h, 1, 1, 0xffffffff);
-
-	// Drawbug draw atlas
-	for (i = 0; i < stash->atlas->nnodes; i++) {
-		FONSatlasNode* n = &stash->atlas->nodes[i];
-
-		if (stash->nverts+6 > FONS_VERTEX_COUNT)
-			fons__flush(stash);
-
-		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+0, u, v, 0xc00000ff);
-
-		fons__vertex(stash, x+n->x+0, y+n->y+0, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+0, y+n->y+1, u, v, 0xc00000ff);
-		fons__vertex(stash, x+n->x+n->width, y+n->y+1, u, v, 0xc00000ff);
-	}
-
-	fons__flush(stash);
 }
 
 FONS_DEF float fonsTextWidth(FONScontext* stash,
@@ -1018,6 +966,7 @@ FONS_DEF float fonsTextWidth(FONScontext* stash,
 	float scale = stbtt_ScaleForPixelHeight(&font->font, (float)isize/10.0f);
 
 	const char* str1 = str;
+
 	if (tSize > 1) {
 		tSize--;
 
