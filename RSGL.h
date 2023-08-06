@@ -216,9 +216,17 @@ void RSGL_drawOvalOutline(RSGL_rect o, unsigned int thickness, RSGL_color c);
 inline unsigned int RSGL_loadFont(const char* font);
 #define RSGL_FONT(str) RSGL_loadFont(str)
 
-void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_color color);
+void RSGL_setFont(unsigned int font);
 
-inline unsigned int RSGL_textWidth(const char* text, unsigned int font, unsigned int fontSize, size_t textEnd);
+void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
+#define RSGL_drawTextF(text, font, c, color) \
+    RSGL_setFont(font);\
+    RSGL_drawText(text, c, color);
+
+inline unsigned int RSGL_textWidth(const char* text, unsigned int fontSize, size_t textEnd);
+#define RSGL_textWidthF(text, fontSize, textEnd) \
+    RSGL_setFont(font);\
+    RSGL_textWidthF(text, fontSize, textEnd);
 #endif /* RSGL_NO_TEXT */
 
 inline unsigned int RSGL_createTexture(unsigned char* bitmap, RSGL_area memsize, unsigned char channels);
@@ -907,26 +915,31 @@ unsigned int RSGL_loadFont(const char* font) {
 
     if (loaded == -1)
         return fonsAddFont(RSGL_fonsContext, font);
-    else 
-        return loaded;
+
+    return loaded;
 }
 
-void RSGL_drawText(const char* text, unsigned int font, RSGL_circle c, RSGL_color color) {
+unsigned int RSGL_font;
+void RSGL_setFont(unsigned int font) {
+    RSGL_font = font;
+}
+
+void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
     if (text == NULL || text[0] == '\0')
         return;
-    int w = fonsTextWidth(RSGL_fonsContext, font, c.d, text, strlen(text));
+    int w = fonsTextWidth(RSGL_fonsContext, RSGL_font, c.d, text, strlen(text));
 
     glPrerequisites((RSGL_rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color);
   
     unsigned int fonsColor = glfonsRGBA(color.r, color.b, color.g, color.a);
 
-    fonsDrawText(RSGL_fonsContext, font, c.x, c.y + (c.d - (c.d / 4)), c.d, fonsColor, text);
+    fonsDrawText(RSGL_fonsContext, RSGL_font, c.x, c.y + (c.d - (c.d / 4)), c.d, fonsColor, text);
     
     rlPopMatrix();
 }
 
-unsigned int RSGL_textWidth(const char* text, unsigned int font, unsigned int fontSize, size_t textEnd) {
-    return fonsTextWidth(RSGL_fonsContext, font, fontSize, text, textEnd);
+unsigned int RSGL_textWidth(const char* text, unsigned int fontSize, size_t textEnd) {
+    return fonsTextWidth(RSGL_fonsContext, RSGL_font, fontSize, text, textEnd);
 }
 #endif /* RSGL_NO_TEXT */
 
@@ -1123,10 +1136,11 @@ void RSGL_textbox_update(RSGL_textbox* textBox, RGFW_Event e) {
     }
 }
 void RSGL_textbox_draw(RSGL_textbox* textBox,   int font, RSGL_color c, RSGL_color cursorColor) {
-    RSGL_drawText(textBox->text, font, (RSGL_circle){textBox->r.x, textBox->r.y, textBox->textSize}, c);
+    RSGL_setFont(font);
+    RSGL_drawText(textBox->text, (RSGL_circle){textBox->r.x, textBox->r.y, textBox->textSize}, c);
 
     RSGL_point cursor = {
-            textBox->r.x + (textBox->cursor.x ? RSGL_textWidth(textBox->text, font, textBox->textSize, textBox->cursor.x) : 0), 
+            textBox->r.x + (textBox->cursor.x ? RSGL_textWidth(textBox->text, textBox->textSize, textBox->cursor.x) : 0), 
             textBox->r.y + (textBox->cursor.y) * textBox->textSize
         };
 
