@@ -58,7 +58,6 @@
 	#define RGFW_X11 (optional) (unix only) if X11 should be used. This option is turned on by default by unix systems except for MacOS
 	#define RGFW_WGL_LOAD (optional) (windows only) if WGL should be loaded dynamically during runtime
 */
-#define RSGL_NO_AUDIO
 
 #ifndef RSGL_INIT_FONTS
 #define RSGL_INIT_FONTS 4
