@@ -1215,7 +1215,7 @@ void RSGL_audio_pause(RSGL_audio a) {
     ma_device_stop(&a.data->device);
 }
 void RSGL_audio_stop(RSGL_audio a) {
-    pause();
+    ma_device_stop(&a.data->device);
     ma_device_uninit(&a.data->device);
     ma_decoder_uninit(&a.data->decoder);
 }
