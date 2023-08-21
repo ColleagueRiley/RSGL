@@ -41,33 +41,44 @@ inline void fonsDeleteBuffer(GLuint* buffer);
 inline void fonsCreateBuffer(GLuint* buffer);
 
 void fonsDeleteBuffer(GLuint* buffer) {
+	#ifndef GRAPHICS_API_OPENGL_11
 	if (!*buffer) return;
 	glDeleteTextures(1, buffer);
 	buffer = 0;
+	#endif
 }
 void fonsCreateBuffer(GLuint* buffer) {
+	#ifndef GRAPHICS_API_OPENGL_11
 	glGenBuffers(1, buffer);
+	#endif
 }
 
 int fons_renderCreate(FONSRenderContext* gl, int width, int height) {
 	// Create may be called multiple times, delete existing texture.
+	
+	#ifndef GRAPHICS_API_OPENGL_11
 	fonsDeleteBuffer(&gl->tex);
+	#endif
 
 	glGenTextures(1, &gl->tex);
 	if (!gl->tex)
 		return 0;
 
+	#ifndef GRAPHICS_API_OPENGL_11
 	if (!gl->vertexArray)
 		glGenVertexArrays(1, &gl->vertexArray);
 
 	glBindVertexArray(gl->vertexArray);
+	#endif
 
+	#ifndef GRAPHICS_API_OPENGL_11
 	fonsCreateBuffer(&gl->vertexBuffer);
 	fonsCreateBuffer(&gl->tcoordBuffer);
 	fonsCreateBuffer(&gl->colorBuffer);
 
 	if (!gl->tex || !gl->vertexArray || !gl->colorBuffer || !gl->tcoordBuffer || !gl->vertexArray || !gl->vertexBuffer)
 		return 0;
+	#endif
 
 	gl->width = width;
 	gl->height = height;
@@ -139,12 +150,16 @@ void fons_renderDraw(FONSRenderContext* gl, const float *verts, const float *tco
 }
 
 void fons_renderDelete(FONSRenderContext* gl) {
+	#ifndef GRAPHICS_API_OPENGL_11
 	fonsDeleteBuffer(&gl->tex);
 	fonsDeleteBuffer(&gl->vertexBuffer);
 	fonsDeleteBuffer(&gl->tcoordBuffer);
 	fonsDeleteBuffer(&gl->colorBuffer);
 	fonsDeleteBuffer(&gl->vertexArray);
+	#endif
 
+	#if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_43)
 	glBindVertexArray(0);
+	#endif
 	free(gl);
 }

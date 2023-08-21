@@ -108,6 +108,9 @@ fontstash made for RSGL
 - ColleagueRiley
 */
 
+#define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
+#define GL_SMOOTH				0x1D01
+
 #ifndef RLGL_H
 #define RLGL_H
 
@@ -265,6 +268,7 @@ fontstash made for RSGL
 #define RL_QUADS                                0x0007      // GL_QUADS
 
 // GL equivalent data types
+
 #define RL_UNSIGNED_BYTE                        0x1401      // GL_UNSIGNED_BYTE
 #define RL_FLOAT                                0x1406      // GL_FLOAT
 
@@ -1154,6 +1158,7 @@ void rlVertex2i(int x, int y) { glVertex2i(x, y); }
 void rlVertex2f(float x, float y) { glVertex2f(x, y); }
 void rlVertex3f(float x, float y, float z) { glVertex3f(x, y, z); }
 void rlTexCoord2f(float x, float y) { glTexCoord2f(x, y); }
+void rlTexCoord3f(float x, float y) { glTexCoord2f(x, y); }
 void rlNormal3f(float x, float y, float z) { glNormal3f(x, y, z); }
 void rlColor4ub(unsigned char r, unsigned char g, unsigned char b, unsigned char a) { glColor4ub(r, g, b, a); }
 void rlColor4f(float x, float y, float z, float w) { glColor4f(x, y, z, w); }
