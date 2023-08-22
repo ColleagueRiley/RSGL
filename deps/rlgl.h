@@ -1790,7 +1790,8 @@ void rlglInit(int width, int height)
     RLGL.currentBatch = &RLGL.defaultBatch;
 
     // Init stack matrices (emulating OpenGL 1.1)
-    for (int i = 0; i < RL_MAX_MATRIX_STACK_SIZE; i++) RLGL.State.stack[i] = rlMatrixIdentity();
+    int i;
+    for (i = 0; i < RL_MAX_MATRIX_STACK_SIZE; i++) RLGL.State.stack[i] = rlMatrixIdentity();
 
     // Init internal matrices
     RLGL.State.transform = rlMatrixIdentity();
@@ -1872,7 +1873,8 @@ void rlLoadExtensions(void *loader)
     // Get supported extensions list
     // WARNING: glGetStringi() not available on OpenGL 2.1
     TRACELOG(RL_LOG_INFO, "GL: OpenGL extensions:");
-    for (int i = 0; i < numExt; i++) TRACELOG(RL_LOG_INFO, "    %s", glGetStringi(GL_EXTENSIONS, i));
+    int i;
+    for (i = 0; i < numExt; i++) TRACELOG(RL_LOG_INFO, "    %s", glGetStringi(GL_EXTENSIONS, i));
 #endif
 
 #if defined(GRAPHICS_API_OPENGL_21)
@@ -1928,7 +1930,8 @@ void rlLoadExtensions(void *loader)
     strcpy(extensionsDup, extensions);
     extList[numExt] = extensionsDup;
 
-    for (int i = 0; i < size; i++)
+    int i;
+    for (i = 0; i < size; i++)
     {
         if (extensionsDup[i] == ' ')
         {
@@ -1942,11 +1945,13 @@ void rlLoadExtensions(void *loader)
 
 #if defined(RLGL_SHOW_GL_DETAILS_INFO)
     TRACELOG(RL_LOG_INFO, "GL: OpenGL extensions:");
-    for (int i = 0; i < numExt; i++) TRACELOG(RL_LOG_INFO, "    %s", extList[i]);
+    int i;
+    for (i = 0; i < numExt; i++) TRACELOG(RL_LOG_INFO, "    %s", extList[i]);
 #endif
 
     // Check required extensions
-    for (int i = 0; i < numExt; i++)
+    int i;
+    for (i = 0; i < numExt; i++)
     {
         // Check VAO support
         // NOTE: Only check on OpenGL ES, OpenGL 3.3 has VAO support as core feature
@@ -2068,7 +2073,8 @@ void rlLoadExtensions(void *loader)
     TRACELOG(RL_LOG_INFO, "    GL_NUM_COMPRESSED_TEXTURE_FORMATS: %i", capability);
     GLint *compFormats = (GLint *)RL_CALLOC(capability, sizeof(GLint));
     glGetIntegerv(GL_COMPRESSED_TEXTURE_FORMATS, compFormats);
-    for (int i = 0; i < capability; i++) TRACELOG(RL_LOG_INFO, "        %s", rlGetCompressedFormatName(compFormats[i]));
+    int i;
+    for (i = 0; i < capability; i++) TRACELOG(RL_LOG_INFO, "        %s", rlGetCompressedFormatName(compFormats[i]));
     RL_FREE(compFormats);
 
 #if defined(GRAPHICS_API_OPENGL_43)
@@ -2139,7 +2145,8 @@ rlRenderBatch rlLoadRenderBatch(int numBuffers, int bufferElements)
     //--------------------------------------------------------------------------------------------
     batch.vertexBuffer = (rlVertexBuffer *)RL_MALLOC(numBuffers*sizeof(rlVertexBuffer));
 
-    for (int i = 0; i < numBuffers; i++)
+    int i;
+    for (i = 0; i < numBuffers; i++)
     {
         batch.vertexBuffer[i].elementCount = bufferElements;
 
@@ -2152,15 +2159,15 @@ rlRenderBatch rlLoadRenderBatch(int numBuffers, int bufferElements)
 #if defined(GRAPHICS_API_OPENGL_ES2)
         batch.vertexBuffer[i].indices = (unsigned short *)RL_MALLOC(bufferElements*6*sizeof(unsigned short));  // 6 int by quad (indices)
 #endif
-
-        for (int j = 0; j < (3*4*bufferElements); j++) batch.vertexBuffer[i].vertices[j] = 0.0f;
-        for (int j = 0; j < (2*4*bufferElements); j++) batch.vertexBuffer[i].texcoords[j] = 0.0f;
-        for (int j = 0; j < (4*4*bufferElements); j++) batch.vertexBuffer[i].colors[j] = 0;
+        int j;
+        for (j = 0; j < (3*4*bufferElements); j++) batch.vertexBuffer[i].vertices[j] = 0.0f;
+        for (j = 0; j < (2*4*bufferElements); j++) batch.vertexBuffer[i].texcoords[j] = 0.0f;
+        for (j = 0; j < (4*4*bufferElements); j++) batch.vertexBuffer[i].colors[j] = 0;
 
         int k = 0;
 
         // Indices can be initialized right now
-        for (int j = 0; j < (6*bufferElements); j += 6)
+        for (j = 0; j < (6*bufferElements); j += 6)
         {
             batch.vertexBuffer[i].indices[j] = 4*k;
             batch.vertexBuffer[i].indices[j + 1] = 4*k + 1;
@@ -2180,7 +2187,8 @@ rlRenderBatch rlLoadRenderBatch(int numBuffers, int bufferElements)
 
     // Upload to GPU (VRAM) vertex data and initialize VAOs/VBOs
     //--------------------------------------------------------------------------------------------
-    for (int i = 0; i < numBuffers; i++)
+
+    for (i = 0; i < numBuffers; i++)
     {
         if (RLGL.ExtSupported.vao)
         {
@@ -2232,7 +2240,7 @@ rlRenderBatch rlLoadRenderBatch(int numBuffers, int bufferElements)
     //--------------------------------------------------------------------------------------------
     batch.draws = (rlDrawCall *)RL_MALLOC(RL_DEFAULT_BATCH_DRAWCALLS*sizeof(rlDrawCall));
 
-    for (int i = 0; i < RL_DEFAULT_BATCH_DRAWCALLS; i++)
+    for (i = 0; i < RL_DEFAULT_BATCH_DRAWCALLS; i++)
     {
         batch.draws[i].mode = RL_QUADS;
         batch.draws[i].vertexCount = 0;
@@ -2262,7 +2270,8 @@ void rlUnloadRenderBatch(rlRenderBatch batch)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Unload all vertex buffers data
-    for (int i = 0; i < batch.bufferCount; i++)
+    int i;
+    for (i = 0; i < batch.bufferCount; i++)
     {
         // Unbind VAO attribs data
         if (RLGL.ExtSupported.vao)
@@ -2410,7 +2419,8 @@ void rlDrawRenderBatch(rlRenderBatch *batch)
 
             // Activate additional sampler textures
             // Those additional textures will be common for all draw calls of the batch
-            for (int i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++)
+            int i;
+            for (i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++)
             {
                 if (RLGL.State.activeTextureId[i] > 0)
                 {
@@ -2423,7 +2433,8 @@ void rlDrawRenderBatch(rlRenderBatch *batch)
             // NOTE: Batch system accumulates calls by texture0 changes, additional textures are enabled for all the draw calls
             glActiveTexture(GL_TEXTURE0);
 
-            for (int i = 0, vertexOffset = 0; i < batch->drawCounter; i++)
+            int vertexOffset;
+            for (i = 0, vertexOffset = 0; i < batch->drawCounter; i++)
             {
                 // Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default
                 glBindTexture(GL_TEXTURE_2D, batch->draws[i].textureId);
@@ -2476,7 +2487,8 @@ void rlDrawRenderBatch(rlRenderBatch *batch)
     RLGL.State.modelview = matModelView;
 
     // Reset RLGL.currentBatch->draws array
-    for (int i = 0; i < RL_DEFAULT_BATCH_DRAWCALLS; i++)
+    int i;
+    for (i = 0; i < RL_DEFAULT_BATCH_DRAWCALLS; i++)
     {
         batch->draws[i].mode = RL_QUADS;
         batch->draws[i].vertexCount = 0;
@@ -2484,7 +2496,8 @@ void rlDrawRenderBatch(rlRenderBatch *batch)
     }
 
     // Reset active texture units for next batch
-    for (int i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++) RLGL.State.activeTextureId[i] = 0;
+
+    for (i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++) RLGL.State.activeTextureId[i] = 0;
 
     // Reset draws counter to one draw for the batch
     batch->drawCounter = 1;
@@ -2634,7 +2647,8 @@ unsigned int rlLoadShaderCode(const char *vsCode, const char *fsCode)
             int uniformCount = -1;
             glGetProgramiv(id, GL_ACTIVE_UNIFORMS, &uniformCount);
 
-            for (int i = 0; i < uniformCount; i++)
+            int i;
+            for (i = 0; i < uniformCount; i++)
             {
                 int namelen = -1;
                 int num = -1;
@@ -2826,11 +2840,13 @@ void rlSetUniformSampler(int locIndex, unsigned int textureId)
 {
 #if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_ES2)
     // Check if texture is already active
-    for (int i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++) if (RLGL.State.activeTextureId[i] == textureId) return;
+    int i;
+    for (i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++) if (RLGL.State.activeTextureId[i] == textureId) return;
 
     // Register a new active texture for the internal batch system
     // NOTE: Default texture is always activated as GL_TEXTURE0
-    for (int i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++)
+
+    for (i = 0; i < RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS; i++)
     {
         if (RLGL.State.activeTextureId[i] == 0)
         {
@@ -3040,7 +3056,7 @@ Matrix rlGetMatrixTransform(void)
     // TODO: Consider possible transform matrices in the RLGL.State.stack
     // Is this the right order? or should we start with the first stored matrix instead of the last one?
     //Matrix matStackTransform = rlMatrixIdentity();
-    //for (int i = RLGL.State.stackCounter; i > 0; i--) matStackTransform = rlMatrixMultiply(RLGL.State.stack[i], matStackTransform);
+    // for (int i = RLGL.State.stackCounter; i > 0; i--) matStackTransform = rlMatrixMultiply(RLGL.State.stack[i], matStackTransform);
     mat = RLGL.State.transform;
 #endif
     return mat;
@@ -3231,7 +3247,8 @@ static void rlLoadShaderDefault(void)
     RLGL.State.defaultShaderLocs = (int *)RL_CALLOC(RL_MAX_SHADER_LOCATIONS, sizeof(int));
 
     // NOTE: All locations must be reseted to -1 (no location)
-    for (int i = 0; i < RL_MAX_SHADER_LOCATIONS; i++) RLGL.State.defaultShaderLocs[i] = -1;
+    int i;
+    for (i = 0; i < RL_MAX_SHADER_LOCATIONS; i++) RLGL.State.defaultShaderLocs[i] = -1;
 
     // Vertex shader directly defined, no external file required
     const char *defaultVShaderCode =
