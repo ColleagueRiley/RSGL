@@ -48,6 +48,9 @@ int main(void) {
                 case RGFW_quit:
                     printf("window close event\n");
                     running = false;
+                case RGFW_windowAttribsChange:
+                    printf("window moved or resized\n");
+                    break;
                 default: break;
             }
 
