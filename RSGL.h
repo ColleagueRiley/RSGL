@@ -529,6 +529,9 @@ int main() {
 
 	you can then use Silicon/include and libSilicon.a for building RGFW projects
 
+    Alternatively, you also can find pre-built binaries for Silicon at
+    https://github.com/ColleagueRiley/Silicon/tree/binaries
+
 	ex.
 	gcc main.c -framework Foundation -lSilicon -framework AppKit -framework CoreVideo -ISilicon/include
 
