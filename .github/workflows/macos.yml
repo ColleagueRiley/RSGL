@@ -13,5 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: silicon-binaries
+      run: git clone https://github.com/ColleagueRiley/Silicon -b binaries && cp Silicon/ARM/*.o deps/Silicon/source
     - name: make
       run: make
