@@ -12,7 +12,7 @@ ifeq ($(detected_OS),Windows)
 	EXT = dll
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
-	LIBS := -I./deps/Silicon -I./deps/Silicon ./deps/Silicon/source/*.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+	LIBS := ./deps/Silicon/source/*.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 	EXT = dylib
 endif
 ifeq ($(detected_OS),Linux)
@@ -30,7 +30,7 @@ all:
 
 RSGL.o:
 	cp RSGL.h RSGL.c
-	gcc -c RSGL.c -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
+	gcc -c RSGL.c -I./deps/Silicon -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
 	rm RSGL.c
 
 clean:
