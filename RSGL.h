@@ -71,6 +71,58 @@
 #define RSGL_NEW_IMAGES 10
 #endif
 
+/*! Optional arguments for making a windows */
+#define RSGL_TRANSPARENT_WINDOW		(1L<<9) /*!< If the window is transparent*/
+#define RSGL_NO_BORDER		(1L<<3) /*!< If the window doesn't have border*/
+#define RSGL_NO_RESIZE		(1L<<4) /*!< If the window cannot be resized  by the user*/
+#define RSGL_ALLOW_DND     (1L<<5) /*!< if the window supports drag and drop*/
+#define RSGL_HIDE_MOUSE (1L<<6) /* if the window should hide the mouse or not (can be toggled later on)*/
+#define RSGL_OPENGL (1L<<7) /* use normal opengl (if another version is also selected) */
+#define RSGL_FULLSCREEN (1L<<8) /* if the window should be fullscreen by default or not */
+#define RSGL_CENTER (1L<<10)
+/*! event codes */
+#define RSGL_keyPressed 2 /*!< a key has been pressed*/
+#define RSGL_keyReleased 3 /*!< a key has been released*/
+#define RSGL_mouseButtonPressed 4 /*!< a mouse button has been pressed (left,middle,right)*/
+#define RSGL_mouseButtonReleased 5 /*!< a mouse button has been released (left,middle,right)*/
+#define RSGL_mousePosChanged 6 /*!< the position of the mouse has been changed*/
+#define RSGL_jsButtonPressed 7 /*!< a joystick button was pressed */
+#define RSGL_jsButtonReleased 8 /*!< a joystick button was released */
+#define RSGL_jsAxisMove 9 /*!< an axis of a joystick was moved*/
+#define RSGL_windowAttribsChange 10 /*!< the window was moved or resized (by the user) */
+#define RSGL_quit 33 /*!< the user clicked the quit button*/ 
+#define RSGL_dnd 34 /*!< a file has been dropped into the window*/
+#define RSGL_dnd_init 35 /*!< the start of a dnd event, when the place where the file drop is known */
+
+/*! mouse button codes */
+#define RSGL_mouseLeft  1 /*!< left mouse button is pressed*/
+#define RSGL_mouseMiddle  2 /*!< mouse-wheel-button is pressed*/
+#define RSGL_mouseRight  3 /*!< right mouse button is pressed*/
+#define RSGL_mouseScrollUp  4 /*!< mouse wheel is scrolling up*/
+#define RSGL_mouseScrollDown  5 /*!< mouse wheel is scrolling down*/
+
+#define RSGL_JS_A RGFW_JS_A /* or PS X button */
+#define RSGL_JS_B RGFW_JS_B /* or PS circle button */
+#define RSGL_JS_Y RGFW_JS_Y /* or PS triangle button */
+#define RSGL_JS_X RGFW_JS_X /* or PS square button */
+#define RSGL_JS_START RGFW_JS_START /* start button */
+#define RSGL_JS_SELECT RGFW_JS_SELECT /* select button */
+#define RSGL_JS_HOME RGFW_JS_HOME /* home button */
+#define RSGL_JS_UP RGFW_JS_UP /* dpad up */
+#define RSGL_JS_DOWN RGFW_JS_DOWN /* dpad down*/
+#define RSGL_JS_LEFT RGFW_JS_LEFT /* dpad left */
+#define RSGL_JS_RIGHT RGFW_JS_RIGHT /* dpad right */
+#define RSGL_JS_L1 RGFW_JS_L1 /* left bump */
+#define RSGL_JS_L2 RGFW_JS_L2 /* left trigger*/
+#define RSGL_JS_R1 RGFW_JS_R1 /* right bumper */
+#define RSGL_JS_R2 RGFW_JS_R2 /* right trigger */
+
+/* 
+keys = 
+RGFW_{key} 
+
+keys will not be reincluded into RSGL
+*/
 
 #ifndef RSGL_H
 #define RSGL_H
@@ -144,6 +196,25 @@ typedef struct RSGL_color {
 #define RSGL_RGB(r, g, b) (RSGL_color){r, g, b, 255}
 #define RSGL_RGBA(r, g, b, a) (RSGL_color){r, g, b, a}
 
+/*
+******
+RGFW_FUNCTION_DEFINES
+******
+*/
+
+#define RSGL_isPressedI RGFW_isPressedI
+#define RSGL_isPressedS RGFW_isPressedS
+#define RSGL_window_readClipboard RGFW_window_readClipboard 
+#define RSGL_window_writeClipboard RGFW_window_writeClipboard
+#define RSGL_registerJoystickF RGFW_registerJoystickF
+#define RSGL_registerJoystick RGFW_registerJoystick
+#define RSGL_isPressedJS RGFW_isPressedJS
+#define RSGL_getMaxGLVersion RGFW_getMaxGLVersion
+#define RSGL_setGLVersion RGFW_setGLVersion
+#define RSGL_window_swapInterval RGFW_window_swapInterval
+#define RSGL_getProcAddress RGFW_getProcAddress
+#define RSGL_window_checkFPS RGFW_window_checkFPS
+
 /* 
 *******
 RSGL_window
@@ -165,6 +236,16 @@ inline void RSGL_window_makeCurrent(RSGL_window* win);
 inline void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 
 inline void RSGL_window_close(RSGL_window* win);
+
+#define RSGL_window_screenSize RGFW_window_screenSize
+#define RSGL_window_move RGFW_window_move
+#define RSGL_window_resize RGFW_window_resize
+#define RSGL_window_setName RGFW_window_setName
+#define RSGL_window_setMouse RGFW_window_setMouse
+#define RSGL_window_setMouseDefault RGFW_window_setMouseDefault
+#define RSGL_window_getGlobalMousePoint RGFW_window_getGlobalMousePoint
+#define RSGL_window_getGlobalMousePoint RGFW_window_getGlobalMousePoint
+
 #else /* RSGL_NO_WINDOW */
 
 /* 
@@ -401,7 +482,7 @@ int main() {
     for (;;) {
         RSGL_window_checkEvent(win); // NOTE: checking events outside of a while loop may cause input lag 
 
-        if (win->event.type == RGFW_quit || RGFW_isPressedI(win, RGFW_Escape))
+        if (win->event.type == RSGL_quit || RSGL_isPressedI(win, RSGL_Escape))
             break;
 
         RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 255, 255))
@@ -670,7 +751,23 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     #ifndef GRAPHICS_API_OPENGL_11
     rlLoadExtensions(loader);
     rlglInit(r.w, r.h);
-    rlEnableDepthTest();
+
+    // Init state: Blending mode
+    glClearDepth(1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);      // Color blending function (how colors are mixed)
+    glEnable(GL_BLEND);                                     // Enable color blending (required to work with transparencies)
+
+    glCullFace(GL_BACK);                                    // Cull the back face (default)
+    glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
+    glEnable(GL_CULL_FACE);        
+
+    rlMatrixMode(RL_PROJECTION);    // Switch to projection matrix
+    rlPushMatrix();                 // Save previous matrix, which contains the settings for the 2d ortho projection
+    rlLoadIdentity();               // Reset current matrix (projection)
     #endif
 
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
