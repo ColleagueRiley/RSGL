@@ -37,27 +37,11 @@ typedef struct FONSRenderContext {
 
 #define glfonsRGBA(r, g, b, a) ((r) | (g << 8) | (b << 16) | (a << 24));
 
-inline void fonsDeleteBuffer(GLuint* buffer);
-inline void fonsCreateBuffer(GLuint* buffer);
-
-void fonsDeleteBuffer(GLuint* buffer) {
-	#ifndef GRAPHICS_API_OPENGL_11
-	if (!*buffer) return;
-	glDeleteTextures(1, buffer);
-	buffer = 0;
-	#endif
-}
-void fonsCreateBuffer(GLuint* buffer) {
-	#ifndef GRAPHICS_API_OPENGL_11
-	glGenBuffers(1, buffer);
-	#endif
-}
-
 int fons_renderCreate(FONSRenderContext* gl, int width, int height) {
 	// Create may be called multiple times, delete existing texture.
 	
 	#ifndef GRAPHICS_API_OPENGL_11
-	fonsDeleteBuffer(&gl->tex);
+	glDeleteTextures(1, &gl->tex);
 	#endif
 
 	glGenTextures(1, &gl->tex);
@@ -72,9 +56,9 @@ int fons_renderCreate(FONSRenderContext* gl, int width, int height) {
 	#endif
 
 	#ifndef GRAPHICS_API_OPENGL_11
-	fonsCreateBuffer(&gl->vertexBuffer);
-	fonsCreateBuffer(&gl->tcoordBuffer);
-	fonsCreateBuffer(&gl->colorBuffer);
+	glGenBuffers(1, &gl->vertexBuffer);
+	glGenBuffers(1, &gl->tcoordBuffer);
+	glGenBuffers(1, &gl->colorBuffer);
 
 	if (!gl->tex || !gl->vertexArray || !gl->colorBuffer || !gl->tcoordBuffer || !gl->vertexArray || !gl->vertexBuffer)
 		return 0;
@@ -82,12 +66,14 @@ int fons_renderCreate(FONSRenderContext* gl, int width, int height) {
 
 	gl->width = width;
 	gl->height = height;
+	
+	gl->tex = rlLoadTexture(NULL, gl->width, gl->height, 4);
+
 	glBindTexture(GL_TEXTURE_2D, gl->tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, gl->width, gl->height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return 1;
 }
@@ -131,6 +117,8 @@ void fons_renderDraw(FONSRenderContext* gl, const float *verts, const float *tco
 
 	rlSetTexture(gl->tex);
 
+	glEnable(GL_BLEND);
+
 	rlPushMatrix();
 	rlBegin(GL_QUADS);
 
@@ -151,15 +139,20 @@ void fons_renderDraw(FONSRenderContext* gl, const float *verts, const float *tco
 
 void fons_renderDelete(FONSRenderContext* gl) {
 	#ifndef GRAPHICS_API_OPENGL_11
-	fonsDeleteBuffer(&gl->tex);
-	fonsDeleteBuffer(&gl->vertexBuffer);
-	fonsDeleteBuffer(&gl->tcoordBuffer);
-	fonsDeleteBuffer(&gl->colorBuffer);
-	fonsDeleteBuffer(&gl->vertexArray);
-	#endif
+	glDeleteBuffers(1, &gl->vertexBuffer);
+	glDeleteBuffers(1, &gl->tcoordBuffer);
+	glDeleteBuffers(1,&gl->colorBuffer);
+	glDeleteBuffers(1, &gl->vertexArray);
 
-	#if defined(GRAPHICS_API_OPENGL_33) || defined(GRAPHICS_API_OPENGL_43)
 	glBindVertexArray(0);
 	#endif
+
+	glDeleteTextures(1, &gl->tex);
+
+	gl->vertexBuffer = 
+	gl->tcoordBuffer =
+	gl->colorBuffer =
+	gl->vertexArray =
+	gl->tex = 0;
 	free(gl);
 }

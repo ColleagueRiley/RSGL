@@ -1082,6 +1082,8 @@ void RSGL_setFont(unsigned int font) {
 }
 
 void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
+    glEnable(GL_BLEND);
+
     if (text == NULL || text[0] == '\0')
         return;
     int w = fonsTextWidth(RSGL_fonsContext, RSGL_font, c.d, text, strlen(text));
