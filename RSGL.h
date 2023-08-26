@@ -211,12 +211,12 @@ typedef struct RSGL_color {
     u8 a, b, g, r;
 } RSGL_color;
 
-#define RSGL_RGBA(r, g, b, a) (RSGL_color){a, b, g, r}
-#define RSGL_RGB(r, g, b) (RSGL_color){255, b, g, r}
+#define RSGL_RGBA(r, g, b, a) ((RSGL_color){(a), (b), (g), (r)})
+#define RSGL_RGB(r, g, b) ((RSGL_color){255, (b), (g), (r)})
 
-#define RSGL_COLOR_TO_HEX(color) (u32)color & 0xFFFFFF00
-#define RSGL_RGB_TO_HEX(r, g, b, a) (u32)RSGL_RGBA(r, g, b, a) & 0xFFFFFF00
-#define RSGL_RGBA_TO_HEX(r, g, b) (u32)RSGL_RGB(r, g, b) & 0xFFFFFF00
+#define RSGL_COLOR_TO_HEX(color) ((u32)(color) & 0xFFFFFF00)
+#define RSGL_RGB_TO_HEX(r, g, b, a) (RSGL_COLOR_TO_HEX(RSGL_RGBA(r, g, b, a)))
+#define RSGL_RGBA_TO_HEX(r, g, b) (RSGL_COLOR_TO_HEX(RSGL_RGB(r, g, b, a)))
 
 /*
 ******
@@ -731,6 +731,16 @@ void RSGL_window_makeCurrent(RSGL_window* win) {
 }
 
 void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
+    #ifndef GRAPHICS_API_OPENGL_11
+        #ifndef RGFW_RECT
+        RLGL.State.framebufferWidth = win->w;
+        RLGL.State.framebufferHeight = win->h;
+        #else /* n RGFW_RECT */
+        RLGL.State.framebufferWidth = win->r.w;
+        RLGL.State.framebufferHeight = win->r.h;
+        #endif /* RGFW_RECT */
+    #endif /* n GRAPHICS_API_OPENGL_11*/
+
     RSGL_window_makeCurrent(win);
     RGFW_window_swapBuffers(win);
 
