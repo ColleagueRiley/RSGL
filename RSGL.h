@@ -731,16 +731,12 @@ void RSGL_window_makeCurrent(RSGL_window* win) {
 }
 
 void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
-    #ifndef GRAPHICS_API_OPENGL_11
-        #ifndef RGFW_RECT
-        RLGL.State.framebufferWidth = win->w;
-        RLGL.State.framebufferHeight = win->h;
-        #else /* n RGFW_RECT */
-        RLGL.State.framebufferWidth = win->r.w;
-        RLGL.State.framebufferHeight = win->r.h;
-        #endif /* RGFW_RECT */
-    #endif /* n GRAPHICS_API_OPENGL_11*/
-
+    #ifndef RGFW_RECT
+    rlSetFramebufferSize(win->w, win->h);
+    #else /* n RGFW_RECT */
+    rlSetFramebufferSize(win->r.w, win->r.h);
+    #endif /* RGFW_RECT */
+    
     RSGL_window_makeCurrent(win);
     RGFW_window_swapBuffers(win);
 
