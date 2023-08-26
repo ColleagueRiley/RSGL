@@ -1855,7 +1855,7 @@ void rlSetFramebufferSize(int width, int height) {
     RLGL.State.framebufferWidth = width;
     RLGL.State.framebufferHeight = height;
     #endif
-    glViewport(width, height);
+    glViewport(0, 0, width, height);
 }
 
 // Load OpenGL extensions
