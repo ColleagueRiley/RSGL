@@ -127,6 +127,19 @@ keys will not be reincluded into RSGL
 #ifndef RSGL_H
 #define RSGL_H
 
+#if !defined(u8)
+    #include <stdint.h>
+
+    typedef uint8_t     u8;
+	typedef int8_t      i8;
+	typedef uint16_t   u16;
+	typedef int16_t    i16;
+	typedef uint32_t   u32;
+	typedef int32_t    i32;
+	typedef uint64_t   u64;
+	typedef int64_t    i64;
+#endif
+
 typedef struct RSGL_rect {
     i32 x, y, w, h;
 } RSGL_rect;
@@ -145,19 +158,6 @@ typedef struct {u32 type, x, y;} RGFW_Event;
 
 #include <stdbool.h>
 #include <stddef.h>
-
-#if !defined(u8)
-    #include <stdint.h>
-
-    typedef uint8_t     u8;
-	typedef int8_t      i8;
-	typedef uint16_t   u16;
-	typedef int16_t    i16;
-	typedef uint32_t   u32;
-	typedef int32_t    i32;
-	typedef uint64_t   u64;
-	typedef int64_t    i64;
-#endif
 
 /* 
 *******
@@ -1509,7 +1509,7 @@ void RSGL_audio_seek(RSGL_audio a, u32 position) {
 
 /* get audio info */
 u32 RSGL_audio_len(RSGL_audio a) {
-    u64 len;
+    ma_uint64 len;
     ma_decoder_get_length_in_pcm_frames(&a.data->decoder, &len);
     return len / 44100;
 }
@@ -1520,7 +1520,7 @@ u32 RSGL_audio_volume(RSGL_audio a) {
     return volume * 100;
 }
 u32 RSGL_audio_position(RSGL_audio a) {
-    u64 pos;
+    ma_uint64 pos;
     ma_decoder_get_cursor_in_pcm_frames(&a.data->decoder, &pos);
     return pos / 44100;
 }
