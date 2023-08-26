@@ -572,10 +572,7 @@ RLAPI void rlglInit(int width, int height);             // Initialize rlgl (buff
 RLAPI void rlglClose(void);                             // De-initialize rlgl (buffers, shaders, textures)
 RLAPI void rlLoadExtensions(void *loader);              // Load OpenGL extensions (loader function required)
 RLAPI int rlGetVersion(void);                           // Get current OpenGL version
-RLAPI void rlSetFramebufferWidth(int width);            // Set current framebuffer width
-RLAPI int rlGetFramebufferWidth(void);                  // Get default framebuffer width
-RLAPI void rlSetFramebufferHeight(int height);          // Set current framebuffer height
-RLAPI int rlGetFramebufferHeight(void);                 // Get default framebuffer height
+RLAPI void rlSetFramebufferSize(int width, int height);            // Set current framebuffer size
 
 RLAPI unsigned int rlGetTextureIdDefault(void);         // Get default texture id
 RLAPI unsigned int rlGetShaderIdDefault(void);          // Get default shader id
@@ -967,8 +964,6 @@ static void rlUnloadShaderDefault(void);    // Unload default shader
 static char *rlGetCompressedFormatName(int format); // Get compressed format official GL identifier name
 #endif  // RLGL_SHOW_GL_DETAILS_INFO
 #endif  // GRAPHICS_API_OPENGL_33 || GRAPHICS_API_OPENGL_ES2
-
-static int rlGetPixelDataSize(int width, int height, int format);   // Get pixel data size in bytes (image or texture)
 
 // Auxiliar matrix math functions
 static Matrix rlMatrixIdentity(void);                       // Get identity matrix
@@ -1853,6 +1848,14 @@ void rlglClose(void)
     glDeleteTextures(1, &RLGL.State.defaultTextureId); // Unload default texture
     TRACELOG(RL_LOG_INFO, "TEXTURE: [ID %i] Default texture unloaded successfully", RLGL.State.defaultTextureId);
 #endif
+}
+
+void rlSetFramebufferSize(int width, int height) {
+    #ifndef GRAPHICS_API_OPENGL_11
+    RLGL.State.framebufferWidth = width;
+    RLGL.State.framebufferHeight = height;
+    #endif
+    glViewport(width, height);
 }
 
 // Load OpenGL extensions
