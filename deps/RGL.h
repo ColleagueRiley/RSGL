@@ -267,6 +267,7 @@ typedef struct RGL_INFO {
     u16* indices;
     u32 elementCount;
 
+    i32 bufferCount;            /* Number of vertex buffers (multi-buffering support) */
     i32 currentBuffer;          /* Current buffer tracking in case of multi-buffering */
     i32 drawCounter;            /* Draw calls counter */
 
@@ -284,7 +285,7 @@ static RGL_INFO RGLinfo;
 
 void rglSetTexture(u32 id) {
 #if defined(RGL_OPENGL_LEGACY)
-    rglEnableTexture(id);
+    glBindTexture(GL_TEXTURE_2D, id);
 #else
     RGLinfo.tex = id;
 
@@ -590,12 +591,15 @@ void rglLoadRenderBatch(i32 bufferElements) {
         RGLinfo.batches[i].tex = RGLinfo.tex;
     }
 
+    RGLinfo.bufferCount = 1;    /* Record buffer count */
     RGLinfo.drawCounter = 1;             /* Reset draws counter */
 #endif /* RGL_MODERN_OPENGL */
 }
 
 void rglRenderBatch() {
+    #if defined(RGL_MODERN_OPENGL)
     rglRenderBatchWithShader(RGLinfo.program, 0, 1, 2);
+    #endif
 }
 
 void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation) {
@@ -686,10 +690,12 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
     /* Change to next buffer in the list (in case of multi-buffering) */
     RGLinfo.currentBuffer++;
-    if (RGLinfo.currentBuffer >= 1) 
+    if (RGLinfo.currentBuffer >= RGLinfo.bufferCount) 
         RGLinfo.currentBuffer = 0;
 #endif
 }
+
+#if defined(RGL_MODERN_OPENGL)
 
 /* Check internal buffer overflow for a given number of vertex */
 /* and force a void draw call if required */
@@ -709,8 +715,6 @@ int rglCheckRenderBatchLimit(int vCount) {
     return 1; 
 }
 
-/* Types and Structures Definition */
-#if defined(RGL_MODERN_OPENGL)
 /* Initialize drawing mode (how to organize vertex) */
 void rglBegin(int mode) {
     if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode != mode && 
@@ -919,7 +923,7 @@ void rglLoadIdentity(void) {
 
 /* Get identity matrix */
 static RGL_MATRIX rglMatrixIdentity(void) {
-    RGL_MATRIX result = { 
+    return (RGL_MATRIX) { 
         {
             1.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
@@ -927,8 +931,6 @@ static RGL_MATRIX rglMatrixIdentity(void) {
             0.0f, 0.0f, 0.0f, 1.0f
         }
     };
-
-    return result;
 }
 
 void rglMultMatrixf(const float* m) {
@@ -936,7 +938,7 @@ void rglMultMatrixf(const float* m) {
 }
 
 static RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]) {
-    RGL_MATRIX result = {
+    return (RGL_MATRIX) {
         {
             left[0] * right[0] + left[1] * right[4] + left[2] * right[8] + left[3] * right[12],
             left[0] * right[1] + left[1] * right[5] + left[2] * right[9] + left[3] * right[13],
@@ -956,8 +958,6 @@ static RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]) {
             left[12] * right[3] + left[13] * right[7] + left[14] * right[11] + left[15] * right[15]
         }
     };
-
-    return result;
 }
 
 #endif /* RGL_MODERN_OPENGL */
