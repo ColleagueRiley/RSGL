@@ -10,14 +10,17 @@ endif
 ifeq ($(detected_OS),Windows)
 	LIBS := -lopengl32 -lshell32 -lgdi32 -lm
 	EXT = dll
+	W = -w
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
 	LIBS := ./deps/Silicon/source/*.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -w
 	EXT = dylib
+	W =
 endif
 ifeq ($(detected_OS),Linux)
     LIBS := -I./include -lX11 -lGLX -lm
 	EXT = so
+	W = 
 endif
 
 all:
@@ -25,7 +28,7 @@ all:
 		make deps/Silicon/source/mac.o;\
 	fi
 	make RSGL.o	
-	gcc RSGL.o -shared -O3 -I./include $(LIBS) -o libRSGL.$(EXT)
+	gcc RSGL.o -shared -O3 -I./include $(W) $(LIBS) -o libRSGL.$(EXT)
 	ar rcs libRSGL.a *.o
 
 RSGL.o:
