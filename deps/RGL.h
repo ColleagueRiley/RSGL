@@ -1,4 +1,3 @@
-#define RGL_DEBUG
 /*
 * Copyright (c) 2021-23 ColleagueRiley ColleagueRiley@gmail.com
 *
