@@ -339,8 +339,8 @@ inline u32 RSGL_loadFont(const char* font);
 
 inline void RSGL_setFont(u32 font);
 
-typedef struct RFont;
-inline void RSGL_setRFont(RFont* font);
+typedef struct RFont_font RFont_font;
+inline void RSGL_setRFont(RFont_font* font);
 
 inline void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
 #define RSGL_drawTextF(text, font, c, color) \
@@ -1266,7 +1266,7 @@ void RSGL_setFont(u32 font) {
     RSGL_font.f = RSGL_font.fonts[font].f;
 }
 
-void RSGL_setRFont(RFont* font) {
+void RSGL_setRFont(RFont_font* font) {
     RSGL_font.f = font;
 }
 
