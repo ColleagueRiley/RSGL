@@ -145,24 +145,19 @@ per each time you compile your application so you know that everything is compil
 
 # credits
 
-# RLGL
-  RLGL is an OpenGL abstraction layer that makes opengl version managing and rendering a lot easier. 
+# RGL
+  [RGL](https://github.com/ColleagueRiley/RGL) is an OpenGL abstraction layer (that I created) that makes opengl version managing and rendering a lot easier. 
 
   It allows RSGL render using a simplified pipeline system while raylib does advanced shader and preformance work in the background
 
-  RSGL uses a version of RLGL I heavily motified for better performance and to reduce bloat.
+  RGL is heavily based on RGL but it's designed to be more lightweight and have better performance and optimization 
+
+# RFont
+  [RFont](https://github.com/colleagueRiley/RFont) is a super light-weight and modular font library for texture atlas and text rendering that I created. RSGL uses this for text rendering.
+
 
 # stb_image 
-  stb_image is an public domain single header image loader library, RSGL uses this for loading images
-
-  repo : https://github.com/nothings/stb/
-
-# fontstatsh
-  Fontstash is light-weight font texture atlas and text rendering. RSGL uses this for text rendering
-
-  RSGL uses a version of fontstash I heavily motified for better performance and to reduce bloat.
-
-  repo : https://github.com/memononen/fontstash
+  [stb_image](https://github.com/nothings/stb/) is an public domain single header image loader library, RSGL uses this for loading images
 
 # miniaudio
   mini audio is an public domain audio playback and capture library. RSGL uses this for playing/loading music
@@ -180,7 +175,7 @@ per each time you compile your application so you know that everything is compil
   Because this project was created and the majority of features were created before my learning of Raylib, I am very surprised to see how simular Raylib is to RSGL. 
   Raylib and it's community seems to have a very simular view of what a good GUI library should be like as RSGL does. So thank you Raylib for showing me that RSGL is not alone.
 
-  However, some newer additions were inspired by Raylib including it's modular design, use of RLGL (which is created for raylib) and verbos examples. 
+  However, some newer additions were inspired by Raylib including it's modular design, RLGL (which RGL is based on) and verbos examples. 
 
 # Eima
   Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project, has helped with coming up with ideas for the project, has helped when debating new featues of the project
