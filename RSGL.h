@@ -337,9 +337,12 @@ void RSGL_drawCube(RSGL_cube r, RSGL_color c);
 inline u32 RSGL_loadFont(const char* font);
 #define RSGL_FONT(str) RSGL_loadFont(str)
 
-void RSGL_setFont(u32 font);
+inline void RSGL_setFont(u32 font);
 
-void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
+typedef struct RFont;
+inline void RSGL_setRFont(RFont* font);
+
+inline void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
 #define RSGL_drawTextF(text, font, c, color) \
     RSGL_setFont(font);\
     RSGL_drawText(text, c, color);
@@ -567,7 +570,8 @@ int main() {
 #ifdef RSGL_IMPLEMENTATION
 
 #ifdef RSGL_LEGACY_OPENGL
-#define GRAPHICS_API_OPENGL_11
+#define RFONT_RENDER_LEGACY
+#define RGL_LEGACY_OPENGL
 #endif
 
 #define RGFW_IMPLEMENTATION
@@ -1170,7 +1174,7 @@ u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels) {
     switch (channels) {
         case 1: c = GL_RED; break;
         case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; printf("h\n"); break;
+        case 3: c = GL_RGB; break;
         case 4: c = GL_RGBA; break;
         default: break;
     }
@@ -1260,6 +1264,10 @@ u32 RSGL_loadFont(const char* font) {
 
 void RSGL_setFont(u32 font) {
     RSGL_font.f = RSGL_font.fonts[font].f;
+}
+
+void RSGL_setRFont(RFont* font) {
+    RSGL_font.f = font;
 }
 
 void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {

@@ -1,3 +1,4 @@
+#define RGL_DEBUG
 /*
 * Copyright (c) 2021-23 ColleagueRiley ColleagueRiley@gmail.com
 *
@@ -382,8 +383,9 @@ void rglInit(int width, i32 height, void *loader) {
         out vec4 finalColor;               
         uniform sampler2D texture0;        
         void main() { 
-            if (length(texture(texture0, fragTexCoord)) > 1) {
-                finalColor = texture(texture0, fragTexCoord) * fragColor;        
+            vec4 tex = texture(texture0, fragTexCoord); 
+            if (tex.r >= 0.0) {
+                finalColor = tex * fragColor;
                 return;
             }
 
