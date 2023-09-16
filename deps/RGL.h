@@ -383,8 +383,7 @@ void rglInit(int width, i32 height, void *loader) {
         uniform sampler2D texture0;        
         void main() { 
             if (length(texture(texture0, fragTexCoord)) > 1) {
-                vec4 texelColor = texture(texture0, fragTexCoord);  
-                finalColor = texelColor*fragColor;        
+                finalColor = texture(texture0, fragTexCoord) * fragColor;        
                 return;
             }
 

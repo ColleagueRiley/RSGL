@@ -731,7 +731,7 @@ void RFont_draw_text_len(RFont_font* font, const char* text, size_t len, i32 x, 
 
 #if !defined(RFONT_NO_OPENGL) && !defined(RFONT_NO_GRAPHICS)
 
-#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) && !defined(RFONT_RENDER_RGL)  
+#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)
 #define GL_GLEXT_PROTOTYPES
 #endif
 
@@ -849,44 +849,6 @@ void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, i32 x, i32 y, i32 w, i32 h) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#ifdef RFONT_RENDER_RGL
-
-void RFont_render_set_color(float r, float g, float b, float a) {
-   rglColor4f(r, g, b, a);
-}
-
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
-   glEnable(GL_TEXTURE_2D);
-   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-   
-   glDisable(GL_DEPTH_TEST);
-   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-   glEnable(GL_CULL_FACE);
-
-	rglSetTexture(atlas);
-
-	glEnable(GL_BLEND);
-
-	rglBegin(RGL_QUADS);
-
-	i32 i, j = 0;
-	for (i = 0; (size_t)i < (nverts * 6); i += 2) {
-		rglTexCoord2f(tcoords[i], tcoords[i + 1]);
-
-		rglVertex2f(verts[i], verts[i + 1]);
-
-		rglVertex2f(verts[i], verts[i + 1]);
-	}
-	rglEnd();
-
-	rglSetTexture(0);
-   glEnable(GL_DEPTH_TEST);
-}
-
-void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
-void RFont_render_init() {}
-#endif /* RFONT_RENDER_RGL */
-
 #ifdef RFONT_RENDER_RLGL
 
 void RFont_render_set_color(float r, float g, float b, float a) {
@@ -931,7 +893,7 @@ void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
 void RFont_render_init() {}
 #endif /* RFONT_RENDER_RLGL */
 
-#if defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) && !defined(RFONT_RENDER_RGL)  
+#if defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)
 
 void RFont_render_set_color(float r, float g, float b, float a) {
    glColor4f(r, g, b, a);
@@ -971,9 +933,9 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 
 void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
 void RFont_render_init() {}
-#endif /* defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) && !defined(RFONT_RENDER_RGL)    */
+#endif /* defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)  */
 
-#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) && !defined(RFONT_RENDER_RGL)  
+#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)
 typedef struct {
    GLuint vao, vbo, tbo, cbo, ebo,
             program, vShader, fShader;
@@ -1162,15 +1124,14 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RFont_gl.ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * 6 * nverts, indices, GL_STATIC_DRAW);
 
+   free(indices);
+
    glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D, atlas);
 
-   glUseProgram(0);
-   glDrawElements(GL_TRIANGLES, nverts * 6, GL_UNSIGNED_SHORT, indices);
-	//glDrawArrays(GL_TRIANGLES, 0, nverts);   
+   glDrawArrays(GL_TRIANGLES, 0, nverts);   
    glUseProgram(0);
 
-   free(indices);
 	glDisable(GL_TEXTURE_2D);
 }
 
@@ -1194,7 +1155,7 @@ void RFont_render_free(u32 atlas) {
    glDeleteProgram(RFont_gl.program);
 }
 
-#endif /* !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) && !defined(RFONT_RENDER_RGL)   */
+#endif /* !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) */
 #endif /*  !defined(RFONT_NO_OPENGL) && !defined(RFONT_NO_GRAPHICS) */
 
 /* 
