@@ -33,7 +33,7 @@ all:
 
 RSGL.o:
 	cp RSGL.h RSGL.c
-	gcc -c RSGL.c -I./deps/Silicon -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
+	gcc -c $(W) RSGL.c -I./deps/Silicon -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
 	rm RSGL.c
 
 clean:
