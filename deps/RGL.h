@@ -32,6 +32,7 @@ MACRO #DEFINE ARGUMENTS
 #define RGL_NO_X64_OPTIMIZATIONS - Use x64 optimizations (x64 only), eg. SIMD
 #define RGL_ALLOC_BATCHES - Allocate room for batches instead of using a stack-based c array
 #define RGL_ALLOC_MATRIX_STACK - Allocate room for the matrix stack instead of using a stack-based c array
+#define RGL_EBO - (modern opengl) use EBO for RGL_QUADS, this is off by default because it is buggy currently
 
 Values
 
@@ -129,12 +130,11 @@ inline void rglInit(int width,  i32 height, void* loader);             /* Initia
 inline void rglClose(void);                             /* De-initialize RGLinfo (buffers, shaders, textures) */
 inline void rglSetFramebufferSize(int width,    i32 height);            /* Set current framebuffer size */
 
-inline void rglLoadRenderBatch(i32 bufferElements);
-
 inline void rglRenderBatch(void);                         /* Draw render batch data (Update->Draw->Reset) */
 inline void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation);
 
 inline void rglSetTexture(u32 id);               /* Set current texture for render batch and check buffers limits */
+inline u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels); /* create texture */
 
 #if defined(RGL_OPENGL_LEGACY)
 #define rglBegin glBegin
@@ -256,6 +256,7 @@ typedef struct RGL_INFO {
     u32 fShader;      /* Default fragment shader id (used by default shader program)*/
     u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 mvp;
+    u32 defaultTex;
 
     i32 width;               /* Current framebuffer width*/
     i32 height;              /* Current framebuffer height*/
@@ -289,10 +290,43 @@ void rglSetTexture(u32 id) {
 #else
     RGLinfo.tex = id;
 
+    if (id == 0)
+        RGLinfo.tex = RGLinfo.defaultTex;
+
     RGLinfo.vertexCounter += RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment;
     RGLinfo.drawCounter++;
     RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount = 0;
 #endif
+}
+
+u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels) {
+    unsigned int id = 0;
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+    
+    unsigned int c;
+
+    switch (channels) {
+        case 1: c = GL_RED; break;
+        case 2: c = GL_RG; break;
+        case 3: c = GL_RGB; break;
+        case 4: c = GL_RGBA; break;
+        default: break;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, c, width, height, 0, c, GL_UNSIGNED_BYTE, bitmap);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return id;
 }
 
 #ifdef RGL_DEBUG
@@ -379,17 +413,11 @@ void rglInit(int width, i32 height, void *loader) {
         \x23version 330       \n
         in vec2 fragTexCoord;              
         in vec4 fragColor;                 
-        out vec4 finalColor;               
+        out vec4 finalColor;     
         uniform sampler2D texture0;        
         void main() { 
-            vec4 tex = texture(texture0, fragTexCoord); 
-            if (tex.r >= 0.0) {
-                finalColor = tex * fragColor;
-                return;
-            }
-
-            finalColor = fragColor;  
-        }                                  
+            finalColor = texture(texture0, fragTexCoord) * fragColor;
+        }                               
     );
 
 	glGenVertexArrays(1, &RGLinfo.vao);
@@ -434,10 +462,90 @@ void rglInit(int width, i32 height, void *loader) {
     RGLinfo.mvp  = glGetUniformLocation(RGLinfo.program, "mvp");
 
     /* Init default vertex arrays buffers */
-    rglLoadRenderBatch(RGL_MAX_BUFFER_ELEMENTS);
+    /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
+
+    RGLinfo.elementCount = RGL_MAX_BUFFER_ELEMENTS;
+
+    RGLinfo.vertices = (float *)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 3 * 4 * sizeof(float));
+    RGLinfo.tcoords = (float *)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 2 * 4 * sizeof(float));
+    RGLinfo.colors = (float*)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 4 * 4 * sizeof(float));
+    RGLinfo.indices = (u16*)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 6 * sizeof(u16));
+
+    i32 k = 0, j;
+
+    /* Indices can be initialized right now */
+    for (j = 0; j < (6 * RGL_MAX_BUFFER_ELEMENTS); j += 6) {
+        RGLinfo.indices[j] = 4*k;
+        RGLinfo.indices[j + 1] = 4*k + 1;
+        RGLinfo.indices[j + 2] = 4*k + 2;
+        RGLinfo.indices[j + 3] = 4*k;
+        RGLinfo.indices[j + 4] = 4*k + 2;
+        RGLinfo.indices[j + 5] = 4*k + 3;
+
+        k++;
+    }
+
+    RGLinfo.vertexCounter = 0;
+
+    glGenVertexArrays(1, &RGLinfo.vao);
+    glBindVertexArray(RGLinfo.vao);
+
+    /* Quads - Vertex buffers binding and attributes enable */
+    /* Vertex position buffer (shader-location = 0) */
+    glGenBuffers(1, &RGLinfo.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.vbo);
+    glBufferData(GL_ARRAY_BUFFER, RGL_MAX_BUFFER_ELEMENTS * 3 * 4 * sizeof(float), RGLinfo.vertices, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
+
+    /* Vertex texcoord buffer (shader-location = 1) */
+    glGenBuffers(1, &RGLinfo.tbo);
+    glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.tbo);
+    glBufferData(GL_ARRAY_BUFFER, RGL_MAX_BUFFER_ELEMENTS * 2 * 4 * sizeof(float), RGLinfo.tcoords, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
+
+    /* Vertex color buffer (shader-location = 3) */
+    glGenBuffers(1, &RGLinfo.cbo);
+    glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.cbo);
+    glBufferData(GL_ARRAY_BUFFER, RGL_MAX_BUFFER_ELEMENTS * 4 * 4 * sizeof(float), RGLinfo.colors, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
+
+    /* Fill index buffer */
+    glGenBuffers(1, &RGLinfo.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RGLinfo.ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, RGL_MAX_BUFFER_ELEMENTS * 6 * sizeof(u16), RGLinfo.indices, GL_STATIC_DRAW);
+
+    /* Unbind the current VAO */
+    if (RGLinfo.vao) 
+        glBindVertexArray(0);
+
+    /* load default texture */
+    u8 white[4] = {255, 255, 255, 255};
+    RGLinfo.defaultTex = rglCreateTexture(white, 1, 1, 4);
+    RGLinfo.tex = RGLinfo.defaultTex;
+
+    #ifdef RGL_ALLOC_BATCHES
+    RGLinfo.batches = (RGL_BATCH *)RGL_MALLOC(RGL_MAX_BATCHES * sizeof(RGL_BATCH));
+    #endif
+    
+    #ifdef RGL_ALLOC_MATRIX_STACK
+    RGLinfo.statck = (RGL_MATRIX*)RGL_MALLOC(RGL_MAX_MATRIX_STACK_SIZE * sizeof(RGL_MATRIX));
+    #endif
+
+    u32 i;
+    for (i = 0; i < RGL_MAX_BATCHES; i++) {
+        RGLinfo.batches[i].mode = RGL_QUADS;
+        RGLinfo.batches[i].vertexCount = 0;
+        RGLinfo.batches[i].vertexAlignment = 0;
+        RGLinfo.batches[i].tex = RGLinfo.tex;
+    }
+
+    RGLinfo.bufferCount = 1;    /* Record buffer count */
+    RGLinfo.drawCounter = 1;             /* Reset draws counter */
     
     /* Init stack matrices (emulating OpenGL 1.1) */
-    i32 i;
     for (i = 0; i < RGL_MAX_MATRIX_STACK_SIZE; i++) RGLinfo.stack[i] = rglMatrixIdentity();
 
     /* Init internal matrices */
@@ -512,90 +620,6 @@ void rglSetFramebufferSize(int width,   i32 height) {
 }
 
 
-/* Render batch management */
-/* Load render batch */
-void rglLoadRenderBatch(i32 bufferElements) {
-#if defined(RGL_MODERN_OPENGL)
-    /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
-
-    RGLinfo.elementCount = bufferElements;
-
-    RGLinfo.vertices = (float *)RGL_MALLOC(bufferElements * 3 * 4 * sizeof(float));
-    RGLinfo.tcoords = (float *)RGL_MALLOC(bufferElements * 2 * 4 * sizeof(float));
-    RGLinfo.colors = (float*)RGL_MALLOC(bufferElements * 4 * 4 * sizeof(float));
-    RGLinfo.indices = (u16*)RGL_MALLOC(bufferElements * 6 * sizeof(u16));
-
-    i32 k = 0, j;
-
-    /* Indices can be initialized right now */
-    for (j = 0; j < (6*bufferElements); j += 6) {
-        RGLinfo.indices[j] = 4*k;
-        RGLinfo.indices[j + 1] = 4*k + 1;
-        RGLinfo.indices[j + 2] = 4*k + 2;
-        RGLinfo.indices[j + 3] = 4*k;
-        RGLinfo.indices[j + 4] = 4*k + 2;
-        RGLinfo.indices[j + 5] = 4*k + 3;
-
-        k++;
-    }
-
-    RGLinfo.vertexCounter = 0;
-
-    glGenVertexArrays(1, &RGLinfo.vao);
-    glBindVertexArray(RGLinfo.vao);
-
-    /* Quads - Vertex buffers binding and attributes enable */
-    /* Vertex position buffer (shader-location = 0) */
-    glGenBuffers(1, &RGLinfo.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.vbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferElements * 3 * 4 * sizeof(float), RGLinfo.vertices, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
-
-    /* Vertex texcoord buffer (shader-location = 1) */
-    glGenBuffers(1, &RGLinfo.tbo);
-    glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.tbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferElements * 2 * 4 * sizeof(float), RGLinfo.tcoords, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
-
-    /* Vertex color buffer (shader-location = 3) */
-    glGenBuffers(1, &RGLinfo.cbo);
-    glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.cbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferElements * 4 * 4 * sizeof(float), RGLinfo.colors, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
-
-    /* Fill index buffer */
-    glGenBuffers(1, &RGLinfo.ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RGLinfo.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, bufferElements * 6 * sizeof(u16), RGLinfo.indices, GL_STATIC_DRAW);
-
-    /* Unbind the current VAO */
-    if (RGLinfo.vao) 
-        glBindVertexArray(0);
-
-    #ifdef RGL_ALLOC_BATCHES
-    RGLinfo.batches = (RGL_BATCH *)RGL_MALLOC(RGL_MAX_BATCHES * sizeof(RGL_BATCH));
-    #endif
-    
-    #ifdef RGL_ALLOC_MATRIX_STACK
-    RGLinfo.statck = (RGL_MATRIX*)RGL_MALLOC(RGL_MAX_MATRIX_STACK_SIZE * sizeof(RGL_MATRIX));
-    #endif
-
-    u32 i;
-    for (i = 0; i < RGL_MAX_BATCHES; i++) {
-        RGLinfo.batches[i].mode = RGL_QUADS;
-        RGLinfo.batches[i].vertexCount = 0;
-        RGLinfo.batches[i].vertexAlignment = 0;
-        RGLinfo.batches[i].tex = RGLinfo.tex;
-    }
-
-    RGLinfo.bufferCount = 1;    /* Record buffer count */
-    RGLinfo.drawCounter = 1;             /* Reset draws counter */
-#endif /* RGL_MODERN_OPENGL */
-}
-
 void rglRenderBatch() {
     #if defined(RGL_MODERN_OPENGL)
     rglRenderBatchWithShader(RGLinfo.program, 0, 1, 2);
@@ -650,14 +674,20 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
         u32 vertexOffset;
         u32 i;
+
         for (i = 0, vertexOffset = 0; i < RGLinfo.drawCounter; i++) {
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
             glBindTexture(GL_TEXTURE_2D, RGLinfo.batches[i].tex);
 
+            #ifdef RGL_EBO
             if ((RGLinfo.batches[i].mode == RGL_LINES) || (RGLinfo.batches[i].mode == RGL_TRIANGLES)) 
+            #endif
                 glDrawArrays(RGLinfo.batches[i].mode, vertexOffset, RGLinfo.batches[i].vertexCount);
+            
+            #ifdef RGL_EBO
             else
                 glDrawElements(GL_TRIANGLES, RGLinfo.batches[i].vertexCount / 4 * 6, GL_UNSIGNED_SHORT, (GLvoid *)(vertexOffset / 4 * 6 * sizeof(GLushort)));
+            #endif
 
             vertexOffset += (RGLinfo.batches[i].vertexCount + RGLinfo.batches[i].vertexAlignment);
         }

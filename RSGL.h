@@ -767,8 +767,8 @@ void RSGL_window_close(RSGL_window* win) {
     RSGL_windowsOpen--;
 
     if (RSGL_windowsOpen == 0) {
-        #ifndef RSGL_NO_TEXT
         u32 i;
+        #ifndef RSGL_NO_TEXT
         for (i = 0; i < RSGL_font.len; i++)
             RFont_font_free(RSGL_font.fonts[i].f);
 
@@ -778,7 +778,7 @@ void RSGL_window_close(RSGL_window* win) {
         #ifndef GRAPHICS_API_OPENGL_11
         rglClose();
         #endif
-
+        
         for (i = 0; i < RSGL_images_len; i++)
             glDeleteTextures(1, &RSGL_images[i].tex);
     }
@@ -1156,34 +1156,8 @@ void RSGL_drawCube(RSGL_cube r, RSGL_color color) {
 }
 
 /* textures / images */
-u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels) {
-    unsigned int id = 0;
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
-    
-    unsigned int c;
-
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return id;
+u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
+    return rglCreateTexture(bitmap, memsize.w, memsize.h, channels);
 }
 
 u32 RSGL_drawImage(const char* image, RSGL_rect r) {
