@@ -1254,7 +1254,7 @@ void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
 
     glPrerequisites((RSGL_rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color);
   
-    RFont_set_color(color.r, color.b, color.g, color.a);
+    RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
     RFont_draw_text(RSGL_font.f, text, c.x, c.y, c.d);
 
     rglPopMatrix();
