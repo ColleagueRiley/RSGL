@@ -491,7 +491,7 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
          return font->glyphs[i];
 
    font->glyph_len++;
-   
+
    float scale = (float)size / font->fheight;
 
    font->glyphs[i].src = stbtt_FindGlyphIndex(&font->info, codepoint);
