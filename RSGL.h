@@ -301,6 +301,7 @@ inline void RSGL_setGradient(RSGL_color gradient[], size_t len);
 inline void RSGL_defaultClearArgs(); /* toggles if args are cleared by default or not */
 inline void RSGL_clearArgs(); /* clears the args */
 
+inline void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rect rect, RSGL_color c, size_t len);
 /* 2D shape drawing */
 
 void RSGL_drawPoint(RSGL_point p, RSGL_color c);
@@ -662,8 +663,7 @@ bool RSGL_cstr_equal(const char* str, const char* str2) {
 }
 
 
-inline void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF points[], RSGL_point3DF texPoints[], RSGL_rect rect, RSGL_color c, size_t len);
-void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF points[], RSGL_point3DF texPoints[], RSGL_rect rect, RSGL_color c, size_t len) {
+void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rect rect, RSGL_color c, size_t len) {
     rglSetTexture(RSGL_args.texture);
     glEnable(GL_TEXTURE_2D);
 
