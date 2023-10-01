@@ -134,7 +134,7 @@ keys will not be reincluded into RSGL
 #ifdef __APPLE__
 #define RSGLDEF extern inline
 #else
-#define RSGLDEF RSGLDEF
+#define RSGLDEF inline
 #endif
 #endif
 
