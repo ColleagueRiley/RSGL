@@ -57,6 +57,11 @@ RLGL (raylib / Raysay5) - 	{UPDATE : Most of this code was actually based on or 
 								
 */
 
+#ifdef __APPLE__
+#define RGLDEF extern inline
+#else
+#define RGLDEF inline
+#endif
 
 #ifndef RGL_H
 #define RGL_H
@@ -126,15 +131,15 @@ extern "C" {            /* Prevents name mangling of functions */
 #endif
 
 
-inline void rglInit(int width,  i32 height, void* loader);             /* Initialize RGLinfo (buffers, shaders, textures, states) */
-inline void rglClose(void);                             /* De-initialize RGLinfo (buffers, shaders, textures) */
-inline void rglSetFramebufferSize(int width,    i32 height);            /* Set current framebuffer size */
+RGLDEF void rglInit(int width,  i32 height, void* loader);             /* Initialize RGLinfo (buffers, shaders, textures, states) */
+RGLDEF void rglClose(void);                             /* De-initialize RGLinfo (buffers, shaders, textures) */
+RGLDEF void rglSetFramebufferSize(int width,    i32 height);            /* Set current framebuffer size */
 
-inline void rglRenderBatch(void);                         /* Draw render batch data (Update->Draw->Reset) */
-inline void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation);
+RGLDEF void rglRenderBatch(void);                         /* Draw render batch data (Update->Draw->Reset) */
+RGLDEF void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation);
 
-inline void rglSetTexture(u32 id);               /* Set current texture for render batch and check buffers limits */
-inline u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels); /* create texture */
+RGLDEF void rglSetTexture(u32 id);               /* Set current texture for render batch and check buffers limits */
+RGLDEF u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels); /* create texture */
 
 #if defined(RGL_OPENGL_LEGACY)
 #define rglBegin glBegin
@@ -160,35 +165,35 @@ inline u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels); /* 
 #define rglLineWidth glLineWidt
 #else
 
-inline void rglBegin(int mode);
-inline void rglEnd(void);
-inline void rglTexCoord2f(float x, float y); 
+RGLDEF void rglBegin(int mode);
+RGLDEF void rglEnd(void);
+RGLDEF void rglTexCoord2f(float x, float y); 
 
-inline void rglColor3ub(u8 r, u8 g, u8 b);
-inline void rglColor4ub(u8 r, u8 g, u8 b, u8 a);
+RGLDEF void rglColor3ub(u8 r, u8 g, u8 b);
+RGLDEF void rglColor4ub(u8 r, u8 g, u8 b, u8 a);
 
-inline void rglColor3f(float r, float g, float b);
-inline void rglColor4f(float r, float g, float b, float a);
+RGLDEF void rglColor3f(float r, float g, float b);
+RGLDEF void rglColor4f(float r, float g, float b, float a);
 
-inline void rglVertex2f(float x, float y);
-inline void rglVertex3f(float x, float y, float z);
+RGLDEF void rglVertex2f(float x, float y);
+RGLDEF void rglVertex3f(float x, float y, float z);
 
 #define rglViewport glViewport
 #define rglLineWidth glLineWidth
 
-inline void rglMatrixMode(int mode);
-inline void rglPushMatrix(void);
-inline void rglPopMatrix(void);
-inline void rglLoadIdentity(void);
-inline void rglTranslatef(float x, float y, float z);
-inline void rglRotatef(float angle, float x, float y, float z);
-inline void rglMultMatrixf(const float *matf);
-inline void rglOrtho(double left, double right, double bottom, double top, double znear, double zfar);
+RGLDEF void rglMatrixMode(int mode);
+RGLDEF void rglPushMatrix(void);
+RGLDEF void rglPopMatrix(void);
+RGLDEF void rglLoadIdentity(void);
+RGLDEF void rglTranslatef(float x, float y, float z);
+RGLDEF void rglRotatef(float angle, float x, float y, float z);
+RGLDEF void rglMultMatrixf(const float *matf);
+RGLDEF void rglOrtho(double left, double right, double bottom, double top, double znear, double zfar);
 
-static RGL_MATRIX rglMatrixIdentity(void);                       /* Get identity matrix */
-static RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]);  /* Multiply two matrices */
+RGLDEF RGL_MATRIX rglMatrixIdentity(void);                       /* Get identity matrix */
+RGLDEF RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]);  /* Multiply two matrices */
 
-inline i32 rglCheckRenderBatchLimit(int vCount);                             /* Check internal buffer overflow for a given number of vertex */
+RGLDEF i32 rglCheckRenderBatchLimit(int vCount);                             /* Check internal buffer overflow for a given number of vertex */
 
 #endif
 #if defined(__cplusplus)
@@ -281,7 +286,7 @@ typedef struct RGL_INFO {
     u32 vao, vbo, tbo, cbo, ebo; /* array object and array buffers */
 } RGL_INFO;
 
-static RGL_INFO RGLinfo;
+RGL_INFO RGLinfo;
 #endif /* RGL_MODERN_OPENGL */
 
 void rglSetTexture(u32 id) {
@@ -312,7 +317,7 @@ u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels) {
     
     glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
     
-    unsigned int c;
+    unsigned int c = 0;
 
     switch (channels) {
         case 1: c = GL_RED; break;
@@ -952,7 +957,7 @@ void rglLoadIdentity(void) {
 }
 
 /* Get identity matrix */
-static RGL_MATRIX rglMatrixIdentity(void) {
+RGL_MATRIX rglMatrixIdentity(void) {
     return (RGL_MATRIX) { 
         {
             1.0f, 0.0f, 0.0f, 0.0f,
@@ -967,7 +972,7 @@ void rglMultMatrixf(const float* m) {
 	*RGLinfo.matrix = rglMatrixMultiply(RGLinfo.matrix->m, (float*)m);
 }
 
-static RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]) {
+RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]) {
     return (RGL_MATRIX) {
         {
             left[0] * right[0] + left[1] * right[4] + left[2] * right[8] + left[3] * right[12],

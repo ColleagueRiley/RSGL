@@ -130,6 +130,14 @@ keys will not be reincluded into RSGL
 #ifndef RSGL_H
 #define RSGL_H
 
+#ifndef RSGLDEF
+#ifdef __APPLE__
+#define RSGLDEF extern inline
+#else
+#define RSGLDEF RSGLDEF
+#endif
+#endif
+
 #if !defined(u8)
     #include <stdint.h>
 
@@ -249,18 +257,18 @@ RSGL_window
 #ifndef RSGL_NO_WINDOW
 typedef RGFW_window RSGL_window;
 
-inline RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args);
+RSGLDEF RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args);
 
-inline void RSGL_window_setIconImage(RSGL_window* win, const char* image); 
+RSGLDEF void RSGL_window_setIconImage(RSGL_window* win, const char* image); 
 #define RGFW_window_setIcon RSGL_window_setIcon
 
 #define RSGL_window_checkEvent RGFW_window_checkEvent
 
-inline void RSGL_window_makeCurrent(RSGL_window* win);
+RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win);
 
-inline void RSGL_window_clear(RSGL_window* win, RSGL_color color);
+RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 
-inline void RSGL_window_close(RSGL_window* win);
+RSGLDEF void RSGL_window_close(RSGL_window* win);
 
 #define RSGL_window_screenSize RGFW_window_screenSize
 #define RSGL_window_move RGFW_window_move
@@ -279,9 +287,9 @@ RSGL_GRAPHICS_CONTEXT
 *********************
 */
 
-inline void RSGL_initGraphics(RSGL_area r, void* loader);
-inline void RSGL_graphics_clear(RSGL_color c);
-inline void RSGL_graphics_free();
+RSGLDEF void RSGL_initGraphics(RSGL_area r, void* loader);
+RSGLDEF void RSGL_graphics_clear(RSGL_color c);
+RSGLDEF void RSGL_graphics_free();
 
 #endif /* RSGL_GRAPHICS_CONTEXT / !RSGL_NO_WINDOW */
 
@@ -293,15 +301,15 @@ RSGL_draw
 
 
 /* RSGL_draw args */
-inline void RSGL_rotate(RSGL_point3D rotate);
-inline void RSGL_setTexture(u32 texture);
-inline void RSGL_setGradient(RSGL_color gradient[], size_t len);
+RSGLDEF void RSGL_rotate(RSGL_point3D rotate);
+RSGLDEF void RSGL_setTexture(u32 texture);
+RSGLDEF void RSGL_setGradient(RSGL_color gradient[], size_t len);
 
 /* args clear after a draw function by default, this toggles that */
-inline void RSGL_defaultClearArgs(); /* toggles if args are cleared by default or not */
-inline void RSGL_clearArgs(); /* clears the args */
+RSGLDEF void RSGL_defaultClearArgs(); /* toggles if args are cleared by default or not */
+RSGLDEF void RSGL_clearArgs(); /* clears the args */
 
-inline void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rect rect, RSGL_color c, size_t len);
+RSGLDEF void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rect rect, RSGL_color c, size_t len);
 /* 2D shape drawing */
 
 void RSGL_drawPoint(RSGL_point p, RSGL_color c);
@@ -335,27 +343,27 @@ void RSGL_drawOvalOutline(RSGL_rect o, u32 thickness, RSGL_color c);
 void RSGL_drawCube(RSGL_cube r, RSGL_color c);
 
 #ifndef RSGL_NO_TEXT
-inline u32 RSGL_loadFont(const char* font);
+RSGLDEF u32 RSGL_loadFont(const char* font);
 #define RSGL_FONT(str) RSGL_loadFont(str)
 
-inline void RSGL_setFont(u32 font);
+RSGLDEF void RSGL_setFont(u32 font);
 
 typedef struct RFont_font RFont_font;
-inline void RSGL_setRFont(RFont_font* font);
+RSGLDEF void RSGL_setRFont(RFont_font* font);
 
-inline void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
+RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
 #define RSGL_drawTextF(text, font, c, color) \
     RSGL_setFont(font);\
     RSGL_drawText(text, c, color);
 
-inline u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd);
+RSGLDEF u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd);
 #define RSGL_textWidthF(text, fontSize, textEnd) \
     RSGL_setFont(font);\
     RSGL_textWidthF(text, fontSize, textEnd);
 #endif /* RSGL_NO_TEXT */
 
-inline u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,    u8 channels);
-inline u32 RSGL_drawImage(const char* image, RSGL_rect r);
+RSGLDEF u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,    u8 channels);
+RSGLDEF u32 RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) RSGL_drawImage(image, (RSGL_rect){})
 
@@ -384,18 +392,18 @@ typedef struct RSGL_button {
 } RSGL_button;
 
 /* these functions should be run in an event loop */
-inline void RSGL_button_update(
+RSGLDEF void RSGL_button_update(
     RSGL_button* b, /* button pointer */
     RGFW_Event e /* current event */
 );
 
-inline void RSGL_ratio_button_update(
+RSGLDEF void RSGL_ratio_button_update(
     RSGL_button* bArray, /* array of ratio buttons (if you have an array of general buttons I suggest you do something like `buttons + x`) */
     size_t arrayLen, /* size of the array, or last button to update in the array */
     RGFW_Event e
 );
 
-inline void RSGL_slider_update(
+RSGLDEF void RSGL_slider_update(
     RSGL_button* b, /* button pointer */
     /* limits, 
         if the slider moves [up/down], the width should be 0, 
@@ -417,12 +425,12 @@ typedef struct RSGL_textbox {
     size_t index, len, capacity;       
 } RSGL_textbox;
 
-inline RSGL_textbox* RSGL_createTextbox(const char* text, u32 textSize, RSGL_rect box, RSGL_point cursor);
+RSGLDEF RSGL_textbox* RSGL_createTextbox(const char* text, u32 textSize, RSGL_rect box, RSGL_point cursor);
 
-inline void RSGL_textbox_update(RSGL_textbox* texbox, RGFW_Event e);
-inline void RSGL_textbox_draw(RSGL_textbox* textBox, i32 font, RSGL_color c, RSGL_color cursorColor);
+RSGLDEF void RSGL_textbox_update(RSGL_textbox* texbox, RGFW_Event e);
+RSGLDEF void RSGL_textbox_draw(RSGL_textbox* textBox, i32 font, RSGL_color c, RSGL_color cursorColor);
 
-inline void RSGL_textbox_free(RSGL_textbox* tb);
+RSGLDEF void RSGL_textbox_free(RSGL_textbox* tb);
 #endif /* RSGL_NO_TEXT */
 
 #endif /* RGFW_NO_WIDGETS */
@@ -446,20 +454,20 @@ typedef struct RSGL_audio {
 } RSGL_audio;
 
 void RSGL_audio_playFile(RSGL_audio* a, const char* file);
-inline void RSGL_audio_play(RSGL_audio a);
-inline void RSGL_audio_pause(RSGL_audio a);
-inline void RSGL_audio_stop(RSGL_audio a);
-inline void RSGL_audio_free(RSGL_audio a);
+RSGLDEF void RSGL_audio_play(RSGL_audio a);
+RSGLDEF void RSGL_audio_pause(RSGL_audio a);
+RSGLDEF void RSGL_audio_stop(RSGL_audio a);
+RSGLDEF void RSGL_audio_free(RSGL_audio a);
 
 /* write audio info */
-inline void RSGL_audio_setVolume(RSGL_audio a, u32);
-inline void RSGL_audio_seek(RSGL_audio a, u32 position);
+RSGLDEF void RSGL_audio_setVolume(RSGL_audio a, u32);
+RSGLDEF void RSGL_audio_seek(RSGL_audio a, u32 position);
 
 /* get audio info */
-inline u32 RSGL_audio_len(RSGL_audio a);
-inline u32 RSGL_audio_volume(RSGL_audio a);
-inline u32 RSGL_audio_position(RSGL_audio a);
-inline bool RSGL_audio_isPlaying(RSGL_audio a);
+RSGLDEF u32 RSGL_audio_len(RSGL_audio a);
+RSGLDEF u32 RSGL_audio_volume(RSGL_audio a);
+RSGLDEF u32 RSGL_audio_position(RSGL_audio a);
+RSGLDEF bool RSGL_audio_isPlaying(RSGL_audio a);
 
 #endif /* RSGL_NO_AUDIO */
 
@@ -470,17 +478,17 @@ extra
 */
 
 /* wait functions */
-inline bool RSGL_wait(u32 miliseconds);
-inline bool RSGL_wait_frames(u32 frames);
-inline char RSGL_keyCodeToKeyChar(u32 keycode);
+RSGLDEF bool RSGL_wait(u32 miliseconds);
+RSGLDEF bool RSGL_wait_frames(u32 frames);
+RSGLDEF char RSGL_keyCodeToKeyChar(u32 keycode);
 
 /* ** collision functions ** */
-inline bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
-inline bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r);
-inline bool RSGL_circleCollide(RSGL_circle cir1, RSGL_circle cir2);
-inline bool RSGL_rectCollidePoint(RSGL_rect r, RSGL_point p);
-inline bool RSGL_rectCollide(RSGL_rect r, RSGL_rect r2);
-inline bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
+RSGLDEF bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
+RSGLDEF bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r);
+RSGLDEF bool RSGL_circleCollide(RSGL_circle cir1, RSGL_circle cir2);
+RSGLDEF bool RSGL_rectCollidePoint(RSGL_rect r, RSGL_point p);
+RSGLDEF bool RSGL_rectCollide(RSGL_rect r, RSGL_rect r2);
+RSGLDEF bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
 
 #endif /* ndef RSGL_H */
 
@@ -616,7 +624,7 @@ typedef struct RSGL_drawArgs {
     RSGL_rect currentRect; /* size of current window */
 } RSGL_drawArgs;
 
-RSGL_drawArgs RSGL_args = {{0, 0, 0}, 1, 0, 0};
+RSGL_drawArgs RSGL_args = {{0, 0, 0}, 1, { }, 0};
 bool RSGL_argsClear = true;
 
 #ifndef RSGL_NO_TEXT
@@ -642,9 +650,9 @@ typedef struct { const char* img; u32 tex;} RSGL_image;
 RSGL_image* RSGL_images = NULL;
 size_t RSGL_images_len = 0;
 
-inline void glPrerequisites(RSGL_rect r, RSGL_color c);
+RSGLDEF void glPrerequisites(RSGL_rect r, RSGL_color c);
 
-inline bool RSGL_cstr_equal(const char* str, const char* str2);
+RSGLDEF bool RSGL_cstr_equal(const char* str, const char* str2);
 bool RSGL_cstr_equal(const char* str, const char* str2) {
     char* s;
     char* s2 = (char*)str2;
@@ -917,10 +925,7 @@ void RSGL_drawPolygonPro(RSGL_rect o, u32 sides, RSGL_point arc, RSGL_color c) {
     o = (RSGL_rect){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
     float centralAngle = 0;
 
-    static RSGL_pointF points[360 * 4];
-    static RSGL_pointF texPoints[360 * 4];
-
-    i32 x = 0, y;
+    i32 x = 0;
     
     rglSetTexture(RSGL_args.texture);
 
