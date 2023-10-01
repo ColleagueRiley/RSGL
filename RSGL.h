@@ -900,13 +900,13 @@ void RSGL_drawTriangle(RSGL_triangle t, RSGL_color c) {
     
     RSGL_rect r = {t.p2.x, t.p3.y, abs(t.p2.x - t.p1.x), abs(t.p2.y - t.p3.y)};
 
-    RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, sizeof(points)/sizeof(RSGL_point));
+    RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
 }
 
 void RSGL_drawRect(RSGL_rect r, RSGL_color c) {
     RSGL_point3DF points[] = {{r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}};
     RSGL_point3DF texPoints[] = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
-    RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, sizeof(points)/sizeof(RSGL_point));
+    RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
 }
 
 void RSGL_drawRoundRect(RSGL_rect r, RSGL_point rounding, RSGL_color c) {
@@ -989,7 +989,7 @@ void RSGL_drawLine(RSGL_point p1, RSGL_point p2, u32 thickness, RSGL_color c) {
 
     RSGL_rect r = {p1.x, p1.y, (p2.x - p1.x), (p2.y - p1.y)};
 
-    RSGL_BASIC_DRAW(RGL_LINES, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, sizeof(points)/sizeof(RSGL_point));
+    RSGL_BASIC_DRAW(RGL_LINES, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 2);
     rglLineWidth(1);
 }
 
@@ -1000,7 +1000,7 @@ void RSGL_drawTriangleOutline(RSGL_triangle t, u32 thickness, RSGL_color c) {
 
     RSGL_rect r = {t.p2.x, t.p3.y, abs(t.p2.x - t.p1.x), abs(t.p2.y - t.p3.y)};
 
-    RSGL_BASIC_DRAW(RGL_LINES, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, sizeof(points)/sizeof(RSGL_point));
+    RSGL_BASIC_DRAW(RGL_LINES, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 6)
     rglLineWidth(1);
 }
 void RSGL_drawRectOutline(RSGL_rect r, u32 thickness, RSGL_color c) {
