@@ -1000,7 +1000,7 @@ void RSGL_drawTriangleOutline(RSGL_triangle t, u32 thickness, RSGL_color c) {
 
     RSGL_rect r = {t.p2.x, t.p3.y, abs(t.p2.x - t.p1.x), abs(t.p2.y - t.p3.y)};
 
-    RSGL_BASIC_DRAW(RGL_LINES, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 6)
+    RSGL_BASIC_DRAW(RGL_LINES, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 6);
     rglLineWidth(1);
 }
 void RSGL_drawRectOutline(RSGL_rect r, u32 thickness, RSGL_color c) {
