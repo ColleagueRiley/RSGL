@@ -628,8 +628,11 @@ void RFont_draw_text_len(RFont_font* font, const char* text, size_t len, i32 x, 
          y += size;
          continue;
       }
-      if (*str == ' ')
+      
+      if (*str == ' ') {
          x += (size / 4);
+         continue;
+      }
 
       float scale = (float)size / font->fheight;
 
