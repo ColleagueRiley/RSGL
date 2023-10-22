@@ -60,6 +60,7 @@
 			Copyright (c) 2006-2019 Camilla Löwy
 */
 
+#define GL_SILENCE_DEPRECATION
 #ifndef RGFW_MALLOC
 #include <stdlib.h>
 #include <time.h>
@@ -265,7 +266,6 @@ typedef struct RGFW_window {
 
 	#if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 	void* view; /*apple viewpoint thingy*/
-	u32 hideMouse; /*if the mouse is hidden or not*/
 	#endif
 
 	#ifdef RGFW_EGL
@@ -348,14 +348,10 @@ RGFWDEF void RGFW_window_setMouseDefault(RGFW_window* win); /* sets the mouse to
 /* where the mouse is on the screen, x = [0], y = [1] */
 RGFWDEF int* RGFW_window_getGlobalMousePoint(RGFW_window* win);
 
-#ifdef __APPLE__
-RGFWDEF void RGFW_window_hideMouse(RGFW_window* win);
-#else
 #define RGFW_window_hideMouse(win) { \
 	u8 RGFW_blk[] = {0, 0, 0, 0}; /* for c++ support */\
 	RGFW_window_setMouse(win, RGFW_blk, 1, 1, 4); \
 }
-#endif
 
 RGFWDEF void RGFW_window_makeCurrent(RGFW_window* win); /*!< make the window the current opengl drawing context */
 
@@ -421,14 +417,11 @@ Example to get you started :
 
 linux : gcc main.c -lX11 -lXcursor -lGL
 windows : gcc main.c -lopengl32 -lshell32 -lgdi32
-macos:
-	<Silicon> can be replaced to where you have the Silicon headers stored
-	<libSilicon.a> can be replaced to wherever you have libSilicon.a
-	clang main.c -I<Silicon> <libSilicon.a> -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+macos : gcc main.c -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 
-	NOTE(EimaMei): If you want the MacOS experience to be fully single header, then I'd be best to install Silicon (after compiling)
-	by going to the `Silicon` folder and running `make install`. After this you can easily include Silicon via `#include <Silicon/silicon.h>'
-	and link it by doing `-lSilicon`
+MACOS NOTE(Colleague Riley): MacOS requires silicon.h to either be included with RGFW or installed globally
+							This is because MacOS uses Objective-C for the API so Silicon.h is required to use it in pure C
+MACOS NOTE(EimaMei): If you want the MacOS experience to be fully single header, then I'd be best to install Silicon into /usr/local/include
 
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
@@ -476,29 +469,9 @@ int main() {
 		linux:
 			gcc -shared RGFW.o -lX11 -lXcursor -lGL -o RGFW.so
 		macos:
-			<Silicon/include> can be replaced to where you have the Silicon headers stored
-			<libSilicon.a> can be replaced to wherever you have libSilicon.a
-			gcc -shared RGFW.o -framework Foundation <libSilicon.a> -framework AppKit -framework OpenGL -framework CoreVideo -I<Silicon/include>
+			gcc -shared RGFW.o -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 
-	installing/building silicon (macos)
-
-	Silicon does not need to be installde per se.
-	I personally recommended that you use the Silicon included using RGFW
-
-	to build this version of Silicon simplly run
-
-	cd Silicon && make
-	
-    Alternatively, you also can find pre-built binaries for Silicon at
-    https://github.com/ColleagueRiley/Silicon/tree/binaries
-
-	you can then use Silicon/include and libSilicon.a for building RGFW projects
-
-	ex.
-	gcc main.c -framework Foundation -lSilicon -framework AppKit -framework OpenGL -framework CoreVideo -ISilicon/include
-
-	I also suggest you compile Silicon (and RGFW if applicable)
-	per each time you compile your application so you know that everything is compiled for the same architecture.
+	Silicon.h, silicon.h is a header file that either needs to be carried around with RGFW or installed into the include folder
 */
 
 #ifdef RGFW_IMPLEMENTATION
@@ -2715,8 +2688,8 @@ void RGFW_setThreadPriority(RGFW_thread thread, u8 priority) { SetThreadPriority
 #endif
 
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
-#define GL_SILENCE_DEPRECATION
-#include <Silicon/silicon.h>
+#define SILICON_IMPLEMENTATION
+#include "silicon.h"
 #include <OpenGL/gl.h>
 	
 void* RGFWnsglFramework = NULL; 
@@ -2775,8 +2748,7 @@ bool performDragOperation(id self, SEL cmd, NSDraggingInfo* sender) {
 	if (!found)
 		i = 0;
 
-
-	siArray(Class) array = si_array_init((Class[]){class(objctype(NSURL))}, sizeof(*array), 1);
+	siArray(Class) array = si_array_init((Class[]){SI_NS_CLASSES[NS_URL_CODE]}, sizeof(*array), 1);
 	siArray(char*) droppedFiles = (siArray(char*))NSPasteboard_readObjectsForClasses(NSDraggingInfo_draggingPasteboard(sender), array, NULL);
 
 	RGFW_windows[i]->event.droppedFilesCount = si_array_len(droppedFiles);
@@ -2797,23 +2769,43 @@ bool performDragOperation(id self, SEL cmd, NSDraggingInfo* sender) {
     return true;
 }
 
+typedef void NSNotification;
+void RGFW_windowDidResize(void* sender, NSNotification *notification) {
+printf("resize\n");
+    // Handle window resize logic here...
+}
 
-RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64 args){
-	static u8 RGFW_loaded = 0;
-	
-	RGFW_window* win = RGFW_MALLOC(sizeof(RGFW_window));
+NSApplication* NSApp;
+
+RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64 args) {
+    static u8 RGFW_loaded = 0;
+
+	/* NOTE(EimaMei): Why does Apple hate good code? Like wtf, who thought of methods being a great idea???
+	Imagine a universe, where MacOS had a proper system API (we would probably have like 20% better performance).
+	*/
+	si_func_to_SEL_with_name(SI_DEFAULT, "windowShouldClose", RGFW_OnClose);
+	si_func_to_SEL_with_name(SI_DEFAULT, "NSWindowDidResizeNotification", RGFW_windowDidResize);
+	si_func_to_SEL_with_name("NSWindow", "windowDidResize", RGFW_windowDidResize);
+
+	/* NOTE(EimaMei): Fixes the 'Boop' sfx from constantly playing each time you click a key. Only a problem when running in the terminal. */
+	si_func_to_SEL("NSWindow", acceptsFirstResponder);
+	si_func_to_SEL("NSWindow", performKeyEquivalent);
+
+	void* WindowDelegateClass = objc_allocateClassPair((Class)objc_getClass("NSObject"), "WindowDelegate", 0);
+	class_addMethod(WindowDelegateClass, sel_registerName("windowDidResize:"), (IMP)RGFW_windowDidResize,  "v@:@");
+
+	RGFW_window* win = (RGFW_window*)malloc(sizeof(RGFW_window));
+    if (!win) {
+        // Handle memory allocation error
+        fprintf(stderr, "Failed to allocate memory for window\n");
+        exit(EXIT_FAILURE);
+    }
+
+    NSApp = NSApplication_sharedApplication();
 
 	u32* r = RGFW_window_screenSize(win);
 
-	u32 i;
-	#ifdef RGFW_ALLOC_DROPFILES
-    win->event.droppedFiles = (char**)RGFW_MALLOC(sizeof(char*) * RGFW_MAX_DROPS);
-	
-	for (i = 0; i < RGFW_MAX_DROPS; i++)
-		win->event.droppedFiles[i] = (char*)RGFW_CALLOC(RGFW_MAX_PATH, sizeof(char));
-	#endif
-
-	if (RGFW_FULLSCREEN & args){
+	if (RGFW_FULLSCREEN & args) {
 		x = 0;
 		y = 0;
 		w = r[0];
@@ -2821,7 +2813,7 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	}
 
 	if (RGFW_CENTER & args) {
-		x = (r[0] - w) / 1.1;
+		x = (r[0] - w) / 4;
 		y = (r[1] - h) / 4;
 	}
 
@@ -2836,10 +2828,20 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 
 	win->fpsCap = 0;
 	win->event.inFocus = 0;
-	win->hideMouse = 0;
 	win->event.type = 0;
 	win->event.droppedFilesCount = 0;
 
+	win->cursor = NSCursor_currentCursor();
+
+	u32 i;
+	#ifdef RGFW_ALLOC_DROPFILES
+    win->event.droppedFiles = (char**)RGFW_MALLOC(sizeof(char*) * RGFW_MAX_DROPS);
+	
+	for (i = 0; i < RGFW_MAX_DROPS; i++)
+		win->event.droppedFiles[i] = (char*)RGFW_CALLOC(RGFW_MAX_PATH, sizeof(char));
+	#endif
+
+    NSRect windowRect = NSMakeRect(win->x, win->y, win->w, win->h);
 	NSBackingStoreType macArgs = NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable | NSBackingStoreBuffered | NSWindowStyleMaskTitled;
 
 	if (!(RGFW_NO_RESIZE & args))
@@ -2849,10 +2851,22 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	else
 		macArgs |= NSWindowStyleMaskBorderless;
 
-
-	win->window = NSWindow_init(NSMakeRect(x, y, w, h), macArgs, false, NULL);
+    win->window = NSWindow_init(windowRect, macArgs, NSBackingStoreBuffered, false);
+	NSWindow_contentView_setWantsLayer(win->window, true);
+	NSRetain(win->window);
 	NSWindow_setTitle(win->window, name);
 
+    if (RGFW_TRANSPARENT_WINDOW & args) {
+		#ifdef RGFW_GL
+		i32 opacity = 0;
+		NSOpenGLContext_setValues(win->glWin, &opacity, NSOpenGLContextParameterSurfaceOpacity);
+		#endif
+		NSWindow_setOpaque(win->window, false);
+		NSWindow_setBackgroundColor(win->window, NSColor_colorWithSRGB(0, 0, 0, 0));
+		NSWindow_setAlphaValue(win->window, 0x00);
+	}
+
+	#ifdef RGFW_GL
 	NSOpenGLPixelFormatAttribute attributes[] = {
 		NSOpenGLPFANoRecovery,
 		NSOpenGLPFAAccelerated,
@@ -2869,69 +2883,60 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
         attributes[12] = (RGFW_majorVersion  >= 4) ? NSOpenGLProfileVersion4_1Core : NSOpenGLProfileVersion3_2Core;
 	}
 
-	#ifdef RGFW_GL
 	NSOpenGLPixelFormat* format = NSOpenGLPixelFormat_initWithAttributes(attributes);
 	win->view = NSOpenGLView_initWithFrame(NSMakeRect(0, 0, w, h), format);
 	NSOpenGLView_prepareOpenGL(win->view);
 
 	RGFW_window_swapInterval(win, 1);
-	#endif
-
-	if (RGFW_ALLOW_DND & args) {
-		siArray(NSPasteboardType) array = si_array_init((NSPasteboardType[]){NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString}, sizeof(*array), 3);
-	    NSView_registerForDraggedTypes(win->window, array);
-		si_array_free(array);
-	}
-
-    if (RGFW_TRANSPARENT_WINDOW & args) {
-		#ifdef RGFW_GL
-		i32 opacity = 0;
-		NSOpenGLContext_setValues(win->glWin, &opacity, NSOpenGLContextParameterSurfaceOpacity);
-		#endif
-		NSWindow_setOpaque(win->window, false);
-		NSWindow_setBackgroundColor(win->window, NSColor_colorWithSRGB(0, 0, 0, 0));
-		NSWindow_setAlphaValue(win->window, 0x00);
-	}
-
-	#ifdef RGFW_GL
 	NSOpenGLContext_makeCurrentContext(win->glWin);
+
+	#else
+    NSRect contentRect = NSMakeRect(0, 0, w, h);
+    win->view = NSView_initWithFrame(contentRect);
 	#endif
+	
 	#ifdef RGFW_OSMESA
 	win->glWin = OSMesaCreateContext(OSMESA_RGBA, NULL);
 	win->buffer = RGFW_MALLOC(w * h * 4);
 	OSMesaMakeCurrent(win->glWin, win->buffer, GL_UNSIGNED_BYTE, w, h);
-
-	#ifdef RGFW_GL
-    win->render = 0;
+	
+	#ifdef RGFW_OPENGL
+	win->render = 0;
 	#endif
 	#endif
 
-	NSWindow_setContentView(win->window, (NSView*)win->view);
+	#ifdef RGFW_BUFFER
+	win->buffer = RGFW_MALLOC(w * h * 4);
+	win->render = 1;
+	#endif
+
+    NSWindow_setContentView(win->window, win->view);
+
+	if (RGFW_ALLOW_DND & args) {
+		siArray(NSPasteboardType) array = si_array_init((NSPasteboardType[]){NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString}, sizeof(*array), 3);
+	    NSView_registerForDraggedTypes(win->view, array);
+		si_array_free(array);
+
+		/* NOTE(EimaMei): Drag 'n Drop requires too many damn functions for just a Drag 'n Drop event. */
+		si_func_to_SEL("NSWindow", draggingEntered);
+		si_func_to_SEL("NSWindow", draggingUpdated);
+		si_func_to_SEL("NSWindow", prepareForDragOperation);
+		si_func_to_SEL("NSWindow", performDragOperation);
+	}
+
+    // Show the window
+    NSWindow_makeKeyAndOrderFront(win->window, NULL);
 	NSWindow_setIsVisible(win->window, true);
-	NSWindow_contentView_wantsLayer(win->window, true);
 
-	if (!RGFW_loaded) {
+	NSApplication_setActivationPolicy(NSApp, NSApplicationActivationPolicyRegular);
+	NSApplication_finishLaunching(NSApp);
+		
+	if (!RGFW_loaded) {	
 		NSWindow_makeMainWindow(win->window);
 
 		RGFW_loaded = 1;
     }
-
-	/* NOTE(EimaMei): Why does Apple hate good code? Like wtf, who thought of methods being a great idea???
-	Imagine a universe, where MacOS had a proper system API (we would probably have like 20% better performance).
-	*/
-	si_func_to_SEL_with_name(SI_DEFAULT, "windowShouldClose", RGFW_OnClose);
-
-	/* NOTE(EimaMei): Fixes the 'Boop' sfx from constantly playing each time you click a key. Only a problem when running in the terminal. */
-	si_func_to_SEL("NSWindow", acceptsFirstResponder);
-	si_func_to_SEL("NSWindow", performKeyEquivalent);
-
-	/* NOTE(EimaMei): Drag 'n Drop requires too many damn functions for just a Drag 'n Drop event. */
-	si_func_to_SEL("NSWindow", draggingEntered);
-	si_func_to_SEL("NSWindow", draggingUpdated);
-	si_func_to_SEL("NSWindow", prepareForDragOperation);
-	si_func_to_SEL("NSWindow", performDragOperation);
-
-
+	
 	RGFW_windows_size++;
 
 	RGFW_window** nWins = (RGFW_window**)malloc(sizeof(RGFW_window*) * RGFW_windows_size);
@@ -2949,22 +2954,21 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 			break;
 		}
 
-	NSApplication_sharedApplication(NSApp);
-	NSApplication_setActivationPolicy(NSApp, NSApplicationActivationPolicyRegular);
-	NSApplication_finishLaunching(NSApp);
-
-	return win;
+    return win;
 }
+
 
 u32* RGFW_window_screenSize(RGFW_window* win){
 	static u32 RGFW_SreenSize[2];
+	static CGDirectDisplayID display = 0;
+	
+	if (display == 0)
+		display = CGMainDisplayID();
+	
+	RGFW_SreenSize[0] = CGDisplayPixelsWide(display);
+	RGFW_SreenSize[1] = CGDisplayPixelsHigh(display);
 
-	NSRect r = NSScreen_frame(NSScreen_mainScreen());
-
-	RGFW_SreenSize[0] = r.size.width;
-	RGFW_SreenSize[1] =  r.size.height;
-
-	return (unsigned int[2]){r.size.width, r.size.height};
+	return RGFW_SreenSize;
 }
 
 int* RGFW_window_getGlobalMousePoint(RGFW_window* win) {
@@ -2978,7 +2982,6 @@ int* RGFW_window_getGlobalMousePoint(RGFW_window* win) {
 u32 RGFW_keysPressed[10]; /*10 keys at a time*/
 
 RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
-
 	if (win->event.droppedFilesCount) {
 		i32 i;
 		for (i = 0; i < win->event.droppedFilesCount; i++)
@@ -2998,12 +3001,12 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 			NSCursor_set(win->cursor);
 	}
 
-	NSEvent* e = NSApplication_nextEventMatchingMask(NSApp, NSEventMaskAny, NULL, 0, true);
+	NSEvent* e = NSApplication_nextEventMatchingMask(NSApp, NSEventMaskAny, NSDate_distantFuture(), NSDefaultRunLoopMode, true);
 
 	if (NSEvent_window(e) == win->window) {
 		u8 button = 0;
 
-		switch(NSEvent_type(e)){
+		switch (NSEvent_type(e)) {
 			case NSEventTypeKeyDown:
 				win->event.type = RGFW_keyPressed;
 				win->event.keyCode = (u16)NSEvent_keyCode(e);
@@ -3065,6 +3068,7 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 				win->event.type = RGFW_mousePosChanged;
 
 				NSPoint p = NSEvent_locationInWindow(e);
+
 				win->event.x = p.x;
 				win->event.y = p.y;
 				break;
@@ -3073,7 +3077,7 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 			default: break;
 		}
 
-		if (win->cursorChanged && NSPointInRect(NSEvent_mouseLocation(e), NSWindow_frame(win->window))) {
+		if (win->cursorChanged && win->event.inFocus) {
 			if (win->cursor == NULL)
 				CGDisplayHideCursor(kCGDirectMainDisplay);
 			else {
@@ -3131,7 +3135,6 @@ RGFWDEF void RGFW_window_setName(RGFW_window* win, char* name) {
 }
 
 void RGFW_window_setIcon(RGFW_window* win, u8* data, i32 width, i32 height, i32 channels) {
-
 	/* code by EimaMei  */
     // Make a bitmap representation, then copy the loaded image into it.
     NSBitmapImageRep* representation = NSBitmapImageRep_initWithBitmapData(NULL, width, height, 8, channels, (channels == 4), false, "NSCalibratedRGBColorSpace", NSBitmapFormatAlphaNonpremultiplied, width * channels, 8 * channels);
@@ -3181,20 +3184,11 @@ void RGFW_window_setMouse(RGFW_window* win, u8* image, i32 width, i32 height, i3
     release(representation);
 }
 
-void RGFW_window_hideMouse(RGFW_window* win) {
-	if (win->cursor != NULL && win->cursor != NULL)
-		release(win->cursor);
-	
-	win->cursor = (void*)-1;
-	win->cursorChanged = true;
-}
-
 void RGFW_window_setMouseDefault(RGFW_window* win) {
 	if (win->cursor != NULL && win->cursor != NULL)
 		release(win->cursor);
 	
-	win->cursor = NULL;
-	win->cursorChanged = true;
+	RGFW_window_setMouse(win, NULL, 0, 0, 0);
 }
 
 u8 RGFW_isPressedI(RGFW_window* win, u32 key) {
@@ -3405,7 +3399,9 @@ void RGFW_window_swapBuffers(RGFW_window* win) {
 
 		struct CGImage* myImage = CGBitmapContextCreateImage(bitmapContext);
 
-		CGContextDrawImage(NSGraphicsContext_currentContext(), rect, myImage);
+		NSGraphicsContext* context = NSGraphicsContext_currentContext(NULL);
+
+		CGContextDrawImage(context, rect, myImage);
 
 		CGContextRelease(bitmapContext);
 		CGImageRelease(myImage);

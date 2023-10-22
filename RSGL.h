@@ -138,6 +138,8 @@ keys will not be reincluded into RSGL
 #endif
 #endif
 
+#define RGFWDEF RSGLDEF
+
 #if !defined(u8)
     #include <stdint.h>
 
@@ -351,6 +353,7 @@ RSGLDEF void RSGL_setFont(u32 font);
 typedef struct RFont_font RFont_font;
 RSGLDEF void RSGL_setRFont(RFont_font* font);
 
+RSGLDEF void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
 #define RSGL_drawTextF(text, font, c, color) \
     RSGL_setFont(font);\
@@ -1249,7 +1252,7 @@ void RSGL_setRFont(RFont_font* font) {
     RSGL_font.f = font;
 }
 
-void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
+void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color) {
     glEnable(GL_BLEND);
 
     if (text == NULL || text[0] == '\0')
@@ -1260,13 +1263,17 @@ void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
     glPrerequisites((RSGL_rect) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color);
   
     RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
-    RFont_draw_text(RSGL_font.f, text, c.x, c.y, c.d);
+    RFont_draw_text_len(RSGL_font.f, text, len, c.x, c.y, c.d, 0.0f);
 
     rglPopMatrix();
 }
 
+void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
+    RSGL_drawText_len(text, 0, c, color);
+}
+
 u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd) {
-    return RFont_text_width(RSGL_font.f, text, fontSize);
+    return RFont_text_width_len(RSGL_font.f, text, fontSize, textEnd);
 }
 #endif /* RSGL_NO_TEXT */
 

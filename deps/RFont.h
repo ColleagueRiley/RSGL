@@ -551,7 +551,10 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
       if (RFont_decode_utf8(&utf8state, &codepoint, *(const u8*)str) != RFONT_UTF8_ACCEPT)
          continue;
 
-      const u8 i = codepoint - ' ';
+      u32 i;
+      for (i = 0; i < font->glyph_len; i++)
+         if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == size)
+            break;
       
       if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == size) {
          glyph = font->glyphs[i].src;
@@ -595,7 +598,8 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
 
    if (x > width)
       width = x;
-
+      
+   printf("%i\n", width);
    return width;
 }
 
