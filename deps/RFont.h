@@ -599,7 +599,6 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
    if (x > width)
       width = x;
       
-   printf("%i\n", width);
    return width;
 }
 
