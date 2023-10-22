@@ -47,4 +47,4 @@ events:
 	gcc events.c $(LIBS) $(ARGS) -o events
 
 clean:
-	rm events glfw shapes RSGL.o
+	rm -f events glfw shapes RSGL.o

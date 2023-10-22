@@ -35,7 +35,7 @@ examples:
 	cd examples && make
 
 clean:
-	rm libRSGL.so RSGL.o libRSGL.a
+	rm -f libRSGL.so RSGL.o libRSGL.a
 	cd examples && make clean
 
 install:
