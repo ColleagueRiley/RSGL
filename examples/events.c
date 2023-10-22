@@ -4,7 +4,7 @@
 #endif
 
 #define RSGL_NO_AUDIO
-#define RSGL_IMPLEMENTATION
+#define RSGLDEF 
 #include "RSGL.h"
 #include <stdio.h>
 

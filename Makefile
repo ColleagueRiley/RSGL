@@ -24,14 +24,19 @@ all:
 	make RSGL.o	
 	gcc RSGL.o -shared -O3 $(LIBS) -lm -o libRSGL.$(EXT)
 	ar rcs libRSGL.a *.o
+	make examples
 
 RSGL.o:
 	cp RSGL.h RSGL.c
 	gcc -c -Wall RSGL.c -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
 	rm RSGL.c
 
+examples:
+	cd examples && make
+
 clean:
 	rm libRSGL.so RSGL.o libRSGL.a
+	cd examples && make clean
 
 install:
 	sudo cp libRSGL.so /usr/lib
