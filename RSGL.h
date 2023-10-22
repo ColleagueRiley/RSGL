@@ -808,8 +808,7 @@ RSGL_GRAPHICS_CONTEXT
 
 void RSGL_initGraphics(RSGL_area r, void* loader) {
     #ifndef GRAPHICS_API_OPENGL_11
-    rglLoadExtensions(loader);
-    RGLInit(r.w, r.h);
+    rglInit(r.w, r.h, loader);
 
     // Init state: Blending mode
     glClearDepth(1.0f);
@@ -824,7 +823,7 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
     glEnable(GL_CULL_FACE);        
 
-    rglMatrixMode(RL_PROJECTION);    // Switch to projection matrix
+    rglMatrixMode(RGL_PROJECTION);    // Switch to projection matrix
     rglPushMatrix();                 // Save previous matrix, which contains the settings for the 2d ortho projection
     rglLoadIdentity();               // Reset current matrix (projection)
     #endif
@@ -832,31 +831,35 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
 
     #ifndef RSGL_NO_TEXT
-    RSGL_fonsContext = glfonsCreate(500, 500, 1);
+    RFont_init(r.w, r.h);
     #endif
 }
 
 void RSGL_graphics_clear(RSGL_color color) {
-    rglClearScreenBuffers();
-    rglDrawRenderBatchActive();
-    
-    rglClearColor(color.r, color.g, color.b, color.a);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    rglRenderBatch();
 }
 
 void RSGL_graphics_free() {
+    u32 i;
     #ifndef RSGL_NO_TEXT
-    fonsDeleteInternal(RSGL_fonsContext);
+    for (i = 0; i < RSGL_font.len; i++)
+        RFont_font_free(RSGL_font.fonts[i].f);
+
+    free(RSGL_font.fonts);
     #endif
 
     #ifndef GRAPHICS_API_OPENGL_11
-    RGLClose();
+    rglClose();
     #endif
 
-    if (images != NULL) {
+    if (RSGL_images != NULL) {
         i32 i;
         for (i = 0; i < RSGL_images_len; i++)
-            glDeleteTextures(1, RSGL_images[i]);
-        free(images);
+            glDeleteTextures(1, RSGL_images[i].tex);
+        free(RSGL_images);
     }
 }
 #endif /* RSGL_GRAPHICS_CONTEXT / !RGFW_NO_WINDOW */
@@ -1637,6 +1640,7 @@ bool RSGL_wait_frames(u32 frames) {
     return !(i % frames);
 }
 
+#ifndef RSGL_NO_WINDOW
 char RSGL_keyCodeToKeyChar(u32 keycode) {
     switch (keycode) {  
         case RGFW_Backtick: return '`';
@@ -1670,6 +1674,7 @@ char RSGL_keyCodeToKeyChar(u32 keycode) {
         default: return '\0';
     }
 }
+#endif
 
 /* collision detection */
 bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p) { return RSGL_circleCollideRect(c, (RSGL_rect) {p.x, p.y, 1, 1}); }
