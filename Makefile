@@ -8,24 +8,21 @@ else
 endif
 
 ifeq ($(detected_OS),Windows)
-	LIBS := -lopengl32 -lshell32 -lgdi32 -lm
+	LIBS := -lopengl32 -lshell32 -lgdi32
 	EXT = dll
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
-	LIBS := ./deps/Silicon/source/*.o -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+	LIBS := -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 	EXT = dylib
 endif
 ifeq ($(detected_OS),Linux)
-    LIBS := -I./include -lX11 -lGLX -lm
+    LIBS := -lX11 -lGLX
 	EXT = so
 endif
 
 all:
-	@if [ $(shell uname) = Darwin ]; then\
-		make deps/Silicon/source/mac.o;\
-	fi
 	make RSGL.o	
-	gcc RSGL.o -shared -O3 -I./include $(LIBS) -o libRSGL.$(EXT)
+	gcc RSGL.o -shared -O3 $(LIBS) -lm -o libRSGL.$(EXT)
 	ar rcs libRSGL.a *.o
 
 RSGL.o:
@@ -35,9 +32,6 @@ RSGL.o:
 
 clean:
 	rm libRSGL.so RSGL.o libRSGL.a
-
-deps/Silicon/source/mac.o:
-	cd deps/Silicon/source/ && gcc -c *.m -I../
 
 install:
 	sudo cp libRSGL.so /usr/lib
