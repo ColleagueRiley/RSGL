@@ -23,7 +23,7 @@ ARGS = RSGL.o -I../
 
 all:
 	make RSGL.o
-	#make glfw
+	make glfw
 	make shapes
 	make events
 
