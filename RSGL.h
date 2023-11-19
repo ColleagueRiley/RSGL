@@ -249,6 +249,16 @@ RGFW_FUNCTION_DEFINES
 #define RSGL_window_swapInterval RGFW_window_swapInterval
 #define RSGL_getProcAddress RGFW_getProcAddress
 #define RSGL_window_checkFPS RGFW_window_checkFPS
+#define RSGL_window_setMinSize RGFW_window_setMinSize
+#define RSGL_window_setMaxSize RGFW_window_setMaxSize
+#define RSGL_window_maximize RGFW_window_maximize
+#define RSGL_window_minimize RGFW_window_minimize
+#define RSGL_window_restore RGFW_window_restore
+#define RSGL_window_shouldClose RGFW_window_shouldClose
+#define RSGL_window_isFullscreen RGFW_window_isFullscreen
+#define RSGL_window_isHidden RGFW_window_isHidden
+#define RSGL_isMinimized RGFW_isMinimized
+#define RSGL_isMaximized RGFW_isMaximized
 
 /* 
 *******

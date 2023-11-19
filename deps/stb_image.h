@@ -6304,24 +6304,24 @@ static stbi_uc *stbi__readval(stbi__context *s, int channel, stbi_uc *dest)
 
 static void stbi__copyval(int channel,stbi_uc *dest,const stbi_uc *src)
 {
-   int mask=0x80,i;
+   int mask = 0x80, i;
 
-   for (i=0;i<4; ++i, mask>>=1)
+   for (i = 0; i < 4; ++i, mask>>=1)
       if (channel&mask)
          dest[i]=src[i];
 }
 
 static stbi_uc *stbi__pic_load_core(stbi__context *s,int width,int height,int *comp, stbi_uc *result)
 {
-   int act_comp=0,num_packets=0,y,chained;
+   int act_comp = 0, num_packets = 0 , y, chained;
    stbi__pic_packet packets[10];
 
    // this will (should...) cater for even some bizarre stuff like having data
     // for the same channel in multiple packets.
    do {
-      stbi__pic_packet *packet;
+      stbi__pic_packet* packet;
 
-      if (num_packets==sizeof(packets)/sizeof(packets[0]))
+      if (num_packets == sizeof(packets)/sizeof(packets[0]))
          return stbi__errpuc("bad format","too many packets");
 
       packet = &packets[num_packets++];
@@ -7446,6 +7446,7 @@ static void *stbi__pnm_load(stbi__context *s, int *x, int *y, int *comp, int req
    if (!stbi__mad4sizes_valid(s->img_n, s->img_x, s->img_y, ri->bits_per_channel / 8, 0))
       return stbi__errpuc("too large", "PNM too large");
 
+
    out = (stbi_uc *) stbi__malloc_mad4(s->img_n, s->img_x, s->img_y, ri->bits_per_channel / 8, 0);
    if (!out) return stbi__errpuc("outofmem", "Out of memory");
    stbi__getn(s, out, s->img_n * s->img_x * s->img_y * (ri->bits_per_channel / 8));
@@ -7457,15 +7458,13 @@ static void *stbi__pnm_load(stbi__context *s, int *x, int *y, int *comp, int req
    return out;
 }
 
-static int      stbi__pnm_isspace(char c)
-{
-   return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
-}
-
 static void     stbi__pnm_skip_whitespace(stbi__context *s, char *c)
 {
    for (;;) {
-      while (!stbi__at_eof(s) && stbi__pnm_isspace(*c))
+      while (
+               !stbi__at_eof(s) &&
+               (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\v' || *c == '\f' || *c == '\r')
+            )
          *c = (char) stbi__get8(s);
 
       if (stbi__at_eof(s) || *c != '#')
@@ -7478,7 +7477,7 @@ static void     stbi__pnm_skip_whitespace(stbi__context *s, char *c)
 
 static int      stbi__pnm_isdigit(char c)
 {
-   return c >= '0' && c <= '9';
+   return c >= '0' && c <= '9'; 
 }
 
 static int      stbi__pnm_getinteger(stbi__context *s, char *c)

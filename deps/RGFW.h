@@ -230,7 +230,8 @@ typedef struct RGFW_Event {
 	i8 axis[4][2]; /* x, y of axises (-100 to 100) */
 
 		
-	clock_t current_ticks, delta_ticks;
+	u32 current_ticks, frames;
+	
 	u32 fps; /*the current fps of the window [the fps is checked when events are checked]*/
 	u32 inFocus;  /*if the window is in focus or not*/
 } RGFW_Event; /*!< Event structure for checking/getting events */
@@ -330,6 +331,13 @@ RGFWDEF void RGFW_window_resize(RGFW_window* win,
 							u32 h
 						);
 
+RGFWDEF void RGFW_window_setMinSize(RGFW_window* win, u32 width, u32 height);
+RGFWDEF void RGFW_window_setMaxSize(RGFW_window* win, u32 width, u32 height);
+
+RGFWDEF void RGFW_window_maximize(RGFW_window* win);
+RGFWDEF void RGFW_window_minimize(RGFW_window* win);
+RGFWDEF void RGFW_window_restore(RGFW_window* win);
+
 RGFWDEF void RGFW_window_setName(RGFW_window* win,
 								char* name
 							);
@@ -352,6 +360,17 @@ RGFWDEF int* RGFW_window_getGlobalMousePoint(RGFW_window* win);
 	u8 RGFW_blk[] = {0, 0, 0, 0}; /* for c++ support */\
 	RGFW_window_setMouse(win, RGFW_blk, 1, 1, 4); \
 }
+
+/* if the window should close (RGFW_close was sent or escape was pressed) */
+RGFWDEF u8 RGFW_window_shouldClose(RGFW_window* win); 
+/* if window is fullscreen'd */
+RGFWDEF u8 RGFW_window_isFullscreen(RGFW_window* win);
+/* if window is hidden */
+RGFWDEF u8 RGFW_window_isHidden(RGFW_window* win);
+/* if window is minimized */
+RGFWDEF u8 RGFW_isMinimized(RGFW_window* win);
+/* if window is maximized */
+RGFWDEF u8 RGFW_isMaximized(RGFW_window* win);
 
 RGFWDEF void RGFW_window_makeCurrent(RGFW_window* win); /*!< make the window the current opengl drawing context */
 
@@ -408,6 +427,10 @@ RGFWDEF void RGFW_window_swapInterval(RGFW_window* win, i32 swapInterval);
 
 /*! Supporting functions */
 RGFWDEF void RGFW_window_checkFPS(RGFW_window* win); /*!< updates fps / sets fps to cap (ran by RGFW_window_checkEvent)*/
+RGFWDEF u32 RGFW_getTime(void); /* get time in seconds */
+RGFWDEF u32 RGFW_getTimeNS(void); /* get time in nanoseconds */
+RGFWDEF u32 RGFW_getFPS(void); /* get current FPS (win->event.fps) */
+RGFWDEF void RGFW_sleep(u32 microsecond); /* sleep for a set time */
 #endif /* RGFW_HEADER */
 
 /*
@@ -473,6 +496,16 @@ int main() {
 
 	Silicon.h, silicon.h is a header file that either needs to be carried around with RGFW or installed into the include folder
 */
+
+#ifdef RGFW_X11
+#define RGFW_OS_BASED_VALUE(l, w, m) l
+#endif
+#ifdef RGFW_WINDOWS
+#define RGFW_OS_BASED_VALUE(l, w, m) w
+#endif
+#ifdef __APPLE__
+#define RGFW_OS_BASED_VALUE(l, w, m) m
+#endif
 
 #ifdef RGFW_IMPLEMENTATION
 
@@ -1127,8 +1160,6 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	if (RGFW_OPENGL & args) {
 	#endif
 		glXMakeCurrent((Display *)win->display, (Drawable)win->window, (GLXContext)win->glWin);
-
-		RGFW_window_swapInterval(win, 1);
 	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER)
 		win->render = 0;
 	}
@@ -1219,7 +1250,6 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 	if (XEventsQueued((Display*)win->display, QueuedAlready) + XEventsQueued((Display*)win->display, QueuedAfterReading))
 		XNextEvent((Display*)win->display, &E);
 	else {
-		win->event.current_ticks = clock();
 		return NULL;
 	}
 
@@ -1702,6 +1732,45 @@ void RGFW_window_resize(RGFW_window* win, u32 w, u32 h) {
 	XResizeWindow((Display *)win->display, (Window)win->window, w, h);
 }
 
+void RGFW_window_setMinSize(RGFW_window* win, u32 width, u32 height) {
+    XSizeHints hints;
+    long flags;
+
+    XGetWMNormalHints(win->display, (Window)win->window, &hints, &flags);
+
+    hints.flags |= PMinSize;
+
+    hints.min_width = width;
+    hints.min_height = height;
+
+    XSetWMNormalHints(win->display, (Window)win->window, &hints);
+}
+
+void RGFW_window_setMaxSize(RGFW_window* win, u32 width, u32 height) {
+    XSizeHints hints;
+    long flags;
+
+    XGetWMNormalHints(win->display, (Window)win->window, &hints, &flags);
+
+    hints.flags |= PMaxSize;
+
+    hints.max_width = width;
+    hints.max_height = height;
+
+    XSetWMNormalHints(win->display, (Window)win->window, &hints);
+}
+
+
+void RGFW_window_minimize(RGFW_window* win) {
+    XIconifyWindow(win->display, (Window)win->window, DefaultScreen(win->display));
+    XFlush(win->display);
+}
+
+void RGFW_window_restore(RGFW_window* win) {
+    XMapWindow(win->display, (Window)win->window);
+    XFlush(win->display);
+}
+
 void RGFW_window_setName(RGFW_window* win, char* name) {
 	XStoreName((Display *)win->display, (Window)win->window, name);
 }
@@ -1985,6 +2054,90 @@ u16 RGFW_registerJoystickF(RGFW_window* win, char* file) {
 
 	return win->joystickCount - 1;
 	#endif
+}
+
+u8 RGFW_window_isFullscreen(RGFW_window* win) {
+	XWindowAttributes windowAttributes;
+    XGetWindowAttributes(win->display, (Window)win->window, &windowAttributes);
+	
+	/* check if the window is visable */
+    if (windowAttributes.map_state != IsViewable) 
+        return 0;
+
+    /* check if the window covers the full screen */
+    return (windowAttributes.x == 0 && windowAttributes.y == 0 &&
+            windowAttributes.width == XDisplayWidth(win->display, DefaultScreen(win->display)) &&
+            windowAttributes.height == XDisplayHeight(win->display, DefaultScreen(win->display)));
+}
+
+u8 RGFW_window_isHidden(RGFW_window* win) {
+    XWindowAttributes windowAttributes;
+    XGetWindowAttributes(win->display, (Window)win->window, &windowAttributes);
+
+    return (windowAttributes.map_state == IsUnmapped && !RGFW_isMinimized(win));
+}
+
+u8 RGFW_isMinimized(RGFW_window* win) {
+    static Atom prop = 0;
+	if (prop == 0)
+		prop = XInternAtom(win->display, "WM_STATE", False);
+
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems, bytes_after;
+    unsigned char *prop_data;
+
+    int status = XGetWindowProperty(win->display, (Window)win->window, prop, 0, 2, False,
+                                     AnyPropertyType, &actual_type, &actual_format,
+                                     &nitems, &bytes_after, &prop_data);
+
+    if (status == Success && nitems >= 1 && *((int *)prop_data) == IconicState) {
+		XFree(prop_data);
+		return 1;
+    }
+
+    if (prop_data != NULL)
+        XFree(prop_data);
+
+    return 0;
+}
+
+u8 RGFW_isMaximized(RGFW_window* win) {
+    static Atom net_wm_state = 0;
+    static Atom net_wm_state_maximized_horz = 0;
+    static Atom net_wm_state_maximized_vert = 0;
+
+	if (net_wm_state == 0) {
+		net_wm_state = XInternAtom(win->display, "_NET_WM_STATE", False);
+		net_wm_state_maximized_vert =  XInternAtom(win->display, "_NET_WM_STATE_MAXIMIZED_VERT", False);
+		net_wm_state_maximized_horz = XInternAtom(win->display, "_NET_WM_STATE_MAXIMIZED_HORZ", False);
+	}
+
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems, bytes_after;
+    unsigned char *prop_data;
+
+    int status = XGetWindowProperty(win->display, (Window)win->window, net_wm_state, 0, 1024, False,
+                                     XA_ATOM, &actual_type, &actual_format,
+                                     &nitems, &bytes_after, &prop_data);
+
+    if (status == Success) {
+        Atom *atoms = (Atom *)prop_data;
+        for (unsigned long i = 0; i < nitems; ++i) {
+            if (atoms[i] == net_wm_state_maximized_horz ||
+                atoms[i] == net_wm_state_maximized_vert) {
+                XFree(prop_data);
+                return 1;
+            }
+        }
+    }
+
+    if (prop_data != NULL) {
+        XFree(prop_data);
+    }
+
+    return 0;
 }
 
 char keyboard[32];
@@ -2285,9 +2438,28 @@ int* RGFW_window_getGlobalMousePoint(RGFW_window* win) {
 	return RGFWMouse;
 }
 
-RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
-	win->event.current_ticks = clock();
+u32 RGFW_WIN_MAX_SIZE[2] = {0, 0};
+u32 RGFW_WIN_MIN_SIZE[2];
 
+RGFWDEF void RGFW_window_setMinSize(RGFW_window* win, u32 width, u32 height) {
+	RGFW_WIN_MIN_SIZE[0] = width;
+	RGFW_WIN_MIN_SIZE[1] = height;
+}
+
+RGFWDEF void RGFW_window_setMaxSize(RGFW_window* win, u32 width, u32 height) {
+	RGFW_WIN_MAX_SIZE[0] = width;
+	RGFW_WIN_MAX_SIZE[1] = height;
+}
+
+void RGFW_window_minimize(RGFW_window* win) {
+    ShowWindow(win->display, SW_MINIMIZE);
+}
+
+void RGFW_window_restore(RGFW_window* win) {
+	ShowWindow(win->display, SW_RESTORE);
+}
+
+RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 	MSG msg = {};
 
 	if (win->event.droppedFilesCount) {
@@ -2421,7 +2593,18 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 				#endif
 				break;
 			}
+			case WM_GETMINMAXINFO:
+			{
+				if (RGFW_WIN_MAX_SIZE[0] == 0)
+					break;
 
+				MINMAXINFO* mmi = (MINMAXINFO*)msg.lParam;
+				mmi->ptMinTrackSize.x = RGFW_WIN_MIN_SIZE[0];
+				mmi->ptMinTrackSize.y = RGFW_WIN_MIN_SIZE[0];
+				mmi->ptMaxTrackSize.x = RGFW_WIN_MAX_SIZE[0];
+				mmi->ptMaxTrackSize.y = RGFW_WIN_MAX_SIZE[1];
+				return 0;
+			}
 			default:
 				win->event.type = 0;
 				break;
@@ -2458,6 +2641,28 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 		return &win->event;
 	else
 		return NULL;
+}
+
+RGFWDEF u8 RGFW_window_isFullscreen(RGFW_window* win) {
+    WINDOWPLACEMENT placement;
+    GetWindowPlacement(win->display, &placement);
+    return placement.showCmd == SW_SHOWMAXIMIZED;
+}
+
+RGFWDEF u8 RGFW_window_isHidden(RGFW_window* win) {
+    return IsWindowVisible(win->display) == 0 && !RGFW_isMinimized(win);
+}
+
+RGFWDEF u8 RGFW_isMinimized(RGFW_window* win) {
+    WINDOWPLACEMENT placement;
+    GetWindowPlacement(win->display, &placement);
+    return placement.showCmd == SW_SHOWMINIMIZED;
+}
+
+RGFWDEF u8 RGFW_isMaximized(RGFW_window* win) {
+    WINDOWPLACEMENT placement;
+    GetWindowPlacement(win->display, &placement);
+    return placement.showCmd == SW_SHOWMAXIMIZED;
 }
 
 u8 RGFW_isPressedI(RGFW_window* win, u32 key) {
@@ -2587,6 +2792,7 @@ void RGFW_window_resize(RGFW_window* win, u32 w, u32 h) {
 	SetWindowPos((HWND)win->display, (HWND)win->display, win->x, win->y, win->w, win->h, 0);
 	#endif
 }
+
 
 void RGFW_window_setName(RGFW_window* win, char* name) {
 	SetWindowTextA(win->display, name);
@@ -2892,7 +3098,6 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	win->view = NSOpenGLView_initWithFrame(NSMakeRect(0, 0, w, h), format);
 	NSOpenGLView_prepareOpenGL(win->view);
 
-	RGFW_window_swapInterval(win, 1);
 	NSOpenGLContext_makeCurrentContext(win->glWin);
 
 	#else
@@ -3102,8 +3307,6 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 
 	NSApplication_updateWindows(NSApp);
 
-	win->event.current_ticks = clock();
-
 	if (win->event.type)
 		return &win->event;
 	else
@@ -3133,6 +3336,14 @@ RGFWDEF void RGFW_window_resize(RGFW_window* win, u32 w, u32 h) {
 	win->h = h;
 	NSWindow_setFrameAndDisplay(win->window, NSMakeRect(win->x, win->y, win->w, win->h), true, true);
 	#endif
+}
+
+void RGFW_window_minimize(RGFW_window* win) {
+	NSWindow_performMiniaturize(win->window, NULL);
+}
+
+void RGFW_window_restore(RGFW_window* win) {
+	NSWindow_performZoom(win->window, NULL);
 }
 
 RGFWDEF void RGFW_window_setName(RGFW_window* win, char* name) {
@@ -3194,6 +3405,23 @@ void RGFW_window_setMouseDefault(RGFW_window* win) {
 		release(win->cursor);
 	
 	RGFW_window_setMouse(win, NULL, 0, 0, 0);
+}
+
+
+u8 RGFW_window_isFullscreen(RGFW_window* win) {
+    return (NSWindow_styleMask(win->window) & NSFullScreenWindowMask) == NSFullScreenWindowMask;
+}
+
+u8 RGFW_window_isHidden(RGFW_window* win) {
+    return NSWindow_isVisible(win) == NO && !RGFW_isMinimized(win);
+}
+
+u8 RGFW_isMinimized(RGFW_window* win) {
+    return NSWindow_isMiniaturized(win->window) == YES;
+}
+
+u8 RGFW_isMaximized(RGFW_window* win) {
+    return NSWindow_isZoomed(win->window) == YES;
 }
 
 u8 RGFW_isPressedI(RGFW_window* win, u32 key) {
@@ -3277,7 +3505,6 @@ void RGFW_setThreadPriority(RGFW_thread thread, u8 priority) { pthread_setschedp
 #endif
 #endif
 
-
 void RGFW_window_makeCurrent_OpenGL(RGFW_window* win) {
 	#ifdef RGFW_GL
 		#ifdef RGFW_X11
@@ -3324,10 +3551,11 @@ void RGFW_window_swapInterval(RGFW_window* win, i32 swapInterval) {
 	eglSwapInterval(win->EGL_display, swapInterval);
 	#endif
 
-	win->fpsCap = swapInterval;
+	win->fpsCap = (swapInterval == 1) ? 0 : swapInterval;
 }
 
 void RGFW_window_swapBuffers(RGFW_window* win) { 
+	win->event.frames++;
 	RGFW_window_checkFPS(win);
 	
 	RGFW_window_makeCurrent(win);
@@ -3423,41 +3651,94 @@ void RGFW_window_swapBuffers(RGFW_window* win) {
 }
 
 
-void RGFW_window_checkFPS(RGFW_window* win) {
-	/* get current fps*/
-	win->event.delta_ticks = clock() - win->event.current_ticks;
+void RGFW_window_maximize(RGFW_window* win) {
+	u32* screen = RGFW_window_screenSize(win);
 
-	 if(win->event.delta_ticks > 0)
-        win->event.fps = CLOCKS_PER_SEC / win->event.delta_ticks;
-
-	/*slow down to the set fps cap*/
-	#ifndef RGFW_OPENGL
-	if (win->fpsCap) {
-		i32 sleepTime = win->event.fps - win->fpsCap;
-		
-		if (sleepTime > 0) {
-			RGFW_Timespec sleep_time;
-			sleep_time.tv_sec = sleepTime / 1000;
-			sleep_time.tv_nsec = (sleepTime % 1000) * 1000000;
-
-			nanosleep((struct timespec*)&sleep_time, NULL);
-		}
-	}
-	#endif
+	RGFW_window_move(win, 0, 0);
+	RGFW_window_resize(win, screen[0], screen[1]);
 }
+
+u8 RGFW_window_shouldClose(RGFW_window* win) {
+	/* || RGFW_isPressedI(win, RGFW_Escape) */
+	return (win->event.type == RGFW_quit || RGFW_isPressedI(win, RGFW_OS_BASED_VALUE(0xff1b, 0x1B, 53)));
+}
+
+void RGFW_sleep(u32 microsecond) {
+   struct timespec time;
+   time.tv_sec = 0;
+   time.tv_nsec = microsecond * 1000;
+
+   nanosleep(&time , NULL);
+}
+
+void RGFW_window_checkFPS(RGFW_window* win) {
+	static float currentFrame = 0;
+	static float deltaTime = 0.0f;
+	static float lastFrame = 0.0f;
+
+	win->event.fps = RGFW_getFPS();
+
+	if (win->fpsCap == 0)
+		return;
+
+    double targetFrameTime = 1.0 / win->fpsCap;
+    double elapsedTime = RGFW_getTime() - currentFrame;
+
+    if (elapsedTime < targetFrameTime) {
+		u32 sleepTime = (u32)((targetFrameTime - elapsedTime) * 1e6);	
+		RGFW_sleep(sleepTime);
+    }
+    
+    currentFrame = RGFW_getTime();
+
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+} 
+
+u32 RGFW_getTimeNS(void) {
+    struct timespec ts = { 0 };
+    clock_gettime(1, &ts);
+	
+	return ts.tv_nsec;
+}
+
+u32 RGFW_getTime(void) {
+    struct timespec ts = { 0 };
+    clock_gettime(1, &ts);
+	
+	return ts.tv_sec;
+}
+
+u32 RGFW_getFPS(void) {
+    static float deltaTime = 0.0f;
+    static float lastFrame = 0.0f;
+
+    static double previousSeconds = 0.0;
+	if (previousSeconds == 0.0)
+		previousSeconds = (double)RGFW_getTime();//glfwGetTime();
+   
+    static int frameCount;
+    double currentSeconds = (double)RGFW_getTime();//glfwGetTime();
+    double elapsedSeconds = currentSeconds - previousSeconds;
+
+    static double fps = 0;
+
+    if (elapsedSeconds > 0.25) {
+        previousSeconds = currentSeconds;
+        fps = (double)frameCount / elapsedSeconds;
+        frameCount = 0;
+    }
+
+    frameCount++;
+
+    float currentFrame = RGFW_getTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+    
+    return (u32)fps;
+}
+
 #endif /*RGFW_IMPLEMENTATION*/
-
-
-
-#ifdef RGFW_X11
-#define RGFW_OS_BASED_VALUE(l, w, m) l
-#endif
-#ifdef RGFW_WINDOWS
-#define RGFW_OS_BASED_VALUE(l, w, m) w
-#endif
-#ifdef __APPLE__
-#define RGFW_OS_BASED_VALUE(l, w, m) m
-#endif
 
 #define RGFW_Escape RGFW_OS_BASED_VALUE(0xff1b, 0x1B, 53)
 #define RGFW_F1 RGFW_OS_BASED_VALUE(0xffbe, 0x70, 127)
