@@ -636,8 +636,8 @@ int main() {
 #ifdef RSGL_IMPLEMENTATION
 
 #ifdef RSGL_LEGACY_OPENGL
+#define RGL_OPENGL_LEGACY
 #define RFONT_RENDER_LEGACY
-#define RGL_LEGACY_OPENGL
 #endif
 
 #define RGFW_IMPLEMENTATION
@@ -746,6 +746,7 @@ void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoin
             }
         rglEnd();
     rglPopMatrix();
+    rglPopMatrix();
     rglSetTexture(0);
 
     if (RSGL_argsClear) RSGL_clearArgs();
@@ -782,6 +783,8 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         rglMatrixMode(RGL_PROJECTION);    // Switch to projection matrix
         rglPushMatrix();                 // Save previous matrix, which contains the settings for the 2d ortho projection
         rglLoadIdentity();               // Reset current matrix (projection)
+
+        RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
         #ifndef RSGL_NO_TEXT
         RFont_init(win->r.w, win->r.h);
@@ -1407,7 +1410,7 @@ void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
 }
 
 u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd) {
-    return RFont_text_width_len(RSGL_font.f, text, fontSize, textEnd);
+    return RFont_text_width_len(RSGL_font.f, text, fontSize, textEnd, 0.0);
 }
 #endif /* RSGL_NO_TEXT */
 
@@ -1416,15 +1419,16 @@ void glPrerequisites(RSGL_rectF r, RSGL_color c) {
     rglMatrixMode(RGL_PROJECTION);
     rglLoadIdentity();
     rglPushMatrix();
+    
+    rglMatrixMode(RGL_MODELVIEW);
+    rglPushMatrix();
 
     rglOrtho(0, RSGL_args.currentRect.w, RSGL_args.currentRect.h, 0, -RSGL_args.currentRect.w, RSGL_args.currentRect.w);
     
-    rglMatrixMode(RGL_MODELVIEW);
     rglTranslatef((r.x + (r.w / 2)), (r.x + (r.h / 2)), 0);
-    
-    rglRotatef(RSGL_args.rotate.x, 1, 0, 0);
+    rglRotatef(RSGL_args.rotate.z,  0, 0, 1);
     rglRotatef(RSGL_args.rotate.y, 0, 1, 0);
-    rglRotatef(RSGL_args.rotate.z, 0, 0, 1);
+    rglRotatef(RSGL_args.rotate.x, 1, 0, 0);
 
     rglTranslatef(-(r.x + (r.w / 2)), -(r.x + (r.h / 2)), 0);
 }
