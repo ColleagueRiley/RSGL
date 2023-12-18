@@ -187,6 +187,7 @@ typedef struct RSGL_point {
 #define RSGL_POINT(x, y) (RSGL_point){x, y}
 
 typedef struct RSGL_pointF { float x, y; } RSGL_pointF;
+#define RSGL_POINTF(x, y) (RSGL_pointF){x, y}
 
 typedef struct RSGL_point3D {
     i32 x, y, z;
@@ -349,6 +350,8 @@ RSGLDEF void RSGL_drawPoint3DF(RSGL_point3DF p, RSGL_color c);
 RSGLDEF void RSGL_drawTriangle(RSGL_triangle t, RSGL_color c);
 RSGLDEF void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c);
 
+RSGLDEF void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color);
+
 RSGLDEF void RSGL_drawRect(RSGL_rect r, RSGL_color c);
 RSGLDEF void RSGL_drawRectF(RSGL_rectF r, RSGL_color c);
 
@@ -399,6 +402,9 @@ RSGLDEF void RSGL_drawCube(RSGL_cube r, RSGL_color c);
 RSGLDEF void RSGL_drawCubeF(RSGL_cubeF, RSGL_color c);
 
 #ifndef RSGL_NO_TEXT
+inline const char* RFont_fmt(const char* string, ...);
+#define RSGL_strFmt RFont_fmt
+
 RSGLDEF u32 RSGL_loadFont(const char* font);
 #define RSGL_FONT(str) RSGL_loadFont(str)
 
@@ -407,6 +413,7 @@ RSGLDEF void RSGL_setFont(u32 font);
 typedef struct RFont_font RFont_font;
 RSGLDEF void RSGL_setRFont(RFont_font* font);
 
+RSGLDEF void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
 #define RSGL_drawTextF(text, font, c, color) \
@@ -1042,6 +1049,22 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
     RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
 }
 
+void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color) {
+    float dir = (hypotenuse > 0);
+    hypotenuse = fabs(hypotenuse);
+
+    float base = hypotenuse * (cos(angle) * RAD2DEG);
+    float opp = hypotenuse * (cos(angle) * RAD2DEG); 
+    
+    RSGL_triangleF t = RSGL_TRIANGLEF(
+        p,
+        RSGL_POINTF(p.x + base, p.y),
+        RSGL_POINTF(p.x + (base * dir), p.y - opp)
+    );
+    
+    RSGL_drawTriangleF(t, color);   
+}
+
 void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
     RSGL_point3DF points[] = {{r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}};
     RSGL_point3DF texPoints[] = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
@@ -1357,6 +1380,8 @@ u32 RSGL_drawImage(const char* image, RSGL_rect r) {
 }
 
 #ifndef RSGL_NO_TEXT
+
+
 u32 RSGL_loadFont(const char* font) {
     u32 i;
     for (i = 0; i < RSGL_font.len; i++) 
@@ -1389,20 +1414,18 @@ void RSGL_setRFont(RFont_font* font) {
     RSGL_font.f = font;
 }
 
+void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color) {
+    RSGL_drawText(RSGL_strFmt("FPS : %i", win->event.fps), c, color);
+}
+
 void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color) {
     glEnable(GL_BLEND);
 
     if (text == NULL || text[0] == '\0')
         return;
 
-    i32 w = RFont_text_width(RSGL_font.f, text, c.d);
-
-    glPrerequisites((RSGL_rectF) {c.x, c.y + (c.d - (c.d/4)), w, c.d}, color);
-  
     RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
     RFont_draw_text_len(RSGL_font.f, text, len, c.x, c.y, c.d, 0.0f);
-
-    rglPopMatrix();
 }
 
 void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
