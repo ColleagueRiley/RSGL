@@ -1131,6 +1131,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     }
     rglEnd();
     rglPopMatrix();
+    rglPopMatrix();
 
     if (RSGL_argsClear) RSGL_clearArgs();
 }
@@ -1204,6 +1205,7 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
         }
     rglEnd();
+    rglPopMatrix();
     rglPopMatrix();
 }
 
@@ -1293,6 +1295,7 @@ void RSGL_drawCubeF(RSGL_cubeF r, RSGL_color color) {
             rglVertex3f(x - r.w / 2, y + r.h / 2, z + r.l / 2);  // Top Left
             rglVertex3f(x - r.w / 2, y - r.h / 2, z - r.l / 2);  // Bottom Right
         rglEnd();
+    rglPopMatrix();
     rglPopMatrix();
 
     /*
@@ -1447,7 +1450,7 @@ void glPrerequisites(RSGL_rectF r, RSGL_color c) {
     rglPushMatrix();
 
     rglOrtho(0, RSGL_args.currentRect.w, RSGL_args.currentRect.h, 0, -RSGL_args.currentRect.w, RSGL_args.currentRect.w);
-    
+
     rglTranslatef((r.x + (r.w / 2)), (r.x + (r.h / 2)), 0);
     rglRotatef(RSGL_args.rotate.z,  0, 0, 1);
     rglRotatef(RSGL_args.rotate.y, 0, 1, 0);
