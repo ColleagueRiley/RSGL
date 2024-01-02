@@ -2343,8 +2343,13 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	GetWindowRect(win->display, &windowRect);
 	GetClientRect(win->display, &clientRect);
 
+	#ifndef RGFW_RECT
 	win->h +=  (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top);
 	RGFW_window_resize(win, win->w, win->h);
+	#else
+	win->r.h += (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top);
+	RGFW_window_resize(win, win->r.w, win->r.h);
+	#endif
 
 	if (RGFW_TRANSPARENT_WINDOW & args) {
 		SetWindowLong((HWND)win->display, GWL_EXSTYLE, GetWindowLong((HWND)win->display, GWL_EXSTYLE) | WS_EX_LAYERED);
