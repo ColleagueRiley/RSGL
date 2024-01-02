@@ -739,7 +739,6 @@ bool RSGL_cstr_equal(const char* str, const char* str2) {
 
 
 void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len) {
-    printf("%i\n", RSGL_args.texture);
     rglSetTexture(RSGL_args.texture);
 
     i32 i;
