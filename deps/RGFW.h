@@ -2171,7 +2171,6 @@ u8 RGFW_isPressedI(RGFW_window* win, u32 key) {
 
 #ifdef RGFW_WINDOWS
 #include <GL/gl.h>
-#include <dwmapi.h>
 
 char* createUTF8FromWideStringWin32(const WCHAR* source);
 
@@ -2349,15 +2348,6 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 
 	if (RGFW_TRANSPARENT_WINDOW & args) {
 		SetWindowLong((HWND)win->display, GWL_EXSTYLE, GetWindowLong((HWND)win->display, GWL_EXSTYLE) | WS_EX_LAYERED);
-	
-	    DWM_BLURBEHIND bb = {0};
-        bb.dwFlags = DWM_BB_ENABLE;
-        bb.fEnable = TRUE;
-        bb.hRgnBlur = NULL;
-        DwmEnableBlurBehindWindow(win->display, &bb);
-
-        MARGINS margins = {-1};
-        DwmExtendFrameIntoClientArea(win->display, &margins);
 	}
 	if (RGFW_ALLOW_DND & args)
 		DragAcceptFiles((HWND)win->display, TRUE);
