@@ -517,7 +517,8 @@ typedef struct RSGL_audio {
     struct RSGL_audioData* data;
 } RSGL_audio;
 
-void RSGL_audio_playFile(RSGL_audio* a, const char* file);
+void RSGL_audio_loadFile(RSGL_audio* a, const char* file);
+RSGLDEF void RSGL_audio_playFile(RSGL_audio* a, const char* file);
 RSGLDEF void RSGL_audio_play(RSGL_audio a);
 RSGLDEF void RSGL_audio_pause(RSGL_audio a);
 RSGLDEF void RSGL_audio_stop(RSGL_audio a);
@@ -661,6 +662,8 @@ int main() {
 
 #ifndef RSGL_NO_TEXT
 #define RFONT_IMPLEMENTATION
+#define RFONT_RENDER_RGL
+
 #include "deps/RFont.h"
 #endif /* RSGL_NO_TEXT */
 
@@ -689,7 +692,7 @@ typedef struct RSGL_drawArgs {
 } RSGL_drawArgs;
 
 RSGL_drawArgs RSGL_args = {{0, 0, 0}, 1, { }, 0};
-bool RSGL_argsClear = true;
+bool RSGL_argsClear = false;
 
 #ifndef RSGL_NO_TEXT
 typedef struct RSGL_fontData {
@@ -736,10 +739,8 @@ bool RSGL_cstr_equal(const char* str, const char* str2) {
 
 
 void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len) {
+    printf("%i\n", RSGL_args.texture);
     rglSetTexture(RSGL_args.texture);
-    glEnable(GL_TEXTURE_2D);
-
-    glBindTexture(GL_TEXTURE_2D, RSGL_args.texture);
 
     i32 i;
 
@@ -748,6 +749,7 @@ void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoin
             for (i = 0; i < len; i++) {
                 if (i && i <= RSGL_args.gradient_len)
                     rglColor4ub(RSGL_args.gradient[i - 1].r, RSGL_args.gradient[i - 1].g, RSGL_args.gradient[i - 1].b, RSGL_args.gradient[i - 1].a);
+                
                 rglTexCoord2f(texPoints[i].x, texPoints[i].y);
                 rglVertex3f(points[i].x, points[i].y, points[i].z);
             }
@@ -1046,7 +1048,7 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
     
     RSGL_rectF r = {t.p2.x, t.p3.y, abs(t.p2.x - t.p1.x), abs(t.p2.y - t.p3.y)};
 
-    RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
+    RSGL_BASIC_DRAW(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
 }
 
 void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color) {
@@ -1069,7 +1071,7 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
     RSGL_point3DF points[] = {{r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}};
     RSGL_point3DF texPoints[] = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
     
-    RSGL_BASIC_DRAW(RGL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
+    RSGL_BASIC_DRAW(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
@@ -1089,13 +1091,21 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     float centralAngle = 0;
 
     i32 x = 0;
-    
     rglSetTexture(RSGL_args.texture);
 
     glPrerequisites(o, c);
-    rglBegin(RSGL_args.texture == 1 ? RGL_TRIANGLES : RGL_QUADS);
+
+    
     for (x = 0; (x / 3) < arc.y; x += 3) {
 
+        /*if (RGLinfo.batches[RGLinfo.drawCounter - 1].tex != RGLinfo.tex ||
+            RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount > 0
+            && !rglCheckRenderBatchLimit(RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment)) {
+            
+                RGLinfo.vertexCounter += RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment;
+                RGLinfo.drawCounter++;
+        }*/
+    rglBegin(RGL_TRIANGLES_2D);
         if ((x / 3) < arc.x) { 
             centralAngle += 360.0f/(float)sides;
             continue;
@@ -1114,15 +1124,14 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     
         rglColor4ubX(0);
         rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-
-        if (RSGL_args.texture != 1) {
+        /*if (RSGL_args.texture != 1) {
             rglTexCoord2f(ty, tx);
             rglColor4ubX(0);
 
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-        }
+        }*/
 
-        centralAngle += 360.0f/(float)sides;
+        centralAngle += 360.0f / (float)sides;
 
         rglTexCoord2f(ty, tx);
 
@@ -1138,9 +1147,26 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
 
 void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (int)sides}, c); }
 
-void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {  RSGL_drawPolygonFPro(o, 360, arc, color); }
-void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  RSGL_drawPolygonFPro((RSGL_rectF){c.x, c.y, c.d, c.d}, 360, (RSGL_pointF){0, 360}, color); }
-void RSGL_drawOvalF(RSGL_rectF o, RSGL_color c) { RSGL_drawPolygonFPro(o, 360, (RSGL_pointF){0, 360}, c); }
+void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {  
+    float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
+    verts = (verts > 360 ? 360 : verts);
+
+    RSGL_drawPolygonFPro(o, verts, arc, color); 
+}
+
+void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  
+    float verts = ((2 * M_PI * c.d) / 10);
+    verts = (verts > 360 ? 360 : verts);
+
+    RSGL_drawPolygonFPro((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
+}
+
+void RSGL_drawOvalF(RSGL_rectF o, RSGL_color c) { 
+    float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
+    verts = (verts > 360 ? 360 : verts);
+
+    RSGL_drawPolygonFPro(o, verts, (RSGL_pointF){0, verts}, c); 
+}
 
 /* 
 outlines
@@ -1190,9 +1216,9 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
     float centralAngle = 0;
 
     glPrerequisites(o, c);
-    rglBegin(RGL_LINES);
         i32 i;
         for (i = 0; i < arc.y; i++) {
+            rglBegin(RGL_LINES);
             rglColor4ub(c.r, c.g, c.b, c.a);
 
             if (i < arc.x ) {
@@ -1203,8 +1229,8 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.w);
             centralAngle += 360.0f/(float)sides;
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
+            rglEnd();
         }
-    rglEnd();
     rglPopMatrix();
     rglPopMatrix();
 }
@@ -1356,8 +1382,10 @@ u32 RSGL_drawImage(const char* image, RSGL_rect r) {
     if (!texture) {
         i32 x, y, c;
         u8* bitmap = stbi_load(image, &x, &y, &c, 0);
-
+        
         texture = RSGL_createTexture(bitmap, (RSGL_area){x, y}, c);
+
+        free(bitmap);
 
         #ifndef RSGL_NO_SAVE_IMAGE
         if (RSGL_images_len + 1 > images_comp) {
@@ -1670,7 +1698,7 @@ typedef struct RSGL_audioData {
 
 void RSGL_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
 
-void RSGL_audio_playFile(RSGL_audio* a, const char* file) {
+void RSGL_audio_loadFile(RSGL_audio* a, const char* file) {
     if (file[1] == '\0')
         return;
 
@@ -1694,13 +1722,10 @@ void RSGL_audio_playFile(RSGL_audio* a, const char* file) {
         printf("Failed to open playback device.\n");
         ma_decoder_uninit(&a->data->decoder);
     }
+}
 
-    if (ma_device_start(&a->data->device) != MA_SUCCESS) {
-        printf("Failed to start playback device.\n");
-        ma_device_uninit(&a->data->device);
-        ma_decoder_uninit(&a->data->decoder);
-    }
-    
+void RSGL_audio_playFile(RSGL_audio* a, const char* file) {
+    RSGL_audio_loadFile(a, file);
     RSGL_audio_play(*a);
 }
 
