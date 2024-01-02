@@ -33,8 +33,8 @@ is in at least one of your files or arguments
 #define RFONT_NO_STDIO - do not include stdio.h
 #define RFONT_EXTERNAL_STB - load stb_truetype from stb_truetype.h instead of using the internal version
 #define RFONT_NO_GRAPHICS - do not include any graphics functions at all
-#define RFONT_RENDER_RLGL - use rlgl functions for rendering
-#define RFONT_RENDER_LEGACY - use opengl legacy functions for rendering (if rlgl is not chosen)
+#define RFONT_RENDER_RGL - use RGL functions for rendering
+#define RFONT_RENDER_LEGACY - use opengl legacy functions for rendering (if RGL is not chosen)
 -- NOTE: By default, opengl 3.3 vbos are used for rendering --
 */
 
@@ -307,6 +307,9 @@ inline u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight); /* create a bitm
 inline void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h); /* add the given bitmap to the texture based on the given coords and size data */
 inline void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts); /* render the text, using the vertices, atlas texture, and texture coords given. */
 inline void RFont_render_free(u32 atlas); /* free any memory the renderer might need to free */
+
+/* (if modern opengl is being used) switch to rendering using opengl legacy or not */
+inline void RFont_render_legacy(u8 legacy);
 #endif
 
 #endif /* RFONT_H */
@@ -724,7 +727,7 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
 
       /* texture coords */
 
-      //#if defined(RFONT_RENDER_LEGACY) || defined(RFONT_RENDER_RLGL)
+      //#if defined(RFONT_RENDER_LEGACY) || defined(RFONT_RENDER_RGL)
       tcoords[i] = RFONT_GET_TEXPOSX(glyph.x);
       tcoords[i + 1] = 0;
       //#endif
@@ -758,16 +761,16 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
    return x;
 }
 
-#if !defined(RFONT_NO_OPENGL) && !defined(RFONT_NO_GRAPHICS)
-
-#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)
-#define GL_GLEXT_PROTOTYPES
-#endif
-
 #ifndef __APPLE__
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
+#endif
+
+#if !defined(RFONT_NO_OPENGL) && !defined(RFONT_NO_GRAPHICS)
+
+#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)
+#define GL_GLEXT_PROTOTYPES
 #endif
 
 #ifndef GL_PERSPECTIVE_CORRECTION_HINT
@@ -780,7 +783,16 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
 
 #ifdef RFONT_DEBUG
 
-void RFont_debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+#ifndef GL_DEBUG_TYPE_ERROR
+#define GL_DEBUG_TYPE_ERROR               0x824C
+#define GL_DEBUG_OUTPUT                   0x92E0
+#define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
+#define GL_COMPILE_STATUS                 0x8B81
+#define GL_LINK_STATUS                    0x8B82
+#define GL_INFO_LOG_LENGTH                0x8B84 
+#endif
+
+void RFont_debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam) {
     if (type != GL_DEBUG_TYPE_ERROR)
         return;
 
@@ -790,26 +802,27 @@ void RFont_debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity,
 void RFont_opengl_getError() {
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR) {
-        switch (err) {
+         switch (err) {
             case GL_INVALID_ENUM:
-                printf("OpenGL error: GL_INVALID_ENUM\n");
-                break;
+                  printf("OpenGL error: GL_INVALID_ENUM\n");
+                  break;
             case GL_INVALID_VALUE:
-                printf("OpenGL error: GL_INVALID_VALUE\n");
-                break;
+                  printf("OpenGL error: GL_INVALID_VALUE\n");
+                  break;
             case GL_INVALID_OPERATION:
-                printf("OpenGL error: GL_INVALID_OPERATION\n");
-                break;
+                  printf("OpenGL error: GL_INVALID_OPERATION\n");
+                  break;
             case GL_STACK_OVERFLOW:
-                printf("OpenGL error: GL_STACK_OVERFLOW\n");
-                break;
+                  printf("OpenGL error: GL_STACK_OVERFLOW\n");
+                  break;
             case GL_STACK_UNDERFLOW:
-                printf("OpenGL error: GL_STACK_UNDERFLOW\n");
-                break;	
+                  printf("OpenGL error: GL_STACK_UNDERFLOW\n");
+                  break;	
             default:
-                printf("OpenGL error: Unknown error code 0x%x\n", err);
-                break;
-        }
+                  printf("OpenGL error: Unknown error code 0x%x\n", err);
+                  break;
+         }
+         exit(1);
     }
 }
 
@@ -875,73 +888,72 @@ void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, flo
 
 	RFont_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+   glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#ifdef RFONT_RENDER_RLGL
+#ifdef RFONT_RENDER_RGL
 
 void RFont_render_set_color(float r, float g, float b, float a) {
-   rlColor4f(r, g, b, a);
+   rglColor4f(r, g, b, a);
 }
 
 void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-   
-   rlMatrixMode(RL_MODELVIEW);
-   rlLoadIdentity();
+   glShadeModel(GL_SMOOTH);
+
+   rglMatrixMode(GL_MODELVIEW);
+   rglLoadIdentity();
+	rglPushMatrix();
+
    glDisable(GL_DEPTH_TEST);
    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-   glEnable(GL_CULL_FACE);
+   glEnable(GL_CULL_FACE);    
 
-	rlSetTexture(atlas);
+   glEnable(GL_BLEND);
+   glEnable(GL_TEXTURE_2D);
+   rglSetTexture(atlas);
 
-	glEnable(GL_BLEND);
+	rglBegin(RGL_TRIANGLES_2D);
 
-	rlPushMatrix();
-
-	rlBegin(GL_QUADS);
-
-	i32 i, j = 0;
-	for (i = 0; (size_t)i < (nverts * 6); i += 2) {
-		rlTexCoord2f(tcoords[i], tcoords[i + 1]);
-
-		if (j++ && j == 2 && (j -= 3))
-			rlVertex2f(verts[i], verts[i + 1]);
-
-		rlVertex2f(verts[i], verts[i + 1]);
+	size_t i;
+	for (i = 0; i < (nverts * 2); i += 2) {
+		rglTexCoord2f(tcoords[i], tcoords[i + 1]);
+		
+      rglVertex2f(verts[i], verts[i + 1]);
 	}
-	rlEnd();
-	rlPopMatrix();
+	rglEnd();
+	rglPopMatrix();
 
-	rlSetTexture(0);
+   glBindTexture(GL_TEXTURE_2D, 0);
    glEnable(GL_DEPTH_TEST);
 }
 
 void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
+void RFont_render_legacy(u8 legacy) { rglLegacy(legacy); }
 void RFont_render_init() {}
-#endif /* RFONT_RENDER_RLGL */
+#endif /* RFONT_RENDER_RGL */
 
-#if defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)
+#if defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)
 
 void RFont_render_set_color(float r, float g, float b, float a) {
    glColor4f(r, g, b, a);
 }
 
 void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
-    glEnable(GL_TEXTURE_2D);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-    glShadeModel(GL_SMOOTH);
+   glEnable(GL_TEXTURE_2D);
+   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+   glShadeModel(GL_SMOOTH);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glDisable(GL_DEPTH_TEST);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_CULL_FACE);    
+   glMatrixMode(GL_MODELVIEW);
+   glLoadIdentity();
+   glDisable(GL_DEPTH_TEST);
+   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+   glEnable(GL_CULL_FACE);    
 
-    glEnable(GL_BLEND);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, atlas);
+   glEnable(GL_BLEND);
+   glEnable(GL_TEXTURE_2D);
+   glBindTexture(GL_TEXTURE_2D, atlas);
 
 	glPushMatrix();
 
@@ -956,18 +968,21 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 	glEnd();
 	glPopMatrix();
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glEnable(GL_DEPTH_TEST);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glEnable(GL_DEPTH_TEST);
 }
 
 void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
+void RFont_render_legacy(u8 legacy) { }
 void RFont_render_init() {}
-#endif /* defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)  */
+#endif /* defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)  */
 
-#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL)
+#if !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)
 typedef struct {
    GLuint vao, vbo, tbo, cbo, ebo,
             program, vShader, fShader;
+   
+   u8 legacy;
 } RFont_gl_info;
 
 RFont_gl_info RFont_gl = { 0 };
@@ -1001,7 +1016,6 @@ void RFont_debug_shader(u32 src, const char* shader, const char* action) {
         }
         
         RFont_opengl_getError();
-        exit(1);
     }
 }
 #endif
@@ -1009,6 +1023,9 @@ void RFont_debug_shader(u32 src, const char* shader, const char* action) {
 #define RFONT_MULTILINE_STR(...) #__VA_ARGS__
 
 void RFont_render_set_color(float r, float g, float b, float a) {
+   if (RFont_gl.legacy)
+      return glColor4f(r, g, b, a);
+   
    RFont_color[0] = r;
    RFont_color[1] = g;
    RFont_color[2] = b;
@@ -1016,7 +1033,7 @@ void RFont_render_set_color(float r, float g, float b, float a) {
 }
 
 void RFont_render_init() {
-   if (RFont_gl.vao != 0)
+   if (RFont_gl.vao != 0 || RFont_gl.legacy)
       return;
 
    static const char* defaultVShaderCode = RFONT_MULTILINE_STR(
@@ -1048,16 +1065,14 @@ void RFont_render_init() {
          FragColor = texture(texture0, fragTexCoord) * fragColor;
       }
    );
-
+   
    glGenVertexArrays(1, &RFont_gl.vao);
-
    glBindVertexArray(RFont_gl.vao);
 
    glGenBuffers(1, &RFont_gl.vbo);
    glGenBuffers(1, &RFont_gl.tbo);
    glGenBuffers(1, &RFont_gl.cbo);
    glGenBuffers(1, &RFont_gl.ebo);
-
    /* compile vertex shader */
    RFont_gl.vShader = glCreateShader(GL_VERTEX_SHADER);
    glShaderSource(RFont_gl.vShader, 1, &defaultVShaderCode, NULL);
@@ -1093,7 +1108,7 @@ void RFont_render_init() {
    RFont_debug_shader(RFont_gl.program, "Both", "link to the program");
    #endif
 }
-
+     
 void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -1103,71 +1118,91 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_CULL_FACE);    
 
    glEnable(GL_BLEND);
+   glShadeModel(GL_SMOOTH);
 
-   glBindVertexArray(RFont_gl.vao);
+   if (RFont_gl.legacy) {
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      glBindTexture(GL_TEXTURE_2D, atlas);
+      glPushMatrix();
 
-   glUseProgram(RFont_gl.program);
+      glBegin(GL_TRIANGLES);
 
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.vbo);
-	glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), verts, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+      size_t i;
+      for (i = 0; i < (nverts * 2); i += 2) {
+         glTexCoord2f(tcoords[i], tcoords[i + 1]);
+         
+         glVertex2f(verts[i], verts[i + 1]);
+      }
+      glEnd();
+      glPopMatrix();
+   } else {
+      glBindVertexArray(RFont_gl.vao);
 
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.tbo);
-	glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), tcoords, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+      glUseProgram(RFont_gl.program);
 
-   float* colors = malloc(sizeof(float) * nverts * 4);
+      glEnableVertexAttribArray(0);
+      glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.vbo);
+      glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), verts, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
-   int i = 0;
-   for (i = 0; i < (nverts * 4); i += 4) {
-      colors[i] = RFont_color[0];
-      colors[i + 1] = RFont_color[1];
-      colors[i + 2] = RFont_color[2];
-      colors[i + 3] = RFont_color[3];
+      glEnableVertexAttribArray(1);
+      glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.tbo);
+      glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), tcoords, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+      float* colors = malloc(sizeof(float) * nverts * 4);
+
+      int i = 0;
+      for (i = 0; i < (nverts * 4); i += 4) {
+         colors[i] = RFont_color[0];
+         colors[i + 1] = RFont_color[1];
+         colors[i + 2] = RFont_color[2];
+         colors[i + 3] = RFont_color[3];
+      }
+
+      glEnableVertexAttribArray(2);
+      glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.cbo);
+      glBufferData(GL_ARRAY_BUFFER, nverts * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+
+      free(colors);
+
+      GLushort* indices = malloc(sizeof(GLushort) * 6 * nverts);
+      int k = 0;
+
+      int j;
+      for (j = 0; j < (6 * nverts); j += 6) {
+         indices[j] = 4*  k;
+         indices[j + 1] = 4*k + 1;
+         indices[j + 2] = 4*k + 2;
+         indices[j + 3] = 4*k;
+         indices[j + 4] = 4*k + 2;
+         indices[j + 5] = 4*k + 3;
+
+         k++;
+      }
+
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RFont_gl.ebo);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * 6 * nverts, indices, GL_STATIC_DRAW);
+
+      free(indices);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, atlas);
+
+      glDrawArrays(GL_TRIANGLES, 0, nverts);   
+      glUseProgram(0);
    }
-
-	glEnableVertexAttribArray(2);
-	glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.cbo);
-	glBufferData(GL_ARRAY_BUFFER, nverts * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-
-   free(colors);
-
-   GLushort* indices = malloc(sizeof(GLushort) * 6 * nverts);
-   int k = 0;
-
-   int j;
-   for (j = 0; j < (6 * nverts); j += 6) {
-      indices[j] = 4*  k;
-      indices[j + 1] = 4*k + 1;
-      indices[j + 2] = 4*k + 2;
-      indices[j + 3] = 4*k;
-      indices[j + 4] = 4*k + 2;
-      indices[j + 5] = 4*k + 3;
-
-      k++;
-   }
-
-   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RFont_gl.ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * 6 * nverts, indices, GL_STATIC_DRAW);
-
-   free(indices);
-
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, atlas);
-
-   glDrawArrays(GL_TRIANGLES, 0, nverts);   
-   glUseProgram(0);
 
 	glDisable(GL_TEXTURE_2D);
+   glEnable(GL_DEPTH_TEST);
 }
 
 void RFont_render_free(u32 atlas) {
    glDeleteTextures(1, &atlas);
 
-   if (RFont_gl.vao == 0)
+   if (RFont_gl.vao == 0 || RFont_gl.legacy)
       return;
    
    /* free vertex array */
@@ -1184,7 +1219,9 @@ void RFont_render_free(u32 atlas) {
    glDeleteProgram(RFont_gl.program);
 }
 
-#endif /* !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RLGL) */
+void RFont_render_legacy(u8 legacy) { RFont_gl.legacy = legacy; }
+
+#endif /* !defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL) */
 #endif /*  !defined(RFONT_NO_OPENGL) && !defined(RFONT_NO_GRAPHICS) */
 
 /* 

@@ -3628,6 +3628,13 @@ Some backends have some nuance details you may want to be aware of.
   is due to 64-bit file APIs not being available.
 */
 
+/* for cross compiling */
+#ifdef __linux__
+#define MA_NO_WFOPEN
+
+#pragma GCC diagnostic ignored "-Wformat"
+#endif
+
 #ifndef miniaudio_h
 #define miniaudio_h
 
