@@ -1095,17 +1095,9 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
 
     glPrerequisites(o, c);
 
+    rglBegin(RSGL_args.texture != 1 ? RGL_QUADS_2D : RGL_TRIANGLES_2D);
     
     for (x = 0; (x / 3) < arc.y; x += 3) {
-
-        /*if (RGLinfo.batches[RGLinfo.drawCounter - 1].tex != RGLinfo.tex ||
-            RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount > 0
-            && !rglCheckRenderBatchLimit(RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment)) {
-            
-                RGLinfo.vertexCounter += RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment;
-                RGLinfo.drawCounter++;
-        }*/
-    rglBegin(RGL_TRIANGLES_2D);
         if ((x / 3) < arc.x) { 
             centralAngle += 360.0f/(float)sides;
             continue;
@@ -1124,12 +1116,13 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     
         rglColor4ubX(0);
         rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-        /*if (RSGL_args.texture != 1) {
+        
+        if (RSGL_args.texture != 1) {
             rglTexCoord2f(ty, tx);
             rglColor4ubX(0);
 
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-        }*/
+        }
 
         centralAngle += 360.0f / (float)sides;
 
@@ -1214,11 +1207,12 @@ void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
     float centralAngle = 0;
-
+    
     glPrerequisites(o, c);
         i32 i;
+
         for (i = 0; i < arc.y; i++) {
-            rglBegin(RGL_LINES);
+    rglBegin(RGL_LINES_2D);
             rglColor4ub(c.r, c.g, c.b, c.a);
 
             if (i < arc.x ) {
@@ -1229,8 +1223,8 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.w);
             centralAngle += 360.0f/(float)sides;
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-            rglEnd();
         }
+                rglEnd();
     rglPopMatrix();
     rglPopMatrix();
 }
@@ -1240,16 +1234,26 @@ void RSGL_drawPolygonFOutline(RSGL_rectF o, u32 sides, u32 thickness, RSGL_color
     RSGL_drawPolygonFOutlinePro(o, sides, (RSGL_pointF){0, (int)sides}, c);
 }
 void RSGL_drawArcFOutline(RSGL_rectF o, RSGL_pointF arc, u32 thickness, RSGL_color color) {
+    float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
+    verts = (verts > 360 ? 360 : verts);
+
     rglLineWidth(thickness);
-    RSGL_drawPolygonFOutlinePro(o, 360, arc, color);
+    RSGL_drawPolygonFOutlinePro(o, verts, arc, color);
 }
 void RSGL_drawCircleFOutline(RSGL_circleF c, u32 thickness, RSGL_color color) {
+    float verts = ((2 * M_PI * c.d) / 10);
+    verts = (verts > 360 ? 360 : verts);
+
+    printf("%i\n", verts);
     rglLineWidth(thickness);
-    RSGL_drawPolygonFOutlinePro((RSGL_rectF){c.x, c.y, c.d, c.d}, 360, (RSGL_pointF){0, 360}, color);
+    RSGL_drawPolygonFOutlinePro((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color);
 }
 void RSGL_drawOvalFOutline(RSGL_rectF o, u32 thickness, RSGL_color c) {
+    float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
+    verts = (verts > 360 ? 360 : verts);
+
     rglLineWidth(thickness);
-    RSGL_drawPolygonFOutlinePro(o, 360, (RSGL_pointF){0, 360}, c);
+    RSGL_drawPolygonFOutlinePro(o, verts, (RSGL_pointF){0, verts}, c);
 }
 
 /* 3D shaoe drawing */
