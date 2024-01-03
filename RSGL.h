@@ -277,6 +277,8 @@ RGFW_FUNCTION_DEFINES
 #define RSGL_isMinimized RGFW_isMinimized
 #define RSGL_isMaximized RGFW_isMaximized
 
+RSGLDEF void RSGL_legacy(i32 legacy);
+
 /* 
 *******
 RSGL_window
@@ -758,6 +760,11 @@ void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoin
     rglSetTexture(0);
 
     if (RSGL_argsClear) RSGL_clearArgs();
+}
+
+void RSGL_legacy(i32 legacy) {
+    rglLegacy(legacy);
+    RFont_render_legacy(legacy);
 }
 
 /* 
@@ -1243,7 +1250,6 @@ void RSGL_drawCircleFOutline(RSGL_circleF c, u32 thickness, RSGL_color color) {
     float verts = ((2 * M_PI * c.d) / 10);
     verts = (verts > 360 ? 360 : verts);
 
-    printf("%i\n", verts);
     rglLineWidth(thickness);
     RSGL_drawPolygonFOutlinePro((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color);
 }
