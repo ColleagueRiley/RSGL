@@ -83,6 +83,7 @@
 #define RSGL_OPENGL (1L<<7) /* use normal opengl (if another version is also selected) */
 #define RSGL_FULLSCREEN (1L<<8) /* if the window should be fullscreen by default or not */
 #define RSGL_CENTER (1L<<10)
+#define RSGL_OPENGL_SOFTWARE (1L<<11) /* use OpenGL software rendering */
 /*! event codes */
 #define RSGL_keyPressed 2 /*!< a key has been pressed*/
 #define RSGL_keyReleased 3 /*!< a key has been released*/
