@@ -227,6 +227,9 @@ RGLDEF RGL_MATRIX rglMatrixScale(float x, float y, float z);
 /* render with legacy (or turn of legacy rendering if you turned it on) */
 RGLDEF void rglLegacy(u8 state);
 
+/* get opengl error */
+RGLDEF void rglGetError(void);
+
 RGLDEF void rglBegin(int mode);
 
 #if defined(RGL_OPENGL_LEGACY)
@@ -663,9 +666,9 @@ void rglInit(int width, i32 height, void *loader) {
 	glAttachShader(RGLinfo.program, RGLinfo.vShader);
 	glAttachShader(RGLinfo.program, RGLinfo.fShader);
 
-    glBindAttribLocation(RGLinfo.vShader, 0, "vertexPosition");
-    glBindAttribLocation(RGLinfo.vShader, 1, "vertexTexCoord");
-    glBindAttribLocation(RGLinfo.vShader, 2, "vertexColor");
+    glBindAttribLocation(RGLinfo.program, 0, "vertexPosition");
+    glBindAttribLocation(RGLinfo.program, 1, "vertexTexCoord");
+    glBindAttribLocation(RGLinfo.program, 2, "vertexColor");
 
 	glLinkProgram(RGLinfo.program);
 
@@ -698,8 +701,11 @@ void rglInit(int width, i32 height, void *loader) {
 
     RGLinfo.vertexCounter = 0;
 
-    glGenVertexArrays(1, &RGLinfo.vao);
     glBindVertexArray(RGLinfo.vao);
+
+    #ifdef RGL_DEBUG
+    rglGetError();
+    #endif
 
     /* Quads - Vertex buffers binding and attributes enable */
     /* Vertex position buffer (shader-location = 0) */
@@ -724,9 +730,14 @@ void rglInit(int width, i32 height, void *loader) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RGLinfo.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, RGL_MAX_BUFFER_ELEMENTS * 6 * sizeof(u16), RGLinfo.indices, GL_STATIC_DRAW);
 
+
     /* Unbind the current VAO */
     if (RGLinfo.vao) 
         glBindVertexArray(0);
+
+    #ifdef RGL_DEBUG
+    rglGetError();
+    #endif
 
     /* load default texture */
     u8 white[4] = {255, 255, 255, 255};
@@ -762,6 +773,11 @@ void rglInit(int width, i32 height, void *loader) {
     /* Store screen size into global variables */
     RGLinfo.width = width;
     RGLinfo.height = height;
+
+
+    #ifdef RGL_DEBUG
+    rglGetError();
+    #endif
 #endif
 }
 
@@ -886,6 +902,10 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
         glActiveTexture(GL_TEXTURE0);
 
+        #ifdef RGL_DEBUG
+        rglGetError();
+        #endif
+
         u32 vertexOffset;
         u32 i;
         
@@ -912,6 +932,10 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
             if (RGLinfo.batches[i].mode > 0x0010)
                 glEnable(GL_DEPTH_TEST);
+
+            #ifdef RGL_DEBUG
+            rglGetError();
+            #endif
         }
 
         if (!RGLinfo.vao) {
@@ -976,6 +1000,33 @@ void rglLegacy(u8 state) {
     if (state != 2)
         RGLinfo.legacy = state;
     #endif
+}
+
+void rglGetError(void) {
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) {
+         switch (err) {
+            case GL_INVALID_ENUM:
+                  printf("OpenGL error: GL_INVALID_ENUM\n");
+                  break;
+            case GL_INVALID_VALUE:
+                  printf("OpenGL error: GL_INVALID_VALUE\n");
+                  break;
+            case GL_INVALID_OPERATION:
+                  printf("OpenGL error: GL_INVALID_OPERATION\n");
+                  break;
+            case GL_STACK_OVERFLOW:
+                  printf("OpenGL error: GL_STACK_OVERFLOW\n");
+                  break;
+            case GL_STACK_UNDERFLOW:
+                  printf("OpenGL error: GL_STACK_UNDERFLOW\n");
+                  break;	
+            default:
+                  printf("OpenGL error: Unknown error code 0x%x\n", err);
+                  break;
+         }
+         exit(1);
+    }
 }
 
 #if defined(RGL_MODERN_OPENGL)
