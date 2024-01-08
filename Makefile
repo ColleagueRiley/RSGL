@@ -12,7 +12,7 @@ ifeq ($(detected_OS),Windows)
 	EXT = dll
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
-	LIBS := -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+	LIBS := -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -w
 	EXT = dylib
 endif
 ifeq ($(detected_OS),Linux)
