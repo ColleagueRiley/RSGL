@@ -68,9 +68,11 @@
 #define RGFW_FREE free
 #endif
 
+#if !_MSC_VER
 #ifndef inline
 #ifndef __APPLE__
 #define inline __inline
+#endif
 #endif
 #endif
 
@@ -240,6 +242,9 @@ typedef struct RGFW_window {
     void* display; /*!< source display */
     void* window; /*!< source window */
     void* glWin; /*!< source opengl context */
+	#ifdef RGFW_WINDOWS
+    void* hinstance; /*!< windows hinstance*/
+	#endif
 
 	#ifndef RGFW_RECT
 	i32 x, y; /*!< window pos, x, y */
@@ -292,7 +297,20 @@ RGFW_window* RGFW_createWindow(
 	u64 args /* extra arguments (NULL / (u64)0 means no args used)*/
 ); /*!< function to create a window struct */
 
-#ifdef RGFW_VULKAN
+
+#ifdef VULKAN
+#ifdef RGFW_X11
+#define VK_USE_PLATFORM_XLIB_KHR
+#endif
+#ifdef RGFW_WINDOWS
+#define VK_USE_PLATFORMRGFW_WINDOWS_KHR
+#endif
+#ifdef __APPLE__
+#define VK_USE_PLATFORM_MACOS_MVK
+#endif
+
+#include <vulkan/vulkan.h>
+
 /*! initializes a vulkan rendering context for the RGFW window, you still need to load your own vulkan instance, ect, ect
 	this outputs the vulkan surface into win->glWin
 	RGFW_VULKAN must be defined for this function to be defined
@@ -556,7 +574,7 @@ u8 RGFW_Error() { return RGFW_error; }
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 #ifdef RGFW_WINDOWS
-#define VK_USE_PLATFORMRGFW_WINDOWS_KHR
+#define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #ifdef __APPLE__
 #define VK_USE_PLATFORM_MACOS_MVK
@@ -566,19 +584,19 @@ u8 RGFW_Error() { return RGFW_error; }
 
 void RGFW_initVulkan(RGFW_window* win, void* inst) {
 	#ifdef RGFW_X11
-	VkXlibSurfaceCreateInfoKHR x11 = { VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR, 0, win->display, win->window };
+	VkXlibSurfaceCreateInfoKHR x11 = { VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR, 0, 0, (Display*)win->display, (Window)win->window };
 
-	vkCreateXlibSurfaceKHR(inst, &x11, NULL, win->glWin);
+	vkCreateXlibSurfaceKHR((VkInstance)inst, &x11, NULL, (VkSurfaceKHR*)win->glWin);
 	#endif
 	#ifdef RGFW_WINDOWS
-	VkWin32SurfaceCreateInfoKHR win32 = { VK_STRUCTURE_TYPERGFW_WINDOWS_SURFACE_CREATE_INFO_KHR, 0, win->display, win->window };
+	VkWin32SurfaceCreateInfoKHR win32 = { VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR, 0, 0, (HINSTANCE)win->hinstance, (HWND)win->display };
 
-	vkCreateWin32SurfaceKHR(inst, &win32, NULL, win->glWin);
+	vkCreateWin32SurfaceKHR((VkInstance)inst, &win32, NULL, (VkSurfaceKHR*)win->glWin);
 	#endif
 	#if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
-	VkMacOSSurfaceCreateFlagsMVK macos = { VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_KHR, 0, win->display, win->window };
+	VkMacOSSurfaceCreateFlagsMVK macos = { VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_KHR, 0, 0, win->display, win->window };
 
-	vkCreateMacOSSurfaceMVK(inst, &macos, NULL, win->glWin);
+	vkCreateMacOSSurfaceMVK((VkInstance)inst, &macos, NULL, (VkSurfaceKHR*)win->glWin);
 	#endif
 }
 
@@ -2198,9 +2216,10 @@ PFN_OSMesaDestroyContext OSMesaDestroyContextSource;
 #define OSMesaDestroyContext OSMesaDestroyContextSource
 #endif
 
-typedef BOOL (*PFN_wglSwapIntervalEXT)(int);
-PFN_wglSwapIntervalEXT wglSwapIntervalEXTSrc = NULL;
-#define wglSwapIntervalEXT wglSwapIntervalEXTSrc
+typedef int (*PFN_wglGetSwapIntervalEXT)(void);
+PFN_wglGetSwapIntervalEXT wglGetSwapIntervalEXTSrc = NULL;
+#define wglGetSwapIntervalEXT wglGetSwapIntervalEXTSrc
+
 
 void* RGFWjoystickApi = NULL;
 
@@ -2256,54 +2275,12 @@ PFN_wglGetCurrentContext wglGetCurrentContextSRC;
 #define wglGetCurrentContext wglGetCurrentContextSRC
 #endif
 
-/* defines for creating ARB attributes */
-#define WGL_CONTEXT_MAJOR_VERSION_ARB             0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB             0x2092
-#define WGL_DRAW_TO_WINDOW_ARB                    0x2001
-#define WGL_ACCELERATION_ARB                      0x2003
-#define WGL_SUPPORT_OPENGL_ARB                    0x2010
-#define WGL_DOUBLE_BUFFER_ARB                     0x2011
-#define WGL_PIXEL_TYPE_ARB                        0x2013
-#define WGL_COLOR_BITS_ARB                        0x2014
-#define WGL_DEPTH_BITS_ARB                        0x2022
-#define WGL_FULL_ACCELERATION_ARB                 0x2027
-#define WGL_TYPE_RGBA_ARB                         0x202B
-#define WGL_CONTEXT_FLAGS_ARB                   0x2094
-#define WGL_CONTEXT_PROFILE_MASK_ARB            0x9126
-#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB 0x00000002
-
-#ifdef RGFW_WGL_LOAD
-static HMODULE wglinstance = NULL;
-typedef HGLRC(WINAPI *PFN_wglCreateContext)(HDC);
-typedef BOOL(WINAPI *PFN_wglDeleteContext)(HGLRC);
-typedef PROC(WINAPI *PFN_wglGetProcAddress)(LPCSTR);
-typedef BOOL(WINAPI *PFN_wglMakeCurrent)(HDC, HGLRC);
-typedef HDC (WINAPI *PFN_wglGetCurrentDC)();
-typedef HGLRC (WINAPI *PFN_wglGetCurrentContext)();
-
-PFN_wglCreateContext wglCreateContextSRC;
-PFN_wglDeleteContext wglDeleteContextSRC;
-PFN_wglGetProcAddress wglGetProcAddressSRC;
-PFN_wglMakeCurrent wglMakeCurrentSRC;
-PFN_wglGetCurrentDC wglGetCurrentDCSRC;
-PFN_wglGetCurrentContext wglGetCurrentContextSRC;
-
-#define wglCreateContext wglCreateContextSRC
-#define wglDeleteContext wglDeleteContextSRC
-#define wglGetProcAddress wglGetProcAddressSRC
-#define wglMakeCurrent wglMakeCurrentSRC
-
-#define wglGetCurrentDC wglGetCurrentDCSRC
-#define wglGetCurrentContext wglGetCurrentContextSRC
-#endif
-
 #ifdef RGFW_GL
 void* RGFW_getProcAddress(const char* procname) { return (void*)wglGetProcAddress(procname); }
 #endif
 
-
 RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64 args) {
-    #ifdef RGFW_WGL_LOAD
+	#ifdef RGFW_WGL_LOAD
 	if (wglinstance == NULL) { 
 		wglinstance = LoadLibraryA("opengl32.dll");
 
@@ -2369,10 +2346,12 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 
     RegisterClassA(&Class);
 
-	DWORD window_style = 0; 
+	DWORD window_style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
+
+    RECT windowRect, clientRect;
 
 	if (!(RGFW_NO_BORDER & args)) {
-		window_style |= WS_CAPTION | WS_SYSMENU | WS_BORDER | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+		window_style |= WS_CAPTION | WS_SYSMENU | WS_BORDER | WS_VISIBLE | WS_MINIMIZEBOX;
 		
 		if (!(RGFW_NO_RESIZE & args))
 			window_style |= WS_SIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
@@ -2382,27 +2361,31 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 
     win->display = CreateWindowA( Class.lpszClassName, name, window_style, x, y, w, h, 0, 0, inh, 0);
 
-    RECT windowRect, clientRect;
+
 	GetWindowRect(win->display, &windowRect);
 	GetClientRect(win->display, &clientRect);
 
 	#ifndef RGFW_RECT
-	h +=  (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top);
+	win->h +=  (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top);
+	RGFW_window_resize(win, win->w, win->h);
 	#else
-	h += (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top);
+	win->r.h += (windowRect.bottom - windowRect.top) - (clientRect.bottom - clientRect.top);
+	RGFW_window_resize(win, win->r.w, win->r.h);
 	#endif
 
-
-	if (RGFW_TRANSPARENT_WINDOW & args)
+	if (RGFW_TRANSPARENT_WINDOW & args) {
 		SetWindowLong((HWND)win->display, GWL_EXSTYLE, GetWindowLong((HWND)win->display, GWL_EXSTYLE) | WS_EX_LAYERED);
-
+	}
 	if (RGFW_ALLOW_DND & args)
 		DragAcceptFiles((HWND)win->display, TRUE);
 
     win->window = GetDC((HWND)win->display);
 
+#ifdef RGFW_WINDOWS
+    win->hinstance = (void*)inh;
+#endif
 
-  	#ifdef RGFW_GL 
+ 	#ifdef RGFW_GL 
     
 	HGLRC prc;
     HDC pdc;
@@ -2432,6 +2415,8 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
         wglCreateContextAttribsARB = (wglCreateContextAttribsARB_type)
             wglGetProcAddress("wglCreateContextAttribsARB");
 
+        wglGetSwapIntervalEXTSrc = (PFN_wglGetSwapIntervalEXT)
+            wglGetProcAddress("wglGetSwapIntervalEXT");
 
 		wglChoosePixelFormatARB = (PFNWGLCHOOSEPIXELFORMATARBPROC)wglGetProcAddress("wglChoosePixelFormatARB");
     }
@@ -2446,7 +2431,7 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	wglMakeCurrent(pdc, prc);
 
     if (wglCreateContextAttribsARB != NULL) {
-        wglDeleteContext(win->glWin);
+        wglDeleteContext((HGLRC)win->glWin);
 
       	i32 attribs[40];
 		PIXELFORMATDESCRIPTOR pfd = {sizeof(pfd), 1, PFD_TYPE_RGBA, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, 32, 8, PFD_MAIN_PLANE, 24, 8};
@@ -2454,17 +2439,17 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 		if (RGFW_OPENGL_SOFTWARE & args)
 			pfd.dwFlags |= PFD_GENERIC_FORMAT | PFD_GENERIC_ACCELERATED;
     	
-		i32 pixelFormat = ChoosePixelFormat(win->window, &pfd);
+		i32 pixelFormat = ChoosePixelFormat((HDC)win->window, &pfd);
 
 		PIXELFORMATDESCRIPTOR SuggestedPixelFormat;
 
-		DescribePixelFormat(win->window, pixelFormat, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
+		DescribePixelFormat((HDC)win->window, pixelFormat, sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
 
-		SetPixelFormat (win->window, pixelFormat, &SuggestedPixelFormat);
+		SetPixelFormat ((HDC)win->window, pixelFormat, &SuggestedPixelFormat);
 
-        DescribePixelFormat(win->window, pixelFormat, sizeof(pfd), &pfd);
+        DescribePixelFormat((HDC)win->window, pixelFormat, sizeof(pfd), &pfd);
 
-		SetPixelFormat(win->window, pixelFormat, &pfd);
+		SetPixelFormat((HDC)win->window, pixelFormat, &pfd);
 
         if (wglCreateContextAttribsARB) {
 			i32 index = 0;
@@ -2474,20 +2459,48 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
             if (RGFW_majorVersion || RGFW_minorVersion) {
                 SET_ATTRIB(WGL_CONTEXT_MAJOR_VERSION_ARB, RGFW_majorVersion);
                 SET_ATTRIB(WGL_CONTEXT_MINOR_VERSION_ARB, RGFW_minorVersion);
-				SET_ATTRIB(WGL_SUPPORT_OPENGL_ARB, GL_TRUE);
             }
 
             SET_ATTRIB(0, 0);
 
-            win->glWin = wglCreateContextAttribsARB(win->window, NULL, attribs);
+            win->glWin = wglCreateContextAttribsARB((HDC)win->window, NULL, attribs);
         }
         else {
 			printf("Failed to create an accelerated OpenGL Context\n");
-		    win->glWin = wglCreateContext(win->window);
+		    win->glWin = wglCreateContext((HDC)win->window);
 		}
 	}
 	else 
 		printf("Failed to create an accelerated OpenGL Context\n");
+	#endif
+
+
+	#ifdef RGFW_OSMESA
+
+	#ifdef RGFW_LINK_OSMESA
+	OSMesaMakeCurrentSource = (PFN_OSMesaMakeCurrent) GetProcAddress(win->display, "OSMesaMakeCurrent");
+	OSMesaCreateContextSource = (PFN_OSMesaCreateContext) GetProcAddress(win->display, "OSMesaCreateContext");
+	OSMesaDestroyContextSource = (PFN_OSMesaDestroyContext) GetProcAddress(win->display, "OSMesaDestroyContext");
+	#endif
+
+	if (RGFW_OPENGL & args) {
+	#endif
+		#ifdef RGFW_GL
+		ReleaseDC((HWND)win->display, (HDC)win->window);
+		win->window = GetDC((HWND)win->display);
+		wglMakeCurrent((HDC)win->window, (HGLRC)win->glWin);
+		#endif
+	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER)
+		win->buffer = NULL;
+	#endif
+	#ifdef RGFW_OSMESA 
+	}
+	else {
+		win->glWin = (void*)OSMesaCreateContext(OSMESA_RGBA, NULL);
+		win->buffer = RGFW_MALLOC(w * h * 4);
+
+		OSMesaMakeCurrent(win->glWin, win->buffer, GL_UNSIGNED_BYTE, w, h);
+	}
 	#endif
 
 	#ifdef RGFW_EGL
@@ -2503,6 +2516,7 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 
     return win;
 }
+
 
 u32* RGFW_window_screenSize(RGFW_window* win) {
 	static u32 RGFW_ScreenSize[2];
@@ -2539,16 +2553,17 @@ RGFWDEF void RGFW_window_setMaxSize(RGFW_window* win, u32 width, u32 height) {
 	RGFW_WIN_MAX_SIZE[1] = height;
 }
 
+
 void RGFW_window_minimize(RGFW_window* win) {
-    ShowWindow(win->display, SW_MINIMIZE);
+    ShowWindow((HWND)win->display, SW_MINIMIZE);
 }
 
 void RGFW_window_restore(RGFW_window* win) {
-	ShowWindow(win->display, SW_RESTORE);
+	ShowWindow((HWND)win->display, SW_RESTORE);
 }
 
 RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
-	MSG msg = {};
+	MSG msg;
 
 	if (win->event.droppedFilesCount) {
 		i32 i;
@@ -2735,23 +2750,23 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 
 RGFWDEF u8 RGFW_window_isFullscreen(RGFW_window* win) {
     WINDOWPLACEMENT placement;
-    GetWindowPlacement(win->display, &placement);
+    GetWindowPlacement((HWND)win->display, &placement);
     return placement.showCmd == SW_SHOWMAXIMIZED;
 }
 
 RGFWDEF u8 RGFW_window_isHidden(RGFW_window* win) {
-    return IsWindowVisible(win->display) == 0 && !RGFW_isMinimized(win);
+    return IsWindowVisible((HWND)win->display) == 0 && !RGFW_isMinimized(win);
 }
 
 RGFWDEF u8 RGFW_isMinimized(RGFW_window* win) {
     WINDOWPLACEMENT placement;
-    GetWindowPlacement(win->display, &placement);
+    GetWindowPlacement((HWND)win->display, &placement);
     return placement.showCmd == SW_SHOWMINIMIZED;
 }
 
 RGFWDEF u8 RGFW_isMaximized(RGFW_window* win) {
     WINDOWPLACEMENT placement;
-    GetWindowPlacement(win->display, &placement);
+    GetWindowPlacement((HWND)win->display, &placement);
     return placement.showCmd == SW_SHOWMAXIMIZED;
 }
 
@@ -2885,7 +2900,7 @@ void RGFW_window_resize(RGFW_window* win, u32 w, u32 h) {
 
 
 void RGFW_window_setName(RGFW_window* win, char* name) {
-	SetWindowTextA(win->display, name);
+	SetWindowTextA((HWND)win->display, name);
 }
 
 /* much of this function is sourced from GLFW */
@@ -2909,7 +2924,7 @@ const char* RGFW_window_readClipboard(RGFW_window* win) {
     }
 
 	static char text[7];
-	strcpy(text, GlobalLock(hData));
+	strcpy(text, (char*)GlobalLock(hData));
 	
     /* Release the clipboard data */
     GlobalUnlock(hData);
@@ -2974,7 +2989,6 @@ char* createUTF8FromWideStringWin32(const WCHAR* source) {
 
     return target;
 }
-
 
 #ifndef RGFW_NO_THREADS
 RGFW_thread RGFW_createThread(void* (*function_ptr)(void*), void* args) { return CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)*function_ptr, args, 0, NULL);  }
