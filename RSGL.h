@@ -167,6 +167,7 @@ typedef struct RSGL_rectF { float x, y, w, h; } RSGL_rectF;
 #ifndef RSGL_NO_WINDOW
 #define RGFW_RECT RSGL_rect
 #define RGFW_EXTRA_CONTEXT
+#define GL_SILENCE_DEPRECATION
 #include "deps/RGFW.h"
 #else
 typedef struct {u32 type, x, y;} RGFW_Event;
@@ -660,6 +661,7 @@ int main() {
 #include "deps/RGL.h"
 
 #ifndef RSGL_NO_WINDOW
+#define GL_SILENCE_DEPRECATION
 #include "deps/RGFW.h"
 #endif
 
