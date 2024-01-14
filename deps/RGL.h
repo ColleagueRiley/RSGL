@@ -227,8 +227,10 @@ RGLDEF RGL_MATRIX rglMatrixScale(float x, float y, float z);
 /* render with legacy (or turn of legacy rendering if you turned it on) */
 RGLDEF void rglLegacy(u8 state);
 
+#ifndef RGL_NO_STD
 /* get opengl error */
 RGLDEF void rglGetError(void);
+#endif
 
 RGLDEF void rglBegin(int mode);
 
@@ -1002,6 +1004,10 @@ void rglLegacy(u8 state) {
     #endif
 }
 
+#ifndef RGL_NO_STD
+
+#include <stdio.h>
+
 void rglGetError(void) {
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR) {
@@ -1028,6 +1034,7 @@ void rglGetError(void) {
          exit(1);
     }
 }
+#endif
 
 #if defined(RGL_MODERN_OPENGL)
 
