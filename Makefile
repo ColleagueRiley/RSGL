@@ -1,3 +1,22 @@
+CC = gcc
+AR = ar
+
+LIBS := -lopengl32 -lshell32 -lgdi32
+EXT = dll
+
+ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
+    detected_OS := Windows
+else
+ifeq '$(findstring ;,$(PATH))' ';'
+    detected_OS := Windows
+else
+    detected_OS := $(shell uname 2>/dev/null || echo Unknown)
+    detected_OS := $(patsubst CYGWIN%,Cygwin,$(detected_OS))
+    detected_OS := $(patsubst MSYS%,MSYS,$(detected_OS))
+    detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
+endif
+endif
+
 ifeq '$(findstring ;,$(PATH))' ';'
     detected_OS := Windows
 else
@@ -22,13 +41,13 @@ endif
 
 all:
 	make RSGL.o	
-	gcc RSGL.o -shared -O3 $(LIBS) -lm -o libRSGL.$(EXT)
-	ar rcs libRSGL.a *.o
+	$(CC) RSGL.o -shared -O3 $(LIBS) -lm -o libRSGL.$(EXT)
+	$(AR) rcs libRSGL.a *.o
 	make examples
 
 RSGL.o:
 	cp RSGL.h RSGL.c
-	gcc -c -Wall RSGL.c -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
+	$(CC) -c -Wall RSGL.c -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
 	rm RSGL.c
 
 examples:
