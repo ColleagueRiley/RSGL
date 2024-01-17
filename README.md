@@ -150,7 +150,7 @@ per each time you compile your application so you know that everything is compil
 
   It allows RSGL render using a simplified pipeline system while raylib does advanced shader and preformance work in the background
 
-  RGL is heavily based on RGL but it's designed to be more lightweight and have better performance and optimization 
+  RGL is heavily based on RLGL but it's designed to be more lightweight and have better performance and optimization 
 
 # RFont
   [RFont](https://github.com/colleagueRiley/RFont) is a super light-weight and modular font library for texture atlas and text rendering that I created. RSGL uses this for text rendering.
