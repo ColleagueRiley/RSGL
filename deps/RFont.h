@@ -638,7 +638,7 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
    
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {        
       if (*str == '\n') { 
-         x = 0;
+         x = 0.0;
          continue;
       }
       
