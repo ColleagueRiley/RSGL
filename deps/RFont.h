@@ -785,6 +785,10 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
 #define GL_TEXTURE0				0x84C0
 #endif
 
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE			0x812F
+#endif
+
 #ifdef RFONT_DEBUG
 
 #ifndef GL_DEBUG_TYPE_ERROR
