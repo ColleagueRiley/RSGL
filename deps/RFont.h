@@ -109,7 +109,7 @@ you want to change anything
 #endif
 
 #ifndef RFONT_ATLAS_WIDTH
-#define RFONT_ATLAS_WIDTH 15000
+#define RFONT_ATLAS_WIDTH 6000
 #endif
 
 #ifndef RFONT_ATLAS_HEIGHT
@@ -569,7 +569,7 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
 
    glyph->src = stbtt_FindGlyphIndex(&font->info, codepoint);
 
-   if (glyph->src == 0 && font2->info.data != font->info.data) {
+   if (glyph->src == 0 && font2 != NULL && font2->info.data != font->info.data) {
       stbtt_fontinfo saveInfo = font->info;
 
       RFont_font* fakeFont = font;
@@ -638,7 +638,7 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
    
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {        
       if (*str == '\n') { 
-         x = 0.0;
+         x = 0;
          continue;
       }
       
@@ -781,6 +781,10 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
 #define GL_TEXTURE_SWIZZLE_RGBA           0x8E46
 #endif
 
+#ifndef GL_TEXTURE0
+#define GL_TEXTURE0				0x84C0
+#endif
+
 #ifdef RFONT_DEBUG
 
 #ifndef GL_DEBUG_TYPE_ERROR
@@ -829,37 +833,44 @@ void RFont_opengl_getError() {
 #endif
 
 u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
-    #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // For synchronous output
-    glDebugMessageCallback(RFont_debugCallback, 0); // Set the callback function
-    #endif
+ #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
+   glEnable(GL_DEBUG_OUTPUT);
+   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // For synchronous output
+   glDebugMessageCallback(RFont_debugCallback, 0); // Set the callback function
+   #endif
 
-    u32 id = 0;
-    glEnable(GL_TEXTURE_2D);
+   u32 id = 0;
+   glEnable(GL_TEXTURE_2D);
+   
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glGenTextures(1, &id);
+   #if !defined(RFONT_RENDER_LEGACY)
+   glActiveTexture(GL_TEXTURE0 + id - 1);
+   #endif
+   glBindTexture(GL_TEXTURE_2D, id);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   
+   u8* data = (u8*)calloc(sizeof(u8), atlasWidth * atlasHeight * 4);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, atlasWidth);
-    
-    u8* data = (u8*)calloc(sizeof(u8), atlasWidth * atlasHeight * 4);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+   free(data);
+   
+   #if !defined(RFONT_RENDER_LEGACY)
+   glActiveTexture(GL_TEXTURE0 + id - 1);
+   #endif
 
-    free(data);
-	
-    glBindTexture(GL_TEXTURE_2D, id);
+   glBindTexture(GL_TEXTURE_2D, id);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return id;
+   glBindTexture(GL_TEXTURE_2D, 0);
+   return id;
 }
 
 
@@ -879,7 +890,11 @@ void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, flo
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-    
+   
+   #if !defined(RFONT_RENDER_LEGACY)
+   glActiveTexture(GL_TEXTURE0 + atlas - 1);
+   #endif
+
 	glBindTexture(GL_TEXTURE_2D, atlas);
 
 	RFont_push_pixel_values(1, w, 0, 0);
@@ -953,6 +968,10 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 
    glEnable(GL_BLEND);
    glEnable(GL_TEXTURE_2D);
+   #if !defined(RFONT_RENDER_LEGACY)
+   glActiveTexture(GL_TEXTURE0 + atlas - 1);
+   #endif
+
    glBindTexture(GL_TEXTURE_2D, atlas);
 
 	glPushMatrix();
@@ -1123,6 +1142,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    if (RFont_gl.legacy) {
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
+
       glBindTexture(GL_TEXTURE_2D, atlas);
       glPushMatrix();
 
