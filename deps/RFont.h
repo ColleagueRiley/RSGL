@@ -839,9 +839,7 @@ void RFont_opengl_getError() {
 u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
-   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // For synchronous output
-   glDebugMessageCallback(RFont_debugCallback, 0); // Set the callback function
-   #endif
+			#endif
 
    u32 id = 0;
    glEnable(GL_TEXTURE_2D);
