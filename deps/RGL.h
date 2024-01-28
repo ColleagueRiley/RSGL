@@ -210,7 +210,7 @@ typedef struct RGL_BATCH {
 extern "C" {            /* Prevents name mangling of functions */
 #endif
 
-RGLDEF void rglInit(int width,  i32 height, void* loader);             /* Initialize RGLinfo (buffers, shaders, textures, states) */
+RGLDEF void rglInit(i32 width,  i32 height, void* loader);             /* Initialize RGLinfo (buffers, shaders, textures, states) */
 RGLDEF void rglClose(void);                             /* De-initialize RGLinfo (buffers, shaders, textures) */
 RGLDEF void rglSetFramebufferSize(i32 width, i32 height);            /* Set current framebuffer size */
 
@@ -618,7 +618,7 @@ void rglBegin(int mode) {
 #endif
 
 /* Initialize RGLinfo: OpenGL extensions, default buffers/shaders/textures, OpenGL states*/
-void rglInit(int width, i32 height, void *loader) {
+void rglInit(i32 width, i32 height, void *loader) {
 #if defined(RGL_MODERN_OPENGL)
     if (RGL_loadGL3((RGLloadfunc)loader)) {
         #ifdef RGL_DEBUG
@@ -804,6 +804,8 @@ void rglInit(int width, i32 height, void *loader) {
     rglGetError();
     #endif
 #endif
+
+    glViewport(0, 0, width, height);
 }
 
 /* Vertex Buffer Object deinitialization (memory free) */
@@ -860,7 +862,7 @@ void rglClose(void) {
 #endif
 }
 
-void rglSetFramebufferSize(int width,   i32 height) {
+void rglSetFramebufferSize(i32 width,  i32 height) {
     #ifndef RGL_OPENGL_LEGACY
     RGLinfo.width = width;
     RGLinfo.height = height;
@@ -945,7 +947,6 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
             glBindTexture(GL_TEXTURE_2D, RGLinfo.batches[i].tex);
             glLineWidth(RGLinfo.batches[i].lineWidth);
-            
             #ifdef RGL_EBO
             if ((modee == RGL_LINES) || (mode == RGL_TRIANGLES)) 
             #endif
