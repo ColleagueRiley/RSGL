@@ -767,7 +767,10 @@ void RSGL_BASIC_DRAW(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoin
 
 void RSGL_legacy(i32 legacy) {
     rglLegacy(legacy);
+
+    #ifndef RSGL_NO_TEXT
     RFont_render_legacy(legacy);
+    #endif
 }
 
 /* 
@@ -951,6 +954,9 @@ void RSGL_rotate(RSGL_point3D rotate){
     RSGL_args.rotate = rotate;
 }
 void RSGL_setTexture(u32 texture) {
+    if (texture == 0)
+        texture = 1;
+    
     RSGL_args.texture = texture;
 }
 void RSGL_setGradient(RSGL_color gradient[], size_t len) {
