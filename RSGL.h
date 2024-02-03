@@ -996,6 +996,9 @@ void RSGL_rotate(RSGL_point3D rotate){
     RSGL_args.rotate = rotate;
 }
 void RSGL_setTexture(u32 texture) {
+    if (texture == 0)
+        texture = 1;
+    
     RSGL_args.texture = texture;
 }
 void RSGL_setGradient(RSGL_color gradient[], size_t len) {
