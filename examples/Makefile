@@ -28,17 +28,22 @@ all:
 	make RSGL.o
 	make shapes
 	make events
+	make textures
+	make text
 	make glfw
 
 debug:
 	gcc shapes.c $(LIBS) $(ARGS) -o shapes
 	gcc events.c $(LIBS) $(ARGS) -o events
 	gcc textures.c $(LIBS) $(ARGS) -o textures
+	gcc text.c $(LIBS) $(ARGS) -o text
+	gcc glVer.c $(LIBS) $(ARGS) -o glVer
 
 	./events
 	./shapes
 	./textures
-
+	./text
+	./glVer
 
 glfw:
 	gcc glfw.c -lglfw -lm -I../ -o glfw
@@ -51,6 +56,12 @@ events:
 
 textures:
 	gcc events.c $(LIBS) $(ARGS) -o textures
+
+text:
+	gcc events.c $(LIBS) $(ARGS) -o text
+
+glVer:
+	gcc events.c $(LIBS) $(ARGS) -o glVer
 
 clean:
 	rm -f events glfw shapes textures RSGL.o *.exe
