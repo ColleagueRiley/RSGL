@@ -1,3 +1,9 @@
+CC = gcc
+
+LIBS := -I.. -lopengl32 -lshell32 -lgdi32 -lm
+ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
+    detected_OS := Windows
+else
 ifeq '$(findstring ;,$(PATH))' ';'
     detected_OS := Windows
 else
@@ -5,6 +11,7 @@ else
     detected_OS := $(patsubst CYGWIN%,Cygwin,$(detected_OS))
     detected_OS := $(patsubst MSYS%,MSYS,$(detected_OS))
     detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
+endif
 endif
 
 ifeq ($(detected_OS),Windows)
@@ -14,28 +21,24 @@ ifeq ($(detected_OS),Darwin)        # Mac OS X
 	LIBS := -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 endif
 ifeq ($(detected_OS),Linux)
-    LIBS := -I./include -lX11 -lGLX -lm
+    LIBS := -I./include -lX11 -lGL -lm 
 endif
-
-OUTPUT = text
-
-ARGS = RSGL.o -I../
 
 all:
 	make RSGL.o
-	make glfw
 	make shapes
 	make events
+	make glfw
 
 debug:
-	make RSGL.o
-	gcc source/main.c -lGL -g -I./include $(LIBS) RSGL.o -o $(OUTPUT)
-	./$(OUTPUT)
+	gcc shapes.c $(LIBS) $(ARGS) -o shapes
+	gcc events.c $(LIBS) $(ARGS) -o events
+	gcc textures.c $(LIBS) $(ARGS) -o textures
 
-RSGL.o:
-	cp ../RSGL.h RSGL.c
-	gcc -c RSGL.c -D RSGL_IMPLEMENTATION -D RGFW_NO_JOYSTICK_CODES -I../
-	rm RSGL.c
+	./events
+	./shapes
+	./textures
+
 
 glfw:
 	gcc glfw.c -lglfw -lm -I../ -o glfw
@@ -46,5 +49,8 @@ shapes:
 events:
 	gcc events.c $(LIBS) $(ARGS) -o events
 
+textures:
+	gcc events.c $(LIBS) $(ARGS) -o textures
+
 clean:
-	rm -f events glfw shapes RSGL.o
+	rm -f events glfw shapes textures RSGL.o *.exe
