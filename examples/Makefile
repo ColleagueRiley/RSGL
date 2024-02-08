@@ -33,12 +33,14 @@ all:
 	make glfw
 
 debug:
+	gcc basic.c $(LIBS) $(ARGS) -o basic
 	gcc shapes.c $(LIBS) $(ARGS) -o shapes
 	gcc events.c $(LIBS) $(ARGS) -o events
 	gcc textures.c $(LIBS) $(ARGS) -o textures
 	gcc text.c $(LIBS) $(ARGS) -o text
 	gcc glVer.c $(LIBS) $(ARGS) -o glVer
 
+	./basic
 	./events
 	./shapes
 	./textures
@@ -62,6 +64,9 @@ text:
 
 glVer:
 	gcc events.c $(LIBS) $(ARGS) -o glVer
+
+basic:
+	gcc basic.c $(LIBS) $(ARGS) -o basic
 
 clean:
 	rm -f events glfw shapes textures RSGL.o *.exe
