@@ -1053,7 +1053,6 @@ RGFW_window* RGFW_createWindow(const char* name, i32 x, i32 y, i32 w, i32 h, u64
 	win->event.inFocus = 1;
 	win->event.droppedFilesCount = 0;
 	win->joystickCount = 0;
-	win->dnd = 0;
 	win->cursor = NULL;
 	win->winArgs = 0;
 	
@@ -1369,7 +1368,7 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 				much of this event (drag and drop code) is source from glfw
 			*/
 
-			else if (win->dnd) {
+			else if (win->winArgs & RGFW_ALLOW_DND) {
 				u8 formFree = 0;
 
 				if (E.xclient.message_type == XdndEnter) {
@@ -1529,7 +1528,7 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 			break;
 
         case SelectionNotify:
-			if (E.xselection.property == XdndSelection && win->dnd) {
+			if (E.xselection.property == XdndSelection && (win->winArgs | RGFW_ALLOW_DND)) {
 				char* data;
                 u64 result;
 
