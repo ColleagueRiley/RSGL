@@ -210,9 +210,8 @@ typedef struct RGL_BATCH {
 extern "C" {            /* Prevents name mangling of functions */
 #endif
 
-RGLDEF void rglInit(i32 width,  i32 height, void* loader);             /* Initialize RGLinfo (buffers, shaders, textures, states) */
+RGLDEF void rglInit(void* loader);             /* Initialize RGLinfo (buffers, shaders, textures, states) */
 RGLDEF void rglClose(void);                             /* De-initialize RGLinfo (buffers, shaders, textures) */
-RGLDEF void rglSetFramebufferSize(i32 width, i32 height);            /* Set current framebuffer size */
 
 RGLDEF void rglRenderBatch(void);                         /* Draw render batch data (Update->Draw->Reset) */
 RGLDEF void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation);
@@ -271,7 +270,6 @@ RGLDEF void rglVertex2f(float x, float y);
 RGLDEF void rglVertex3f(float x, float y, float z);
 
 #define rglViewport glViewport
-#define rglLineWidth glLineWidth
 
 RGLDEF void rglMatrixMode(int mode);
 RGLDEF void rglPushMatrix(void);
@@ -412,52 +410,49 @@ extern int RGL_loadGL3(RGLloadfunc proc);
 
 #ifdef RGL_MODERN_OPENGL
 typedef struct RGL_INFO {
-    i32 vertexCounter;                  /* Current active render batch vertex counter (generic, used for all batches) */
-    float tcoord[3];
-    float color[4];
-
-    i32 matrixMode;              /* Current matrix mode */
-    RGL_MATRIX* matrix;              /* Current matrix pointer */
-    RGL_MATRIX modelview;                   /* Default modelview matrix */
-    RGL_MATRIX projection;                  /* Default projection matrix */
-    
 	RGL_MATRIX transform; /* transformation matrix*/
-	u8 transformRequired;
-
     #ifdef RGL_ALLOC_MATRIX_STACK 
     RGL_MATRIX* stack
     #else
     RGL_MATRIX stack[RGL_MAX_MATRIX_STACK_SIZE]; /* RGL_MATRIX stack for push/pop */
     #endif
 
+    RGL_MATRIX* matrix;              /* Current matrix pointer */
+    RGL_MATRIX modelview;                   /* Default modelview matrix */
+    RGL_MATRIX projection;                  /* Default projection matrix */
+    RGL_BATCH* batches;          /* Draw calls array, depends on tex */
+
+    u16* indices;
+    
+    float* vertices;
+	float* colors;
+    float* tcoords;
+
+    i32 vertexCounter;                  /* Current active render batch vertex counter (generic, used for all batches) */
+    
+    i32 matrixMode;              /* Current matrix mode */
+
+	u8 transformRequired;
+
     i32 stackCounter;                   /* RGL_MATRIX stack counter */
 
     u32 tex;      /* Default texture used on shapes/poly drawing (required by shader)*/
-    float lineWidth;    /* Default lineWidth used on shapes/poly drawing (required by shader)*/
     u32 vShader;      /* Default vertex shader id (used by default shader program)*/
     u32 fShader;      /* Default fragment shader id (used by default shader program)*/
     u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 mvp;
     u32 defaultTex;
-
-    i32 width;               /* Current framebuffer width*/
-    i32 height;              /* Current framebuffer height*/
-
-	float* vertices;
-	float* colors;
-    float* tcoords;
-
-    u16* indices;
     u32 elementCount;
 
     i32 bufferCount;            /* Number of vertex buffers (multi-buffering support) */
     i32 currentBuffer;          /* Current buffer tracking in case of multi-buffering */
     i32 drawCounter;            /* Draw calls counter */
 
-    RGL_BATCH* batches;          /* Draw calls array, depends on tex */
-    
-    u32 vao, vbo, tbo, cbo, ebo; /* array object and array buffers */
+    float lineWidth;    /* Default lineWidth used on shapes/poly drawing (required by shader)*/
+    float tcoord[3];
+    float color[4];
 
+    u32 vao, vbo, tbo, cbo, ebo; /* array object and array buffers */
     u8 legacy;
 } RGL_INFO;
 
@@ -618,7 +613,7 @@ void rglBegin(int mode) {
 #endif
 
 /* Initialize RGLinfo: OpenGL extensions, default buffers/shaders/textures, OpenGL states*/
-void rglInit(i32 width, i32 height, void *loader) {
+void rglInit(void *loader) {
 #if defined(RGL_MODERN_OPENGL)
     if (RGL_loadGL3((RGLloadfunc)loader)) {
         #ifdef RGL_DEBUG
@@ -795,17 +790,10 @@ void rglInit(i32 width, i32 height, void *loader) {
     RGLinfo.modelview = rglMatrixIdentity();
     RGLinfo.matrix = &RGLinfo.modelview;
 
-    /* Store screen size into global variables */
-    RGLinfo.width = width;
-    RGLinfo.height = height;
-
-
     #ifdef RGL_DEBUG
     rglGetError();
     #endif
 #endif
-
-    glViewport(0, 0, width, height);
 }
 
 /* Vertex Buffer Object deinitialization (memory free) */
@@ -862,15 +850,6 @@ void rglClose(void) {
 #endif
 }
 
-void rglSetFramebufferSize(i32 width,  i32 height) {
-    #ifndef RGL_OPENGL_LEGACY
-    RGLinfo.width = width;
-    RGLinfo.height = height;
-    #endif
-    glViewport(0, 0, width, height);
-}
-
-
 void rglRenderBatch() {
     #if defined(RGL_MODERN_OPENGL)
     if (RGLinfo.legacy)
@@ -884,7 +863,7 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 #if defined(RGL_MODERN_OPENGL)
     if (RGLinfo.legacy)
         return;
-
+        
     if (RGLinfo.vertexCounter > 0) {
         glBindVertexArray(RGLinfo.vao);
 
@@ -899,7 +878,6 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
         /* Colors buffer */
         glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.cbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, RGLinfo.vertexCounter * 4 * sizeof(float), RGLinfo.colors); 
-        
         glBindVertexArray(0);
 
         /* Set current shader and upload current MVP matrix */
@@ -935,7 +913,7 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
         u32 vertexOffset;
         u32 i;
-        
+
         for (i = 1, vertexOffset = 0; i < RGLinfo.drawCounter; i++) {
             GLenum mode = RGLinfo.batches[i].mode;
             
@@ -943,10 +921,13 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
                 mode -= 0x0010;
                 glDisable(GL_DEPTH_TEST);
             }
+            else    
+                glEnable(GL_DEPTH_TEST);
 
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
             glBindTexture(GL_TEXTURE_2D, RGLinfo.batches[i].tex);
             glLineWidth(RGLinfo.batches[i].lineWidth);
+            
             #ifdef RGL_EBO
             if ((modee == RGL_LINES) || (mode == RGL_TRIANGLES)) 
             #endif
