@@ -181,9 +181,9 @@ per each time you compile your application so you know that everything is compil
   Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project, has helped with coming up with ideas for the project, has helped when debating new featues of the project
   and even has contributed some code to the project. 
 
-  Eima also made Silicon, without Silicon RSGL/RGFW probably would not support native macOS
+  Eima also the original creator of Silicon, without Silicon RSGL/RGFW probably would not support native macOS
 
-  ![Eima's own programming launage for HOI 4](https://github.com/EimaMei/HPL/)
+  ![Eima's C toolkit / STL (sili)](https://github.com/Eimamei/sili)
   
 # RSGL-Architecture diagram
 
