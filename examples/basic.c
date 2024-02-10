@@ -99,7 +99,7 @@ int main() {
 
         {                
             RSGL_point3DF points[3] = {RSGL_POINT3DF(20, win->r.h - 20, 0.0f), RSGL_POINT3DF(win->r.w - 20,win->r.h - 20, 0.0f), RSGL_POINT3DF((win->r.w - 40) / 2, 20, 0.0f)};
-            RSGL_point3DF tex[3];
+            RSGL_pointF tex[3];
     
             RSGL_setGradient(gradient, 3);
             RSGL_basicDraw(RSGL_TRIANGLES_2D, points, tex, RSGL_RECTF(20, 20, win->r.w - 20, win->r.h - 20), RSGL_RGB(255, 255, 0), 3);
