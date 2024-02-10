@@ -462,7 +462,7 @@ RFont_font* RFont_font_init(const char* font_name) {
 
 RFont_font* RFont_font_init_data(u8* font_data, b8 auto_free) {
    RFont_font* font = (RFont_font*)malloc(sizeof(RFont_font));
-   
+
    stbtt_InitFont(&font->info, font_data, 0);
 
    font->fheight = ttSHORT(font->info.data + font->info.hhea + 4) - ttSHORT(font->info.data + font->info.hhea + 6);
@@ -840,16 +840,14 @@ u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
    #endif
-
+   
    u32 id = 0;
    glEnable(GL_TEXTURE_2D);
    
    glBindTexture(GL_TEXTURE_2D, 0);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glGenTextures(1, &id);
-   #if !defined(RFONT_RENDER_LEGACY)
-   glActiveTexture(GL_TEXTURE0 + id - 1);
-   #endif
+
    glBindTexture(GL_TEXTURE_2D, id);
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -862,10 +860,6 @@ u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
    free(data);
-   
-   #if !defined(RFONT_RENDER_LEGACY)
-   glActiveTexture(GL_TEXTURE0 + id - 1);
-   #endif
 
    glBindTexture(GL_TEXTURE_2D, id);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
@@ -929,8 +923,12 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 
    glEnable(GL_BLEND);
    glEnable(GL_TEXTURE_2D);
-   rglSetTexture(atlas);
+   
+   if (glActiveTexture != NULL)
+      glActiveTexture(GL_TEXTURE0);
 
+   rglSetTexture(atlas);
+   
 	rglBegin(RGL_TRIANGLES_2D);
 
 	size_t i;
@@ -941,7 +939,8 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 	}
 	rglEnd();
 	rglPopMatrix();
-
+   
+   rglSetTexture(0);
    glBindTexture(GL_TEXTURE_2D, 0);
    glEnable(GL_DEPTH_TEST);
 }
@@ -1217,6 +1216,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
       glUseProgram(0);
    }
 
+   glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
    glEnable(GL_DEPTH_TEST);
 }

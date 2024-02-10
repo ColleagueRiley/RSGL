@@ -486,7 +486,6 @@ void rglSetTexture(u32 id) {
     {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, id);
-
         return;
     }
 #if defined(RGL_MODERN_OPENGL)
@@ -906,7 +905,7 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RGLinfo.ebo);
 
         glActiveTexture(GL_TEXTURE0);
-
+        
         #ifdef RGL_DEBUG
         rglGetError();
         #endif

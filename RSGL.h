@@ -384,7 +384,7 @@ RSGLDEF void RSGL_fill(bool fill);
 RSGLDEF void RSGL_setClearArgs(bool clearArgs); /* toggles if args are cleared by default or not */
 RSGLDEF void RSGL_clearArgs(); /* clears the args */
 
-RSGLDEF void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len);
+RSGLDEF void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len);
 /* 2D shape drawing */
 
 RSGLDEF void RSGL_drawPoint(RSGL_point p, RSGL_color c);
@@ -803,7 +803,7 @@ bool RSGL_cstr_equal(const char* str, const char* str2) {
 }
 
 
-void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len) {  
+void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len) {  
     i32 i;
 
     glPrerequisites(rect, c);
@@ -820,7 +820,7 @@ void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_point3DF* texPoint
     rglPopMatrix();
 
     if (RSGL_argsClear) {
-        rglSetTexture(0);
+        RSGL_setTexture(0);
         RSGL_clearArgs();
     }
 }
@@ -909,6 +909,7 @@ void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    
     rglRenderBatch();
 }
 
@@ -1013,7 +1014,10 @@ RSGL_draw
 void RSGL_rotate(RSGL_point3D rotate){
     RSGL_args.rotate = rotate;
 }
-void RSGL_setTexture(u32 texture) { rglSetTexture(texture); }
+void RSGL_setTexture(u32 texture) { 
+    RSGL_args.texture = texture;
+    rglSetTexture(texture); 
+}
 
 void RSGL_setGradient(RSGL_color gradient[], size_t len) {
     RSGL_args.gradient_len = len;
@@ -1117,14 +1121,14 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
         return RSGL_drawTriangleFOutline(t, 1, c);
 
     RSGL_point3DF points[] = {{(float)t.p1.x, (float)t.p1.y, 0.0f}, {(float)t.p2.x, (float)t.p2.y, 0.0f}, {(float)t.p2.x, (float)t.p2.y}, {(float)t.p3.x, (float)t.p3.y, 0.0f}};
-    RSGL_point3DF texPoints[] = {  
-                {((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f, 0.0f}, 
-                {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}
+    RSGL_pointF texPoints[] = {  
+                {((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f}, 
+                {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}
     };
     
     RSGL_rectF r = {t.p2.x, t.p3.y, fabsf(t.p2.x - t.p1.x), fabsf(t.p2.y - t.p3.y)};
 
-    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
+    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 4);
 }
 
 void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color) {
@@ -1147,10 +1151,10 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
     if (RSGL_args.fill == false)
         return RSGL_drawRectFOutline(r, 1, c);
 
-    RSGL_point3DF texPoints[] = {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}};
+    RSGL_pointF texPoints[] = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}};
     RSGL_point3DF points[] = {{r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}};
 
-    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 4);
+    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 4);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
@@ -1180,8 +1184,8 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     i32 x = 0;
 
     glPrerequisites(o, c);
-
-    rglBegin(RGLinfo.tex != 1 ? RGL_QUADS_2D : RGL_TRIANGLES_2D);
+    
+    rglBegin(RSGL_args.texture != 1 ? RGL_QUADS_2D : RGL_TRIANGLES_2D);
     
     for (x = 0; (x / 3) < arc.y; x += 3) {
         if ((x / 3) < arc.x) { 
@@ -1203,7 +1207,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
         rglColor4ubX(0);
         rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
         
-        if (RGLinfo.tex != 1) {
+        if (RSGL_args.texture != 1 && RSGL_args.texture) {
             rglTexCoord2f(ty, tx);
             rglColor4ubX(0);
 
@@ -1254,21 +1258,21 @@ outlines
 void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c) {
     rglLineWidth(thickness);
     RSGL_point3DF points[] = {{p1.x, p1.y, 0.0f}, {p2.x, p2.y, 0.0f}};
-    RSGL_point3DF texPoints[] = {{0, 0, 0.0f}, {0, 0, 0.0f}};
+    RSGL_pointF texPoints[] = {{0, 0.0f}, {0, 0.0f}};
 
     RSGL_rectF r = {p1.x, p1.y, (p2.x - p1.x), (p2.y - p1.y)};
 
-    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 2);
+    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 2);
 }
 
 void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c) {
     rglLineWidth(thickness);
     RSGL_point3DF points[] = {{t.p3.x, t.p3.y, 0.0f}, {t.p1.x, t.p1.y, 0.0f}, {t.p1.x, t.p1.y, 0.0f}, {t.p2.x, t.p2.y, 0.0f}, {t.p2.x, t.p2.y, 0.0f}, {t.p3.x, t.p3.y, 0.0f}};
-    RSGL_point3DF texPoints[] = {{0, 0, 0.0f}, {0, 0, 0.0f}, {0, 0, 0.0f}, {0, 0, 0.0f}, {0, 0, 0.0f}, {0, 0, 0.0f}};
+    RSGL_pointF texPoints[] = {{0, 0.0f}, {0, 0.0f}, {0, 0.0f}, {0, 0.0f}, {0, 0.0f}, {0, 0.0f}};
 
     RSGL_rectF r = {t.p2.x, t.p3.y, fabsf(t.p2.x - t.p1.x), fabsf(t.p2.y - t.p3.y)};
 
-    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, r, c, 6);
+    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 6);
 }
 void RSGL_drawRectFOutline(RSGL_rectF r, u32 thickness, RSGL_color c) {
     RSGL_drawLineF((RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x + r.w, r.y}, thickness, c);
@@ -1436,7 +1440,7 @@ void RSGL_drawCubeF(RSGL_cubeF r, RSGL_color color) {
     glVertex3f(1.0f, 1.0f, 1.0f);
     glVertex3f(1.0f, -1.0f, 1.0f);
     glVertex3f(1.0f, -1.0f, -1.0f);
-        RSGL_basicDraw(RL_QUADS, (RSGL_point3DF*)points, (RSGL_point3DF*)texPoints, RSGL_RECT(r.x, r.y, r.w, r.h), c, sizeof(points)/sizeof(RSGL_point));*/
+        RSGL_basicDraw(RL_QUADS, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, RSGL_RECT(r.x, r.y, r.w, r.h), c, sizeof(points)/sizeof(RSGL_point));*/
 }
 
 /* textures / images */
@@ -1521,12 +1525,12 @@ u32 RSGL_drawImage(const char* image, RSGL_rect r) {
     }
 
     if (r.w || r.h) {
-        u32 tex = RGLinfo.tex;
+        u32 tex = RSGL_args.texture;
         RSGL_setTexture(texture);
 
         RSGL_drawRect(r, RSGL_RGB(255, 255, 255));
 
-        RGLinfo.tex = tex;
+        RSGL_args.texture = tex;
     }
 
     return texture;
@@ -1789,7 +1793,6 @@ void RSGL_textbox_update(RSGL_textbox* textBox, RSGL_window* win) {
         textBox->text = (char*)realloc(textBox->text, sizeof(char) * textBox->cap);
     }
 
-    printf("h\n");
     textBox->text[textBox->cursor.x] = ch;
     textBox->len++;
     textBox->text[textBox->len] = '\0';
