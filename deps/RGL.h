@@ -116,7 +116,7 @@ typedef u8 b8;
 #endif
 
 #ifndef RGL_MAX_BATCHES
-#define RGL_MAX_BATCHES 1028
+#define RGL_MAX_BATCHES 3028
 #endif
 
 #ifndef RGL_MAX_BUFFER_ELEMENTS
@@ -1074,9 +1074,9 @@ void rglBegin(int mode) {
         RGLinfo.batches[RGLinfo.drawCounter - 1].tex != RGLinfo.tex ||
         RGLinfo.batches[RGLinfo.drawCounter - 1].lineWidth != RGLinfo.lineWidth ||
         RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount > 0) {
-            if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES) 
+            if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES_2D) 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = ((RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount < 4)? RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount : RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4);
-            else if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES) 
+            else if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS_2D) 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = ((RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount < 4)? 1 : (4 - (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4)));
             else 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = 0;
@@ -1099,6 +1099,10 @@ void rglBegin(int mode) {
 void rglEnd(void) {
     if (RGLinfo.legacy)
         return glEnd();
+
+    if (RGLinfo.drawCounter >= RGL_MAX_BATCHES - 1) {
+        rglRenderBatch();
+    }
 }
 
 /* Define one vertex (texture coordinate) */
