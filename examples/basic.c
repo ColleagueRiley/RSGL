@@ -58,9 +58,9 @@ int main() {
                 break;
             }
             if (RSGL_isPressedI(win, RGFW_Up))
-                printf("Pasted : %s\n", RSGL_window_readClipboard(win));
+                printf("Pasted : %s\n", RSGL_readClipboard());
             else if (RSGL_isPressedI(win, RGFW_Down))
-                RSGL_window_writeClipboard(win, "DOWN", 4);
+                RSGL_writeClipboard("DOWN", 4);
             else if (RSGL_isPressedI(win, RGFW_Space))
                 printf("fps : %i\n", win->event.fps);
             else if (RSGL_isPressedI(win, RGFW_w) && frames >= 30) {

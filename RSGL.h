@@ -295,8 +295,8 @@ RGFW_FUNCTION_DEFINES
 
 #define RSGL_isPressedI RGFW_isPressedI
 #define RSGL_isPressedS RGFW_isPressedS
-#define RSGL_window_readClipboard RGFW_window_readClipboard 
-#define RSGL_window_writeClipboard RGFW_window_writeClipboard
+#define RSGL_readClipboard RGFW_readClipboard
+#define RSGL_writeClipboard RGFW_writeClipboard
 #define RSGL_registerJoystickF RGFW_registerJoystickF
 #define RSGL_registerJoystick RGFW_registerJoystick
 #define RSGL_isPressedJS RGFW_isPressedJS
@@ -343,6 +343,8 @@ RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 
 RSGLDEF void RSGL_window_close(RSGL_window* win);
 
+RSGLDEF RSGL_point RSGL_window_getGlobalMousePoint(RSGL_window* win);
+
 #define RSGL_window_screenSize RGFW_window_screenSize
 #define RSGL_window_move RGFW_window_move
 #define RSGL_window_resize RGFW_window_resize
@@ -350,9 +352,6 @@ RSGLDEF void RSGL_window_close(RSGL_window* win);
 #define RSGL_window_setMouse RGFW_window_setMouse
 #define RSGL_window_moveMouse RGFW_window_moveMouse
 #define RSGL_window_setMouseDefault RGFW_window_setMouseDefault
-#define RSGL_window_getGlobalMousePoint RGFW_window_getGlobalMousePoint
-#define RSGL_window_getGlobalMousePoint RGFW_window_getGlobalMousePoint
-
 #else /* RSGL_NO_WINDOW */
 
 /* 
@@ -936,6 +935,12 @@ void RSGL_window_close(RSGL_window* win) {
     RGFW_window_close(win);
 }
 
+RSGL_point RSGL_window_getGlobalMousePoint(RSGL_window* win) {
+    int* mouse = RGFW_window_getGlobalMousePoint(win);
+
+    return RSGL_POINT(mouse[0], mouse[1]);
+}
+
 #else /* !RGFW_NO_WINDOW */
 
 /* 
@@ -1312,7 +1317,7 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
             centralAngle += 360.0f/(float)sides;
             rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
         }
-                rglEnd();
+        rglEnd();
     rglPopMatrix();
     rglPopMatrix();
 }
