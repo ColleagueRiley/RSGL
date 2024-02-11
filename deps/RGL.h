@@ -116,7 +116,7 @@ typedef u8 b8;
 #endif
 
 #ifndef RGL_MAX_BATCHES
-#define RGL_MAX_BATCHES 3028
+#define RGL_MAX_BATCHES 2028
 #endif
 
 #ifndef RGL_MAX_BUFFER_ELEMENTS
@@ -1100,7 +1100,7 @@ void rglEnd(void) {
     if (RGLinfo.legacy)
         return glEnd();
 
-    if (RGLinfo.drawCounter >= RGL_MAX_BATCHES - 1) {
+    if (RGLinfo.drawCounter >= RGL_MAX_BATCHES - 28) {
         rglRenderBatch();
     }
 }
