@@ -22,7 +22,7 @@
 
 /*
     define args
-    (MAKE SURE RSGL_IMPLEMENTATION is in at least one header or you use -DRSGL_IMPLEMENTATION)
+    (MAKE SURE RSGL_IMPLEMENTATION is in exactly one header or you use -DRSGL_IMPLEMENTATION)
 	#define RSGL_IMPLEMENTATION - makes it so source code is included with header
     
     #define RSGL_NO_WINDOW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]

@@ -27,7 +27,7 @@ make sure
 
 ** #define RFONT_IMPLEMENTATION ** - include function defines
 
-is in at least one of your files or arguments
+is in exactly one of your files or arguments
 
 #define RFONT_NO_OPENGL - do not define graphics functions (that use opengl)
 #define RFONT_NO_STDIO - do not include stdio.h

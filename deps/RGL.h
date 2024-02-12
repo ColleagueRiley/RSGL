@@ -23,8 +23,10 @@
 /* 
 MACRO #DEFINE ARGUMENTS
 
+(MAKE SURE RGL_IMPLEMENTATION is in exactly one header or you use -D RGL_IMPLEMENTATION)
+
 ***
-#define RGL_IMPLEMENTATION - include the RGL defines, this line must be included in at least one file or argument (-D), in your project
+#define RGL_IMPLEMENTATION - include the RGL defines, this line must be included in exactly one file or argument (-D), in your project
 ***
 
 #define RGL_MODERN_OPENGL - Use the modern opengl backend (this is enabled by default)

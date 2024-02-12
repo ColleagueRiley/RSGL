@@ -21,6 +21,11 @@
 */
 
 /*
+    (MAKE SURE RGFW_IMPLEMENTATION is in exactly one header or you use -D RGFW_IMPLEMENTATION)
+	#define RGFW_IMPLEMENTATION - makes it so source code is included with header
+*/
+
+/*
 	#define RGFW_IMPLEMENTATION - (semi-option) makes it so source code is included
 	#define RGFW_PRINT_ERRORS - (optional) makes it so RGFW prints errors when they're found
 	#define RGFW_OSMESA - (optional) use OSmesa as backend (instead of system's opengl api + regular opengl)
@@ -424,7 +429,7 @@ RGFWDEF u32 RGFW_keyStrToKeyCode(char* key); /*!< converts a string of a key to 
 RGFWDEF char RGFW_keystrToChar(const char*);
 
 /*! clipboard functions*/
-RGFWDEF const char* RGFW_readClipboard(void); /*!< read clipboard data */
+RGFWDEF char* RGFW_readClipboard(void); /*!< read clipboard data */
 RGFWDEF void RGFW_writeClipboard(const char* text, u32 textLen); /*!< write text to the clipboard */
 
 #ifndef RGFW_NO_THREADS
@@ -1923,7 +1928,7 @@ void RGFW_window_setMouseDefault(RGFW_window* win) {
 /*
 	the majority function is sourced from GLFW
 */
-const char* RGFW_readClipboard(void) {
+char* RGFW_readClipboard(void) {
 	char* result = NULL;
 	u64 ressize, restail;
 	i32 resbits;
@@ -2957,7 +2962,7 @@ void RGFW_window_setIcon(RGFW_window* win, u8* src, i32 width, i32 height, i32 c
     SendMessageW((HWND)win->display, WM_SETICON, ICON_SMALL, (LPARAM) handle);
 }
 
-const char* RGFW_readClipboard(void) {
+char* RGFW_readClipboard(void) {
     /* Open the clipboard */
     if (!OpenClipboard(NULL))
         return (char*)"";
@@ -2968,9 +2973,8 @@ const char* RGFW_readClipboard(void) {
         CloseClipboard();
         return (char*)"";
     }
-
-	static char text[7];
-	strcpy(text, (char*)GlobalLock(hData));
+	
+	char* text = strdup(GlobalLock(hData));
 	
     /* Release the clipboard data */
     GlobalUnlock(hData);
@@ -2983,7 +2987,7 @@ void RGFW_writeClipboard(const char* text, u32 textLen) {
     HANDLE object;
     WCHAR* buffer;
 
-    object = GlobalAlloc(GMEM_MOVEABLE, textLen * sizeof(WCHAR));
+    object = GlobalAlloc(GMEM_MOVEABLE, (1 + textLen) * sizeof(WCHAR));
     if (!object)
         return;
 
@@ -3601,7 +3605,7 @@ u8 RGFW_isPressedI(RGFW_window* win, u32 key) {
 	return RGFW_keyMap[key];
 }
 
-const char* RGFW_readClipboard(void){ return (char*)NSPasteboard_stringForType(NSPasteboard_generalPasteboard(), NSPasteboardTypeString); }
+char* RGFW_readClipboard(void){ return (char*)NSPasteboard_stringForType(NSPasteboard_generalPasteboard(), NSPasteboardTypeString); }
 
 void RGFW_writeClipboard(const char* text, u32 textLen) {
 	siArray(NSPasteboardType) array = si_array_init((NSPasteboardType[]){NSPasteboardTypeString}, sizeof(*array), 1);

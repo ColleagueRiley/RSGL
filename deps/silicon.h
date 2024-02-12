@@ -23,7 +23,7 @@
 
 /*
     define args
-    (MAKE SURE ** #define SILICON_IMPLEMENTATION ** is in at least one header or you use -D SILICON_IMPLEMENTATION)
+    (MAKE SURE ** #define SILICON_IMPLEMENTATION ** is in exactly one header or you use -D SILICON_IMPLEMENTATION)
     #define SI_NO_RELEASE - do not define release (just use NSRelease)
 */
 
