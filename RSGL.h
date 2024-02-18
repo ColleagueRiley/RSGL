@@ -316,7 +316,7 @@ RGFW_FUNCTION_DEFINES
 #define RSGL_isMinimized RGFW_isMinimized
 #define RSGL_isMaximized RGFW_isMaximized
 #define RSGL_window_swapBuffers RGFW_window_swapBuffers
-#define RSGL_window_hideMouse RGFW_window_hideMouse
+#define RSGL_window_showMouse RGFW_window_showMouse
 #define RSGL_createThread RGFW_createThread
 
 RSGLDEF void RSGL_legacy(i32 legacy);
@@ -1140,8 +1140,8 @@ void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_co
     float dir = (hypotenuse > 0);
     hypotenuse = fabsf(hypotenuse);
 
-    float base = hypotenuse * (cos(angle) * RAD2DEG);
-    float opp = hypotenuse * (cos(angle) * RAD2DEG); 
+    float base = hypotenuse * (cos(angle) * DEG2RAD);
+    float opp = hypotenuse * (sin(angle) * DEG2RAD); 
     
     RSGL_triangleF t = RSGL_TRIANGLEF(
         p,

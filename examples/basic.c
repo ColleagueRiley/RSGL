@@ -30,7 +30,6 @@ int main() {
 
     /*unsigned short js = RSGL_registerJoystick(win, 0);*/
     unsigned char i, frames = 60;
-    unsigned char mouseHidden = 0;
 
     RSGL_window_setIcon(win, icon, 3, 3, 4);
 
@@ -58,23 +57,15 @@ int main() {
                 break;
             }
             if (RSGL_isPressedI(win, RGFW_Up))
-                printf("Pasted : %s\n", RSGL_readClipboard());
+                printf("Pasted : %s\n", RSGL_readClipboard(NULL));
             else if (RSGL_isPressedI(win, RGFW_Down))
                 RSGL_writeClipboard("DOWN", 4);
             else if (RSGL_isPressedI(win, RGFW_Space))
                 printf("fps : %i\n", win->event.fps);
-            else if (RSGL_isPressedI(win, RGFW_w) && frames >= 30) {
-                if (!mouseHidden) {
-                    RSGL_window_hideMouse(win);
-                    mouseHidden = 1;
-                }
-                else {
-                    RSGL_window_setMouseDefault(win);
-                    mouseHidden = 0;
-                }
-                
-                frames = 0;
-            }
+            else if (RSGL_isPressedI(win, RGFW_w))
+                RSGL_window_setMouseDefault(win);
+            else if (RSGL_isPressedI(win, RGFW_q))
+                RSGL_window_showMouse(win, 0);
             else if (RSGL_isPressedI(win, RGFW_t)) {
                 RSGL_window_setMouse(win, icon, 3, 3, 4);
             }
