@@ -906,8 +906,8 @@ void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     RGFW_window_swapBuffers(win);
 
     glClearDepth(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     rglRenderBatch();
 }
@@ -981,8 +981,8 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
 
 void RSGL_graphics_clear(RSGL_color color) {
     glClearDepth(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     rglRenderBatch();
 }
 
