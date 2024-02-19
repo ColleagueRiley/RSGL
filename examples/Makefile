@@ -40,13 +40,13 @@ debug:
 	gcc text.c $(LIBS) $(ARGS) -o text
 	gcc glVer.c $(LIBS) $(ARGS) -o glVer
 
-	./basic
 	./events
 	./shapes
 	./textures
 	./text
 	./glVer
-
+	./basic
+	
 glfw:
 	gcc glfw.c -lglfw -lm -I../ -o glfw
 
