@@ -378,12 +378,13 @@ RSGLDEF void RSGL_rotate(RSGL_point3D rotate);
 RSGLDEF void RSGL_setTexture(u32 texture);
 RSGLDEF void RSGL_setGradient(RSGL_color gradient[], size_t len);
 RSGLDEF void RSGL_fill(bool fill);
+RSGLDEF void RSGL_center(RSGL_point3DF center);
 
 /* args clear after a draw function by default, this toggles that */
 RSGLDEF void RSGL_setClearArgs(bool clearArgs); /* toggles if args are cleared by default or not */
 RSGLDEF void RSGL_clearArgs(); /* clears the args */
 
-RSGLDEF void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len);
+RSGLDEF void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_point3DF center, RSGL_color c, size_t len);
 /* 2D shape drawing */
 
 RSGLDEF void RSGL_drawPoint(RSGL_point p, RSGL_color c);
@@ -753,9 +754,10 @@ typedef struct RSGL_drawArgs {
     RSGL_point3D rotate; 
 
     bool fill;
+    RSGL_point3DF center;
 } RSGL_drawArgs;
 
-RSGL_drawArgs RSGL_args = {{ }, 1, 0, { }, {0, 0, 0}, 1};
+RSGL_drawArgs RSGL_args = {{ }, 1, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1)};
 bool RSGL_argsClear = false;
 
 #ifndef RSGL_NO_TEXT
@@ -781,7 +783,7 @@ typedef struct { const char* img; u32 tex;} RSGL_image;
 RSGL_image* RSGL_images = NULL;
 size_t RSGL_images_len = 0;
 
-RSGLDEF void glPrerequisites(RSGL_rectF r, RSGL_color c);
+RSGLDEF void glPrerequisites(RSGL_point3DF center, RSGL_color c);
 
 RSGLDEF bool RSGL_cstr_equal(const char* str, const char* str2);
 bool RSGL_cstr_equal(const char* str, const char* str2) {
@@ -802,10 +804,10 @@ bool RSGL_cstr_equal(const char* str, const char* str2) {
 }
 
 
-void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_rectF rect, RSGL_color c, size_t len) {  
+void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_point3DF center, RSGL_color c, size_t len) {  
     i32 i;
 
-    glPrerequisites(rect, c);
+    glPrerequisites(center, c);
         rglBegin(RGL_TYPE);
             for (i = 0; i < len; i++) {
                 if (i && i <= RSGL_args.gradient_len)
@@ -1033,7 +1035,11 @@ void RSGL_setGradient(RSGL_color gradient[], size_t len) {
 void RSGL_fill(bool fill) {
     RSGL_args.fill = fill;
 }
+void RSGL_center(RSGL_point3DF center) {
+    RSGL_args.center = center;
+}
 void RSGL_setClearArgs(bool clearArgs) {
+    RSGL_POINT3DF(-1, -1, -1);
     RSGL_argsClear = clearArgs;
 }
 void RSGL_clearArgs() {
@@ -1130,9 +1136,8 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
                 {((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f},
     };
     
-    RSGL_rectF r = {t.p2.x, t.p3.y, fabsf(t.p2.x - t.p1.x), fabsf(t.p2.y - t.p3.y)};
-
-    RSGL_basicDraw(RGL_TRIANGLES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 3);
+    RSGL_point3DF center = {t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0};
+    RSGL_basicDraw(RGL_TRIANGLES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 3);
 }
 
 void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color) {
@@ -1158,7 +1163,9 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
     RSGL_pointF texPoints[] = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 0.0f}};
     RSGL_point3DF points[] = {{r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}};
 
-    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 4);
+    RSGL_point3DF center = RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f);
+
+    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 4);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
@@ -1184,7 +1191,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
     
-    glPrerequisites(o, c);
+    glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
     rglBegin(RGL_TRIANGLES_2D);
 
     float displacement = 360.0f / (float)sides;
@@ -1253,9 +1260,9 @@ void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c)
     RSGL_point3DF points[] = {{p1.x, p1.y, 0.0f}, {p2.x, p2.y, 0.0f}};
     RSGL_pointF texPoints[] = {{0, 0.0f}, {0, 0.0f}};
 
-    RSGL_rectF r = {p1.x, p1.y, (p2.x - p1.x), (p2.y - p1.y)};
+    RSGL_point3DF center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, 0.0f};
 
-    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 2);
+    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 2);
 }
 
 void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c) {
@@ -1263,15 +1270,26 @@ void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c) {
     RSGL_point3DF points[] = {{t.p3.x, t.p3.y, 0.0f}, {t.p1.x, t.p1.y, 0.0f}, {t.p1.x, t.p1.y, 0.0f}, {t.p2.x, t.p2.y, 0.0f}, {t.p2.x, t.p2.y, 0.0f}, {t.p3.x, t.p3.y, 0.0f}};
     RSGL_pointF texPoints[] = {{0, 0.0f}, {0, 0.0f}, {0, 0.0f}, {0, 0.0f}, {0, 0.0f}, {0, 0.0f}};
 
-    RSGL_rectF r = {t.p2.x, t.p3.y, fabsf(t.p2.x - t.p1.x), fabsf(t.p2.y - t.p3.y)};
+    RSGL_point3DF center = {t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0};
 
-    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 6);
+    RSGL_basicDraw(RGL_LINES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 6);
 }
 void RSGL_drawRectFOutline(RSGL_rectF r, u32 thickness, RSGL_color c) {
+    RSGL_point3DF oCenter = RSGL_args.center;
+
+    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
     RSGL_drawLineF((RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x + r.w, r.y}, thickness, c);
+
+    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
     RSGL_drawLineF((RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x, r.y + r.h}, thickness, c);
+
+    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
     RSGL_drawLineF((RSGL_pointF){r.x, r.y + r.h}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness, c);
+
+    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
     RSGL_drawLineF((RSGL_pointF){r.x + r.w, r.y}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness, c);
+
+    RSGL_center(oCenter);
 }
 void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness, RSGL_color c) {
     RSGL_drawRectF((RSGL_rectF) {r.x + (rounding.x/2), r.y, r.w - rounding.x, (int)(thickness + !thickness)}, c);
@@ -1291,7 +1309,7 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
     float displacement = 360.0f / (float)sides;
     float centralAngle = displacement * arc.x;
 
-    glPrerequisites(o, c);
+    glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
         i32 i;
 
         for (i = arc.x; i < arc.y; i++) {
@@ -1582,7 +1600,7 @@ u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd) {
 }
 #endif /* RSGL_NO_TEXT */
 
-void glPrerequisites(RSGL_rectF r, RSGL_color c) {
+void glPrerequisites(RSGL_point3DF center, RSGL_color c) {
     rglColor4ub(c.r, c.g, c.b, c.a);
     rglMatrixMode(RGL_PROJECTION);
     rglLoadIdentity();
@@ -1591,13 +1609,18 @@ void glPrerequisites(RSGL_rectF r, RSGL_color c) {
     rglPushMatrix();
 
     rglOrtho(0, RSGL_args.currentRect.w, RSGL_args.currentRect.h, 0, -RSGL_args.currentRect.w, RSGL_args.currentRect.w);
+    
+    if (RSGL_args.rotate.x == 0 && RSGL_args.rotate.y == 0 && RSGL_args.rotate.z == 0)
+        return;
+    
+    if (RSGL_args.center.x != -1 && RSGL_args.center.y != -1 &&  RSGL_args.center.z != -1)
+        center = RSGL_args.center;
 
-    rglTranslatef((r.x + (r.w / 2)), (r.x + (r.h / 2)), 0);
+    rglTranslatef(center.x, center.y, center.z);
     rglRotatef(RSGL_args.rotate.z,  0, 0, 1);
     rglRotatef(RSGL_args.rotate.y, 0, 1, 0);
     rglRotatef(RSGL_args.rotate.x, 1, 0, 0);
-
-    rglTranslatef(-(r.x + (r.w / 2)), -(r.x + (r.h / 2)), 0);
+    rglTranslatef(-center.x, -center.y, -center.z);
 }
 
 
