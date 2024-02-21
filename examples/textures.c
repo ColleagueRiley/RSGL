@@ -25,7 +25,7 @@ int main(void) {
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
-    u32 texture = RSGL_loadImage("../logo.png");
+    u32 texture = RSGL_loadImage("logo.png");
     u32 iconTex = RSGL_createTexture(icon, RSGL_AREA(3, 3), 4);
 
     size_t texTimer = time(0);
