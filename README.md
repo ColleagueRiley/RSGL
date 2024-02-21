@@ -2,7 +2,7 @@
 ### Riley's Simple GUI Library 
 #
 
-![alt text](https://github.com/ColleagueRiley/RSGL/blob/main/logo.png?raw=true)
+![The RSGL logo](https://github.com/ColleagueRiley/RSGL/blob/main/logo.png?raw=true)
 
 A simple GUI library currently for Linux, Windows and MacOS
 
