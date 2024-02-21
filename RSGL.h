@@ -1184,47 +1184,35 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
         return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
     
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
-    float centralAngle = 0;
-
-    i32 x = 0;
-
+    
     glPrerequisites(o, c);
-    
-    rglBegin(RSGL_args.texture != 1 ? RGL_QUADS_2D : RGL_TRIANGLES_2D);
-    
-    for (x = 0; (x / 3) < arc.y; x += 3) {
-        if ((x / 3) < arc.x) { 
-            centralAngle += 360.0f/(float)sides;
-            continue;
-        }
+    rglBegin(RGL_TRIANGLES_2D);
 
-        float rad = (360 / sides * (x / 3)) * (M_PI / 180.0);
-
-        float tx = (float)cos(rad) * 0.5 + 0.5;
-        float ty = (float)sin(rad) * 0.5 + 0.5;
+    float centralAngle = 0;
+    u32 x = 0;
+    for (x = arc.x; x < arc.y; x++) {
+        float caSin = sinf(centralAngle * DEG2RAD);
+        float caCos = cosf(centralAngle * DEG2RAD);
+        
+        /*
+            0.5 is the center of the texture
+            the hypotenuse of the triangle slice reaches from the center of the texture to the current side 
+            Therefore, (caSin * 0.5) = opp
+        */
 
         rglTexCoord2f(0.5f, 0.5f);
-
+        rglColor4ubX(0);
         rglVertex2f(o.x, o.y);
 
-        rglTexCoord2f(ty, 0);
-    
-        rglColor4ubX(0);
-        rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-        
-        if (RSGL_args.texture != 1 && RSGL_args.texture) {
-            rglTexCoord2f(ty, tx);
-            rglColor4ubX(0);
-
-            rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
-        }
-
-        centralAngle += 360.0f / (float)sides;
-
-        rglTexCoord2f(ty, tx);
-
         rglColor4ubX(1);
-        rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
+        rglTexCoord2f((caSin * 0.5) + 0.5, (caCos * 0.5) + 0.5);
+        rglVertex2f(o.x + (caSin * o.w),  o.y + (caCos * o.h));
+        
+        centralAngle += 360.0f / (float)sides;        
+        rglVertex2f(
+                o.x + (sinf(centralAngle * DEG2RAD) * o.w), 
+                o.y + (cosf(centralAngle * DEG2RAD) * o.h)
+        );
     }
     rglEnd();
     rglPopMatrix();
@@ -1305,7 +1293,7 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
         i32 i;
 
         for (i = 0; i < arc.y; i++) {
-    rglBegin(RGL_LINES_2D);
+            rglBegin(RGL_LINES_2D);
             rglColor4ub(c.r, c.g, c.b, c.a);
 
             if (i < arc.x ) {
@@ -1313,9 +1301,9 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
                 continue;
             }
 
-            rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.w);
+            rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.w));
             centralAngle += 360.0f/(float)sides;
-            rglVertex2f(o.x + sinf(DEG2RAD * centralAngle) * o.w, o.y + cosf(DEG2RAD * centralAngle) * o.h);
+            rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.h));
         }
         rglEnd();
     rglPopMatrix();
