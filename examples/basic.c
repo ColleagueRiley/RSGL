@@ -93,7 +93,9 @@ int main() {
             RSGL_pointF tex[3];
     
             RSGL_setGradient(gradient, 3);
-            RSGL_basicDraw(RSGL_TRIANGLES_2D, points, tex, RSGL_RECTF(20, 20, win->r.w - 20, win->r.h - 20), RSGL_RGB(255, 255, 0), 3);
+
+            RSGL_point3DF center = {points[2].x, (points[2].y + points[0].y) / 2.0f, 0};
+            RSGL_basicDraw(RSGL_TRIANGLES_2D, points, tex, center, RSGL_RGB(255, 255, 0), 3);
             
             RSGL_window_clear(win2, RSGL_RGB(255, 255, 255));
         }
