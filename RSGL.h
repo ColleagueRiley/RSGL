@@ -816,7 +816,6 @@ void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints,
             }
         rglEnd();
     rglPopMatrix();
-    rglPopMatrix();
 
     if (RSGL_argsClear) {
         RSGL_setTexture(0);
@@ -1188,7 +1187,9 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     glPrerequisites(o, c);
     rglBegin(RGL_TRIANGLES_2D);
 
-    float centralAngle = 0;
+    float displacement = 360.0f / (float)sides;
+    float centralAngle = displacement * arc.x;
+
     u32 x = 0;
     for (x = arc.x; x < arc.y; x++) {
         float caSin = sinf(centralAngle * DEG2RAD);
@@ -1208,14 +1209,13 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
         rglTexCoord2f((caSin * 0.5) + 0.5, (caCos * 0.5) + 0.5);
         rglVertex2f(o.x + (caSin * o.w),  o.y + (caCos * o.h));
         
-        centralAngle += 360.0f / (float)sides;        
+        centralAngle += displacement;        
         rglVertex2f(
                 o.x + (sinf(centralAngle * DEG2RAD) * o.w), 
                 o.y + (cosf(centralAngle * DEG2RAD) * o.h)
         );
     }
     rglEnd();
-    rglPopMatrix();
     rglPopMatrix();
 
     if (RSGL_argsClear) RSGL_clearArgs();
@@ -1287,26 +1287,22 @@ void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness
 
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
-    float centralAngle = 0;
-    
+ 
+    float displacement = 360.0f / (float)sides;
+    float centralAngle = displacement * arc.x;
+
     glPrerequisites(o, c);
         i32 i;
 
-        for (i = 0; i < arc.y; i++) {
+        for (i = arc.x; i < arc.y; i++) {
             rglBegin(RGL_LINES_2D);
             rglColor4ub(c.r, c.g, c.b, c.a);
 
-            if (i < arc.x ) {
-                centralAngle += 360.0f/(float)sides;
-                continue;
-            }
-
             rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.w));
-            centralAngle += 360.0f/(float)sides;
+            centralAngle += displacement;
             rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.h));
         }
         rglEnd();
-    rglPopMatrix();
     rglPopMatrix();
 }
 
@@ -1405,7 +1401,6 @@ void RSGL_drawCubeF(RSGL_cubeF r, RSGL_color color) {
             rglVertex3f(x - r.w / 2, y + r.h / 2, z + r.l / 2);  // Top Left
             rglVertex3f(x - r.w / 2, y - r.h / 2, z - r.l / 2);  // Bottom Right
         rglEnd();
-    rglPopMatrix();
     rglPopMatrix();
 
     /*
@@ -1591,7 +1586,6 @@ void glPrerequisites(RSGL_rectF r, RSGL_color c) {
     rglColor4ub(c.r, c.g, c.b, c.a);
     rglMatrixMode(RGL_PROJECTION);
     rglLoadIdentity();
-    rglPushMatrix();
     
     rglMatrixMode(RGL_MODELVIEW);
     rglPushMatrix();
