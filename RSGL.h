@@ -1124,15 +1124,15 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
     if (RSGL_args.fill == false)
         return RSGL_drawTriangleFOutline(t, 1, c);
 
-    RSGL_point3DF points[] = {{(float)t.p1.x, (float)t.p1.y, 0.0f}, {(float)t.p2.x, (float)t.p2.y, 0.0f}, {(float)t.p2.x, (float)t.p2.y}, {(float)t.p3.x, (float)t.p3.y, 0.0f}};
-    RSGL_pointF texPoints[] = {  
-                {((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f}, 
-                {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}
+    RSGL_point3DF points[] = {{(float)t.p1.x, (float)t.p1.y, 0.0f}, {(float)t.p2.x, (float)t.p2.y, 0.0f}, {(float)t.p3.x, (float)t.p3.y, 0.0f}};
+    RSGL_pointF texPoints[] = {   
+                {0.0f, 1.0f}, {1.0f, 1.0f},
+                {((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f},
     };
     
     RSGL_rectF r = {t.p2.x, t.p3.y, fabsf(t.p2.x - t.p1.x), fabsf(t.p2.y - t.p3.y)};
 
-    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 4);
+    RSGL_basicDraw(RGL_TRIANGLES_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, r, c, 3);
 }
 
 void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color) {
