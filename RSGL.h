@@ -1189,9 +1189,9 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     if (RSGL_args.fill == false)
         return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
     
+    glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
     
-    glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
     rglBegin(RGL_TRIANGLES_2D);
 
     float displacement = 360.0f / (float)sides;
@@ -1304,23 +1304,23 @@ void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness
 }
 
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
+    glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
  
     float displacement = 360.0f / (float)sides;
     float centralAngle = displacement * arc.x;
 
-    glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
-        i32 i;
+    i32 i;
 
-        for (i = arc.x; i < arc.y; i++) {
-            rglBegin(RGL_LINES_2D);
-            rglColor4ub(c.r, c.g, c.b, c.a);
+    for (i = arc.x; i < arc.y; i++) {
+        rglBegin(RGL_LINES_2D);
+        rglColor4ub(c.r, c.g, c.b, c.a);
 
-            rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.w));
-            centralAngle += displacement;
-            rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.h));
-        }
-        rglEnd();
+        rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.w));
+        centralAngle += displacement;
+        rglVertex2f(o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.h));
+    }
+    rglEnd();
     rglPopMatrix();
 }
 
