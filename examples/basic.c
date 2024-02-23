@@ -3,7 +3,7 @@
 #define RSGL_NO_AUDIO
 #define RSGL_NO_X11_CURSOR
 
-#include "RSGL.h"
+#include "../RSGL.h"
 #include <stdio.h>
 
 void drawLoop(RSGL_window* w); /* I seperate the draw loop only because it's run twice */
