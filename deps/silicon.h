@@ -2133,14 +2133,14 @@ void NSWindow_setTitle(NSWindow* window, const char* title) {
     objc_msgSend_void_id(window, func, str);
 }
 
-void NSWindow_maxSize(NSWindow* window, NSSize size) {
+void NSWindow_setMaxSize(NSWindow* window, NSSize size) {
     void* func = SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE];
 
     return (((*)(id, SEL, NSSize))objc_msgSend)
                 (SI_NS_CLASSES[NS_WINDOW_CODE], func, size);
 }
 
-void NSWindow_MinSize(NSWindow* window, NSSize size) {
+void NSWindow_setMinSize(NSWindow* window, NSSize size) {
     void* func = SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE];
 
     return (((*)(id, SEL, NSSize))objc_msgSend)
