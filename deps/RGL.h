@@ -983,15 +983,15 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 }
 
 void rglPerspective(double fovY, double aspect, double zNear, double zFar) {
-    const double f = tan(fovY / 2.0);
+    const double f = 1 / tan(fovY / 2.0);
     float projectionMatrix[16] = {0};
-
+    
     projectionMatrix[0] = f / aspect;
     projectionMatrix[5] = f;
     projectionMatrix[10] = (zFar + zNear) / (zNear - zFar);
     projectionMatrix[11] = -1.0;
     projectionMatrix[14] = (2.0 * zFar * zNear) / (zNear - zFar);
-
+    
     rglMultMatrixf(projectionMatrix);
 }
 
