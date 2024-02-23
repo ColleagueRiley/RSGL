@@ -1832,7 +1832,7 @@ void si_initNS(void) {
     SI_NS_FUNCTIONS[NS_WINDOW_PERFORM_MINIATURIZE_CODE] = sel_getUid("performMiniaturize:");
     SI_NS_FUNCTIONS[NS_WINDOW_PERFORM_ZOOM_CODE] = sel_getUid("performZoom:");
     SI_NS_FUNCTIONS[NS_WINDOW_STYLE_MASK_CODE] = sel_getUid("styleMask");
-    SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE] = sel_getUid("setMinSize:")
+    SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE] = sel_getUid("setMinSize:");
     SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE] = sel_getUid("setMaxSize:");
 }
 
@@ -2136,14 +2136,14 @@ void NSWindow_setTitle(NSWindow* window, const char* title) {
 void NSWindow_setMaxSize(NSWindow* window, NSSize size) {
     void* func = SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE];
 
-    return (((*)(id, SEL, NSSize))objc_msgSend)
+    return ((void (*)(id, SEL, NSSize))objc_msgSend)
                 (SI_NS_CLASSES[NS_WINDOW_CODE], func, size);
 }
 
 void NSWindow_setMinSize(NSWindow* window, NSSize size) {
     void* func = SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE];
 
-    return (((*)(id, SEL, NSSize))objc_msgSend)
+    return ((void (*)(id, SEL, NSSize))objc_msgSend)
                 (NSAlloc(SI_NS_CLASSES[NS_WINDOW_CODE]), func, size);
 }
 
