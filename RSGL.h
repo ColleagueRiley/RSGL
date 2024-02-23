@@ -103,8 +103,7 @@
 #define RSGL_mouseButtonReleased 5 /*!< a mouse button has been released (left,middle,right)*/
 #define RSGL_mousePosChanged 6 /*!< the position of the mouse has been changed*/
 /*! mouse event note
-	the x and why of the mouse can be found in
-	RGFW_Event.x and RGFW_Event.y respectively
+	The x and y coords of the mouse are stored as RSGL_point in RGFW_Event.point
 	
 	RGFW_Event.button holds which mouse button was pressed
 */
@@ -127,8 +126,7 @@
 #define RSGL_dnd 34 /*!< a file has been dropped into the window*/
 #define RSGL_dnd_init 35 /*!< the start of a dnd event, when the place where the file drop is known */
 /* dnd data note
-	The x and y coords of the drop are stored in
-	RGFW_Event.x and RGFW_Event.y respectively
+	The x and y coords of the drop are stored as RSGL_point in RGFW_Event.point
 
 	RGFW_Event.droppedFilesCount holds how many files were dropped
 	
