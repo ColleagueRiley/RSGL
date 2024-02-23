@@ -2,7 +2,7 @@
 ### Riley's Simple GUI Library 
 #
 
-![The RSGL logo](https://github.com/ColleagueRiley/RSGL/blob/main/logo.png?raw=true)
+![The RSGL logo](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL_logo.png?raw=true)
 
 RSGL is A modular simple-to-use cross-platform GUI library for easily creating GUI apps and games. It combines the freedom of lower-level GUI libraries with modern C techniques, offering both simplicity and convenience. 
 
