@@ -31,7 +31,7 @@ int main() {
     /*unsigned short js = RSGL_registerJoystick(win, 0);*/
     unsigned char i, frames = 60;
 
-    RSGL_window_setIcon(win, icon, 3, 3, 4);
+    RSGL_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
 
     RSGL_window_swapInterval(win, 60);
 
@@ -67,7 +67,7 @@ int main() {
             else if (RSGL_isPressedI(win, RGFW_q))
                 RSGL_window_showMouse(win, 0);
             else if (RSGL_isPressedI(win, RGFW_t)) {
-                RSGL_window_setMouse(win, icon, 3, 3, 4);
+                RSGL_window_setMouse(win, icon, RSGL_AREA(3, 3), 4);
             }
             if (win->event.type == RSGL_dnd) {
                 for (i = 0; i < win->event.droppedFilesCount; i++)
@@ -78,7 +78,7 @@ int main() {
                 printf("pressed %i\n", win->event.button);
 
             else if (win->event.type == RSGL_jsAxisMove && !win->event.button)
-                printf("{%i, %i}\n", win->event.axis[0][0], win->event.axis[0][1]);
+                printf("{%i, %i}\n", win->event.axis[0].x, win->event.axis[0].y);
         }
 
         RSGL_window_makeCurrent(win);

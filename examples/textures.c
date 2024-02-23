@@ -17,7 +17,7 @@ int main(void) {
     RSGL_window* win = RSGL_createWindow("RSGL event example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
     win->fpsCap = 60;
 
-    RSGL_window_setIcon(win, icon, 3, 3, 4);
+    RSGL_window_setIcon(win, icon, RSGL_AREA(3, 3), 4);
 
     bool running = true;
 
