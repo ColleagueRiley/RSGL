@@ -75,35 +75,77 @@
 #endif
 
 /*! Optional arguments for making a windows */
-#define RSGL_TRANSPARENT_WINDOW		(1L<<9) /*!< If the window is transparent*/
-#define RSGL_NO_BORDER		(1L<<3) /*!< If the window doesn't have border*/
-#define RSGL_NO_RESIZE		(1L<<4) /*!< If the window cannot be resized  by the user*/
-#define RSGL_ALLOW_DND     (1L<<5) /*!< if the window supports drag and drop*/
-#define RSGL_HIDE_MOUSE (1L<<6) /* if the window should hide the mouse or not (can be toggled later on)*/
-#define RSGL_OPENGL (1L<<7) /* use normal opengl (if another version is also selected) */
-#define RSGL_FULLSCREEN (1L<<8) /* if the window should be fullscreen by default or not */
-#define RSGL_CENTER (1L<<10)
-#define RSGL_OPENGL_SOFTWARE (1L<<11) /* use OpenGL software rendering */
+#define RSGL_TRANSPARENT_WINDOW		(1L<<9) /*!< the window is transparent */
+#define RSGL_NO_BORDER		(1L<<3) /*!< the window doesn't have border */
+#define RSGL_NO_RESIZE		(1L<<4) /*!< the window cannot be resized  by the user */
+#define RSGL_ALLOW_DND     (1L<<5) /*!< the window supports drag and drop*/
+#define RSGL_HIDE_MOUSE (1L<<6) /*! the window should hide the mouse or not (can be toggled later on) using `RGFW_window_mouseShow*/
+#define RSGL_OPENGL (1L<<7) /*! load a normal opengl context (if another GL/buffer context is selected) */
+#define RSGL_FULLSCREEN (1L<<8) /* the window is fullscreen by default or not */
+#define RSGL_CENTER (1L<<10) /*! center the window on the screen */
+#define RSGL_OPENGL_SOFTWARE (1L<<11) /*! use OpenGL software rendering */
+
 /*! event codes */
-#define RSGL_keyPressed 2 /*!< a key has been pressed*/
+#define RSGL_keyPressed 2 /* a key has been pressed */
 #define RSGL_keyReleased 3 /*!< a key has been released*/
+/*! key event note
+	the code of the key pressed is stored in
+	RGFW_Event.keyCode
+	!!Keycodes defined at the bottom of the header file!!
+	
+	while a string version is stored in
+	RGFW_Event.KeyString
+
+	RGFW_Event.lockState holds the current lockState
+	this means if CapsLock, NumLock are active or not
+*/
 #define RSGL_mouseButtonPressed 4 /*!< a mouse button has been pressed (left,middle,right)*/
 #define RSGL_mouseButtonReleased 5 /*!< a mouse button has been released (left,middle,right)*/
 #define RSGL_mousePosChanged 6 /*!< the position of the mouse has been changed*/
+/*! mouse event note
+	the x and why of the mouse can be found in
+	RGFW_Event.x and RGFW_Event.y respectively
+	
+	RGFW_Event.button holds which mouse button was pressed
+*/
 #define RSGL_jsButtonPressed 7 /*!< a joystick button was pressed */
 #define RSGL_jsButtonReleased 8 /*!< a joystick button was released */
 #define RSGL_jsAxisMove 9 /*!< an axis of a joystick was moved*/
+/*! joystick event note
+	RGFW_Event.joystick holds which joystick was altered, if any
+	RGFW_Event.button holds which joystick button was pressed
+
+	RGFW_Event.axis holds the data of all the axis
+	RGFW_Event.axisCount says how many axis there are
+*/
 #define RSGL_windowAttribsChange 10 /*!< the window was moved or resized (by the user) */
+/* attribs change event note
+	The event data is sent straight to the window structure
+	with win->r.x, win->r.y, win->r.w and win->r.h
+*/
 #define RSGL_quit 33 /*!< the user clicked the quit button*/ 
 #define RSGL_dnd 34 /*!< a file has been dropped into the window*/
 #define RSGL_dnd_init 35 /*!< the start of a dnd event, when the place where the file drop is known */
+/* dnd data note
+	The x and y coords of the drop are stored in
+	RGFW_Event.x and RGFW_Event.y respectively
 
-/*! mouse button codes */
+	RGFW_Event.droppedFilesCount holds how many files were dropped
+	
+	This is also the size of the array which stores all the dropped file string,
+	RGFW_Event.droppedFiles
+*/
+
+/*! mouse button codes (RGFW_Event.button) */
 #define RSGL_mouseLeft  1 /*!< left mouse button is pressed*/
 #define RSGL_mouseMiddle  2 /*!< mouse-wheel-button is pressed*/
 #define RSGL_mouseRight  3 /*!< right mouse button is pressed*/
 #define RSGL_mouseScrollUp  4 /*!< mouse wheel is scrolling up*/
 #define RSGL_mouseScrollDown  5 /*!< mouse wheel is scrolling down*/
+
+/* for RGFW_Event.lockstate */
+#define RSGL_CAPSLOCK (1L << 1)
+#define RSGL_NUMLOCK (1L << 2)
 
 #define RSGL_JS_A RGFW_JS_A /* or PS X button */
 #define RSGL_JS_B RGFW_JS_B /* or PS circle button */
@@ -189,6 +231,14 @@ keys will not be reincluded into RSGL
 	typedef int64_t    i64;
 #endif
 
+#define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
+
+/* 
+*******
+RSGL_[shape]
+*******
+*/
+
 typedef struct RSGL_rect {
     i32 x, y, w, h;
 } RSGL_rect;
@@ -197,11 +247,23 @@ typedef struct RSGL_rect {
 typedef struct RSGL_rectF { float x, y, w, h; } RSGL_rectF;
 #define RSGL_RECTF(x, y, w, h) (RSGL_rectF){x, y, w, h}
 
-#define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
+typedef struct RSGL_point {
+    i32 x, y;
+} RSGL_point;
+#define RSGL_POINT(x, y) (RSGL_point){x, y}
+
+typedef struct RSGL_area {
+    i32 w, h;
+} RSGL_area;
+#define RSGL_AREA(w, h) (RSGL_area){w, h}
+
+/*  include RGFW here  */
 
 #ifndef RSGL_NO_WINDOW
-#define RGFW_RECT RSGL_rect
-#define RGFW_EXTRA_CONTEXT
+/* so we're only using one kind of shape data */
+#define RGFW_rect RSGL_rect
+#define RGFW_vector RSGL_point
+#define RGFW_area RSGL_area
 #define GL_SILENCE_DEPRECATION
 #include "deps/RGFW.h"
 #else
@@ -213,15 +275,10 @@ typedef struct {u32 type, x, y;} RGFW_Event;
 #include <stddef.h>
 
 /* 
-*******
+******* 
 RSGL_[shape]
 *******
 */
-
-typedef struct RSGL_point {
-    i32 x, y;
-} RSGL_point;
-#define RSGL_POINT(x, y) (RSGL_point){x, y}
 
 typedef struct RSGL_pointF { float x, y; } RSGL_pointF;
 #define RSGL_POINTF(x, y) (RSGL_pointF){x, y}
@@ -234,12 +291,6 @@ typedef struct RSGL_point3DF { float x, y, z; } RSGL_point3DF;
 
 #define RSGL_POINT3D(x, y, z) (RSGL_point3D){x, y, z}
 #define RSGL_POINT3DF(x, y, z) (RSGL_point3DF){x, y, z}
-
-
-typedef struct RSGL_area {
-    i32 w, h;
-} RSGL_area;
-#define RSGL_AREA(w, h) (RSGL_area){w, h}
 
 typedef struct RSGL_areaF { float w, h;} RSGL_areaF;
 #define RSGL_AREAF(w, h) (RSGL_areaF){w, h}
@@ -287,38 +338,7 @@ typedef struct RSGL_color {
 #define RSGL_RGB_TO_HEX(r, g, b, a) (RSGL_COLOR_TO_HEX(RSGL_RGBA(r, g, b, a)))
 #define RSGL_RGBA_TO_HEX(r, g, b) (RSGL_COLOR_TO_HEX(RSGL_RGB(r, g, b, a)))
 
-/*
-******
-RGFW_FUNCTION_DEFINES
-******
-*/
-
-#define RSGL_isPressedI RGFW_isPressedI
-#define RSGL_isPressedS RGFW_isPressedS
-#define RSGL_readClipboard RGFW_readClipboard
-#define RSGL_writeClipboard RGFW_writeClipboard
-#define RSGL_registerJoystickF RGFW_registerJoystickF
-#define RSGL_registerJoystick RGFW_registerJoystick
-#define RSGL_isPressedJS RGFW_isPressedJS
-#define RSGL_getMaxGLVersion RGFW_getMaxGLVersion
-#define RSGL_setGLVersion RGFW_setGLVersion
-#define RSGL_window_swapInterval RGFW_window_swapInterval
-#define RSGL_getProcAddress RGFW_getProcAddress
-#define RSGL_window_checkFPS RGFW_window_checkFPS
-#define RSGL_window_setMinSize RGFW_window_setMinSize
-#define RSGL_window_setMaxSize RGFW_window_setMaxSize
-#define RSGL_window_maximize RGFW_window_maximize
-#define RSGL_window_minimize RGFW_window_minimize
-#define RSGL_window_restore RGFW_window_restore
-#define RSGL_window_shouldClose RGFW_window_shouldClose
-#define RSGL_window_isFullscreen RGFW_window_isFullscreen
-#define RSGL_window_isHidden RGFW_window_isHidden
-#define RSGL_isMinimized RGFW_isMinimized
-#define RSGL_isMaximized RGFW_isMaximized
-#define RSGL_window_swapBuffers RGFW_window_swapBuffers
-#define RSGL_window_showMouse RGFW_window_showMouse
-#define RSGL_createThread RGFW_createThread
-
+/* toggle the use of legacy OpenGL, on by default unless it fails to load */
 RSGLDEF void RSGL_legacy(i32 legacy);
 
 /* 
@@ -328,39 +348,245 @@ RSGL_window
 */
 
 #ifndef RSGL_NO_WINDOW
+
+/* relevent RGFW defines. For documentation, this isn't meant to be used. */
+#if defined(RELEVENT_RGFW_STRUCTS) && !defined(RELEVENT_RGFW_STRUCTS)
+/* NOTE: some parts of the data can represent different things based on the event (read comments in RGFW_Event struct) */
+typedef struct RGFW_Event {
+	#ifdef RGFW_WINDOWS
+	char keyName[16]; /* key name of event*/
+	#else
+	char* keyName; /*!< key name of event */
+	#endif
+	
+	/*! drag and drop data */
+	/* 260 max paths with a max length of 260 */
+	#ifdef RGFW_ALLOC_DROPFILES
+    char** droppedFiles;
+	#else
+	char droppedFiles[RGFW_MAX_DROPS][RGFW_MAX_PATH]; /*!< dropped files*/
+	#endif
+	u32 droppedFilesCount; /*!< house many files were dropped */
+
+	u32 type; /*!< which event has been sent?*/
+	RGFW_vector point; /*!< mouse x, y of event (or drop point) */
+    u32 keyCode; /*!< keycode of event 	!!Keycodes defined at the bottom of the header file!! */
+
+	u32 inFocus;  /*if the window is in focus or not*/
+	
+	u32 fps; /*the current fps of the window [the fps is checked when events are checked]*/
+	u32 current_ticks, frames;
+	
+	u8 lockState;
+
+	u16 joystick; /* which joystick this event applies to (if applicable to any) */
+
+    u8 button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed*/
+  	
+	u8 axisesCount; /* number of axises */
+	RGFW_vector axis[2]; /* x, y of axises (-100 to 100) */
+} RGFW_Event; /*!< Event structure for checking/getting events */
+
+typedef struct RGFW_window {
+    void* display; /*!< source display */
+    void* window; /*!< source window */
+    #if !defined(RGFW_VULKAN)
+	void* rSurf; /*!< source opengl context */
+	#else
+	#ifdef RGFW_VULKAN
+	VkSurfaceKHR rSurf; /*!< source opengl context */
+
+	/* vulkan data */
+    VkSwapchainKHR swapchain;
+    u32 image_count;
+	VkImage* swapchain_images;
+    VkImageView* swapchain_image_views;
+	#endif
+	#endif
+
+	#ifndef RGFW_WINDOWS
+	void* cursor; /* current cursor (for unix) */
+	#else
+	RGFW_area maxSize, minSize;
+	#if defined(RGFW_DIRECTX)
+	IDXGISwapChain* swapchain;
+	ID3D11RenderTargetView* renderTargetView;
+	ID3D11DepthStencilView* pDepthStencilView;
+	#endif
+	#endif
+
+	#if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
+	void* view; /*apple viewpoint thingy*/
+	#endif
+
+	#ifdef RGFW_EGL
+	void* EGL_surface;
+	void* EGL_display;
+	#endif
+	
+	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER) 
+	u8* buffer; /* buffer for non-GPU systems (OSMesa, basic software rendering) */
+	#endif
+
+	u8 jsPressed[4][16]; /* if a key is currently pressed or not (per joystick) */
+
+	RGFW_Event event; /*!< current event */
+	
+	RGFW_rect r; /* the x, y, w and h of the struct */
+
+	i32 joysticks[4]; /* limit of 4 joysticks at a time */
+	u16 joystickCount; /* the actual amount of joysticks */
+
+	u8 fpsCap; /*!< the fps cap of the window should run at (change this var to change the fps cap, 0 = no limit)*/
+		/*[the fps is capped when events are checked]*/
+
+	#ifdef __APPLE__
+	u8 cursorChanged; /* for steve jobs */
+	#endif
+
+	u8 winArgs; /* windows args (for RGFW to check) */ 
+	/*
+		!< if dnd is enabled or on (based on window creating args) 
+		cursorChanged
+	*/
+
+	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER) 
+	u8 render; /* if OSMesa should render on the screen or not (set by window args by default but it can be changed in runtime if you want) */
+	#endif
+} RGFW_window; /*!< Window structure for managing the window */
+#endif
+
 typedef RGFW_window RSGL_window;
+/* 
+    create RSGL window, an RGFW window with an RGL setup and init stuff for RSGL 
+    u64 args -> custom args (can be found earlier in this file)
+*/
+RSGLDEF RSGL_window* RSGL_createWindow(const char* name, RSGL_rect rect, u64 args);
 
-RSGLDEF RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args);
+/*
+******
+RGFW_FUNCTION_DEFINES
+******
+*/
 
-RSGLDEF void RSGL_window_setIconImage(RSGL_window* win, const char* image); 
-#define RGFW_window_setIcon RSGL_window_setIcon
+/* 
+	this function checks an *individual* event (and updates window structure attributes)
+	this means, using this function without a while loop may cause event lag
 
-#define RSGL_window_checkEvent RGFW_window_checkEvent
+	ex. 
+	
+	while (RSGL_window_checkEvent(win) != NULL) [this keeps checking events until it reaches the last one]
+*/
 
-RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win);
+RGFW_Event* RSGL_window_checkEvent(RSGL_window* win); /*!< check events (returns a pointer to win->event or NULL if there is no event)*/
 
-RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
+/*! window managment functions*/
+RSGLDEF void RSGL_window_close(RSGL_window* win); /*!< close the window and free leftover data */
+RSGLDEF RSGL_area RSGL_window_screenSize(RSGL_window* win);
 
-RSGLDEF void RSGL_window_close(RSGL_window* win);
+RSGLDEF void RSGL_window_move(RSGL_window* win,
+								RSGL_point p/* new pos*/
+						);
 
+RSGLDEF void RSGL_window_resize(RSGL_window* win,
+								RSGL_area a/* new size*/
+						);
+
+/* set the minimum size a user can shrink a window */
+RSGLDEF void RSGL_window_setMinSize(RSGL_window* win, RSGL_area a);
+/* set the minimum size a user can extend a window */
+RSGLDEF void RSGL_window_setMaxSize(RSGL_window* win, RSGL_area a);
+
+RSGLDEF void RSGL_window_maximize(RSGL_window* win); /* maximize the window size */
+RSGLDEF void RSGL_window_minimize(RSGL_window* win); /* minimize the window (in taskbar (per OS))*/
+RSGLDEF void RSGL_window_restore(RSGL_window* win); /* restore the window from minimized (per OS)*/
+
+RSGLDEF void RSGL_window_setName(RSGL_window* win,
+								char* name
+							);
+
+void RSGL_window_setIcon(RSGL_window* win, /*!< source window */
+				u8* icon /*!< icon bitmap */,
+				RSGL_area a /*!< width and height of the bitmap*/,
+				i32 channels /*!< how many channels the bitmap has (rgb : 3, rgba : 4) */
+		); /*!< image resized by default */
+
+/*!< sets mouse to bitmap (very simular to RSGL_window_setIcon), image NOT resized by default*/
+
+RSGLDEF void RSGL_window_setMouse(RSGL_window* win, u8* image, RSGL_area a, i32 channels);
+RSGLDEF void RSGL_window_setMouseDefault(RSGL_window* win); /* sets the mouse to1` the default mouse image */
+
+/* where the mouse is on the screen */
 RSGLDEF RSGL_point RSGL_window_getGlobalMousePoint(RSGL_window* win);
 
-#define RSGL_window_screenSize RGFW_window_screenSize
-#define RSGL_window_move RGFW_window_move
-#define RSGL_window_resize RGFW_window_resize
-#define RSGL_window_setName RGFW_window_setName
-#define RSGL_window_setMouse RGFW_window_setMouse
-#define RSGL_window_moveMouse RGFW_window_moveMouse
-#define RSGL_window_setMouseDefault RGFW_window_setMouseDefault
+/* show the mouse or hide the mouse*/
+RSGLDEF void RSGL_window_showMouse(RSGL_window* win, i8 show);
+/* move the mouse to a set x, y pos*/
+RSGLDEF void RSGL_window_moveMouse(RSGL_window* win, RSGL_point v);
+
+/* if the window should close (RSGL_close was sent or escape was pressed) */
+RSGLDEF u8 RSGL_window_shouldClose(RSGL_window* win); 
+/* if window is fullscreen'd */
+RSGLDEF u8 RSGL_window_isFullscreen(RSGL_window* win);
+/* if window is hidden */
+RSGLDEF u8 RSGL_window_isHidden(RSGL_window* win);
+/* if window is minimized */
+RSGLDEF u8 RSGL_isMinimized(RSGL_window* win);
+/* if window is maximized */
+RSGLDEF u8 RSGL_isMaximized(RSGL_window* win);
+/*!< make the window the current opengl drawing context */
+RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win); 
+
+/*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
+RSGLDEF u8 RSGL_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
+
+/*
+	!!Keycodes defined at the bottom of the header file!!
+*/
+ /*!< converts a key code to it's key string */
+RSGLDEF char* RSGL_keyCodeTokeyStr(u32 key);
+/*!< converts a string of a key to it's key code */
+RSGLDEF u32 RSGL_keyStrToKeyCode(char* key);
+/*!< if key is pressed (key string) */
+#define RSGL_isPressedS(win, key) RSGL_isPressedI(win, RSGL_keyStrToKeyCode(key))
+
+/*! clipboard functions*/
+RSGLDEF char* RSGL_readClipboard(size_t* size); /*!< read clipboard data */
+#define RSGL_clipboardFree free /* the string returned from RSGL_readClipboard must be freed */
+
+RSGLDEF void RSGL_writeClipboard(const char* text, u32 textLen); /*!< write text to the clipboard */
+
+/* 
+	convert a keyString to a char version
+*/
+RSGLDEF char RSGL_keystrToChar(const char*);
+/*
+	ex.
+	"parenleft" -> '('
+	"A" -> 'A',
+	"Return" -> "\n"
+*/
+
+/*! native opengl functions */
+RSGLDEF void RSGL_setGLVersion(i32 major, i32 minor);
+/* supports openGL, directX, OSMesa, EGL and software rendering */
+RSGLDEF void RSGL_window_swapBuffers(RSGL_window* win); /* swap the rendering buffer */
+RSGLDEF void RSGL_window_swapInterval(RSGL_window* win, i32 swapInterval); 
 #else /* RSGL_NO_WINDOW */
 
 /* 
 *********************
 RSGL_GRAPHICS_CONTEXT
 *********************
+
+this is for standalone RSGL graphics, no windowing / RGFW
+AN example of this can be found in examples/glfw.c
 */
 
-RSGLDEF void RSGL_initGraphics(RSGL_area r, void* loader);
+RSGLDEF void RSGL_initGraphics(
+                            RSGL_area r, /* graphics context size */
+                            void* loader /* opengl proc address ex. wglProcAddress */
+                            ); 
 RSGLDEF void RSGL_graphics_clear(RSGL_color c);
 RSGLDEF void RSGL_graphics_free();
 
@@ -373,19 +599,43 @@ RSGL_draw
 */
 
 
-/* RSGL_draw args */
-RSGLDEF void RSGL_rotate(RSGL_point3D rotate);
-RSGLDEF void RSGL_setTexture(u32 texture);
-RSGLDEF void RSGL_setGradient(RSGL_color gradient[], size_t len);
-RSGLDEF void RSGL_fill(bool fill);
-RSGLDEF void RSGL_center(RSGL_point3DF center);
+/* 
+    RSGL_draw args 
+
+    RSGL has internal args which control how RSGL draws certain things
+    by default these args clear after each RSGL_draw<whatever> call 
+
+    but you can run RSGL_setClearArgs to enable or disable this behavior
+    you can also run RSGL_clearArgs to clear the args by hand
+*/
+RSGLDEF void RSGL_rotate(RSGL_point3D rotate); /* apply rotation to drawing */
+RSGLDEF void RSGL_setTexture(u32 texture); /* apply texture to drawing */
+RSGLDEF void RSGL_setGradient(
+                                RSGL_color* gradient, /* array of gradients */
+                                size_t len /* length of array */
+                            ); /* apply gradient to drawing, based on color list*/
+RSGLDEF void RSGL_fill(bool fill); /* toggle filling, if fill is false it runs RSGL_draw<whatever>_outline instead */
+RSGLDEF void RSGL_center(RSGL_point3DF center); /* the center of the drawing (or shape), this is used for rotation */
 
 /* args clear after a draw function by default, this toggles that */
 RSGLDEF void RSGL_setClearArgs(bool clearArgs); /* toggles if args are cleared by default or not */
 RSGLDEF void RSGL_clearArgs(); /* clears the args */
 
-RSGLDEF void RSGL_basicDraw(u32 RGL_TYPE, RSGL_point3DF* points, RSGL_pointF* texPoints, RSGL_point3DF center, RSGL_color c, size_t len);
+/* 
+RSGL_basicDraw is a function used internally by RSGL, but you can use it yourself
+RSGL_basicDraw renders a given set of points based on the data given
+*/
+RSGLDEF void RSGL_basicDraw(
+                u32 RGL_TYPE, /* type of shape, RSGL_QUADS, RSGL_TRIANGLES, RSGL_LINES, RSGL_QUADS_2D */
+                RSGL_point3DF* points, /* array of points */
+                RSGL_pointF* texPoints, /* array of texture points (must be same length as points)*/
+                RSGL_point3DF center, /* the center of the shape */
+                RSGL_color c, /* the color to draw the shape */
+                size_t len /* the length of the points array */
+            );
 /* 2D shape drawing */
+
+/* in the function names, F means float */
 
 RSGLDEF void RSGL_drawPoint(RSGL_point p, RSGL_color c);
 RSGLDEF void RSGL_drawPointF(RSGL_pointF p, RSGL_color c);
@@ -422,6 +672,8 @@ RSGLDEF void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_
 
 /* 2D outlines */
 
+/* thickness means the thickness of the line */
+
 RSGLDEF void RSGL_drawTriangleOutline(RSGL_triangle t, u32 thickness, RSGL_color c);
 RSGLDEF void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c);
 
@@ -443,22 +695,25 @@ RSGLDEF void RSGL_drawCircleFOutline(RSGL_circleF c, u32 thickness, RSGL_color c
 RSGLDEF void RSGL_drawOvalFOutline(RSGL_rectF o, u32 thickness, RSGL_color c);
 RSGLDEF void RSGL_drawOvalOutline(RSGL_rect o, u32 thickness, RSGL_color c);
 
-/* 3D shaoe drawing */
+/* 3D shape drawing */
 RSGLDEF void RSGL_drawCube(RSGL_cube r, RSGL_color c);
 RSGLDEF void RSGL_drawCubeF(RSGL_cubeF, RSGL_color c);
 
+/* format a string */
 #ifndef RSGL_NO_TEXT
 RSGLDEF const char* RFont_fmt(const char* string, ...);
 #define RSGL_strFmt RFont_fmt
 
+/* loads a font into RSGL, returns it's index into the RSGL_fonts array, this is used as an id in later functions */
 RSGLDEF u32 RSGL_loadFont(const char* font);
-#define RSGL_FONT(str) RSGL_loadFont(str)
-
+/* sets font as the current font in use based on index in RSGL_font, given when it was loaded */
 RSGLDEF void RSGL_setFont(u32 font);
 
 typedef struct RFont_font RFont_font;
+/* sets source RFont font as the current font, given when it was loaded */
 RSGLDEF void RSGL_setRFont(RFont_font* font);
 
+/* draws the current fps on the screen */
 RSGLDEF void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
@@ -466,22 +721,42 @@ RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
     RSGL_setFont(font);\
     RSGL_drawText(text, c, color);
 
+/* 
+    returns the width of a text when rendered with the set font with the size of `fontSize
+    stops at `textEnd` or when it reaches '\0'
+*/
 RSGLDEF u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd);
 #define RSGL_textWidthF(text, fontSize, textEnd) \
     RSGL_setFont(font);\
     RSGL_textWidthF(text, fontSize, textEnd);
 #endif /* RSGL_NO_TEXT */
 
-RSGLDEF u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,    u8 channels);
+/* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
+RSGLDEF u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
+/* 
+    this creates a texture based on a given image, draws it on a rectangle and then returns the loaded texture 
+    
+    if the rectangle's width and height are 0 it doesn't draw the image
+    the texture is loaded into RSGL_image, this means it doesn't need to be freed
+    but you can still free it early
+*/
 RSGLDEF u32 RSGL_drawImage(const char* image, RSGL_rect r);
 
-#define RSGL_loadImage(image) RSGL_drawImage(image, (RSGL_rect){})
+#define RSGL_loadImage(image) RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0})
 
 #define RSGL_deleteTexture(texture) glDeleteTextures(1, &texture);
 #define RSGL_deleteTextures(texture, num) glDeleteTextures(num, &texture);
 
+/* 
+    these two functions can be used before RSGL_createTexture in order to create 
+    an swizzle'd texutre or atlas
+*/
+
+/* stores the pixel values using `glPixelStorei` */
 RSGLDEF void RSGL_pushPixelValues(i32 alignment, i32 rowLength, i32 skipPixels, i32 skipRows);
+/* sets up a swizzle mask */
 RSGLDEF void RSGL_textureSwizzleMask(u32 atlas, u32 param, i32 swizzleRgbaParams[4]);
+/* load bitmap into atlas */
 RSGLDEF void RSGL_atlasAddBitmap(u32 atlas, u8* bitmap, float x, float y, float w, float h);
 
 /* 
@@ -513,7 +788,7 @@ RSGLDEF void RSGL_button_update(
 RSGLDEF void RSGL_ratio_button_update(
     RSGL_button* bArray, /* array of ratio buttons (if you have an array of general buttons I suggest you do something like `buttons + x`) */
     size_t arrayLen, /* size of the array, or last button to update in the array */
-    RGFW_Event e
+    RGFW_Event e /* the current event, used for checking for a mouse event */
 );
 
 RSGLDEF void RSGL_slider_update(
@@ -523,10 +798,12 @@ RSGLDEF void RSGL_slider_update(
         if the slight moves [left/right] the height should be 0 
     */
     RSGL_rect limits,
-    RGFW_Event e
+    RGFW_Event e /* the current event, used for checking for a mouse event */
 );
 
 #ifndef RSGL_NO_TEXT
+
+/* WARNING textbox stuff is very WIP */
 typedef struct RSGL_textbox {
     char* text;
 
@@ -837,7 +1114,7 @@ void RSGL_legacy(i32 legacy) {
 #ifndef RSGL_NO_WINDOW
 
 RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
-    RGFW_window* win = RGFW_createWindow(name, r.x, r.y, r.w, r.h, args);
+    RGFW_window* win = RGFW_createWindow(name, r, args);
 
     if (RSGL_windowsOpen == 0) {
         #ifndef GRAPHICS_API_OPENGL_11
@@ -845,11 +1122,7 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         rglRenderBatch();      // Update and draw internal render batch
         #endif
 
-        #ifndef RGFW_RECT
-        glViewport(0, 0, win->w, win->h);
-        #else /* n RGFW_RECT */
         glViewport(0, 0, win->r.w, win->r.h);
-        #endif /* RGFW_RECT */
         
         // Init state: Blending mode
         glClearDepth(1.0f);
@@ -881,11 +1154,20 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     return win;
 }
 
+RGFW_Event* RSGL_window_checkEvent(RSGL_window* win) {
+    RGFW_Event* e = RGFW_window_checkEvent(win);
+
+    if (win->event.type == RGFW_windowAttribsChange)
+        glViewport(win->r.x, win->r.y, win->r.w, win->r.h);
+
+    return e;
+}
+
 void RSGL_window_setIconImage(RGFW_window* win, const char* image) {
     i32 x, y, c;
     u8* img = stbi_load(image, &x, &y, &c, 0);
 
-    RGFW_window_setIcon(win, img, x, y, c);
+    RSGL_window_setIcon(win, img, RSGL_AREA(x, y), c);
     
     free(img);
 }
@@ -897,19 +1179,13 @@ void RSGL_window_makeCurrent(RSGL_window* win) {
 }
 
 void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
-    #ifndef RGFW_RECT
-    glViewport(0, 0, win->w, win->h);
-    #else /* n RGFW_RECT */
-    glViewport(0, 0, win->r.w, win->r.h);
-    #endif /* RGFW_RECT */
- 
     RSGL_window_makeCurrent(win);
-    RGFW_window_swapBuffers(win);
+    RSGL_window_swapBuffers(win);
 
     glClearDepth(1.0f);
     glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+   
     rglRenderBatch();
 }
 
@@ -937,9 +1213,119 @@ void RSGL_window_close(RSGL_window* win) {
 }
 
 RSGL_point RSGL_window_getGlobalMousePoint(RSGL_window* win) {
-    int* mouse = RGFW_window_getGlobalMousePoint(win);
+    return RGFW_window_getGlobalMousePoint(win);
+}
 
-    return RSGL_POINT(mouse[0], mouse[1]);
+RSGL_area RSGL_window_screenSize(RSGL_window* win) {
+    return RGFW_window_screenSize(win);
+}
+
+void RSGL_window_move(RSGL_window* win, RSGL_point p) {
+    return RGFW_window_move(win, p);
+}
+
+void RSGL_window_resize(RSGL_window* win, RSGL_area a) {
+    return RGFW_window_resize(win, a);
+}
+
+void RSGL_window_setMinSize(RSGL_window* win, RSGL_area a) {
+    return RGFW_window_setMinSize(win, a);
+}
+
+void RSGL_window_setMaxSize(RSGL_window* win, RSGL_area a) {
+    return RGFW_window_setMaxSize(win, a);
+}
+
+void RSGL_window_maximize(RSGL_window* win) {
+    return RGFW_window_maximize(win);
+}
+
+void RSGL_window_minimize(RSGL_window* win) {
+    RGFW_window_minimize(win);
+}
+
+void RSGL_window_restore(RSGL_window* win) {
+    RGFW_window_restore(win);
+}
+
+void RSGL_window_setName(RSGL_window* win, char* name) {
+    RGFW_window_setName(win, name);
+}
+
+void RSGL_window_setIcon(RSGL_window* win, u8* icon, RSGL_area a, i32 channels) {
+    RGFW_window_setIcon(win, icon, a, channels);
+}
+
+void RSGL_window_setMouse(RSGL_window* win, u8* image, RSGL_area a, i32 channels) {
+    RGFW_window_setMouse(win, image, a, channels);
+}
+
+void RSGL_window_setMouseDefault(RSGL_window* win) {
+    RGFW_window_setMouseDefault(win);
+}
+
+void RSGL_window_showMouse(RSGL_window* win, i8 show) {
+    RGFW_window_showMouse(win, show);
+}
+
+void RSGL_window_moveMouse(RSGL_window* win, RSGL_point v) {
+    RGFW_window_moveMouse(win, v);
+}
+
+u8 RSGL_window_shouldClose(RSGL_window* win) {
+    return RGFW_window_shouldClose(win);
+}
+
+u8 RSGL_window_isFullscreen(RSGL_window* win) {
+    return RGFW_window_isFullscreen(win);
+}
+
+u8 RSGL_window_isHidden(RSGL_window* win) {
+    return RGFW_window_isHidden(win);
+}
+
+u8 RSGL_isMinimized(RSGL_window* win) {
+    return RGFW_isMinimized(win);
+}
+
+u8 RSGL_isMaximized(RSGL_window* win) {
+    return RGFW_isMaximized(win);
+}
+
+u8 RSGL_isPressedI(RSGL_window* win, u32 key) {
+    return RGFW_isPressedI(win, key);
+}
+
+char* RSGL_keyCodeTokeyStr(u32 key) {
+    return RGFW_keyCodeTokeyStr(key);
+}
+
+u32 RSGL_keyStrToKeyCode(char* key) {
+    return RGFW_keyStrToKeyCode(key);
+}
+
+char* RSGL_readClipboard(size_t* size) {
+    return RGFW_readClipboard(size);
+}
+
+void RSGL_writeClipboard(const char* text, u32 textLen) {
+    return RGFW_writeClipboard(text, textLen);
+}
+
+char RSGL_keystrToChar(const char* str) {
+    return RGFW_keystrToChar(str);
+}
+
+void RSGL_setGLVersion(i32 major, i32 minor) {
+    return RGFW_setGLVersion(major, minor);
+}
+
+void RSGL_window_swapBuffers(RSGL_window* win) {
+    return RGFW_window_swapBuffers(win);
+}
+
+void RSGL_window_swapInterval(RSGL_window* win, i32 swapInterval) {
+    return RGFW_window_swapInterval(win, swapInterval);
 }
 
 #else /* !RGFW_NO_WINDOW */
@@ -1609,7 +1995,7 @@ void glPrerequisites(RSGL_point3DF center, RSGL_color c) {
     rglPushMatrix();
 
     rglOrtho(0, RSGL_args.currentRect.w, RSGL_args.currentRect.h, 0, -RSGL_args.currentRect.w, RSGL_args.currentRect.w);
-    
+
     if (RSGL_args.rotate.x == 0 && RSGL_args.rotate.y == 0 && RSGL_args.rotate.z == 0)
         return;
     
@@ -1635,20 +2021,20 @@ RSGL_widgets
 void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     switch (e.type) {
         case RGFW_mouseButtonPressed:
-            if (RSGL_rectCollidePoint(b->r, (RSGL_point){e.x, e.y})) {
+            if (RSGL_rectCollidePoint(b->r, e.point)) {
                 if (b->s != RSGL_pressed)
                     b->toggle = !b->toggle;
                 b->s = RSGL_pressed;
             }
             break;
         case RGFW_mouseButtonReleased:
-            if (b->s == RSGL_pressed && RSGL_rectCollidePoint(b->r, (RSGL_point){e.x, e.y}))
+            if (b->s == RSGL_pressed && RSGL_rectCollidePoint(b->r, e.point))
                 b->s = RSGL_hovered;
             else
                 b->s = RSGL_none;
             break;
         case RGFW_mousePosChanged:
-            if (RSGL_rectCollidePoint(b->r, (RSGL_point){e.x, e.y}))
+            if (RSGL_rectCollidePoint(b->r, e.point))
                 b->s = RSGL_hovered;
             else
                 b->s = RSGL_none;
@@ -1685,10 +2071,10 @@ void RSGL_slider_update(RSGL_button* b, RSGL_rect limits, RGFW_Event e) {
         return;
 
 
-    if (limits.w && RSGL_between(e.x, limits.x, limits.x + limits.w))
-        b->r.x = e.x;
-    else if (limits.h && RSGL_between(e.y, limits.y, limits.y + limits.h)) 
-        b->r.y = e.y;
+    if (limits.w && RSGL_between(e.point.x, limits.x, limits.x + limits.w))
+        b->r.x = e.point.x;
+    else if (limits.h && RSGL_between(e.point.y, limits.y, limits.y + limits.h)) 
+        b->r.y = e.point.y;
 }
 
 #if !defined(RSGL_NO_TEXT) && defined(RGFW_keyPressed)

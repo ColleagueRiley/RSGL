@@ -4,12 +4,25 @@
 
 ![The RSGL logo](https://github.com/ColleagueRiley/RSGL/blob/main/logo.png?raw=true)
 
-A simple GUI library currently for Linux, Windows and MacOS
+RSGL is A modular simple-to-use cross-platform GUI library for easily creating GUI apps and games. It combines the freedom of lower-level GUI libraries with modern C techniques, offering both simplicity and convenience. 
+
+It currently supports Linux, Windows and MacOS
 
 # Build statuses
 ![cplus workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
 ![cplus workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/windows.yml/badge.svg)
 ![cplus workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/macos.yml/badge.svg)
+
+# Features
+- No external dependencies, all the libraries required are included in RSGL and are also very lightweight\
+- Supports multiple platforms, windows, MacOS, linux, ect
+- Supports multiple versions of OpenGL (even allowing you to switch during runtime)
+- Uses other small lightweight dependencies
+- OpenGL abstraction layer : RGL (which is its own single-header library too)
+- Supports multiple font and image formats due to `stb_truetype.h` and `stb_image.h`
+- Supporst multiple audio formats due to `miniaudio.h`
+- Many examples included
+- Free and Open Source with a very flexible license
 
 # header-only
   In order to "link" RSGL you must add the line 
@@ -23,6 +36,58 @@ A simple GUI library currently for Linux, Windows and MacOS
   or have RSGL's defined in a seperate file\
   which I would suggest you do if you're going to use any optimization args\
   or compile with miniaudio
+
+# Modules 
+  #define RSGL_NO_WIDGETS (makes it so RSGL doesn't include widget functions)\
+  #define RSGL_NO_AUDIO (makes it so RSGL doesn't include audio functions)\
+  #define RSGL_NO_WINDOW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]\
+  #define RSGL_NO_TEXT - do not include text rendering functions\
+  #define RGFW_NO_WIDGETS - do not include widgets\
+  #define RSGL_NO_AUDIO - do not include audio functions\
+  #define RSGL_NO_MINIAUDIO_IMPLEMENTATION - do not have `#define MINIAUDIO_IMPLEMENTATION` in this header (you'll have to link miniaudio some other way to use audio)\
+  #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), \
+                                  RSGL_drawImage saves the file name + texture so it can load it\
+                                  when you ask for it later. This disables that\
+
+# Examples
+
+## a basic start up example
+
+```c
+#define RSGL_NO_AUDIO /* RSGL uses miniaudio.h, and I don't wanna compile it if I'm not using it */
+#define RSGL_IMPLEMENTATION
+#include "RSGL.h"
+
+int main() {
+    RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);
+
+    bool running = true;
+
+    while (running) {
+      while (RSGL_window_checkEvent(win)) {
+          if (win->event.type == RSGL_quit) {
+            running = false;
+            break;
+          }
+      }
+
+      RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
+      RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
+    }
+
+    RSGL_window_close(win);
+}
+```
+
+this can be compiled with :\
+linux:
+`gcc <file> -lX11 -lGLX -lm -o example`
+windows :
+`gcc <file> -lopengl32 -lgdi32 -lshell32 -o example`
+macos :
+`gcc <file> -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o example`
+
+Feel free to copy from either of the included makefiles (`Makefile` and `examples/Makefile`) if you wish.
 
 # compiling without RSGL_audio
 If you want to compile without RSGL_AUDIO you have to add the line
@@ -73,17 +138,36 @@ or building RSGL...
 
     `cp ./build/bin/* /usr/bin`
 
-# Modules 
-  #define  RSGL_NO_WIDGETS (makes it so RSGL doesn't include widget functions)\
-  #define  RSGL_NO_AUDIO (makes it so RSGL doesn't include audio functions)\
-  #define RSGL_NO_WINDOW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]\
-  #define RSGL_NO_TEXT - do not include text rendering functions\
-  #define RGFW_NO_WIDGETS - do not include widgets\
-  #define RSGL_NO_AUDIO - do not include audio functions\
-  #define RSGL_NO_MINIAUDIO_IMPLEMENTATION - do not have `#define MINIAUDIO_IMPLEMENTATION` in this header (you'll have to link miniaudio some other way to use audio)\
-  #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), \
-                                  RSGL_drawImage saves the file name + texture so it can load it\
-                                  when you ask for it later. This disables that\
+## compiling 
+these examples can be compiled using the make file in `examples/`\
+or running `make examples` in the current directory\
+
+you can either compile all the example using `make`,\
+compile one specific example using `make <example>` or\
+running `make debug` which compiles and runs each example in debug mode
+
+## basic.c 
+`examples/basic.c` is a basic example which goes through many of the window managing features RSGL has\
+It also shows multiple ways of drawing a triangle
+
+## events.c
+`example/events.c` is a example which shows off all the events that RSGL has and prints out their event data into the terminal
+
+## glfw.c
+`examples/glfw.c` is a example which shows off how you can use RSGL's rendering functions seperate from the windowing backend
+
+## glVer.c
+`examples/glVer.c` is a example which shows how RSGL can switch between legacy and modern opengl\
+in the example, you can toggle between opengl 3.0+ and opengl 2.0- by pressing the spacebar
+
+## shapes.c
+`examples/shapes.c` is a example which shows off shape rendering using RSGL, the shapes rotate and switch between being filled and unfilled 
+
+## text.c
+`examples/text.c` is an example of text rendering using RSGL
+
+## textures.c
+`examples/textures.c` is an example which shows off rendering textures on a shape, the textures switch between being enabled and disabled as the shapes spin
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in, 
@@ -176,6 +260,9 @@ per each time you compile your application so you know that everything is compil
   Raylib and it's community seems to have a very simular view of what a good GUI library should be like as RSGL does. So thank you Raylib for showing me that RSGL is not alone.
 
   However, some newer additions were inspired by Raylib including it's modular design, RLGL (which RGL is based on) and verbos examples. 
+
+  Why use RSGL instead of Raylib? RSGL has more dynamic features than raylib and is more lightweight than raylib.\
+  RSGL's dependencies are also very lightweight and modular as compared to Raylib's which are bloated in one way or the other.
 
 # Eima
   Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project, has helped with coming up with ideas for the project, has helped when debating new featues of the project
