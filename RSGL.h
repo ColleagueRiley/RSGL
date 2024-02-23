@@ -1133,11 +1133,7 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         glCullFace(GL_BACK);                                    // Cull the back face (default)
         glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
         glEnable(GL_CULL_FACE);        
-
-        rglMatrixMode(RGL_PROJECTION);    // Switch to projection matrix
-        rglPushMatrix();                 // Save previous matrix, which contains the settings for the 2d ortho projection
-        rglLoadIdentity();               // Reset current matrix (projection)
-
+		
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
         #ifndef RSGL_NO_TEXT
@@ -1351,10 +1347,6 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     glCullFace(GL_BACK);                                    // Cull the back face (default)
     glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
     glEnable(GL_CULL_FACE);        
-
-    rglMatrixMode(RGL_PROJECTION);    // Switch to projection matrix
-    rglPushMatrix();                 // Save previous matrix, which contains the settings for the 2d ortho projection
-    rglLoadIdentity();               // Reset current matrix (projection)
     #endif
 
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
