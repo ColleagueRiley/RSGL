@@ -1,7 +1,7 @@
 CC = gcc
 AR = ar
 
-LIBS := -w -lopengl32 -lshell32 -lgdi32
+LIBS := -lopengl32 -lshell32 -lgdi32
 EXT = dll
 
 ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
