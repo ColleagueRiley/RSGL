@@ -49,7 +49,7 @@
     
 	#define RGFW_PRINT_ERRORS - (optional) makes it so RGFW prints errors when they're found
 	#define RGFW_OSMESA - (optional) use OSmesa as backend (instead of system's opengl api + regular opengl)
-	#define RGFW_BUFFER - (optional) just draw directly to (RGFW) window pixel buffer that is drawn to screen
+	#define RGFW_BUFFER - (optional) just draw directly to (RGFW) window pixel buffer that is drawn to screen (the buffer is in the BGRA format)
 	#define RGFW_EGL - (optional) use EGL for loading an OpenGL context (instead of the system's opengl api)
 	#define RGFW_OPENGL_ES - (optional) use EGL to load and use Opengl ES for backend rendering (instead of the system's opengl api)
 	#define VULKAN - (optional) use vulkan for the rendering backend (rather than opengl)
@@ -80,7 +80,6 @@
 #define RSGL_NO_RESIZE		(1L<<4) /*!< the window cannot be resized  by the user */
 #define RSGL_ALLOW_DND     (1L<<5) /*!< the window supports drag and drop*/
 #define RSGL_HIDE_MOUSE (1L<<6) /*! the window should hide the mouse or not (can be toggled later on) using `RGFW_window_mouseShow*/
-#define RSGL_OPENGL (1L<<7) /*! load a normal opengl context (if another GL/buffer context is selected) */
 #define RSGL_FULLSCREEN (1L<<8) /* the window is fullscreen by default or not */
 #define RSGL_CENTER (1L<<10) /*! center the window on the screen */
 #define RSGL_OPENGL_SOFTWARE (1L<<11) /*! use OpenGL software rendering */
