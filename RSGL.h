@@ -386,71 +386,19 @@ typedef struct RGFW_Event {
 } RGFW_Event; /*!< Event structure for checking/getting events */
 
 typedef struct RGFW_window {
-    void* display; /*!< source display */
-    void* window; /*!< source window */
-    #if !defined(RGFW_VULKAN)
-	void* rSurf; /*!< source opengl context */
-	#else
-	#ifdef RGFW_VULKAN
-	VkSurfaceKHR rSurf; /*!< source opengl context */
+	RGFW_window_src src;
 
-	/* vulkan data */
-    VkSwapchainKHR swapchain;
-    u32 image_count;
-	VkImage* swapchain_images;
-    VkImageView* swapchain_image_views;
-	#endif
-	#endif
-
-	#ifndef RGFW_WINDOWS
-	void* cursor; /* current cursor (for unix) */
-	#else
-	RGFW_area maxSize, minSize;
-	#if defined(RGFW_DIRECTX)
-	IDXGISwapChain* swapchain;
-	ID3D11RenderTargetView* renderTargetView;
-	ID3D11DepthStencilView* pDepthStencilView;
-	#endif
-	#endif
-
-	#if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
-	void* view; /*apple viewpoint thingy*/
-	#endif
-
-	#ifdef RGFW_EGL
-	void* EGL_surface;
-	void* EGL_display;
-	#endif
-	
 	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER) 
 	u8* buffer; /* buffer for non-GPU systems (OSMesa, basic software rendering) */
+				/* when rendering using RGFW_BUFFER, the buffer is in the BGRA format */
 	#endif
 
-	u8 jsPressed[4][16]; /* if a key is currently pressed or not (per joystick) */
-
 	RGFW_Event event; /*!< current event */
-	
-	RGFW_rect r; /* the x, y, w and h of the struct */
 
-	i32 joysticks[4]; /* limit of 4 joysticks at a time */
-	u16 joystickCount; /* the actual amount of joysticks */
+	RGFW_rect r; /* the x, y, w and h of the struct */
 
 	u8 fpsCap; /*!< the fps cap of the window should run at (change this var to change the fps cap, 0 = no limit)*/
 		/*[the fps is capped when events are checked]*/
-
-	#ifdef __APPLE__
-	u8 cursorChanged; /* for steve jobs */
-	#endif
-
-	u8 winArgs; /* windows args (for RGFW to check) */ 
-	/*
-		!< if dnd is enabled or on (based on window creating args) 
-		cursorChanged
-	*/
-
-	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER) 
-	u8 render; /* if OSMesa should render on the screen or not (set by window args by default but it can be changed in runtime if you want) */
-	#endif
 } RGFW_window; /*!< Window structure for managing the window */
 #endif
 
@@ -480,7 +428,7 @@ RGFW_Event* RSGL_window_checkEvent(RSGL_window* win); /*!< check events (returns
 
 /*! window managment functions*/
 RSGLDEF void RSGL_window_close(RSGL_window* win); /*!< close the window and free leftover data */
-RSGLDEF RSGL_area RSGL_window_screenSize(RSGL_window* win);
+RSGLDEF RSGL_area RSGL_getScreenSize();
 
 RSGLDEF void RSGL_window_move(RSGL_window* win,
 								RSGL_point p/* new pos*/
@@ -515,7 +463,7 @@ RSGLDEF void RSGL_window_setMouse(RSGL_window* win, u8* image, RSGL_area a, i32 
 RSGLDEF void RSGL_window_setMouseDefault(RSGL_window* win); /* sets the mouse to1` the default mouse image */
 
 /* where the mouse is on the screen */
-RSGLDEF RSGL_point RSGL_window_getGlobalMousePoint(RSGL_window* win);
+RSGLDEF RSGL_point RSGL_getGlobalMousePoint(void);
 
 /* show the mouse or hide the mouse*/
 RSGLDEF void RSGL_window_showMouse(RSGL_window* win, i8 show);
@@ -1206,12 +1154,12 @@ void RSGL_window_close(RSGL_window* win) {
     RGFW_window_close(win);
 }
 
-RSGL_point RSGL_window_getGlobalMousePoint(RSGL_window* win) {
-    return RGFW_window_getGlobalMousePoint(win);
+RSGL_point RSGL_getGlobalMousePoint(void) {
+    return RGFW_getGlobalMousePoint();
 }
 
-RSGL_area RSGL_window_screenSize(RSGL_window* win) {
-    return RGFW_window_screenSize(win);
+RSGL_area RSGL_getScreenSize() {
+    return RGFW_getScreenSize();
 }
 
 void RSGL_window_move(RSGL_window* win, RSGL_point p) {
