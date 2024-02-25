@@ -274,7 +274,7 @@ per each time you compile your application so you know that everything is compil
   
 # RSGL-Architecture diagram
 
-![alt text](https://github.com/ColleagueRiley/RSGL/blob/development/RSGL-Architecture.png?raw=true)
+![The RSGL Architecture](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL-Architecture.png?raw=true)
 
 # License
 RSGL uses the libpng license, this means you can use RSGL freely as long as you do not claim you wrote this software, mark altered versions as such and keep the license included with the header.
