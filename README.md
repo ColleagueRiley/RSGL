@@ -162,60 +162,54 @@ in the example, you can toggle between opengl 3.0+ and opengl 2.0- by pressing t
   All of RSGL's (non-native) dependencies are built-in, 
 
 # RGFW
-  RGFW, Riley's Gui library FrameWork.
+  RGFW, Riley's Gui library FrameWork.\
+  RSGL is built off of RGFW, it handles window management for RSGL.
 
-  RSGL's window management is built off of RGFW!
-
-  RGFW is made as an very small, single-header-file alternative to GLFW. \
-  RGFW also tries to be even more flexable than GLFW. 
+  RGFW is a flexible, lightweight, single-header-file alternative to GLFW. \ 
 
   [![AltText](https://github.com/ColleagueRiley/ColleagueRiley/blob/main/rgfw.png?raw=true)](https://github.com/ColleagueRiley/RGFW)\
   (this is a button that leads to the RGFW repo)
 
-  RGFW is considered apart of the "RSGL Project".
-
 # credits
 
 # RGL
-  [RGL](https://github.com/ColleagueRiley/RGL) is an OpenGL abstraction layer (that I created) that makes opengl version managing and rendering a lot easier. 
+  [RGL](https://github.com/ColleagueRiley/RGL) is an OpenGL abstraction layer (that I created), it handles opengl version managing and rendering. 
 
-  It allows RSGL render using a simplified pipeline system while raylib does advanced shader and preformance work in the background
-
-  RGL is heavily based on RLGL but it's designed to be more lightweight and have better performance and optimization 
+  It also allows RSGL to render using a simplified pipeline system.\
+  RGL is heavily based on RLGL but it's designed to be more lightweight, with better performance.
 
 # RFont
-  [RFont](https://github.com/colleagueRiley/RFont) is a super light-weight and modular font library for texture atlas and text rendering that I created. RSGL uses this for text rendering.
+  [RFont](https://github.com/colleagueRiley/RFont) is a super light-weight and modular font library for text rendering that I created. 
 
 
 # stb_image 
-  [stb_image](https://github.com/nothings/stb/) is an public domain single header image loader library, RSGL uses this for loading images
+  [stb_image](https://github.com/nothings/stb/) is an public domain single header image loader library.
 
 # miniaudio
-  mini audio is an public domain audio playback and capture library. RSGL uses this for playing/loading music
+  mini audio is an public domain audio playback and capture library. RSGL uses this for playing/loading audio
 
   miniaudio webpage : https://miniaud.io/
 
 # Silicon
-  Silicon is a C binding for MacOS's Cocoas library. This library makes working with apple's API a lot better because you don't have to directly work with Objective-C.
+  Silicon is a single-header C binding for MacOS's Cocoas library. This library makes working with apple's API a lot better because you don't have to directly work with Objective-C.
   
   RSGL uses silicon via RGFW
 
   ![https://github.com/EimaMei/Silicon](Silicon Github)
 
 # Raylib
-  Because this project was created and the majority of features were created before my learning of Raylib, I am very surprised to see how simular Raylib is to RSGL. 
-  Raylib and it's community seems to have a very simular view of what a good GUI library should be like as RSGL does. So thank you Raylib for showing me that RSGL is not alone.
+  Because this project was created before I knew about Raylib, I am very surprised to see how simular RSGL is to Raylib.
 
-  However, some newer additions were inspired by Raylib including it's modular design, RLGL (which RGL is based on) and verbos examples. 
+  Raylib and it's community seems to have a very simular view of what a good GUI library should be like. So thank you Raylib for showing me that RSGL is not alone.
 
-  Why use RSGL instead of Raylib? RSGL has more dynamic features than raylib and is more lightweight than raylib.\
-  RSGL's dependencies are also very lightweight and modular as compared to Raylib's which are bloated in one way or the other.
+  Some newer additions were inspired by Raylib including it's modular design, RLGL (which RGL is based on) and verbos examples. 
+
+  Why use RSGL instead of Raylib? RSGL has more dynamic features and is more lightweight.\
 
 # Eima
-  Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project, has helped with coming up with ideas for the project, has helped when debating new featues of the project
-  and even has contributed some code to the project. 
+  Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project and has helped me come up with new ideas andd improvements for the project. He also contributed some code to the project. 
 
-  Eima also the original creator of Silicon, without Silicon RSGL/RGFW probably would not support native macOS
+  Eima is the original creator of Silicon, without Silicon RSGL/RGFW probably would not support native macOS
 
   ![Eima's C toolkit / STL (sili)](https://github.com/Eimamei/sili)
   
