@@ -166,6 +166,9 @@ in the example, you can toggle between opengl 3.0+ and opengl 2.0- by pressing t
 ## textures.c
 `examples/textures.c` is an example which shows off rendering textures on a shape, the textures switch between being enabled and disabled as the shapes spin
 
+## button.c 
+`examples/button.c` is an example that shows off how to create and manage buttons using RSGL
+
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in, 
 
