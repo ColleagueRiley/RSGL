@@ -141,6 +141,8 @@ with that makefile you can either compile all the example using `make`,\
 compile one specific example using `make <example>` or\
 running `make debug` which compiles and runs each example in debug mode
 
+![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot.PNG?raw=true)
+
 ## basic.c 
 `examples/basic.c` is a basic example which goes through many of the window managing features RSGL has\
 It also shows multiple ways of drawing a triangle
