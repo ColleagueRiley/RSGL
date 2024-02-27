@@ -31,6 +31,7 @@ all:
 	make textures
 	make text
 	make glfw
+	make button
 
 debug:
 	gcc basic.c $(LIBS) $(ARGS) -o basic
@@ -39,6 +40,7 @@ debug:
 	gcc textures.c $(LIBS) $(ARGS) -o textures
 	gcc text.c $(LIBS) $(ARGS) -o text
 	gcc glVer.c $(LIBS) $(ARGS) -o glVer
+	gcc button.c $(LIBS) $(ARGS) -o button
 
 	./events
 	./shapes
@@ -46,6 +48,7 @@ debug:
 	./text
 	./glVer
 	./basic
+	./button
 	
 glfw:
 	gcc glfw.c -lglfw -lm -I../ -o glfw
@@ -67,6 +70,9 @@ glVer:
 
 basic:
 	gcc basic.c $(LIBS) $(ARGS) -o basic
+
+button:
+	gcc button.c $(LIBS) $(ARGS) -o button
 
 clean:
 	rm -f events glfw shapes textures RSGL.o *.exe
