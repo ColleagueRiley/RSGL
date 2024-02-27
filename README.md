@@ -86,6 +86,12 @@ and then link miniaudio your own way\
                                   RSGL_drawImage saves the file name + texture so it can load it\
                                   when you ask for it later. This disables that\
 
+# Widgets 
+Note, widgets are WIP, the supported widgets include\
+RSGL_alignRect and RSGL_button\
+
+RSGL_textBox and RSGL_expandableRect are currently WIP
+
 # Examples
 
 ## a basic start up example
