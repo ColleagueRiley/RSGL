@@ -45,6 +45,12 @@ int main() {
     RSGL_button_setRect(&checkbox, RSGL_RECT(50, 250, 50, 50));
     RSGL_button_setStyle(&checkbox, RSGL_STYLE_DARK | RSGL_STYLE_CHECKBOX);
 
+    /* generic radio buttons */
+    RSGL_button radioButtons = RSGL_initButton();
+    RSGL_button_setPolygon(&radioButtons, RSGL_RECT(50, 320, 15, 15), 36);
+    RSGL_button_setRadioCount(&radioButtons, 3);
+    RSGL_button_setStyle(&radioButtons, RSGL_STYLE_DARK | RSGL_STYLE_RADIO);
+
     bool running = true;
     while (running) {
         while (RSGL_window_checkEvent(win)) {
@@ -57,12 +63,14 @@ int main() {
             RSGL_button_update(&generic, win->event);
             RSGL_button_update(&genericToggle, win->event);
             RSGL_button_update(&checkbox, win->event);
+            RSGL_button_update(&radioButtons, win->event);
         }
 
         RSGL_drawButton(button);
         RSGL_drawButton(generic);
         RSGL_drawButton(genericToggle);
         RSGL_drawButton(checkbox);
+        RSGL_drawButton(radioButtons);
 
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }
