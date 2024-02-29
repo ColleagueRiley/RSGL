@@ -767,14 +767,15 @@ typedef enum {
     RSGL_STYLE_TOGGLE = (1L << 6),
     RSGL_STYLE_RADIO = (1L << 8),
     RSGL_STYLE_CHECKBOX = (1 << 9),
-    RSGL_STYLE_TYPE = RSGL_STYLE_SLIDER | RSGL_STYLE_TOGGLE | RSGL_STYLE_RADIO | RSGL_STYLE_CHECKBOX,
+    RSGL_STYLE_COMBOBOX = (1 << 10),
+    RSGL_STYLE_TYPE = RSGL_STYLE_SLIDER | RSGL_STYLE_TOGGLE | RSGL_STYLE_RADIO | RSGL_STYLE_CHECKBOX | RSGL_STYLE_COMBOBOX,
 
     RSGL_SHAPE_NULL = (1L << 0),
-    RSGL_SHAPE_RECT = (1L << 10),
-    RSGL_SHAPE_POLYGON = (1L << 11),
+    RSGL_SHAPE_RECT = (1L << 11),
+    RSGL_SHAPE_POLYGON = (1L << 12),
 
-    RSGL_SHAPE_POLYGONF = (1L << 12),
-    RSGL_SHAPE_RECTF = (1L << 13),
+    RSGL_SHAPE_POLYGONF = (1L << 13),
+    RSGL_SHAPE_RECTF = (1L << 14),
 
     RSGL_STYLE_SHAPE = RSGL_SHAPE_RECT | RSGL_SHAPE_POLYGON | RSGL_SHAPE_POLYGONF | RSGL_SHAPE_RECTF,
 } RSGL_widgetStyle;
@@ -1246,13 +1247,14 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);      // Color blending function (how colors are mixed)
-        glEnable(GL_BLEND);                                     // Enable color blending (required to work with transparencies)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
 
-        glCullFace(GL_BACK);                                    // Cull the back face (default)
-        glFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
         glEnable(GL_CULL_FACE);        
 		
+
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
         #ifndef RSGL_NO_TEXT
@@ -1683,38 +1685,28 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
         return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
     
     glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
-    o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
+    o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
     
-    rglBegin(RGL_TRIANGLES_2D);
+    rglBegin(RGL_TRIANGLE_FAN);
 
     float displacement = 360.0f / (float)sides;
-    float centralAngle = displacement * arc.x;
+    float angle = displacement * arc.x;
 
-    u32 x = 0;
-    for (x = arc.x; x < arc.y; x++) {
-        float caSin = sinf(centralAngle * DEG2RAD);
-        float caCos = cosf(centralAngle * DEG2RAD);
+    u32 i;
+    for (i = arc.x; i < arc.y; i++) {
+        RSGL_pointF p = {sinf(angle * DEG2RAD), cosf(angle * DEG2RAD)};
+
+        float texCoordX = (-p.x + 1.0f) * 0.5;
+        float texCoordY = (-p.y + 1.0f) * 0.5;
+
+        rglTexCoord2f(texCoordX, texCoordY);
         
-        /*
-            0.5 is the center of the texture
-            the hypotenuse of the triangle slice reaches from the center of the texture to the current side 
-            Therefore, (caSin * 0.5) = opp
-        */
+        rglVertex2f(o.x + (o.w) + (p.x * o.w), o.y + (o.h) + (p.y * o.h));
 
-        rglTexCoord2f(0.5f, 0.5f);
-        rglColor4ubX(0);
-        rglVertex2f(o.x, o.y);
-
-        rglColor4ubX(1);
-        rglTexCoord2f((caSin * 0.5) + 0.5, (caCos * 0.5) + 0.5);
-        rglVertex2f(o.x + (caSin * o.w),  o.y + (caCos * o.h));
-        
-        centralAngle += displacement;        
-        rglVertex2f(
-                o.x + (sinf(centralAngle * DEG2RAD) * o.w), 
-                o.y + (cosf(centralAngle * DEG2RAD) * o.h)
-        );
+        angle += displacement;
     }
+
+    rglTexCoord2f(0, 0);
     rglEnd();
     rglPopMatrix();
 
@@ -2446,6 +2438,13 @@ void RSGL_drawButton(RSGL_button button) {
         RSGL_drawLineF(p1, p2, 2, RSGL_RGB(0, 255, 0));
         RSGL_drawLineF(p2, p3, 2, RSGL_RGB(0, 255, 0));
     }
+    
+    if (button.src.style & RSGL_STYLE_COMBOBOX) {
+        RSGL_point cen =  RSGL_POINT(button.rect.x + button.rect.w - 20, button.rect.y + button.rect.h - 5);
+        size_t y = ((cen.y - button.rect.h) + 15);
+
+        RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
+    }
 
     /* set args back to the old ones */
     RSGL_args = args;
@@ -2640,9 +2639,8 @@ void RSGL_textbox_draw(RSGL_textbox* textBox, RSGL_color c, RSGL_color cursorCol
 
     if (textBox->toggle)
         RSGL_drawRectF(RSGL_RECTF(textBox->box.rect.x + offset, (textBox->box.rect.y + 2) + (textBox->cursor.y * 20), 1, 16), cursorColor);
-
+    
     RSGL_drawText(textBox->text + (u32)textBox->x, RSGL_CIRCLE(textBox->box.rect.x, textBox->box.rect.y - 5, textBox->textSize), c);
-
 }
 void RSGL_textbox_free(RSGL_textbox* tb) {
     free(tb->text);
