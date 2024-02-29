@@ -132,12 +132,14 @@ typedef u8 b8;
 
 #ifndef RGL_QUADS
 #define RGL_LINES                                0x0001      /* GL_LINES */
-#define RGL_TRIANGLES                            0x0004      /* GL_TRIANGLES */
+#define RGL_TRIANGLES                            0x0004      /* GL_TRIANGLES */  
+#define RGL_TRIANGLE_FAN                          0x0006      /* GL_TRIANGLE_FAN  */  
 #define RGL_QUADS                                0x0007      /* GL_QUADS */
 
 /* these ensure GL_DEPTH_TEST is disabled when they're being rendered */
 #define RGL_LINES_2D                                0x0011      /* GL_LINES */
 #define RGL_TRIANGLES_2D                            0x0014      /* GL_TRIANGLES */
+#define RGL_TRIANGLE_FAN_2D                         0x0016      /* GL_TRIANGLE_FAN  */ 
 #define RGL_QUADS_2D                                0x0017      /* GL_QUADS */
 #endif
 
@@ -921,16 +923,19 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
             if (mode > 0x0010) {
                 mode -= 0x0010;
                 glDisable(GL_DEPTH_TEST);
+                glDepthMask(GL_FALSE);
             }
-            else    
+            else {
                 glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_TRUE);
+            }
 
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
             glBindTexture(GL_TEXTURE_2D, RGLinfo.batches[i].tex);
             glLineWidth(RGLinfo.batches[i].lineWidth);
             
             #ifdef RGL_EBO
-            if ((modee == RGL_LINES) || (mode == RGL_TRIANGLES)) 
+            if (mode != RGL_QUADS) 
             #endif
                 glDrawArrays(mode, vertexOffset, RGLinfo.batches[i].vertexCount);
             #ifdef RGL_EBO
@@ -940,8 +945,10 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
             vertexOffset += (RGLinfo.batches[i].vertexCount + RGLinfo.batches[i].vertexAlignment);
 
-            if (RGLinfo.batches[i].mode > 0x0010)
+            if (RGLinfo.batches[i].mode > 0x0010) {
                 glEnable(GL_DEPTH_TEST);
+                glDepthMask(GL_TRUE);
+            }
 
             #ifdef RGL_DEBUG
             rglGetError();
@@ -1078,7 +1085,7 @@ void rglBegin(int mode) {
         RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount > 0) {
             if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES_2D) 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = ((RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount < 4)? RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount : RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4);
-            else if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS_2D) 
+            else if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN_2D) 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = ((RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount < 4)? 1 : (4 - (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4)));
             else 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = 0;
@@ -1162,7 +1169,7 @@ void rglVertex3f(float x, float y, float z) {
         if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES_2D) &&
             (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%2 == 0))
                 rglCheckRenderBatchLimit(2 + 1);
-        else if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D) &&
+        else if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN_2D) &&
             (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%3 == 0))
                 rglCheckRenderBatchLimit(3 + 1);
         else if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS_2D) &&
