@@ -799,6 +799,7 @@ typedef struct RSGL_button_src {
         size_t text_len;
         RSGL_circle c;
         RSGL_color color;
+        u8 alignment;
     } text;
 
     char** combo;
@@ -900,6 +901,22 @@ RSGLDEF void RSGL_slider_update(
     RGFW_Event e /* the current event, used for checking for a mouse event */
 );
 
+typedef struct RSGL_container {
+    RSGL_button* buttons;
+    size_t buttons_len;
+
+    RSGL_button src;
+} RSGL_container;
+
+RSGLDEF RSGL_button RSGL_nullButton(void);
+
+RSGLDEF RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len);
+RSGLDEF void RSGL_drawContainer(RSGL_container container);
+RSGLDEF void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle);
+
+RSGLDEF void RSGL_container_setPos(RSGL_container* container, RSGL_point p);
+
+RSGLDEF i32 RSGL_container_update(RSGL_container* container, RGFW_Event event);
 #ifndef RSGL_NO_TEXT
 
 /* WARNING textbox stuff is very WIP */
@@ -2315,6 +2332,7 @@ void RSGL_button_alignText(RSGL_button* button, u8 alignment) {
     RSGL_circle cir = RSGL_alignText_len(button->src.text.str, button->src.text.text_len, button->src.text.c, button->rect, alignment);
 
     button->src.text.c = cir;
+    button->src.text.alignment = alignment;
 }
 void RSGL_button_setTexture(RSGL_button* button, u32 tex) { button->src.tex = tex; }
 void RSGL_button_setColor(RSGL_button* button, RSGL_color color) { button->src.color = color; }
@@ -2504,6 +2522,9 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     for (i = 0; i < b->src.array_count + 1; i++) {
         switch (e.type) {
             case RGFW_mouseButtonPressed:
+                if (e.button != RSGL_mouseLeft)
+                    break;
+                
                 if (RSGL_rectCollidePointF(rect, mouse)) {
                     if (b->status != RSGL_pressed)
                         b->toggle = !b->toggle;
@@ -2517,6 +2538,9 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
                 }
                 break;
             case RGFW_mouseButtonReleased:
+                if (e.button != RSGL_mouseLeft)
+                    break;
+                
                 if (b->status == RSGL_pressed && RSGL_rectCollidePointF(rect, mouse)) {
                     b->status = RSGL_hovered;
                     return;
@@ -2556,6 +2580,132 @@ void RSGL_slider_update(RSGL_button* b, RSGL_rect limits, RGFW_Event e) {
         b->rect.x = e.point.x;
     else if (limits.h && RSGL_between(e.point.y, limits.y, limits.y + limits.h)) 
         b->rect.y = e.point.y;
+}
+
+RSGL_button RSGL_nullButton(void) {
+    RSGL_button nullButton;
+    nullButton.src.tex = 0;
+
+    return nullButton;
+}
+
+RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len) {
+    RSGL_container new;
+    new.src = RSGL_initButton();
+    new.buttons = buttons;
+    new.buttons_len = len;
+
+    RSGL_button_setRect(&new.src, r);    
+
+    RSGL_rectF rect = RSGL_RECTF(r.x, r.y, r.w, r.h);
+
+    size_t i, x;
+    float spacing = 0;
+
+    for (i = 0; i < new.buttons_len; i += 3) {
+        size_t y = i / 3;
+
+        float newHeight = 0;
+        for (x = 0; x < 3; x++) {
+
+            if (new.buttons[i + x].src.tex == 0)
+                continue;
+            
+            new.buttons[i + x].rect = RSGL_alignRectF(rect, new.buttons[i + x].rect, (1 << (1 + x)));
+
+            new.buttons[i + x].rect.x += ((5 + new.buttons[i + x].outline) * !x); 
+            new.buttons[i + x].rect.y = r.y + spacing;
+
+            if (new.buttons[i + x].src.text.str != NULL)
+                RSGL_button_alignText(&new.buttons[i + x], new.buttons[i + x].src.text.alignment);
+            
+            RSGL_button_setStyle(&new.buttons[i + x], new.buttons[i + x].src.style);
+
+            float height = new.buttons[i + x].rect.h + (new.buttons[i + x].outline * 2);
+            if (new.buttons[i + x].src.style & RSGL_STYLE_RADIO) {
+                height *= new.buttons[i + x].src.array_count;
+                height += 5 * new.buttons[i + x].src.array_count;
+            }
+
+            if (height > newHeight)
+                newHeight = height;
+        }
+        
+        spacing += newHeight + 5;
+    }   
+
+    return new;
+}
+
+void RSGL_container_setPos(RSGL_container* container, RSGL_point p) {
+    RSGL_rectF rect = RSGL_RECTF((float)p.x, (float)p.y, container->src.rect.w, container->src.rect.h);
+    RSGL_button_setRectF(&container->src, rect);    
+    
+    size_t i, x;
+    float spacing = 0;
+
+    for (i = 0; i < container->buttons_len; i += 3) {
+        size_t y = i / 3;
+
+        float newHeight = 0;
+        for (x = 0; x < 3; x++) {
+
+            if (container->buttons[i + x].src.tex == 0)
+                continue;
+            
+            container->buttons[i + x].rect = RSGL_alignRectF(rect, container->buttons[i + x].rect, (1 << (1 + x)));
+
+            container->buttons[i + x].rect.x += ((5 + container->buttons[i + x].outline) * !x); 
+            container->buttons[i + x].rect.y = rect.y + spacing;
+
+            if (container->buttons[i + x].src.text.str != NULL)
+                RSGL_button_alignText(&container->buttons[i + x], container->buttons[i + x].src.text.alignment);
+            
+            RSGL_button_setStyle(&container->buttons[i + x], container->buttons[i + x].src.style);
+
+            float height = container->buttons[i + x].rect.h + (container->buttons[i + x].outline * 2);
+            if (container->buttons[i + x].src.style & RSGL_STYLE_RADIO) {
+                height *= container->buttons[i + x].src.array_count;
+                height += 5 * container->buttons[i + x].src.array_count;
+            }
+
+            if (height > newHeight)
+                newHeight = height;
+        }
+        
+        spacing += newHeight + 5;
+    }   
+}
+
+void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle) {
+    RSGL_button_setStyle(&button->src, buttonStyle);   
+}
+
+void RSGL_drawContainer(RSGL_container container) {
+    RSGL_drawButton(container.src);
+    
+    size_t i;
+    for (i = 0; i < container.buttons_len; i++) {
+        if (container.buttons[i].src.tex == 0)
+            continue;
+        
+        RSGL_drawButton(container.buttons[i]);
+    }
+}
+
+i32 RSGL_container_update(RSGL_container* container, RGFW_Event event) {
+    size_t i;
+    for (i = 0; i < container->buttons_len; i++) {
+        if (container->buttons[i].src.tex == 0)
+            continue;
+        
+        RSGL_button_update(&container->buttons[i], event);
+
+        if (container->buttons[i].status)
+            return i;
+    }
+
+    return -1;
 }
 
 #if !defined(RSGL_NO_TEXT) && defined(RGFW_keyPressed)
