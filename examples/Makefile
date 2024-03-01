@@ -32,6 +32,7 @@ all:
 	make text
 	make glfw
 	make button
+	make container
 
 debug:
 	gcc basic.c $(LIBS) $(ARGS) -o basic
@@ -41,6 +42,7 @@ debug:
 	gcc text.c $(LIBS) $(ARGS) -o text
 	gcc glVer.c $(LIBS) $(ARGS) -o glVer
 	gcc button.c $(LIBS) $(ARGS) -o button
+	gcc container.c $(LIBS) $(ARGS) -o container
 
 	./events
 	./shapes
@@ -49,6 +51,7 @@ debug:
 	./glVer
 	./basic
 	./button
+	./container
 	
 glfw:
 	gcc glfw.c -lglfw -lm -I../ -o glfw
@@ -73,6 +76,9 @@ basic:
 
 button:
 	gcc button.c $(LIBS) $(ARGS) -o button
+
+container:
+	gcc container.c $(LIBS) $(ARGS) -o container
 
 clean:
 	rm -f events glfw shapes textures RSGL.o *.exe
