@@ -768,14 +768,15 @@ typedef enum {
     RSGL_STYLE_RADIO = (1L << 8),
     RSGL_STYLE_CHECKBOX = (1 << 9),
     RSGL_STYLE_COMBOBOX = (1 << 10),
+    RSGL_STYLE_CONTAINER = (1 << 11),
     RSGL_STYLE_TYPE = RSGL_STYLE_SLIDER | RSGL_STYLE_TOGGLE | RSGL_STYLE_RADIO | RSGL_STYLE_CHECKBOX | RSGL_STYLE_COMBOBOX,
 
     RSGL_SHAPE_NULL = (1L << 0),
-    RSGL_SHAPE_RECT = (1L << 11),
-    RSGL_SHAPE_POLYGON = (1L << 12),
+    RSGL_SHAPE_RECT = (1L << 12),
+    RSGL_SHAPE_POLYGON = (1L << 13),
 
-    RSGL_SHAPE_POLYGONF = (1L << 13),
-    RSGL_SHAPE_RECTF = (1L << 14),
+    RSGL_SHAPE_POLYGONF = (1L << 14),
+    RSGL_SHAPE_RECTF = (1L << 15),
 
     RSGL_STYLE_SHAPE = RSGL_SHAPE_RECT | RSGL_SHAPE_POLYGON | RSGL_SHAPE_POLYGONF | RSGL_SHAPE_RECTF,
 } RSGL_widgetStyle;
@@ -800,13 +801,15 @@ typedef struct RSGL_button_src {
         RSGL_color color;
     } text;
 
+    char** combo;
+
     u32 tex;
     RSGL_color color, outlineColor;
     RSGL_point rounding;
     RSGL_drawArgs drawArgs;
-    size_t radio_count;
+    size_t array_count; /* used for the combobox and radio buttons array size */
 
-    u16 style;
+    u16 style;   
 } RSGL_button_src; /* src data for a button*/
 
 typedef struct RSGL_button {
@@ -820,6 +823,8 @@ typedef struct RSGL_button {
     u32 outline;
 
     RSGL_button_src src;
+
+
 } RSGL_button;
 
 /* button managing functions */
@@ -857,6 +862,9 @@ RSGLDEF void RSGL_button_setTexture(RSGL_button* button, u32 tex);
 
 RSGLDEF void RSGL_button_setColor(RSGL_button* button, RSGL_color color);
 RSGLDEF void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color);
+
+/* set button combos for a combo box */
+RSGLDEF void RSGL_button_setCombo(RSGL_button* button, char** combo, size_t combo_count);
 
 /* 
     by default drawArgs is reset before drawing the button 
@@ -2179,7 +2187,7 @@ RSGL_button RSGL_initButton(void) {
     button.toggle = 0;
     button.src.rounding = RSGL_POINT(0, 0);
     button.src.drawArgs = (RSGL_drawArgs){{ }, 1, 0, RSGL_args.currentRect, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1)};
-    button.src.radio_count = 0;
+    button.src.array_count = 0;
     button.radio_select = 0;
 
     button.src.text.str = NULL;
@@ -2213,8 +2221,10 @@ RSGL_button RSGL_copyButton(RSGL_button button) {
     newButton.src.outlineColor = button.src.outlineColor;
     newButton.src.rounding = button.src.rounding;
     newButton.src.drawArgs = button.src.drawArgs;
-    newButton.src.radio_count = button.src.radio_count;
+    newButton.src.array_count = button.src.array_count;
     newButton.radio_select = button.radio_select;
+    
+    newButton.src.combo = button.src.combo;
 
     newButton.src.style = button.src.style;
 
@@ -2252,7 +2262,6 @@ void RSGL_button_setStyle(RSGL_button* button, u16 buttonStyle) {
             
             RSGL_button hover = RSGL_copyButton(*button);
             RSGL_button_setOutline(&hover, 1, RSGL_RGB(80, 80, 80));
-            
             RSGL_button_setOnHover(button, hover.src);
             break;
         }
@@ -2313,6 +2322,10 @@ void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color) {
     button->src.outlineColor = color;
     button->outline = size;
 }
+void RSGL_button_setCombo(RSGL_button* button, char** combo, size_t combo_count) {
+    button->src.combo = combo;
+    button->src.array_count += combo_count + 1;
+}
 void RSGL_button_setDrawArgs(RSGL_button* button) {
     RSGL_button_setDrawArgsData(button, RSGL_args);
 }
@@ -2328,14 +2341,14 @@ void RSGL_button_setOnHover(RSGL_button* button, RSGL_button_src hover) {
 void RSGL_button_setOnPress(RSGL_button* button, RSGL_button_src press) {
     button->loaded_states[RSGL_pressed] = press;
 }
-void RSGL_button_setRadioCount(RSGL_button* button, size_t radio_count) {
-    button->src.radio_count = radio_count;
+void RSGL_button_setRadioCount(RSGL_button* button, size_t array_count) {
+    button->src.array_count = array_count;
 }
 
 void RSGL_drawButton(RSGL_button button) {
     assert((button.src.style & RSGL_STYLE_SHAPE) != RSGL_SHAPE_NULL);
     
-    if (button.loaded_states[button.status].tex != 0)
+    if (button.loaded_states[button.status].tex != 0 && !(button.src.style & RSGL_STYLE_CONTAINER))
         button.src = button.loaded_states[button.status];
 
     /* reset args, but save the old ones */
@@ -2376,10 +2389,10 @@ void RSGL_drawButton(RSGL_button button) {
         rect = button.rect;
 
      if (button.src.style & RSGL_STYLE_RADIO == 0)
-        button.src.radio_count = 0;
+        button.src.array_count = 0;
 
     size_t i;
-    for (i = 0; i < (button.src.radio_count == 0) + button.src.radio_count; i++)  {
+    for (i = 0; i < (button.src.array_count == 0) + button.src.array_count; i++)  {
         switch (button.src.style & RSGL_STYLE_SHAPE) {
             case RSGL_SHAPE_POLYGONF:
                 if (button.src.style &  RSGL_STYLE_TOGGLE) {
@@ -2422,14 +2435,26 @@ void RSGL_drawButton(RSGL_button button) {
                 break;
             default: break;
         }
+        if ((button.src.style & RSGL_STYLE_COMBOBOX)) {
+            if (button.toggle == false)
+                break;
+            
+            rect.y = rectOutline.y + (button.outline); 
+            continue;
+        }
 
         rectOutline.y += rectOutline.h + 5;
         rect.y = rectOutline.y + (button.outline); 
     }
 
-    if (button.src.text.str != NULL)
-        RSGL_drawText(button.src.text.str,  button.src.text.c, button.src.text.color);
+    if (button.src.text.str != NULL) {
+        char* text = button.src.text.str;
+        if (button.src.style & RSGL_STYLE_COMBOBOX)
+            text = button.src.combo[button.radio_select ? button.radio_select - 1 : 0];
 
+        RSGL_drawText(text,  button.src.text.c, button.src.text.color);
+    }
+    
     if (button.src.style & RSGL_STYLE_CHECKBOX) {
         RSGL_pointF p1 = RSGL_POINTF(button.rect.x + button.rect.w / 4, button.rect.y + button.rect.h / 2);
         RSGL_pointF p2 = RSGL_POINTF(button.rect.x + button.rect.w / 2, button.rect.y + button.rect.h * 3 / 4);
@@ -2444,10 +2469,21 @@ void RSGL_drawButton(RSGL_button button) {
         size_t y = ((cen.y - button.rect.h) + 15);
 
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
+
+        size_t i; 
+        for (i = 0; i < (button.src.array_count - 1) && button.toggle; i++) {
+            button.src.text.c.y += rectOutline.h + (button.outline); 
+            RSGL_drawText(button.src.combo[i],  button.src.text.c, button.src.text.color);
+        }
     }
 
     /* set args back to the old ones */
     RSGL_args = args;
+ 
+    if (button.loaded_states[button.status].tex != 0 && (button.src.style & RSGL_STYLE_CONTAINER)) {
+        button.src = button.loaded_states[button.status];
+        RSGL_drawButton(button);
+    }
 }
 
 void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
@@ -2465,7 +2501,7 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     }
 
     size_t i;
-    for (i = 0; i < b->src.radio_count + 1; i++) {
+    for (i = 0; i < b->src.array_count + 1; i++) {
         switch (e.type) {
             case RGFW_mouseButtonPressed:
                 if (RSGL_rectCollidePointF(rect, mouse)) {
@@ -2495,6 +2531,9 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
                 break;
             default: break;
         }
+
+        if (b->src.style & RSGL_STYLE_COMBOBOX && b->toggle == false)
+            break;
         
         rect.y += rect.h + 5;
     }
