@@ -2507,6 +2507,9 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
                 if (RSGL_rectCollidePointF(rect, mouse)) {
                     if (b->status != RSGL_pressed)
                         b->toggle = !b->toggle;
+                                    
+                    if (i == 0 && b->src.style & RSGL_STYLE_COMBOBOX)
+                        break;
                     
                     b->status = RSGL_pressed;
                     b->radio_select = i;
