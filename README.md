@@ -143,7 +143,7 @@ running `make debug` which compiles and runs each example in debug mode
 
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot.PNG?raw=true)
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot2.PNG?raw=true)
-![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot3.PNG?raw=true
+![example screenshot 2](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot3.PNG?raw=true)
 
 ## basic.c 
 `examples/basic.c` is a basic example which goes through many of the window managing features RSGL has\
