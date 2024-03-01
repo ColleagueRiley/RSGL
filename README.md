@@ -143,6 +143,7 @@ running `make debug` which compiles and runs each example in debug mode
 
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot.PNG?raw=true)
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot2.PNG?raw=true)
+![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot3.PNG?raw=true
 
 ## basic.c 
 `examples/basic.c` is a basic example which goes through many of the window managing features RSGL has\
@@ -170,6 +171,9 @@ in the example, you can toggle between opengl 3.0+ and opengl 2.0- by pressing t
 ## button.c 
 `examples/button.c` is an example that shows off how to create and manage buttons using RSGL,
 these include, a default style button, an checkbox, a toggle button, radio buttons, a comboBox and a custom button
+
+# container.c
+`examples/container.c` is an example which shows how to create and manage a widget container
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in, 
