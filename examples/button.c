@@ -3,7 +3,6 @@
 #include "RSGL.h"
 
 int main() {
-    RSGL_setGLVersion(4, 6);
     RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
 
     RSGL_button button = RSGL_initButton(); 
@@ -30,7 +29,7 @@ int main() {
     /* this can be a rect or polygon */
     RSGL_button_setRect(&generic, RSGL_RECT(50, 50, 100, 50));
     
-    RSGL_button_setText(&generic, "generic", 11, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
+    RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&generic, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
 
     RSGL_button_setStyle(&generic, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED);
@@ -41,7 +40,7 @@ int main() {
 
     /* this can be a rect or polygon */
     RSGL_button_setRect(&comboBox, RSGL_RECT(200, 50, 200, 50));
-    RSGL_button_setText(&comboBox, "comboBox 0", 11, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
+    RSGL_button_setText(&comboBox, "", 11, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&comboBox, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
     RSGL_button_setStyle(&comboBox, RSGL_STYLE_DARK | RSGL_STYLE_COMBOBOX);
 
