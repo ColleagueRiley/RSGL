@@ -31,6 +31,7 @@ MACRO #DEFINE ARGUMENTS
 
 #define RGL_MODERN_OPENGL - Use the modern opengl backend (this is enabled by default)
 #define RGL_OPENGL_LEGACY - Use the legacy opengl backend
+#define RGL_NO_GL_LOADER  - Do not use the RGL OpenGL loader (you'll have to use something like GLAD instead)
 #define RGL_NO_X64_OPTIMIZATIONS - Use x64 optimizations (x64 only), eg. SIMD
 #define RGL_ALLOC_BATCHES - Allocate room for batches instead of using a stack-based c array
 #define RGL_ALLOC_MATRIX_STACK - Allocate room for the matrix stack instead of using a stack-based c array
@@ -289,6 +290,7 @@ RGLDEF RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]);  /* Multip
 
 RGLDEF i32 rglCheckRenderBatchLimit(int vCount);                             /* Check internal buffer overflow for a given number of vertex */
 
+#ifndef RGL_NO_GL_LOADER
 #define RGL_PROC_DEF(proc, name) name##SRC = (name##PROC)proc(#name)
 
 typedef void (*RGLapiproc)(void);
@@ -390,6 +392,7 @@ glDebugMessageCallbackPROC glDebugMessageCallbackSRC = NULL;
 #define glDebugMessageCallback glDebugMessageCallbackSRC
 
 extern int RGL_loadGL3(RGLloadfunc proc);
+#endif
 
 #endif
 #if defined(__cplusplus)
@@ -618,6 +621,7 @@ void rglBegin(int mode) {
 /* Initialize RGLinfo: OpenGL extensions, default buffers/shaders/textures, OpenGL states*/
 void rglInit(void *loader) {
 #if defined(RGL_MODERN_OPENGL)
+    #ifndef RGL_NO_GL_LOADER
     if (RGL_loadGL3((RGLloadfunc)loader)) {
         #ifdef RGL_DEBUG
         printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
@@ -626,6 +630,7 @@ void rglInit(void *loader) {
         RGLinfo.legacy = 2;   
         return;
     }
+    #endif
 
     RGLinfo.legacy = 0; 
 
@@ -1367,6 +1372,7 @@ RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]) {
     };
 }
 
+#ifndef RGL_NO_GL_LOADER
 int RGL_loadGL3(RGLloadfunc proc) {
     RGL_PROC_DEF(proc, glShaderSource);
     RGL_PROC_DEF(proc, glCreateShader);
@@ -1441,6 +1447,7 @@ int RGL_loadGL3(RGLloadfunc proc) {
     
     return 0;
 }
+#endif
 
 #endif /* RGL_MODERN_OPENGL */
 
