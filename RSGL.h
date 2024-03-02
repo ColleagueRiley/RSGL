@@ -807,7 +807,7 @@ typedef struct RSGL_button_src {
     u32 tex;
     RSGL_color color, outlineColor;
     RSGL_point rounding;
-    RSGL_drawArgs drawArgs;
+    RSGL_drawArgs drawArgs; 
     size_t array_count; /* used for the combobox and radio buttons array size */
 
     u16 style;   
@@ -824,7 +824,6 @@ typedef struct RSGL_button {
     u32 outline;
 
     RSGL_button_src src;
-
 
 } RSGL_button;
 
@@ -909,6 +908,7 @@ typedef struct RSGL_container {
 } RSGL_container;
 
 RSGLDEF RSGL_button RSGL_nullButton(void);
+RSGLDEF RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize);
 
 RSGLDEF RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len);
 RSGLDEF void RSGL_drawContainer(RSGL_container container);
@@ -1298,7 +1298,7 @@ RGFW_Event* RSGL_window_checkEvent(RSGL_window* win) {
     RGFW_Event* e = RGFW_window_checkEvent(win);
 
     if (win->event.type == RGFW_windowAttribsChange)
-        glViewport(win->r.x, win->r.y, win->r.w, win->r.h);
+        glViewport(0, 0, win->r.w, win->r.h);
 
     return e;
 }
@@ -1712,7 +1712,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     glPrerequisites(RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c);
     o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
     
-    rglBegin(RGL_TRIANGLE_FAN);
+    rglBegin(RGL_TRIANGLE_FAN_2D);
 
     float displacement = 360.0f / (float)sides;
     float angle = displacement * arc.x;
@@ -2589,51 +2589,22 @@ RSGL_button RSGL_nullButton(void) {
     return nullButton;
 }
 
+RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize) {
+    RSGL_button label = RSGL_initButton();
+    RSGL_button_setRect(&label, RSGL_RECT(50, 50, 100, 50));
+    RSGL_button_setText(&label, text, text_len, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));   
+
+    return label;
+}
+
 RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len) {
     RSGL_container new;
     new.src = RSGL_initButton();
     new.buttons = buttons;
     new.buttons_len = len;
 
-    RSGL_button_setRect(&new.src, r);    
-
-    RSGL_rectF rect = RSGL_RECTF(r.x, r.y, r.w, r.h);
-
-    size_t i, x;
-    float spacing = 0;
-
-    for (i = 0; i < new.buttons_len; i += 3) {
-        size_t y = i / 3;
-
-        float newHeight = 0;
-        for (x = 0; x < 3; x++) {
-
-            if (new.buttons[i + x].src.tex == 0)
-                continue;
-            
-            new.buttons[i + x].rect = RSGL_alignRectF(rect, new.buttons[i + x].rect, (1 << (1 + x)));
-
-            new.buttons[i + x].rect.x += ((5 + new.buttons[i + x].outline) * !x); 
-            new.buttons[i + x].rect.y = r.y + spacing;
-
-            if (new.buttons[i + x].src.text.str != NULL)
-                RSGL_button_alignText(&new.buttons[i + x], new.buttons[i + x].src.text.alignment);
-            
-            RSGL_button_setStyle(&new.buttons[i + x], new.buttons[i + x].src.style);
-
-            float height = new.buttons[i + x].rect.h + (new.buttons[i + x].outline * 2);
-            if (new.buttons[i + x].src.style & RSGL_STYLE_RADIO) {
-                height *= new.buttons[i + x].src.array_count;
-                height += 5 * new.buttons[i + x].src.array_count;
-            }
-
-            if (height > newHeight)
-                newHeight = height;
-        }
-        
-        spacing += newHeight + 5;
-    }   
-
+    RSGL_button_setRect(&new.src, r);
+    RSGL_container_setPos(&new, RSGL_POINT(r.x, r. y));
     return new;
 }
 
