@@ -88,7 +88,7 @@ and then link miniaudio your own way\
 
 # Widgets 
 Note, widgets are WIP, the supported widgets include\
-RSGL_alignRect, RSGL_button (checkboxes, toggleboxes, combo boxes, and radiobuttons) \
+RSGL_alignRect, RSGL_button (checkboxes, toggleboxes, combo boxes, sliders and radiobuttons) \
 
 RSGL_textBox and RSGL_expandableRect are currently WIP
 
@@ -170,7 +170,7 @@ in the example, you can toggle between opengl 3.0+ and opengl 2.0- by pressing t
 
 ## button.c 
 `examples/button.c` is an example that shows off how to create and manage buttons using RSGL,
-these include, a default style button, an checkbox, a toggle button, radio buttons, a comboBox and a custom button
+these include, a default style button, an checkbox, a toggle button, radio buttons, a comboBox, a slider and a custom button
 
 # container.c
 `examples/container.c` is an example which shows how to create and manage a widget container
