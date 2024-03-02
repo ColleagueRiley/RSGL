@@ -189,11 +189,14 @@ RSGL GL defs
 #define RSGL_LINES                                0x0001      /* GL_LINES */
 #define RSGL_TRIANGLES                            0x0004      /* GL_TRIANGLES */
 #define RSGL_QUADS                                0x0007      /* GL_QUADS */
+#define RSGL_TRIANGLE_FAN                         0x0006      /* GL_QUADS */
 
 /* these ensure GL_DEPTH_TEST is disabled when they're being rendered */
 #define RSGL_LINES_2D                                0x0011      /* GL_LINES */
 #define RSGL_TRIANGLES_2D                            0x0014      /* GL_TRIANGLES */
-#define RSGL_QUADS_2D                                0x0017      /* GL_QUADS */
+#define RSGL_QUADS_2D                                0x0016      /* GL_QUADS */
+#define RSGL_TRIANGLE_FAN_2D                         0x0017      /* GL_QUADS */
+
 
 /* 
 keys = 
@@ -763,8 +766,13 @@ typedef enum {
 
     RSGL_STYLE_ROUNDED = (1L << 3), /* use rounded rect */
     
-    RSGL_STYLE_SLIDER = (1L << 5), 
-    RSGL_STYLE_TOGGLE = (1L << 6),
+    RSGL_STYLE_SLIDER_HORIZONTAL = (1L << 4),
+    RSGL_STYLE_SLIDER_VERTICAL = (1L << 5),
+    /* rectangle by default */
+    RSGL_STYLE_SLIDER_CIRCLE = (1L << 6), 
+    RSGL_STYLE_SLIDER = RSGL_STYLE_SLIDER_VERTICAL | RSGL_STYLE_SLIDER_HORIZONTAL, 
+    
+    RSGL_STYLE_TOGGLE = (1L << 7),
     RSGL_STYLE_RADIO = (1L << 8),
     RSGL_STYLE_CHECKBOX = (1 << 9),
     RSGL_STYLE_COMBOBOX = (1 << 10),
@@ -808,7 +816,11 @@ typedef struct RSGL_button_src {
     RSGL_color color, outlineColor;
     RSGL_point rounding;
     RSGL_drawArgs drawArgs; 
-    size_t array_count; /* used for the combobox and radio buttons array size */
+    
+    union {    
+        size_t array_count; /* used for the combobox and radio buttons array size */
+        size_t slider_pos; /* the pos of a slider for x or y */
+    };
 
     u16 style;   
 } RSGL_button_src; /* src data for a button*/
@@ -890,13 +902,8 @@ RSGLDEF void RSGL_button_update(
     RGFW_Event e /* current event */
 );
 
-RSGLDEF void RSGL_slider_update(
+RSGLDEF float RSGL_slider_update(
     RSGL_button* b, /* button pointer */
-    /* limits, 
-        if the slider moves [up/down], the width should be 0, 
-        if the slight moves [left/right] the height should be 0 
-    */
-    RSGL_rect limits,
     RGFW_Event e /* the current event, used for checking for a mouse event */
 );
 
@@ -2254,6 +2261,9 @@ void RSGL_button_setStyle(RSGL_button* button, u16 buttonStyle) {
 
     button->src.style |= buttonStyle;
 
+    if (buttonStyle & RSGL_STYLE_SLIDER)
+        button->src.slider_pos = button->rect.x;
+
     if (buttonStyle & RSGL_STYLE_ROUNDED) {
         if (buttonStyle & RSGL_STYLE_TOGGLE)
             RSGL_button_setRounding(button, RSGL_POINT(50, 50));
@@ -2366,8 +2376,10 @@ void RSGL_button_setRadioCount(RSGL_button* button, size_t array_count) {
 void RSGL_drawButton(RSGL_button button) {
     assert((button.src.style & RSGL_STYLE_SHAPE) != RSGL_SHAPE_NULL);
     
-    if (button.loaded_states[button.status].tex != 0 && !(button.src.style & RSGL_STYLE_CONTAINER))
+    if (button.loaded_states[button.status].tex != 0 && !(button.src.style & RSGL_STYLE_CONTAINER)) {
+        button.loaded_states[button.status].array_count = button.src.array_count;
         button.src = button.loaded_states[button.status];
+    }
 
     /* reset args, but save the old ones */
     RSGL_drawArgs args = RSGL_args;
@@ -2406,7 +2418,7 @@ void RSGL_drawButton(RSGL_button button) {
     else 
         rect = button.rect;
 
-     if (button.src.style & RSGL_STYLE_RADIO == 0)
+    if (button.src.style & RSGL_STYLE_RADIO == 0 && (button.src.style & RSGL_STYLE_SLIDER) == 0)
         button.src.array_count = 0;
 
     size_t i;
@@ -2453,6 +2465,24 @@ void RSGL_drawButton(RSGL_button button) {
                 break;
             default: break;
         }
+        
+        if (button.src.style & RSGL_STYLE_SLIDER) {
+            RSGL_circle c;
+            
+            if (button.src.style & RSGL_STYLE_SLIDER_VERTICAL)
+                c = RSGL_CIRCLE(button.rect.x - (button.rect.w / 2), button.src.slider_pos, button.rect.w * 2);
+            else
+                c = RSGL_CIRCLE(button.src.slider_pos, button.rect.y - (button.rect.h / 2), button.rect.h * 2);
+
+            if (button.src.style & RSGL_STYLE_SLIDER_CIRCLE)
+                RSGL_drawCircle(c, RSGL_RGB(200, 200, 200));
+            else if (button.src.style & RSGL_STYLE_ROUNDED)
+                RSGL_drawRoundRect(RSGL_RECT(c.x, c.y, c.d, c.d), RSGL_POINT(10, 10), RSGL_RGB(200, 200, 200));
+            else
+                RSGL_drawRect(RSGL_RECT(c.x, c.y, c.d, c.d), RSGL_RGB(200, 200, 200));
+            break;
+        }
+
         if ((button.src.style & RSGL_STYLE_COMBOBOX)) {
             if (button.toggle == false)
                 break;
@@ -2526,7 +2556,7 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
                     break;
                 
                 if (RSGL_rectCollidePointF(rect, mouse)) {
-                    if (b->status != RSGL_pressed)
+                    if (b->status != RSGL_pressed && !(b->src.style & RSGL_STYLE_SLIDER))
                         b->toggle = !b->toggle;
                                     
                     if (i == 0 && b->src.style & RSGL_STYLE_COMBOBOX)
@@ -2566,20 +2596,36 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     }
 }
 
-void RSGL_slider_update(RSGL_button* b, RSGL_rect limits, RGFW_Event e) {
+float RSGL_slider_update(RSGL_button* b, RGFW_Event e) {
     RSGL_button_update(b, e);
 
-    if (e.type == RGFW_mouseButtonReleased && b->toggle)
+    float room, length, rect_pos, mouse_pos;
+    
+    if (b->src.style & RSGL_STYLE_SLIDER_VERTICAL) {
+        room = b->rect.w;
+        length = b->rect.h;
+        rect_pos = b->rect.y;
+        mouse_pos = e.point.y;
+    } else {
+        room = b->rect.h;
+        length = b->rect.w;
+        rect_pos = b->rect.x;
+        mouse_pos = e.point.x;
+    }
+
+    if (b->status == RSGL_pressed) 
+        b->toggle = true;
+    else if (e.type == RSGL_mouseButtonReleased)
         b->toggle = false;
     
-    if (!b->toggle || e.type != RGFW_mousePosChanged)
-        return;
+    if (b->toggle && RSGL_between(mouse_pos, rect_pos, rect_pos + length)) {
+        b->src.slider_pos = mouse_pos;
 
+        if (b->src.slider_pos + room * 2 > (rect_pos + length))
+            b->src.slider_pos -= room * 2;
+    }
 
-    if (limits.w && RSGL_between(e.point.x, limits.x, limits.x + limits.w))
-        b->rect.x = e.point.x;
-    else if (limits.h && RSGL_between(e.point.y, limits.y, limits.y + limits.h)) 
-        b->rect.y = e.point.y;
+    return ((b->src.slider_pos - rect_pos) / (length - (room * 2))) * 100;
 }
 
 RSGL_button RSGL_nullButton(void) {

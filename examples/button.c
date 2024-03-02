@@ -61,6 +61,12 @@ int main() {
     RSGL_button_setRadioCount(&radioButtons, 3);
     RSGL_button_setStyle(&radioButtons, RSGL_STYLE_DARK | RSGL_STYLE_RADIO);
 
+    RSGL_button slider = RSGL_initButton();
+    RSGL_button_setRect(&slider, RSGL_RECT(200, 450, 200, 15));    
+    RSGL_button_setStyle(&slider, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_SLIDER_HORIZONTAL | RSGL_STYLE_SLIDER_CIRCLE);
+
+    float slider_value;
+
     bool running = true;
     while (running) {
         while (RSGL_window_checkEvent(win)) {
@@ -75,6 +81,7 @@ int main() {
             RSGL_button_update(&checkbox, win->event);
             RSGL_button_update(&radioButtons, win->event);
             RSGL_button_update(&comboBox, win->event);
+            slider_value = RSGL_slider_update(&slider, win->event);
         }
 
         RSGL_drawButton(button);
@@ -83,6 +90,9 @@ int main() {
         RSGL_drawButton(checkbox);
         RSGL_drawButton(radioButtons);
         RSGL_drawButton(comboBox);
+        RSGL_drawButton(slider);
+
+        RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(100, 450, 15), RSGL_RGB(255, 255, 255));
 
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }
