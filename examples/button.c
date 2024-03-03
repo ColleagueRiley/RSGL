@@ -10,14 +10,14 @@ int main() {
     RSGL_button_setColor(&button, RSGL_RGB(200, 0, 0));
     RSGL_button_setOutline(&button, 10, RSGL_RGB(100, 0, 0));
 
-    RSGL_setFont(RSGL_loadFont("SansPosterBold.ttf"));
-    RSGL_button_setText(&button, "text", 5, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(0, 0, 0));
+    RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
+    RSGL_button_setText(&button, "text", 5, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(0, 0, 0));
     RSGL_button_alignText(&button, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
 
     RSGL_button press = RSGL_copyButton(button);
 
     RSGL_button_setColor(&press, RSGL_RGB(255, 0, 0));
-    RSGL_button_setText(&press, "other text", 11, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(0, 0, 0));
+    RSGL_button_setText(&press, "other text", 11, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(0, 0, 0));
     RSGL_button_alignText(&press, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
 
     RSGL_button_setOnIdle(&button, button.src);
@@ -29,7 +29,7 @@ int main() {
     /* this can be a rect or polygon */
     RSGL_button_setRect(&generic, RSGL_RECT(50, 50, 100, 50));
     
-    RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
+    RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&generic, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
 
     RSGL_button_setStyle(&generic, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED);
@@ -40,7 +40,7 @@ int main() {
 
     /* this can be a rect or polygon */
     RSGL_button_setRect(&comboBox, RSGL_RECT(200, 50, 200, 50));
-    RSGL_button_setText(&comboBox, "", 11, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
+    RSGL_button_setText(&comboBox, "", 11, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&comboBox, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
     RSGL_button_setStyle(&comboBox, RSGL_STYLE_DARK | RSGL_STYLE_COMBOBOX);
 
@@ -92,7 +92,7 @@ int main() {
         RSGL_drawButton(comboBox);
         RSGL_drawButton(slider);
 
-        RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(100, 450, 15), RSGL_RGB(255, 255, 255));
+        RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(100, 440, 25), RSGL_RGB(255, 255, 255));
 
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }

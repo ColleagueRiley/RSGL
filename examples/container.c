@@ -10,9 +10,9 @@ int main() {
     /* this can be a rect or polygon */
     RSGL_button_setRect(&generic, RSGL_RECT(50, 50, 100, 50));
     
-    RSGL_setFont(RSGL_loadFont("SansPosterBold.ttf"));
+    RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
 
-    RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
+    RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&generic, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
 
     RSGL_button_setStyle(&generic, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED);
@@ -23,7 +23,7 @@ int main() {
 
     /* this can be a rect or polygon */
     RSGL_button_setRect(&comboBox, RSGL_RECT(200, 50, 200, 50));
-    RSGL_button_setText(&comboBox, "", 11, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));
+    RSGL_button_setText(&comboBox, "", 11, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&comboBox, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
     RSGL_button_setStyle(&comboBox, RSGL_STYLE_DARK | RSGL_STYLE_COMBOBOX);
 
@@ -44,14 +44,29 @@ int main() {
     RSGL_button_setRadioCount(&radioButtons, 3);
     RSGL_button_setStyle(&radioButtons, RSGL_STYLE_DARK | RSGL_STYLE_RADIO);
 
+    /* slider button */
+    RSGL_button slider = RSGL_initButton();
+    RSGL_button_setRect(&slider, RSGL_RECT(200, 450, 200, 15));    
+    RSGL_button_setStyle(&slider, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_SLIDER_HORIZONTAL | RSGL_STYLE_SLIDER_CIRCLE);
+    
     RSGL_button null = RSGL_nullButton();
-
+    
+    
+    /*RSGL_button label = RSGL_initButton();
+    label.rect =  RSGL_RECTF(50, 250, 50, 50);
+    label.src.text.str = "name";
+    //label.src.text.color = RSGL_RGB(100, 100, 100);
+    label.src.text.c.d = 15;
+    //RSGL_button_setText(&label, "name", 5, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));   
+    //label.src.text.alignment = RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE;
+    */
+   
     RSGL_button buttons[] = {
         null, generic, null, 
         checkbox, null, generic,
         null, null, null,
-        radioButtons, null, null,
-        comboBox,
+        radioButtons, null, genericToggle,
+        comboBox, null, null, slider
     };
 
     RSGL_container container = RSGL_initContainer(RSGL_RECT(50, 50, 300, 400), buttons, 13);

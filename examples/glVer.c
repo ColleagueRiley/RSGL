@@ -5,7 +5,7 @@
 int main() {
     RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
     win->fpsCap = 120;
-    RSGL_setFont(RSGL_loadFont("SansPosterBold.ttf"));
+    RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
 
     RSGL_legacy(true);
 
