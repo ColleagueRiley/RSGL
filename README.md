@@ -16,8 +16,11 @@ RSGL currently supports Linux, BSD, Windows and MacOS.
 - Supports multiple platforms, Windows, MacOS, Linux, etc
 - Supports multiple versions of OpenGL (even allowing you to switch during runtime)
 - Uses other small lightweight dependencies
+- Basic shape drawing, collisions and drawing operations
 - OpenGL abstraction layer, RGL, which can also be used independently as a single-header library
+- straightforward window management via RGFW
 - Supports multiple font, image and audio formats via `stb_truetype.h`, `stb_image.h`, and `miniaudio.h`
+- Dynamic GUI Widgets 
 - Many examples included
 - Free and Open Source
 
