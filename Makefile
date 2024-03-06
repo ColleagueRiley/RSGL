@@ -38,7 +38,7 @@ ifeq ($(detected_OS),Darwin)        # Mac OS X
 	EXT = dylib
 endif
 ifeq ($(detected_OS),Linux)
-    LIBS := -lX11 -lGLX
+    LIBS := -lX11 -lGLX -lXrandr
 	EXT = so
 endif
 

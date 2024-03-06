@@ -24,7 +24,7 @@ ifeq ($(detected_OS),Darwin)        # Mac OS X
 	LIBS := -I.. -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 endif
 ifeq ($(detected_OS),Linux)
-    LIBS := -I.. -I./include -lX11 -lGL -lm 
+    LIBS := -I.. -I./include -lX11 -lGL -lm -lXrandr
 endif
 
 all:
