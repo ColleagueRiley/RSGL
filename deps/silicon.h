@@ -435,6 +435,7 @@ enum {
 	NSOpenGLPFAAllowOfflineRenderers NS_OPENGL_ENUM_DEPRECATED(10.5, 10.14)  =  96,  /* allow use of offline renderers               */
 	NSOpenGLPFAAcceleratedCompute    NS_OPENGL_ENUM_DEPRECATED(10.0, 10.14)  =  97,	/* choose a hardware accelerated compute device */
 	
+	NSOpenGLProfileVersionLegacy 	 NS_OPENGL_ENUM_DEPRECATED(10.7, 10.14)  = 0x1000,
 	NSOpenGLPFAOpenGLProfile         NS_OPENGL_ENUM_DEPRECATED(10.7, 10.14)  =  99,    /* specify an OpenGL Profile to use             */
 	NSOpenGLProfileVersion3_2Core    NS_OPENGL_ENUM_DEPRECATED(10.0, 10.14)  = 0x3200, /* The 3.2 Profile of OpenGL */
 	NSOpenGLProfileVersion4_1Core    NS_OPENGL_ENUM_DEPRECATED(10.0, 10.14)  = 0x3200, /* The 4.1 profile of OpenGL */
@@ -1416,6 +1417,13 @@ enum{
 	NS_CURSOR_IMAGE_CODE,
 	NS_CURSOR_HOT_SPOT_CODE,
 	NS_CURSOR_ARROW_CURSOR_CODE,
+	NS_CURSOR_IBEAM_CURSOR_CODE,
+	NS_CURSOR_CROSHAIR_CURSOR_CODE,
+	NS_CURSOR_POINTING_HAND_CURSOR_CODE,
+	NS_CURSOR_RESIZE_LEFT_RIGHT_CURSOR_CODE,
+	NS_CURSOR_RESIZE_UP_DOWN_CURSOR_CODE,
+	NS_CURSOR_CLOSED_HAND_CURSOR_CODE,
+	NS_CURSOR_OPERATION_NOT_ALLOWED_CURSOR_CODE,
 	NS_CURSOR_INIT_WITH_IMAGE_CODE,
 	NS_CURSOR_HIDE_CODE,
 	NS_CURSOR_UNHIDE_CODE,
@@ -1558,7 +1566,9 @@ enum{
 	NS_STRING_IS_EQUAL_CODE,
 	NS_WINDOW_SET_MAX_SIZE_CODE,
 	NS_WINDOW_SET_MIN_SIZE_CODE,
-  
+	NS_GRAPHICS_CONTEXT_WIDTH_WINDOW_CODE,
+	NS_CURSOR_PERFORM_SELECTOR,
+
 	NS_FUNC_LEN
 };
 
@@ -1679,6 +1689,13 @@ void si_initNS(void) {
 	SI_NS_FUNCTIONS[NS_CURSOR_IMAGE_CODE] = sel_getUid("image");
 	SI_NS_FUNCTIONS[NS_CURSOR_HOT_SPOT_CODE] = sel_getUid("hotSpot");
 	SI_NS_FUNCTIONS[NS_CURSOR_ARROW_CURSOR_CODE] = sel_getUid("arrowCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_IBEAM_CURSOR_CODE] = sel_getUid("IBeamCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_CROSHAIR_CURSOR_CODE] = sel_getUid("crosshairCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_POINTING_HAND_CURSOR_CODE] = sel_getUid("pointingHandCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_RESIZE_LEFT_RIGHT_CURSOR_CODE] = sel_getUid("resizeLeftRightCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_RESIZE_UP_DOWN_CURSOR_CODE] = sel_getUid("resizeUpDownCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_CLOSED_HAND_CURSOR_CODE] = sel_getUid("closedHandCursor");
+	SI_NS_FUNCTIONS[NS_CURSOR_OPERATION_NOT_ALLOWED_CURSOR_CODE] = sel_getUid("operationNotAllowedCursor");
 	SI_NS_FUNCTIONS[NS_CURSOR_INIT_WITH_IMAGE_CODE] = sel_getUid("initWithImage:hotSpot:");
 	SI_NS_FUNCTIONS[NS_CURSOR_HIDE_CODE] = sel_getUid("hide");
 	SI_NS_FUNCTIONS[NS_CURSOR_UNHIDE_CODE] = sel_getUid("unhide");
@@ -1839,6 +1856,8 @@ void si_initNS(void) {
 	SI_NS_FUNCTIONS[NS_WINDOW_STYLE_MASK_CODE] = sel_getUid("styleMask");
 	SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE] = sel_getUid("setMinSize:");
 	SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE] = sel_getUid("setMaxSize:");
+	SI_NS_FUNCTIONS[NS_GRAPHICS_CONTEXT_WIDTH_WINDOW_CODE] = sel_getUid("graphicsContextWithWindow:");
+	SI_NS_FUNCTIONS[NS_CURSOR_PERFORM_SELECTOR] = sel_getUid("performSelector:");
 }
 
 void si_impl_func_to_SEL_with_name(const char* class_name, const char* register_name, void* function) {
@@ -2351,6 +2370,11 @@ NSGraphicsContext* NSGraphicsContext_currentContext(NSGraphicsContext* context) 
 void NSGraphicsContext_setCurrentContext(NSGraphicsContext* context, NSGraphicsContext* currentContext) {
 	void* func = SI_NS_FUNCTIONS[NS_GRAPHICS_CONTEXT_SET_CURRENT_CONTEXT_CODE];
 	objc_msgSend_void_id(context, func, currentContext);
+}
+
+NSGraphicsContext* NSGraphicsContext_graphicsContextWithWindow(NSWindow* window) {
+	void* func = SI_NS_FUNCTIONS[NS_GRAPHICS_CONTEXT_WIDTH_WINDOW_CODE];
+	return objc_msgSend_id_id(SI_NS_CLASSES[NS_GRAPHICS_CONTEXT_CODE], func, window);
 }
 
 void NSMenuItem_setSubmenu(NSMenuItem* item, NSMenu* submenu) {
@@ -2894,6 +2918,48 @@ NSCursor* NSCursor_arrowCursor(void) {
 	return (NSCursor *)objc_msgSend_id(nclass, func);
 }
 
+NSCursor* NSCursor_IBeamCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_IBEAM_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+
+NSCursor* NSCursor_crosshairCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_CROSHAIR_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+
+NSCursor* NSCursor_pointingHandCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_POINTING_HAND_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+
+NSCursor* NSCursor_resizeLeftRightCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_RESIZE_LEFT_RIGHT_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+
+NSCursor* NSCursor_resizeUpDownCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_RESIZE_UP_DOWN_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+
+NSCursor* NSCursor_closedHandCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_CLOSED_HAND_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+
+NSCursor* NSCursor_operationNotAllowedCursor(void) {
+	void* nclass = SI_NS_CLASSES[NS_CURSOR_CODE];
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_OPERATION_NOT_ALLOWED_CURSOR_CODE];
+	return (NSCursor *)objc_msgSend_id(nclass, func);
+}
+	
 NSCursor* NSCursor_initWithImage(NSImage* newImage, NSPoint aPoint) {
 	void* func = SI_NS_FUNCTIONS[NS_CURSOR_INIT_WITH_IMAGE_CODE];
 	void* nsclass = SI_NS_CLASSES[NS_CURSOR_CODE];
@@ -2927,6 +2993,11 @@ void NSCursor_push(NSCursor* cursor) {
 void NSCursor_set(NSCursor* cursor) {
 	void* func = SI_NS_FUNCTIONS[NS_CURSOR_SET_CODE];
 	objc_msgSend_void(cursor, func);
+}
+
+void NSCursor_performSelector(NSCursor* cursor, void* selector) {
+	void* func = SI_NS_FUNCTIONS[NS_CURSOR_PERFORM_SELECTOR];
+	objc_msgSend_void_SEL(cursor, func, selector);
 }
 
 NSPasteboard* NSPasteboard_generalPasteboard(void) {
