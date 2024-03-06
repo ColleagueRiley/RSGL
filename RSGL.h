@@ -479,9 +479,9 @@ RSGLDEF u8 RSGL_window_isFullscreen(RSGL_window* win);
 /* if window is hidden */
 RSGLDEF u8 RSGL_window_isHidden(RSGL_window* win);
 /* if window is minimized */
-RSGLDEF u8 RSGL_isMinimized(RSGL_window* win);
+RSGLDEF u8 RSGL_window_isMinimized(RSGL_window* win);
 /* if window is maximized */
-RSGLDEF u8 RSGL_isMaximized(RSGL_window* win);
+RSGLDEF u8 RSGL_window_isMaximized(RSGL_window* win);
 /*!< make the window the current opengl drawing context */
 RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win); 
 
@@ -516,7 +516,14 @@ RSGLDEF char RSGL_keystrToChar(const char*);
 */
 
 /*! native opengl functions */
+
+/* OpenGL init hints */
 RSGLDEF void RSGL_setGLVersion(i32 major, i32 minor);
+RSGLDEF void RSGL_setGLStencil(i32 stencil); /* set stencil buffer bit size (8 by default) */
+RSGLDEF void RSGL_setGLSamples(i32 samples); /* set number of sampiling buffers (4 by default) */
+RSGLDEF void RSGL_setGLStereo(i32 stereo); /* use GL_STEREO (GL_FALSE by default) */
+RSGLDEF void RSGL_setGLAuxBuffers(i32 auxBuffers); /* number of aux buffers (0 by default) */
+
 /* supports openGL, directX, OSMesa, EGL and software rendering */
 RSGLDEF void RSGL_window_swapBuffers(RSGL_window* win); /* swap the rendering buffer */
 RSGLDEF void RSGL_window_swapInterval(RSGL_window* win, i32 swapInterval); 
@@ -1264,6 +1271,9 @@ void RSGL_legacy(i32 legacy) {
 #ifndef RSGL_NO_WINDOW
 
 RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
+    if (RGFW_majorVersion == 0)
+        RGFW_setGLVersion(3, 3);
+    
     RGFW_window* win = RGFW_createWindow(name, r, args);
 
     if (RSGL_windowsOpen == 0) {
@@ -1431,12 +1441,12 @@ u8 RSGL_window_isHidden(RSGL_window* win) {
     return RGFW_window_isHidden(win);
 }
 
-u8 RSGL_isMinimized(RSGL_window* win) {
-    return RGFW_isMinimized(win);
+u8 RSGL_window_isMinimized(RSGL_window* win) {
+    return RGFW_window_isMinimized(win);
 }
 
 u8 RSGL_isMaximized(RSGL_window* win) {
-    return RGFW_isMaximized(win);
+    return RGFW_window_isMaximized(win);
 }
 
 u8 RSGL_isPressedI(RSGL_window* win, u32 key) {
@@ -1466,6 +1476,11 @@ char RSGL_keystrToChar(const char* str) {
 void RSGL_setGLVersion(i32 major, i32 minor) {
     return RGFW_setGLVersion(major, minor);
 }
+
+void RSGL_setGLStencil(i32 stencil){ RGFW_setGLStencil(stencil); }
+void RSGL_setGLSamples(i32 samples){ RGFW_setGLSamples(samples); }
+void RSGL_setGLStereo(i32 stereo){ RGFW_setGLStereo(stereo); }
+void RSGL_setGLAuxBuffers(i32 auxBuffers){ RGFW_setGLAuxBuffers(auxBuffers); }
 
 void RSGL_window_swapBuffers(RSGL_window* win) {
     return RGFW_window_swapBuffers(win);
@@ -1692,7 +1707,7 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
 
     RSGL_point3DF center = RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f);
 
-    RSGL_basicDraw(RGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 4);
+    RSGL_basicDraw(RGL_TRIANGLES, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 4);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
@@ -2716,7 +2731,10 @@ i32 RSGL_container_update(RSGL_container* container, RGFW_Event event) {
         if (container->buttons[i].src.tex == 0)
             continue;
         
-        RSGL_button_update(&container->buttons[i], event);
+        if (container->buttons[i].src.style & RSGL_STYLE_SLIDER)
+            RSGL_slider_update(&container->buttons[i], event);
+        else
+            RSGL_button_update(&container->buttons[i], event);
 
         if (container->buttons[i].status)
             return i;
