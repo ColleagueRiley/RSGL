@@ -1,7 +1,10 @@
+# This is free and unencumbered software released into the public domain.
+# Anyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means. 
+
 CC = gcc
 AR = ar
 
-LIBS := -lopengl32 -lshell32 -lgdi32
+LIBS := -lopengl32 -lshell32 -lgdi32 -lXInput -lShcore
 EXT = dll
 
 ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
@@ -27,7 +30,7 @@ else
 endif
 
 ifeq ($(detected_OS),Windows)
-	LIBS := -lopengl32 -lshell32 -lgdi32
+	LIBS := -lopengl32 -lshell32 -lgdi32 -lXInput -lShcore
 	EXT = dll
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
