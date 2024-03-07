@@ -1702,15 +1702,15 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
     if (RSGL_args.fill == false)
         return RSGL_drawRectFOutline(r, 1, c);
         
-    RSGL_pointF texPoints[] = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 1.0f}};
+    RSGL_pointF texPoints[] = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
     RSGL_point3DF points[] = {
                                  {r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}, 
-                                 {r.x + r.w, r.y, 0.0f},  {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y + r.h, 0.0f},
+                                 {r.x + r.w, r.y, 0.0f},  {r.x + r.w, r.y + r.h, 0.0f}, {r.x, r.y + r.h, 0.0f},  
                             };
 
     RSGL_point3DF center = RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f);
 
-    RSGL_basicDraw(RGL_TRIANGLES, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 6);
+    RSGL_basicDraw(RSGL_QUADS_2D, (RSGL_point3DF*)points, (RSGL_pointF*)texPoints, center, c, 6);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
