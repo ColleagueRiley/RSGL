@@ -1705,7 +1705,7 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
     RSGL_pointF texPoints[] = {{0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
     RSGL_point3DF points[] = {
                                  {r.x, r.y, 0.0f}, {r.x, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f}, 
-                                 {r.x + r.w, r.y, 0.0f},  {r.x + r.w, r.y + r.h, 0.0f}, {r.x, r.y + r.h, 0.0f},  
+                                 {r.x + r.w, r.y + r.h, 0.0f}, {r.x + r.w, r.y, 0.0f},   {r.x, r.y + r.h, 0.0f},  
                             };
 
     RSGL_point3DF center = RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f);
