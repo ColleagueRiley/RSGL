@@ -2,26 +2,26 @@
 ### Riley's Simple GUI Library
 ![The RSGL logo](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL_logo.png?raw=true)
 
-RSGL is a modular simple-to-use cross-platform GUI library for creating GUI applications. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
+RSGL is a modular simple-to-use cross-platform software development and GUI library. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
 
 RSGL currently supports Linux, BSD, Windows and MacOS.
 
 # Build statuses
-![cplus workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
-![cplus workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/windows.yml/badge.svg)
-![cplus workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/macos.yml/badge.svg)
+![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
+![Windows workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/windows.yml/badge.svg)
+![MacOS workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/macos.yml/badge.svg)
 
 # Features
-- No external dependencies, all the libraries required are included in RSGL
+- No external dependencies, all the libraries required are lightweight and bundled in
 - Supports multiple platforms, Windows, MacOS, Linux, etc
 - Supports multiple versions of OpenGL (even allowing you to switch during runtime)
-- Uses other small lightweight dependencies
 - Basic shape drawing, collisions and drawing operations
 - OpenGL abstraction layer, RGL, which can also be used independently as a single-header library
 - straightforward window management via RGFW
 - Supports multiple font, image and audio formats via `stb_truetype.h`, `stb_image.h`, and `miniaudio.h`
-- Dynamic GUI Widgets 
+- Dynamic GUI Widgets via a convenient styling system 
 - Many examples included
+- Allows you to use other libraries instead of the default RSGL backend.
 - Free and Open Source
 
 # Modules 
@@ -147,7 +147,7 @@ It also shows multiple ways of drawing a triangle
 
 ## glVer.c
 `examples/glVer.c` is an example that shows how RSGL can switch between legacy and modern OpenGL\
-in the example, you can toggle between opengl 3.0+ and opengl 2.0- by pressing the spacebar
+in the example, you can toggle between OpenGL 3.0+ and OpenGL 2.0- by pressing the spacebar
 
 ## shapes.c
 `examples/shapes.c` is an example that shows off shape rendering using RSGL, the shapes rotate and switch between being filled and unfilled 
@@ -190,7 +190,7 @@ these include, a default style button, a checkbox, a toggle button, radio button
 ## stb_image 
   [stb_image](https://github.com/nothings/stb/) is a public domain single header image loader library.
 
-## miniaudio
+## Miniaudio
   Miniaudio is a public-domain audio playback and capture library. RSGL uses this for playing/loading audio
 
   Miniaudio's website, https://miniaud.io/
