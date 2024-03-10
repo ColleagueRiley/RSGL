@@ -1278,15 +1278,15 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     
     RGFW_window* win = RGFW_createWindow(name, r, args);
     RSGL_window_makeCurrent(win);
-    
+
     if (RSGL_windowsOpen == 0) {
         rglInit((void*)RGFW_getProcAddress);
         rglViewport(0, 0, win->r.w, win->r.h);
         
         #ifdef RGL_OPENGL_43
         rglClearDepth(1.0f);
-        rglDepthFunc(GL_LEQUAL);
-        rglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        rglDepthFunc(RGL_LEQUAL);
+        rglBlendFunc(RGL_SRC_ALPHA, RGL_ONE_MINUS_SRC_ALPHA);
         #endif
 
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
@@ -1336,7 +1336,7 @@ void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     #endif
 
     rglClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-    rglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    rglClear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
 
     rglRenderBatch();
 }
@@ -1495,21 +1495,13 @@ RSGL_GRAPHICS_CONTEXT
 
 
 void RSGL_initGraphics(RSGL_area r, void* loader) {
-    #ifndef GRAPHICS_API_OPENGL_11
-    rglInit(r.w, r.h, loader);
-
-    // Init state: Blending mode
+    rglInit((void*)RGFW_getProcAddress);
+    rglViewport(0, 0, r.w, r.h);
+    
+    #ifdef RGL_OPENGL_43
     rglClearDepth(1.0f);
-    rglEnable(GL_DEPTH_TEST);
-    rglDepthFunc(GL_LEQUAL);
-    rglHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-    rglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);      // Color blending function (how colors are mixed)
-    rglEnable(GL_BLEND);                                     // Enable color blending (required to work with transparencies)
-
-    rglCullFace(GL_BACK);                                    // Cull the back face (default)
-    rglFrontFace(GL_CCW);                                    // Front face are defined counter clockwise (default)
-    rglEnable(GL_CULL_FACE);        
+    rglDepthFunc(RGL_LEQUAL);
+    rglBlendFunc(RGL_SRC_ALPHA, RGL_ONE_MINUS_SRC_ALPHA);
     #endif
 
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
@@ -1520,9 +1512,12 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
 }
 
 void RSGL_graphics_clear(RSGL_color color) {
-    rrglClearDepth(1.0f);
+    #ifdef RGL_OPENGL_43
+    rglClearDepth(1.0f);
+    #endif
+
     rglClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-    rglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    rglClear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
     rglRenderBatch();
 }
 
@@ -2092,7 +2087,7 @@ void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color) {
 }
 
 void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color) {
-    rglEnable(GL_BLEND);
+    rglEnable(RGL_BLEND);
 
     if (text == NULL || text[0] == '\0')
         return;
