@@ -1707,8 +1707,8 @@ void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
     if (RSGL_args.fill == false)
         return RSGL_drawRoundRectFOutline(r, rounding, 1, c);
 
-    RSGL_drawRect((RSGL_rect) {r.x + (rounding.x/2), r.y, r.w - rounding.x, r.h}, c);
-    RSGL_drawRect((RSGL_rect) {r.x, r.y + (rounding.y/2), r.w,  r.h - rounding.y}, c);
+    RSGL_drawRect((RSGL_rect) {r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h}, c);
+    RSGL_drawRect((RSGL_rect) {r.x, r.y + (rounding.y / 2), r.w,  r.h - rounding.y}, c);
 
     RSGL_drawArc((RSGL_rect) {r.x, r.y, rounding.x, rounding.y}, (RSGL_point){180, 270}, c);
     RSGL_drawArc((RSGL_rect) {r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y}, (RSGL_point){90, 180}, c);
