@@ -181,6 +181,9 @@ typedef u8 b8;
 #define RGL_DEPTH_TEST               0x0B71
 #define RGL_LEQUAL                   0x0203
 #define RGL_ONE_MINUS_SRC_ALPHA      0x0303
+#endif
+
+#ifndef RGL_BLEND
 #define RGL_BLEND                    0x0BE2
 #define RGL_BACK                     0x0405
 #define RGL_CCW                      0x0901
