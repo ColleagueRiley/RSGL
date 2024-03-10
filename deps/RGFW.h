@@ -137,6 +137,7 @@ extern "C" {
 
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11)
 #define RGFW_MACOS
+#include <CoreVideo/CVDisplayLink.h>
 #endif
 
 #if defined(RGFW_OPENGL_ES) && !defined(RGFW_EGL)
@@ -387,6 +388,8 @@ typedef struct RGFW_window_src {
     Window window; /*!< source window */
 	#endif
 	#ifdef RGFW_MACOS
+	u32 display;
+	CVDisplayLinkRef displayLink;
 	void* window;
 	#endif
 
@@ -4419,6 +4422,7 @@ RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, u16 args) {
 	class_addMethod(WindowDelegateClass, sel_registerName("windowDidResize:"), (IMP)RGFW_windowDidResize,  "v@:@");
 
     NSApp = NSApplication_sharedApplication();
+	NSApplication_setActivationPolicy(NSApp, NSApplicationActivationPolicyRegular);
 
 	RGFW_window* win = RGFW_window_basic_init(rect, args);
 
@@ -4432,20 +4436,9 @@ RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, u16 args) {
 	else
 		macArgs |= NSWindowStyleMaskBorderless;
 
-    win->src.window = NSWindow_init(windowRect, macArgs, NSBackingStoreBuffered, false);
-	NSWindow_contentView_setWantsLayer(win->src.window, true);
+    win->src.window = NSWindow_init(windowRect, macArgs, macArgs, false);
 	NSRetain(win->src.window);
 	NSWindow_setTitle(win->src.window, name);
-
-    if (args & RGFW_TRANSPARENT_WINDOW) {
-		#ifdef RGFW_OPENGL
-		i32 opacity = 0;
-		NSOpenGLContext_setValues(win->src.rSurf, &opacity, NSOpenGLContextParameterSurfaceOpacity);
-		#endif
-		NSWindow_setOpaque(win->src.window, false);
-		NSWindow_setBackgroundColor(win->src.window, NSColor_colorWithSRGB(0, 0, 0, 0));
-		NSWindow_setAlphaValue(win->src.window, 0x00);
-	}
 
 	#ifdef RGFW_OPENGL
 	NSOpenGLPixelFormatAttribute attributes[] = {
@@ -4499,20 +4492,38 @@ RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, u16 args) {
 	win->src.view = NSOpenGLView_initWithFrame(NSMakeRect(0, 0, win->r.w, win->r.h), format);
 	NSOpenGLView_prepareOpenGL(win->src.view);
 
-	win->src.rSurf = NSOpenGLView_openGLContext(win->src.view);
-	NSOpenGLContext_makeCurrentContext(win->src.rSurf);
-
 	#else
     NSRect contentRect = NSMakeRect(0, 0, win->r.w, win->r.h);
     win->src.view = NSView_initWithFrame(contentRect);
 	#endif
 
-	RGFW_init_buffer(win);
+	NSWindow_contentView_setWantsLayer(win->src.window, true);
+	NSWindow_setContentView(win->src.window, (NSView*)win->src.view);
 
+	win->src.rSurf = NSOpenGLView_openGLContext(win->src.view);
+	NSOpenGLContext_makeCurrentContext(win->src.rSurf);
+
+    if (args & RGFW_TRANSPARENT_WINDOW) {
+		#ifdef RGFW_OPENGL
+		i32 opacity = 0;
+		NSOpenGLContext_setValues(win->src.rSurf, &opacity, NSOpenGLContextParameterSurfaceOpacity);
+		#endif
+		NSWindow_setOpaque(win->src.window, false);
+		NSWindow_setBackgroundColor(win->src.window, NSColor_colorWithSRGB(0, 0, 0, 0));
+		NSWindow_setAlphaValue(win->src.window, 0x00);
+	}
+
+	win->src.display = CGMainDisplayID();
+	CVDisplayLinkCreateWithCGDisplay(win->src.display, &win->src.displayLink);
+	CVDisplayLinkSetOutputCallback(win->src.displayLink, displayCallback, win);
+	CVDisplayLinkStart(win->src.displayLink);
+
+	RGFW_init_buffer(win);
+	
 	if (args & RGFW_SCALE_TO_MONITOR)
 		RGFW_window_scaleToMonitor(win);
-    NSWindow_setContentView(win->src.window, win->src.view);
-	if (args & RGFW_ALLOW_DND) {
+   
+   if (args & RGFW_ALLOW_DND) {
 		win->src.winArgs |= RGFW_ALLOW_DND;
 		
 		siArray(NSPasteboardType) array = si_array_init((NSPasteboardType[]){NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString}, sizeof(*array), 3);
@@ -4532,18 +4543,17 @@ RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, u16 args) {
 	if (args & RGFW_COCOA_MOVE_TO_RESOURCE_DIR)
 		NSMoveToResourceDir();
 
-    	// Show the window
-    	NSWindow_makeKeyAndOrderFront(win->src.window, NULL);
+	// Show the window
+	NSWindow_makeKeyAndOrderFront(win->src.window, NULL);
 	NSWindow_setIsVisible(win->src.window, true);
-
-	NSApplication_setActivationPolicy(NSApp, NSApplicationActivationPolicyRegular);
-	NSApplication_finishLaunching(NSApp);
 		
 	if (!RGFW_loaded) {	
 		NSWindow_makeMainWindow(win->src.window);
 
 		RGFW_loaded = 1;
     }
+	
+	NSApplication_finishLaunching(NSApp);
 	
 	RGFW_windows_size++;
 
@@ -4594,6 +4604,10 @@ u32 RGFW_keysPressed[10]; /*10 keys at a time*/
 RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 	assert(win != NULL);
 	
+	NSEvent* e = NSApplication_nextEventMatchingMask(NSApp, NSEventMaskAny, NULL, NSDefaultRunLoopMode, true);
+	if (win->event.type == RGFW_quit || e == NULL || NSEvent_window(e) != win->src.window)
+		return NULL;
+
 	if (win->event.droppedFilesCount) {
 		i32 i;
 		for (i = 0; i < win->event.droppedFilesCount; i++)
@@ -4612,10 +4626,6 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 		if (win->src.cursorChanged != 2 || NSCursor_currentCursor() != win->src.cursor)
 			NSCursor_set(win->src.cursor);
 	}
-
-	NSEvent* e = NSApplication_nextEventMatchingMask(NSApp, NSEventMaskAny, NULL, NSDefaultRunLoopMode, true);
-	if (win->event.type == RGFW_quit || e == NULL || NSEvent_window(e) != win->src.window)
-		return NULL;
 
 	switch (NSEvent_type(e)) {
 		case NSEventTypeKeyDown:
@@ -4705,8 +4715,6 @@ RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 	}
 
 	NSApplication_sendEvent(NSApp, e);
-
-	NSApplication_updateWindows(NSApp);
 
 	RGFW_vector mouse = RGFW_getGlobalMousePoint();
 	if (win->src.winArgs &  RGFW_HOLD_MOUSE && win->event.inFocus &&
@@ -4902,11 +4910,7 @@ RGFW_monitor RGFW_getPrimaryMonitor(void) {
 }
 
 RGFW_monitor RGFW_window_getMonitor(RGFW_window* win) {
-	static CGDirectDisplayID display = 0;
-	if (display == 0)
-		display = CGMainDisplayID();
-	
-	return RGFW_NSCreateMonitor(display);
+	return RGFW_NSCreateMonitor(win->src.display);
 }
 
 u8 RGFW_isPressedI(RGFW_window* win, u32 key) {
@@ -4993,6 +4997,8 @@ void RGFW_window_close(RGFW_window* win){
 		RGFW_FREE(RGFW_windows);
 	}
 	
+	CVDisplayLinkStop(win->src.displayLink);
+	CVDisplayLinkRelease(win->src.displayLink);
 
 	NSApplication_terminate(NSApp, (id)win->src.window);
 }
