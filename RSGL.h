@@ -1277,29 +1277,17 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         RGFW_setGLVersion(3, 3);
     
     RGFW_window* win = RGFW_createWindow(name, r, args);
-
+    RSGL_window_makeCurrent(win);
+    
     if (RSGL_windowsOpen == 0) {
-        #ifndef GRAPHICS_API_OPENGL_11
         rglInit((void*)RGFW_getProcAddress);
-        rglRenderBatch();      // Update and draw internal render batch
-        #endif
-
         rglViewport(0, 0, win->r.w, win->r.h);
         
-        // Init state: Blending mode
-        rglEnable(GL_DEPTH_TEST);
-
         #ifdef RGL_OPENGL_43
         rglClearDepth(1.0f);
         rglDepthFunc(GL_LEQUAL);
         rglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         #endif
-
-        rglEnable(GL_BLEND);
-
-        rglCullFace(GL_BACK);
-        rglFrontFace(GL_CCW);
-        rglEnable(GL_CULL_FACE);        
 
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
