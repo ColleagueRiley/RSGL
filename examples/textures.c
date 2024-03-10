@@ -25,7 +25,7 @@ int main(void) {
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
-    u32 texture = RSGL_loadImage("logo.png");
+    u32 texture = RSGL_loadImage("logo.png").tex;
     u32 iconTex = RSGL_createTexture(icon, RSGL_AREA(3, 3), 4);
 
     size_t texTimer = time(0);
@@ -39,8 +39,8 @@ int main(void) {
             }
         
         rotate.z += 1;
+
         RSGL_rotate(rotate);
-        RSGL_setTexture(texture);
         RSGL_drawRect(RSGL_RECT(200, 200, 200, 200), RSGL_RGB(255, 0, 0));
 
         RSGL_setTexture(iconTex);
@@ -48,7 +48,7 @@ int main(void) {
         RSGL_drawPolygon(RSGL_RECT(20, 20, 50, 50), 8, RSGL_RGB(255, 255, 255));
         
         RSGL_setTexture(texture);
-      
+        
         if (texTimer2 && texTimer2 + 5 > time(0))
             RSGL_setTexture(0);
         else if (texTimer2 && texTimer2 + 5 <= time(0)) {
@@ -64,7 +64,7 @@ int main(void) {
 
         RSGL_rotate(rotate);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)), RSGL_RGB(255, 255, 255));
-        
+
         RSGL_window_clear(win, RSGL_RGB(65, 65, 65));
     }
 
