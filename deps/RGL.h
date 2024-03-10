@@ -37,6 +37,12 @@ MACRO #DEFINE ARGUMENTS
 #define RGL_ALLOC_MATRIX_STACK - Allocate room for the matrix stack instead of using a stack-based c array
 #define RGL_EBO - (modern opengl) use EBO for RGL_QUADS, this is off by default because it is buggy currently
 
+#define RGL_OPENGL_21 - Load and use  opengl version 4.3 functionaries
+#define RGL_OPENGL_33 - Load and use opengl version 4.3 functionaries
+#define RGL_OPENGL_43 - Load and use  opengl version 4.3 functionaries
+#define RGL_OPENGL_ES2 - Load and use  opengl ES version 2 functionaries
+#define RGL_OPENGL_ES3 - Load and use  opengl ES version 3 functionaries
+
 Values
 
 #define RGL_MAX_BATCHES <x> - Set the max amount of batches (a batch is created when a different mode or texture is used), 
@@ -67,6 +73,13 @@ RLGL (raylib / Raysay5) - 	{UPDATE : Most of this code was actually based on or 
     #include <GL/gl.h>
 #endif
 
+#ifdef RGL_DIRECTX
+#include <d3d11.h>
+#include <dxgi.h>
+#include <dxgi.h>
+#include <d3dcompiler.h>
+#endif
+
 #if defined(__WIN32) && !defined(__linux__) && !defined(GL_VERTEX_SHADER)
 typedef char GLchar;
 typedef int	 GLsizei;
@@ -93,6 +106,9 @@ typedef ptrdiff_t GLsizeiptr;
 
 #ifndef RGL_OPENGL_LEGACY
 #define RGL_MODERN_OPENGL
+#if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_33) && !defined(RGL_OPENGL_43)
+#define RGL_OPENGL_33
+#endif
 #endif
 
 #if !defined(u8)
@@ -132,27 +148,46 @@ typedef u8 b8;
 #endif
 
 #ifndef RGL_QUADS
+#define RGL_POINTS                               0x0000
 #define RGL_LINES                                0x0001      /* GL_LINES */
+#define RGL_LINE_LOOP                            0x0002
+#define RGL_LINE_STRIP                           0x0003
 #define RGL_TRIANGLES                            0x0004      /* GL_TRIANGLES */  
-#define RGL_TRIANGLE_FAN                          0x0006      /* GL_TRIANGLE_FAN  */  
-#define RGL_QUADS                                0x0007      /* GL_QUADS */
+#define RGL_TRIANGLE_STRIP                       0x0005
+#define RGL_TRIANGLE_FAN                         0x0006      /* GL_TRIANGLE_FAN  */  
+#define GL_QUADS                                 0x0007
 
 /* these ensure GL_DEPTH_TEST is disabled when they're being rendered */
+#define RGL_POINTS_2D                               0x0010
 #define RGL_LINES_2D                                0x0011      /* GL_LINES */
-#define RGL_TRIANGLES_2D                            0x0014      /* GL_TRIANGLES */
+#define RGL_LINE_LOOP_2D                            0x0012
+#define RGL_LINE_STRIP_2D                           0x0013
+#define RGL_TRIANGLES_2D                            0x0014      /* GL_TRIANGLES */  
+#define RGL_TRIANGLE_STRIP_2D                       0x0015
 #define RGL_TRIANGLE_FAN_2D                         0x0016      /* GL_TRIANGLE_FAN  */ 
-#define RGL_QUADS_2D                                0x0017      /* GL_QUADS */
+#define RGL_QUADS                                 0x0007
 #endif
 
-#ifndef GL_PERSPECTIVE_CORRECTION_HINT
-#define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
-#define GL_POINT_SMOOTH_HINT			0x0C51
-#define GL_LINE_SMOOTH_HINT			0x0C52
-#define GL_POLYGON_SMOOTH_HINT			0x0C53
-#define GL_FOG_HINT				0x0C54
-#define GL_DONT_CARE				0x1100
-#define GL_FASTEST				0x1101
-#define GL_NICEST				0x1102
+#ifndef RGL_PERSPECTIVE_CORRECTION_HINT
+#define RGL_PERSPECTIVE_CORRECTION_HINT		0x0C50
+#define RGL_POINT_SMOOTH_HINT			0x0C51
+#define RGL_LINE_SMOOTH_HINT			0x0C52
+#define RGL_POLYGON_SMOOTH_HINT			0x0C53
+#define RGL_FOG_HINT				0x0C54
+#define RGL_DONT_CARE				0x1100
+#define RGL_FASTEST				0x1101
+#define RGL_NICEST				0x1102
+
+#define RGL_DEPTH_TEST               0x0B71
+#define RGL_LEQUAL                   0x0203
+#define RGL_ONE_MINUS_SRC_ALPHA      0x0303
+#define RGL_BLEND                    0x0BE2
+#define RGL_BACK                     0x0405
+#define RGL_CCW                      0x0901
+#define RGL_CULL_FACE                0x0B44
+#define RGL_COLOR_BUFFER_BIT         0x00004000
+#define RGL_DEPTH_BUFFER_BIT         0x00000100
+#define RGL_SRC_ALPHA                0x0302
 #endif
 
 #ifndef GL_RG
@@ -223,6 +258,13 @@ RGLDEF void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoo
 
 RGLDEF void rglSetTexture(u32 id);               /* Set current texture for render batch and check buffers limits */
 RGLDEF u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels); /* create texture */
+RGLDEF void rglUpdateTexture(u32 texture, u8* bitmap, u32 width, u32 height, u8 channels); /* update texture */
+RGLDEF void rglDeleteTextures(GLsizei n, const GLuint * textures);
+
+RGLDEF void rglPushPixelValues(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
+RGLDEF void rglTextureSwizzleMask(u32 atlas, u32 param, i32 swizzleRgbaParams[4]);
+
+RGLDEF void rglAtlasAddBitmap(u32 atlas, u8* bitmap, float x, float y, float width, float height);
 
 /* RGL implementation of gluPerspective */
 RGLDEF void rglPerspective(double fovY, double aspect, double zNear, double zFar); /* set up a perspective projection matrix */
@@ -238,6 +280,21 @@ RGLDEF void rglGetError(void);
 #endif
 
 RGLDEF void rglBegin(int mode);
+
+RGLDEF void rglLineWidth(float width);
+RGLDEF void rglViewport(GLint x, GLint y, GLsizei width, GLsizei height);
+RGLDEF void rglClear(GLbitfield mask);
+RGLDEF void rglClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+RGLDEF void rglDepthFunc(GLenum func);
+RGLDEF void rglCullFace(GLenum mode);
+RGLDEF void rglFrontFace(GLenum mode);
+#ifdef RGL_OPENGL_43
+RGLDEF void rglClearDepth(float depth);
+RGLDEF void rglBlendFunc(GLenum sfactor, GLenum dfactor)
+#endif
+
+RGLDEF void rglHint(GLenum target, GLenum mode);
+RGLDEF void rglEnable(GLenum cap);
 
 #if defined(RGL_OPENGL_LEGACY)
 #define rglColor3f glColor3f
@@ -258,8 +315,6 @@ RGLDEF void rglBegin(int mode);
 #define rglOrtho glOrtho
 #define rglFrustum glFrustum
 #define rglMultMatrixf glMultMatrixf
-#define rglViewport glViewport
-#define rglLineWidth glLineWidth
 #else
 
 RGLDEF void rglEnd(void);
@@ -273,8 +328,6 @@ RGLDEF void rglColor4f(float r, float g, float b, float a);
 
 RGLDEF void rglVertex2f(float x, float y);
 RGLDEF void rglVertex3f(float x, float y, float z);
-
-#define rglViewport glViewport
 
 RGLDEF void rglMatrixMode(int mode);
 RGLDEF void rglPushMatrix(void);
@@ -326,8 +379,6 @@ typedef GLint (*glGetUniformLocationPROC)(GLuint program, const GLchar *name);
 typedef void (*glUniformMatrix4fvPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef void (*glTexImage2DPROC)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels);
 typedef void (*glActiveTexturePROC) (GLenum texture);
-typedef void (*glDebugMessageCallbackPROC)(void* callback, const void*);
-typedef void (*glDebugMessageCallbackPROC)(void* callback, const void*);
 
 glShaderSourcePROC glShaderSourceSRC = NULL;
 glCreateShaderPROC glCreateShaderSRC = NULL;
@@ -342,7 +393,6 @@ glEnableVertexAttribArrayPROC glEnableVertexAttribArraySRC = NULL;
 glVertexAttribPointerPROC glVertexAttribPointerSRC = NULL;
 glDisableVertexAttribArrayPROC glDisableVertexAttribArraySRC = NULL;
 glDeleteBuffersPROC glDeleteBuffersSRC = NULL;
-glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 glUseProgramPROC glUseProgramSRC = NULL;
 glDetachShaderPROC glDetachShaderSRC = NULL;
 glDeleteShaderPROC glDeleteShaderSRC = NULL;
@@ -352,13 +402,24 @@ glGetShaderivPROC glGetShaderivSRC = NULL;
 glGetShaderInfoLogPROC glGetShaderInfoLogSRC = NULL;
 glGetProgramivPROC glGetProgramivSRC = NULL;
 glGetProgramInfoLogPROC glGetProgramInfoLogSRC = NULL;
-glGenVertexArraysPROC glGenVertexArraysSRC = NULL;
 glGenBuffersPROC glGenBuffersSRC = NULL;
-glBindVertexArrayPROC glBindVertexArraySRC = NULL;
 glGetUniformLocationPROC glGetUniformLocationSRC = NULL;
 glUniformMatrix4fvPROC glUniformMatrix4fvSRC = NULL;
 glActiveTexturePROC glActiveTextureSRC = NULL;
-glDebugMessageCallbackPROC glDebugMessageCallbackSRC = NULL;
+
+#if defined(RGL_OPENGL_ES2) && !defined(RGL_OPENGL_ES3)
+typedef void (* PFNGLGENVERTEXARRAYSOESPROC) (GLsizei n, GLuint *arrays);
+typedef void (* PFNGLBINDVERTEXARRAYOESPROC) (GLuint array);
+typedef void (* PFNGLDELETEVERTEXARRAYSOESPROC) (GLsizei n, const GLuint *arrays);
+
+static PFNGLGENVERTEXARRAYSOESPROC glGenVertexArraysSRC = NULL;
+static PFNGLBINDVERTEXARRAYOESPROC glBindVertexArraySRC = NULL;
+static PFNGLDELETEVERTEXARRAYSOESPROC glDeleteVertexArraysSRC = NULL;
+#else
+glGenVertexArraysPROC glGenVertexArraysSRC = NULL;
+glBindVertexArrayPROC glBindVertexArraySRC = NULL;
+glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
+#endif
 
 #define glActiveTexture glActiveTextureSRC
 #define glShaderSource glShaderSourceSRC
@@ -389,9 +450,8 @@ glDebugMessageCallbackPROC glDebugMessageCallbackSRC = NULL;
 #define glBindVertexArray glBindVertexArraySRC
 #define glGetUniformLocation glGetUniformLocationSRC
 #define glUniformMatrix4fv glUniformMatrix4fvSRC
-#define glDebugMessageCallback glDebugMessageCallbackSRC
 
-extern int RGL_loadGL3(RGLloadfunc proc);
+extern int RGL_loadGLModern(RGLloadfunc proc);
 #endif
 
 #endif
@@ -415,7 +475,7 @@ extern int RGL_loadGL3(RGLloadfunc proc);
     #define RAD2DEG (180.0f/PI)
 #endif
 
-#ifdef RGL_MODERN_OPENGL
+#ifndef RGL_OPENGL_LEGACY
 typedef struct RGL_INFO {
 	RGL_MATRIX transform; /* transformation matrix*/
     #ifdef RGL_ALLOC_MATRIX_STACK 
@@ -444,10 +504,14 @@ typedef struct RGL_INFO {
     i32 stackCounter;                   /* RGL_MATRIX stack counter */
 
     u32 tex;      /* Default texture used on shapes/poly drawing (required by shader)*/
+
+    #ifdef RGL_MODERN_OPENGL
     u32 vShader;      /* Default vertex shader id (used by default shader program)*/
     u32 fShader;      /* Default fragment shader id (used by default shader program)*/
-    u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 mvp;
+    #endif
+
+    u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 defaultTex;
     u32 elementCount;
 
@@ -467,7 +531,7 @@ RGL_INFO RGLinfo;
 #endif /* RGL_MODERN_OPENGL */
 
 void rglLineWidth(float width) {
-    #if defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    #ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.legacy) 
     #endif
     {
@@ -486,8 +550,148 @@ void rglLineWidth(float width) {
 #endif    
 }
 
+void rglViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy)
+    #endif
+        glViewport(x, y, width, height);
+
+    #ifdef RGL_DIRECTX
+    D3D11_VIEWPORT viewport;
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    viewport.Width = win->r.w;
+    viewport.Height = win->r.h;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+    dxInfo.pDeviceContext->lpVtbl->RSSetViewports(RGL_dxInfo.pDeviceContext, 1, &viewport);
+    #endif
+}
+
+void rglClear(GLbitfield mask) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy)
+    #endif
+        glClear(mask);
+}
+
+void rglClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy)
+    #endif
+        glClearColor(red, green, blue, alpha);
+}
+
+void rglDeleteTextures(GLsizei n, const GLuint * textures) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy)
+    #endif
+        glDeleteTextures(n, textures);
+}
+
+void rglPushPixelValues(i32 alignment, i32 rowLength, i32 skipPixels, i32 skipRows) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy == 0) 
+        return;
+    #endif
+	
+    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
+	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
+}
+
+
+void rglTextureSwizzleMask(u32 atlas, u32 param, i32 swizzleRgbaParams[4]) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy == 0) 
+        return;
+    #endif
+
+    glBindTexture(GL_TEXTURE_2D, atlas);
+    glTexParameteriv(GL_TEXTURE_2D, param, swizzleRgbaParams);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void rglAtlasAddBitmap(u32 atlas, u8* bitmap, float x, float y, float width, float height) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy == 0) 
+        return;
+    #endif
+
+    rglEnable(GL_TEXTURE_2D);
+
+    i32 alignment, rowLength, skipPixels, skipRows;
+    glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+    glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
+    glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+    glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
+
+    glBindTexture(GL_TEXTURE_2D, atlas);
+
+    rglPushPixelValues(1, width, 0, 0);
+
+    glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+
+    rglPushPixelValues(alignment, rowLength, skipPixels, skipRows);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void rglDepthFunc(GLenum func) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+
+    return glDepthFunc(func);
+}
+
+void rglCullFace(GLenum mode) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+        glCullFace(mode);
+}
+
+void rglFrontFace(GLenum mode) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+        glFrontFace(mode);
+}
+
+#ifdef RGL_OPENGL_43
+void rglClearDepth(float depth) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+        glClearDepth(depth);
+}
+
+void rglBlendFunc(GLenum sfactor, GLenum dfactor) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+        glBlendFunc(sfactor, dfactor);
+}
+#endif
+
+void rglHint(GLenum target, GLenum mode) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+        glHint(target, mode);
+}
+
+void rglEnable(GLenum cap) {
+    #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    if (RGLinfo.legacy) 
+    #endif
+        glEnable(cap);
+}
+
 void rglSetTexture(u32 id) {
-    #if defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)
+    #ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.legacy) 
     #endif
     {
@@ -495,12 +699,12 @@ void rglSetTexture(u32 id) {
         glBindTexture(GL_TEXTURE_2D, id);
         return;
     }
-#if defined(RGL_MODERN_OPENGL)
+#ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.tex == id)
         return;
 
     RGLinfo.tex = id;
-
+    
     if (id == 0)
         RGLinfo.tex = RGLinfo.defaultTex;
 
@@ -513,31 +717,52 @@ void rglSetTexture(u32 id) {
 u32 rglCreateTexture(u8* bitmap, u32 width, u32 height, u8 channels) {
     unsigned int id = 0;
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
+    #if defined(RGL_MODERN_OPENGL) || defined(RGL_OPENGL_LEGACY)
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D, id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
-    
-    unsigned int c = 0;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+        
+        unsigned int c = 0;
 
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
+        switch (channels) {
+            case 1: c = GL_RED; break;
+            case 2: c = GL_RG; break;
+            case 3: c = GL_RGB; break;
+            case 4: c = GL_RGBA; break;
+            default: break;
+        }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, c, width, height, 0, c, GL_UNSIGNED_BYTE, bitmap);
+        glTexImage2D(GL_TEXTURE_2D, 0, c, width, height, 0, c, GL_UNSIGNED_BYTE, bitmap);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    #endif
 
     return id;
+}
+
+void rglUpdateTexture(u32 texture, u8* bitmap, u32 width, u32 height, u8 channels) {
+    #if defined(RGL_MODERN_OPENGL) || defined(RGL_OPENGL_LEGACY)
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, width);
+
+        u16 c = 0;
+        switch (channels) {
+            case 1: c = GL_RED; break;
+            case 2: c = GL_RG; break;
+            case 3: c = GL_RGB; break;
+            case 4: c = GL_RGBA; break;
+            default: break;
+        }
+
+        glTexImage2D(GL_TEXTURE_2D, 0, c, width,height, 0, c, GL_UNSIGNED_BYTE, bitmap);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    #endif
 }
 
 #ifdef RGL_DEBUG
@@ -618,11 +843,22 @@ void rglBegin(int mode) {
 }
 #endif
 
+#ifdef RGL_DIRECTX
+typedef struct {
+	IDXGIFactory* pFactory;
+	IDXGIAdapter* pAdapter;
+	ID3D11Device* pDevice;
+	ID3D11DeviceContext* pDeviceContext;
+} RGFW_directXinfo;
+
+RGFW_directXinfo RGL_dxInfo;
+#endif
+
 /* Initialize RGLinfo: OpenGL extensions, default buffers/shaders/textures, OpenGL states*/
 void rglInit(void *loader) {
-#if defined(RGL_MODERN_OPENGL)
-    #ifndef RGL_NO_GL_LOADER
-    if (RGL_loadGL3((RGLloadfunc)loader)) {
+#ifndef RGL_OPENGL_LEGACY
+    #if !defined(RGL_NO_GL_LOADER) && defined(RGL_MODERN_OPENGL)
+    if (RGL_loadGLModern((RGLloadfunc)loader)) {
         #ifdef RGL_DEBUG
         printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
         #endif
@@ -632,15 +868,39 @@ void rglInit(void *loader) {
     }
     #endif
 
+    #ifdef RGL_DIRECTX
+    RGL_dxInfo = (RGFW_directXinfo)loader;
+    #endif
+
     RGLinfo.legacy = 0; 
 
+    #ifdef RGL_MODERN_OPENGL
+    
     static const char *defaultVShaderCode = RGL_MULTILINE_STR(
-        \x23version 330                    \n
-        in vec3 vertexPosition;
-        in vec2 vertexTexCoord;
-        in vec4 vertexColor;
-        out vec2 fragTexCoord;
-        out vec4 fragColor;
+    #if defined(RGL_OPENGL_21)
+        \x23version 120                       \n
+        attribute vec3 vertexPosition;     \n
+        attribute vec2 vertexTexCoord;     \n
+        attribute vec4 vertexColor;        \n
+        varying vec2 fragTexCoord;         \n
+        varying vec4 fragColor;            \n
+    #elif defined(RGL_OPENGL_33)
+        \x23version 330                     \n
+        in vec3 vertexPosition;            \n
+        in vec2 vertexTexCoord;            \n
+        in vec4 vertexColor;               \n
+        out vec2 fragTexCoord;             \n
+        out vec4 fragColor;                \n
+    #endif
+    #if defined(RGL_OPENGL_ES2)
+        \x23version 100                     \n
+        precision mediump float;           \n
+        attribute vec3 vertexPosition;     \n
+        attribute vec2 vertexTexCoord;     \n
+        attribute vec4 vertexColor;        \n
+        varying vec2 fragTexCoord;         \n
+        varying vec4 fragColor;            \n
+    #endif
         uniform mat4 mvp;
         void main() {
             fragTexCoord = vertexTexCoord;
@@ -649,19 +909,37 @@ void rglInit(void *loader) {
         }
     );
 
-    static const char *defaultFShaderCode = RGL_MULTILINE_STR(
-        \x23version 330       \n
-        in vec2 fragTexCoord;              
-        in vec4 fragColor;                 
-        out vec4 finalColor;     
+    static const char* defaultFShaderCode = RGL_MULTILINE_STR(
+#if defined(RGL_OPENGL_21)
+    \x23version 120 \n
+    varying vec2 fragTexCoord;
+    varying vec4 fragColor;
+#elif defined(RGL_OPENGL_33)
+    \x23version 330       \n
+    in vec2 fragTexCoord;
+    in vec4 fragColor;
+    out vec4 finalColor;
+#endif
+#if defined(RGL_OPENGL_ES2)
+        \x23version 100                    \n
+        precision mediump float;           \n
+        varying vec2 fragTexCoord;         \n
+        varying vec4 fragColor;            \n
+#endif
         uniform sampler2D texture0;        
         void main() { 
+            #ifdef RGL_OPENGL_33
             finalColor = texture(texture0, fragTexCoord) * fragColor;
+            #else
+            gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
+            #endif
         }                               
     );
 
+    #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
 	glGenVertexArrays(1, &RGLinfo.vao);
 	glBindVertexArray(RGLinfo.vao);
+    #endif
 
 	glGenBuffers(1, &RGLinfo.vbo);
 	glGenBuffers(1, &RGLinfo.tbo);
@@ -701,12 +979,81 @@ void rglInit(void *loader) {
     /* Set default shader locations: uniform locations */
     RGLinfo.mvp  = glGetUniformLocation(RGLinfo.program, "mvp");
 
+    #endif
+
+    #ifdef RGL_DIRECTX
+    const char* shaderString = MULTILINE_STR(
+        typedef struct {float x, y, z;} Vertex;
+
+        struct VOut
+        {
+            float4 position : SV_POSITION;
+        };
+
+        VOut VS(float4 position : POSITION)
+        {
+            VOut output;
+
+            output.position = position;
+
+            return output;
+        }
+
+
+        float4 PS(float4 position : SV_POSITION) : SV_TARGET
+        {
+            return float4(1.0, 0.0, 0.0, 1.0);
+        }
+    );
+
+    D3D11_BUFFER_DESC bd;
+    ZeroMemory(&bd, sizeof(bd));
+
+    bd.Usage = D3D11_USAGE_DYNAMIC;
+    bd.ByteWidth = sizeof(Vertex) * 3;
+    bd.BindFlags = D3D11 _BIND_VERTEX_BUFFER;
+    bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    RGL_dxInfo.pDevice->lpVtbl->CreateBuffer(RGL_dxInfo.pDevice, &bd, NULL, &pVertexBuffer);
+
+    D3D11_MAPPED_SUBRESOURCE ms;
+    RGL_dxInfo.pDeviceContext->lpVtbl->Map(RGL_dxInfo.pDeviceContext, (ID3D11Resource*)pVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+    memcpy(ms.pData, vertices, sizeof(vertices));
+    RGL_dxInfo.pDeviceContext->lpVtbl->Unmap(RGL_dxInfo.pDeviceContext, (ID3D11Resource*)pVertexBuffer, 0);   
+
+    // Compile shaders
+    ID3D10Blob* pVertexShaderBlob = NULL;
+    ID3D10Blob* pPixelShaderBlob = NULL;
+    ID3D10Blob* pErrorBlob = NULL;
+
+    D3DCompile(shaderString, strlen(shaderString), NULL, NULL, NULL, "VS", "vs_5_0", 0, 0, &pVertexShaderBlob, &pErrorBlob);
+    D3DCompile(shaderString, strlen(shaderString), NULL, NULL, NULL, "PS", "ps_5_0", 0, 0, &pPixelShaderBlob, &pErrorBlob);
+
+    // Create shaders
+    ID3D11VertexShader* pVertexShader;
+    ID3D11PixelShader* pPixelShader;
+    RGL_dxInfo.pDevice->lpVtbl->CreateVertexShader(RGL_dxInfo.pDevice, pVertexShaderBlob->lpVtbl->GetBufferPointer(pVertexShaderBlob), pVertexShaderBlob->lpVtbl->GetBufferSize(pVertexShaderBlob), NULL, &pVertexShader);
+    RGL_dxInfo.pDevice->lpVtbl->CreatePixelShader(RGL_dxInfo.pDevice, pPixelShaderBlob->lpVtbl->GetBufferPointer(pPixelShaderBlob), pPixelShaderBlob->lpVtbl->GetBufferSize(pPixelShaderBlob), NULL, &pPixelShader);
+    
+    RGL_dxInfo.pDeviceContext->lpVtbl->VSSetShader(RGL_dxInfo.pDeviceContext, pVertexShader, 0, 0);
+    RGL_dxInfo.pDeviceContext->lpVtbl->PSSetShader(RGL_dxInfo.pDeviceContext, pPixelShader, 0, 0);
+
+    // Set input layout
+    ID3D11InputLayout* pInputLayout;
+    D3D11_INPUT_ELEMENT_DESC layout[] = {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+    };
+    
+    RGL_dxInfo.pDevice->lpVtbl->CreateInputLayout(RGL_dxInfo.pDevice, layout, 1, pVertexShaderBlob->lpVtbl->GetBufferPointer(pVertexShaderBlob), pVertexShaderBlob->lpVtbl->GetBufferSize(pVertexShaderBlob), &pInputLayout);
+    RGL_dxInfo.pDeviceContext->lpVtbl->IASetInputLayout(RGL_dxInfo.pDeviceContext, pInputLayout);
+    #endif
+
     /* Init default vertex arrays buffers */
     /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
 
     RGLinfo.elementCount = RGL_MAX_BUFFER_ELEMENTS;
 
-    RGLinfo.vertices = (float *)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 3 * 4 * sizeof(float) * RGL_MAX_BATCHES);
+    RGLinfo.vertices = (float*)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 3 * 4 * sizeof(float) * RGL_MAX_BATCHES);
     RGLinfo.tcoords = (float*)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 2 * 4 * sizeof(float) * RGL_MAX_BATCHES);
     RGLinfo.colors = (float*)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 4 * 4 * sizeof(float) * RGL_MAX_BATCHES);
     RGLinfo.indices = (u16*)RGL_MALLOC(RGL_MAX_BUFFER_ELEMENTS * 6 * sizeof(u16) * RGL_MAX_BATCHES);
@@ -715,19 +1062,24 @@ void rglInit(void *loader) {
 
     /* Indices can be initialized right now */
     for (j = 0; j < (6 * RGL_MAX_BUFFER_ELEMENTS); j += 6) {
-        RGLinfo.indices[j] = 4*k;
-        RGLinfo.indices[j + 1] = 4*k + 1;
-        RGLinfo.indices[j + 2] = 4*k + 2;
-        RGLinfo.indices[j + 3] = 4*k;
-        RGLinfo.indices[j + 4] = 4*k + 2;
-        RGLinfo.indices[j + 5] = 4*k + 3;
+		RGLinfo.indices[j + 0] = k + 0;
+		RGLinfo.indices[j + 1] = k + 1;
+		RGLinfo.indices[j + 2] = k + 2;
 
-        k++;
+		RGLinfo.indices[j + 3] = k + 0;
+		RGLinfo.indices[j + 4] = k + 2;
+		RGLinfo.indices[j + 5] = k + 3;
+
+		k += 4;
     }
 
     RGLinfo.vertexCounter = 0;
 
+    #ifdef RGL_MODERN_OPENGL
+
+    #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
     glBindVertexArray(RGLinfo.vao);
+    #endif
 
     #ifdef RGL_DEBUG
     rglGetError();
@@ -755,14 +1107,22 @@ void rglInit(void *loader) {
     /* Fill index buffer */
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RGLinfo.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, RGL_MAX_BUFFER_ELEMENTS * 6 * sizeof(u16), RGLinfo.indices, GL_STATIC_DRAW);
+    #endif
 
+    RGL_FREE(RGLinfo.indices);
 
+    #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
+    
+    #ifdef RGL_MODERN_OPENGL
     /* Unbind the current VAO */
     if (RGLinfo.vao) 
         glBindVertexArray(0);
+    #endif
 
     #ifdef RGL_DEBUG
     rglGetError();
+    #endif
+
     #endif
 
     /* load default texture */
@@ -788,7 +1148,7 @@ void rglInit(void *loader) {
 
     RGLinfo.bufferCount = 1;    /* Record buffer count */
     RGLinfo.drawCounter = 1;             /* Reset draws counter */
-    
+                                                            
     /* Init stack matrices (emulating OpenGL 1.1) */
     for (i = 0; i < RGL_MAX_MATRIX_STACK_SIZE; i++) RGLinfo.stack[i] = rglMatrixIdentity();
 
@@ -797,7 +1157,7 @@ void rglInit(void *loader) {
     RGLinfo.projection = rglMatrixIdentity();
     RGLinfo.modelview = rglMatrixIdentity();
     RGLinfo.matrix = &RGLinfo.modelview;
-
+    
     #ifdef RGL_DEBUG
     rglGetError();
     #endif
@@ -806,35 +1166,40 @@ void rglInit(void *loader) {
 
 /* Vertex Buffer Object deinitialization (memory free) */
 void rglClose(void) {
-#if defined(RGL_MODERN_OPENGL)
-    if (RGLinfo.legacy)
-        return;
-    
-    /* Unbind everything */
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+#ifndef RGL_OPENGL_LEGACY
+    #if defined(RGL_MODERN_OPENGL)
+        if (RGLinfo.legacy)
+            return;
+        
+        /* Unbind everything */
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    /* Unload all vertex buffers data */
-    glBindVertexArray(RGLinfo.vao);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
-    glDisableVertexAttribArray(3);
-    glBindVertexArray(0);
+        /* Unload all vertex buffers data */
+        #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
+        glBindVertexArray(RGLinfo.vao);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);
+        glDisableVertexAttribArray(3);
+        glBindVertexArray(0);
+        #endif
 
-    /* Delete VBOs from GPU (VRAM) */
-    glDeleteBuffers(1, &RGLinfo.vbo);
-    glDeleteBuffers(1, &RGLinfo.tbo);
-    glDeleteBuffers(1, &RGLinfo.cbo);
-    glDeleteBuffers(1, &RGLinfo.ebo);
+        /* Delete VBOs from GPU (VRAM) */
+        glDeleteBuffers(1, &RGLinfo.vbo);
+        glDeleteBuffers(1, &RGLinfo.tbo);
+        glDeleteBuffers(1, &RGLinfo.cbo);
+        glDeleteBuffers(1, &RGLinfo.ebo);
 
-    glDeleteVertexArrays(1, &RGLinfo.vao);
+        #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
+        glDeleteVertexArrays(1, &RGLinfo.vao);
+        #endif
+    #endif
 
     /* Free vertex arrays memory from CPU (RAM) */
     RGL_FREE(RGLinfo.vertices);
     RGL_FREE(RGLinfo.tcoords);
     RGL_FREE(RGLinfo.colors);
-    RGL_FREE(RGLinfo.indices);
 
     /* Unload arrays */
     #ifdef RGL_ALLOC_BATCHES
@@ -844,7 +1209,9 @@ void rglClose(void) {
     #ifdef RGL_ALLOC_MATRIX_STACK
     RGL_FREE(RGLinfo.stack);
     #endif
+#endif
 
+#ifdef RGL_MODERN_OPENGL
     glUseProgram(0);
 
     glDetachShader(RGLinfo.program, RGLinfo.vShader);
@@ -859,7 +1226,7 @@ void rglClose(void) {
 }
 
 void rglRenderBatch() {
-    #if defined(RGL_MODERN_OPENGL)
+    #ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.legacy)
         return;
     
@@ -868,12 +1235,15 @@ void rglRenderBatch() {
 }
 
 void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation) {
-#if defined(RGL_MODERN_OPENGL)
+#ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.legacy)
         return;
-        
+
+#ifdef RGL_MODERN_OPENGL
     if (RGLinfo.vertexCounter > 0) {
+        #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
         glBindVertexArray(RGLinfo.vao);
+        #endif
 
         /* Vertex positions buffer */
         glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.vbo);
@@ -886,7 +1256,10 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
         /* Colors buffer */
         glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.cbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, RGLinfo.vertexCounter * 4 * sizeof(float), RGLinfo.colors); 
+        
+        #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
         glBindVertexArray(0);
+        #endif
 
         /* Set current shader and upload current MVP matrix */
         glUseProgram(program);
@@ -894,7 +1267,9 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
         RGL_MATRIX matMVP = rglMatrixMultiply(RGLinfo.modelview.m, RGLinfo.projection.m);
         glUniformMatrix4fv(RGLinfo.mvp, 1, 0, matMVP.m);
 
+        #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
         glBindVertexArray(RGLinfo.vao);
+        #endif
 
         /* Bind vertex attrib: position (shader-location = 0) */
         glBindBuffer(GL_ARRAY_BUFFER, RGLinfo.vbo);
@@ -921,7 +1296,6 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
         u32 vertexOffset;
         u32 i;
-
         for (i = 1, vertexOffset = 0; i < RGLinfo.drawCounter; i++) {
             GLenum mode = RGLinfo.batches[i].mode;
             
@@ -940,12 +1314,13 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
             glLineWidth(RGLinfo.batches[i].lineWidth);
             
             #ifdef RGL_EBO
-            if (mode != RGL_QUADS) 
+            if (mode != RGL_QUADS && mode != RGL_TRIANGLE_FAN) 
             #endif
                 glDrawArrays(mode, vertexOffset, RGLinfo.batches[i].vertexCount);
             #ifdef RGL_EBO
-            else
-                glDrawElements(GL_TRIANGLES, RGLinfo.batches[i].vertexCount / 4 * 6, GL_UNSIGNED_SHORT, (GLvoid *)(vertexOffset / 4 * 6 * sizeof(GLushort)));
+            else {
+                glDrawElements(GL_TRIANGLES, (RGLinfo.batches[i].vertexCount) * 2, GL_UNSIGNED_SHORT, (GLvoid *)((vertexOffset) * sizeof(GLushort)));
+            }
             #endif
 
             vertexOffset += (RGLinfo.batches[i].vertexCount + RGLinfo.batches[i].vertexAlignment);
@@ -972,6 +1347,7 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
         glBindVertexArray(0); /* Unbind VAO */
 
     glUseProgram(0);    /* Unbind shader program */
+#endif
 
     /* Reset vertex counter for next frame */
     RGLinfo.vertexCounter = 0;
@@ -1019,7 +1395,7 @@ RGL_MATRIX rglMatrixScale(float x, float y, float z) {
 }
 
 void rglLegacy(u8 state) {
-    #if defined(RGL_MODERN_OPENGL)
+    #ifndef RGL_OPENGL_LEGACY
     if (state != 2)
         RGLinfo.legacy = state;
     #endif
@@ -1030,34 +1406,36 @@ void rglLegacy(u8 state) {
 #include <stdio.h>
 
 void rglGetError(void) {
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR) {
-         switch (err) {
-            case GL_INVALID_ENUM:
-                  printf("OpenGL error: GL_INVALID_ENUM\n");
-                  break;
-            case GL_INVALID_VALUE:
-                  printf("OpenGL error: GL_INVALID_VALUE\n");
-                  break;
-            case GL_INVALID_OPERATION:
-                  printf("OpenGL error: GL_INVALID_OPERATION\n");
-                  break;
-            case GL_STACK_OVERFLOW:
-                  printf("OpenGL error: GL_STACK_OVERFLOW\n");
-                  break;
-            case GL_STACK_UNDERFLOW:
-                  printf("OpenGL error: GL_STACK_UNDERFLOW\n");
-                  break;	
-            default:
-                  printf("OpenGL error: Unknown error code 0x%x\n", err);
-                  break;
-         }
-         exit(1);
-    }
+    #if defined(RGL_MODERN_OPENGL) || defined(RGL_OPENGL_LEGACY)
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) {
+            switch (err) {
+                case GL_INVALID_ENUM:
+                    printf("OpenGL error: GL_INVALID_ENUM\n");
+                    break;
+                case GL_INVALID_VALUE:
+                    printf("OpenGL error: GL_INVALID_VALUE\n");
+                    break;
+                case GL_INVALID_OPERATION:
+                    printf("OpenGL error: GL_INVALID_OPERATION\n");
+                    break;
+                case GL_STACK_OVERFLOW:
+                    printf("OpenGL error: GL_STACK_OVERFLOW\n");
+                    break;
+                case GL_STACK_UNDERFLOW:
+                    printf("OpenGL error: GL_STACK_UNDERFLOW\n");
+                    break;	
+                default:
+                    printf("OpenGL error: Unknown error code 0x%x\n", err);
+                    break;
+            }
+            exit(1);
+        }
+    #endif
 }
 #endif
 
-#if defined(RGL_MODERN_OPENGL)
+#ifndef RGL_OPENGL_LEGACY
 
 int rglCheckRenderBatchLimit(int vCount) {
     if (RGLinfo.legacy || (RGLinfo.vertexCounter + vCount) < (RGLinfo.elementCount * 4))
@@ -1090,7 +1468,7 @@ void rglBegin(int mode) {
         RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount > 0) {
             if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES_2D) 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = ((RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount < 4)? RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount : RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4);
-            else if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN_2D) 
+            else if (RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN_2D) 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = ((RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount < 4)? 1 : (4 - (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4)));
             else 
                 RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment = 0;
@@ -1177,9 +1555,6 @@ void rglVertex3f(float x, float y, float z) {
         else if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLES_2D || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_TRIANGLE_FAN_2D) &&
             (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%3 == 0))
                 rglCheckRenderBatchLimit(3 + 1);
-        else if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_QUADS_2D) &&
-            (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%4 == 0))
-                rglCheckRenderBatchLimit(4 + 1);
     }
 
     /* Add vertices */
@@ -1372,8 +1747,12 @@ RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]) {
     };
 }
 
+#endif /* RGL_OPENGL_LEGACY */
+
+#ifdef RGL_MODERN_OPENGL
+
 #ifndef RGL_NO_GL_LOADER
-int RGL_loadGL3(RGLloadfunc proc) {
+int RGL_loadGLModern(RGLloadfunc proc) {
     RGL_PROC_DEF(proc, glShaderSource);
     RGL_PROC_DEF(proc, glCreateShader);
     RGL_PROC_DEF(proc, glCompileShader);
@@ -1387,7 +1766,6 @@ int RGL_loadGL3(RGLloadfunc proc) {
     RGL_PROC_DEF(proc, glVertexAttribPointer);
     RGL_PROC_DEF(proc, glDisableVertexAttribArray);
     RGL_PROC_DEF(proc, glDeleteBuffers);
-    RGL_PROC_DEF(proc, glDeleteVertexArrays);
     RGL_PROC_DEF(proc, glUseProgram);
     RGL_PROC_DEF(proc, glDetachShader);
     RGL_PROC_DEF(proc, glDeleteShader);
@@ -1397,13 +1775,21 @@ int RGL_loadGL3(RGLloadfunc proc) {
     RGL_PROC_DEF(proc, glGetShaderInfoLog);
     RGL_PROC_DEF(proc, glGetProgramiv);
     RGL_PROC_DEF(proc, glGetProgramInfoLog);
-    RGL_PROC_DEF(proc, glGenVertexArrays);
     RGL_PROC_DEF(proc, glGenBuffers);
+    #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2) && !defined(RGL_OPENGL_ES3)
     RGL_PROC_DEF(proc, glBindVertexArray);
+    RGL_PROC_DEF(proc, glGenVertexArrays);
+    RGL_PROC_DEF(proc, glDeleteVertexArrays);
+    #endif
     RGL_PROC_DEF(proc, glGetUniformLocation);
     RGL_PROC_DEF(proc, glUniformMatrix4fv);
     RGL_PROC_DEF(proc, glActiveTexture);
-    RGL_PROC_DEF(proc, glDebugMessageCallback);
+
+    #if defined(RGL_OPENGL_ES2) && !defined(RGL_OPENGL_ES3)
+        glGenVertexArraysSRC = (PFNGLGENVERTEXARRAYSOESPROC)((RGLloadfunc)loader)("glGenVertexArraysOES");
+        glBindVertexArraySRC = (PFNGLBINDVERTEXARRAYOESPROC)((RGLloadfunc)loader)("glBindVertexArrayOES");
+        glDeleteVertexArraysSRC = (PFNGLDELETEVERTEXARRAYSOESPROC)((RGLloadfunc)loader)("glDeleteVertexArraysOES");
+    #endif
 
     if (
         glShaderSourceSRC == NULL ||
@@ -1415,11 +1801,9 @@ int RGL_loadGL3(RGLloadfunc proc) {
         glLinkProgramSRC == NULL ||
         glBindBufferSRC == NULL ||
         glBufferDataSRC == NULL ||
-        glEnableVertexAttribArraySRC == NULL ||
         glVertexAttribPointerSRC == NULL ||
         glDisableVertexAttribArraySRC == NULL ||
         glDeleteBuffersSRC == NULL ||
-        glDeleteVertexArraysSRC == NULL ||
         glUseProgramSRC == NULL ||
         glDetachShaderSRC == NULL ||
         glDeleteShaderSRC == NULL ||
@@ -1429,22 +1813,24 @@ int RGL_loadGL3(RGLloadfunc proc) {
         glGetShaderInfoLogSRC == NULL ||
         glGetProgramivSRC == NULL ||
         glGetProgramInfoLogSRC == NULL ||
-        glGenVertexArraysSRC == NULL ||
         glGenBuffersSRC == NULL ||
-        glBindVertexArraySRC == NULL ||
         glGetUniformLocationSRC == NULL ||
         glUniformMatrix4fvSRC == NULL
     )
         return 1;
 
+    #if !defined(RGL_OPENGL_21)
     GLuint vao;
     glGenVertexArraysSRC(1, &vao);
     
     if (vao == 0)
         return 1;
+    #endif
     
+    #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
     glDeleteVertexArraysSRC(1, &vao);
-    
+    #endif
+
     return 0;
 }
 #endif
