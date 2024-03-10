@@ -1283,9 +1283,10 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         rglInit((void*)RGFW_getProcAddress);
         rglViewport(0, 0, win->r.w, win->r.h);
         
+        rglDepthFunc(RGL_LEQUAL);
+
         #ifdef RGL_OPENGL_43
         rglClearDepth(1.0f);
-        rglDepthFunc(RGL_LEQUAL);
         rglBlendFunc(RGL_SRC_ALPHA, RGL_ONE_MINUS_SRC_ALPHA);
         #endif
 
@@ -1498,9 +1499,10 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     rglInit((void*)RGFW_getProcAddress);
     rglViewport(0, 0, r.w, r.h);
     
+    rglDepthFunc(RGL_LEQUAL);
+
     #ifdef RGL_OPENGL_43
     rglClearDepth(1.0f);
-    rglDepthFunc(RGL_LEQUAL);
     rglBlendFunc(RGL_SRC_ALPHA, RGL_ONE_MINUS_SRC_ALPHA);
     #endif
 
@@ -2417,7 +2419,7 @@ void RSGL_drawButton(RSGL_button button) {
                     if (button.src.rounding.x || button.src.rounding.y)
                         RSGL_drawRoundRectF(rectOutline, button.src.rounding, button.src.outlineColor);
                     else
-                        RSGL_drawRectF(rectOutline, button.src.outlineColor);   
+                        RSGL_drawRectF(rectOutline, button.src.outlineColor);
                 }
 
                 else if (button.outline != 0) 
