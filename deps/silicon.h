@@ -755,6 +755,8 @@ SICDEF void NSWindow_performMiniaturize(NSWindow* window, SEL s);
 /* */
 SICDEF void NSWindow_performZoom(NSWindow* window, SEL s);
 /* */
+SICDEF void NSWindow_deminiaturize(NSWindow* window, SEL s);
+/* */
 SICDEF NSPoint NSWindow_convertPointFromScreen(NSWindow* window, NSPoint point);
 /* Passes a display message down the window’s view hierarchy, thus redrawing all views within the window. */
 SICDEF void NSWindow_display(NSWindow* window);
@@ -1566,6 +1568,7 @@ enum{
 	NS_WINDOW_IS_MINIATURIZED_CODE,
 	NS_WINDOW_IS_ZOOMED_CODE,
 	NS_WINDOW_PERFORM_MINIATURIZE_CODE,
+	NS_WINDOW_DEMINIATURIZE_CODE,
 	NS_WINDOW_PERFORM_ZOOM_CODE,
 	NS_WINDOW_STYLE_MASK_CODE,
 	NS_STRING_FROM_CLASS_CODE,
@@ -1863,10 +1866,11 @@ void si_initNS(void) {
 	SI_NS_FUNCTIONS[NS_WINDOW_IS_MINIATURIZED_CODE] = sel_getUid("isMiniaturized");
 	SI_NS_FUNCTIONS[NS_WINDOW_IS_ZOOMED_CODE] = sel_getUid("isZoomed");
 	SI_NS_FUNCTIONS[NS_WINDOW_PERFORM_MINIATURIZE_CODE] = sel_getUid("performMiniaturize:");
+	SI_NS_FUNCTIONS[NS_WINDOW_DEMINIATURIZE_CODE] = sel_getUid("deminiaturize:");
 	SI_NS_FUNCTIONS[NS_WINDOW_PERFORM_ZOOM_CODE] = sel_getUid("performZoom:");
 	SI_NS_FUNCTIONS[NS_WINDOW_STYLE_MASK_CODE] = sel_getUid("styleMask");
-	SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE] = sel_getUid("setMinSize:");
-	SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE] = sel_getUid("setMaxSize:");
+	SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE] = sel_getUid("setMaxSize:");
+	SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE] = sel_getUid("setMinSize:");
 	SI_NS_FUNCTIONS[NS_GRAPHICS_CONTEXT_WIDTH_WINDOW_CODE] = sel_getUid("graphicsContextWithWindow:");
 	SI_NS_FUNCTIONS[NS_CURSOR_PERFORM_SELECTOR] = sel_getUid("performSelector:");
 	SI_NS_FUNCTIONS[NS_NOTIFICATIONCENTER_ADD_OBSERVER] = sel_getUid("addObserver:selector:name:object:");
@@ -2180,14 +2184,14 @@ void NSWindow_setMaxSize(NSWindow* window, NSSize size) {
 	void* func = SI_NS_FUNCTIONS[NS_WINDOW_SET_MAX_SIZE_CODE];
 
 	return ((void (*)(id, SEL, NSSize))objc_msgSend)
-				(SI_NS_CLASSES[NS_WINDOW_CODE], func, size);
+				(window, func, size);
 }
 
 void NSWindow_setMinSize(NSWindow* window, NSSize size) {
 	void* func = SI_NS_FUNCTIONS[NS_WINDOW_SET_MIN_SIZE_CODE];
 
 	return ((void (*)(id, SEL, NSSize))objc_msgSend)
-				(SI_NS_CLASSES[NS_WINDOW_CODE], func, size);
+				(window, func, size);
 }
 
 NSView* NSWindow_contentView(NSWindow* window) {
@@ -2442,6 +2446,11 @@ void NSWindow_performMiniaturize(NSWindow* window, SEL s) {
 void NSWindow_performZoom(NSWindow* window, SEL s) {
 	void* func = SI_NS_FUNCTIONS[NS_WINDOW_PERFORM_ZOOM_CODE];
    objc_msgSend_void_SEL(window, func, s);
+}
+/* */
+void NSWindow_deminiaturize(NSWindow* window, SEL s) {
+	void* func = SI_NS_FUNCTIONS[NS_WINDOW_DEMINIATURIZE_CODE];
+	objc_msgSend_void_SEL(window, func, s);
 }
 
 NSPoint NSWindow_convertPointFromScreen(NSWindow* window, NSPoint point) {
