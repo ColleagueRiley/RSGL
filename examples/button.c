@@ -31,8 +31,11 @@ int main() {
     
     RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&generic, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
-
+    
     RSGL_button_setStyle(&generic, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED);
+
+    RSGL_button_setKeybind(&generic, (u32[]){RGFW_F, RGFW_ControlL}, 2);
+    RSGL_button_setWindow(&generic, win);
 
     RSGL_button comboBox = RSGL_initButton();
     char* combos[3] = {"comboBox 0", "comboBox 1", "comboBox 2"};
