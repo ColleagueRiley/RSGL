@@ -35,6 +35,7 @@ all:
 	make text
 	make glfw
 	make button
+	make styles
 	make container
 
 debug:
@@ -45,6 +46,7 @@ debug:
 	gcc text.c $(LIBS) $(ARGS) -o text
 	gcc glVer.c $(LIBS) $(ARGS) -o glVer
 	gcc button.c $(LIBS) $(ARGS) -o button
+	gcc styles.c $(LIBS) $(ARGS) -o styles
 	gcc container.c $(LIBS) $(ARGS) -o container
 
 	./events
@@ -54,6 +56,7 @@ debug:
 	./glVer
 	./basic
 	./button
+	./styles
 	./container
 	
 glfw:
@@ -79,6 +82,9 @@ basic:
 
 button:
 	gcc button.c $(LIBS) $(ARGS) -o button
+
+styles:
+	gcc styles.c $(LIBS) $(ARGS) -o styles
 
 container:
 	gcc container.c $(LIBS) $(ARGS) -o container
