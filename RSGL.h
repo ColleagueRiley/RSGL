@@ -232,6 +232,7 @@ keys will not be reincluded into RSGL
 #endif
 
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
+#define RSGL_ENUM(type, name) type name; enum
 
 /* 
 *******
@@ -591,7 +592,7 @@ RSGLDEF void RSGL_setClearArgs(bool clearArgs); /* toggles if args are cleared b
 RSGLDEF void RSGL_clearArgs(); /* clears the args */
 
 /* calculate the align a smaller rect with larger rect */
-typedef enum {
+typedef RSGL_ENUM(u8, RSGL_alignment) {
     RSGL_ALIGN_NONE = (1 << 0),
     /* horizontal */
     RSGL_ALIGN_LEFT = (1 << 1),
@@ -606,7 +607,7 @@ typedef enum {
     RSGL_ALIGN_HORIZONTAL = RSGL_ALIGN_LEFT | RSGL_ALIGN_CENTER | RSGL_ALIGN_RIGHT,
     RSGL_ALIGN_VERTICAL = RSGL_ALIGN_UP | RSGL_ALIGN_MIDDLE | RSGL_ALIGN_DOWN,
 /* ex : alignment = (RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE) */
-} RSGL_alignment;
+};
 
 /* align smaller rect onto larger rect based on a given alignment */
 RSGLDEF RSGL_rect RSGL_alignRect(RSGL_rect larger, RSGL_rect smaller, u16 alignment);
@@ -768,7 +769,7 @@ RSGL_widgets
 #ifndef RGFW_NO_WIDGETS
 
 /* style of a widget */
-typedef enum {
+typedef RSGL_ENUM(u32, RSGL_widgetStyle) {
     RSGL_STYLE_NONE = (1L << 0),
 
     RSGL_STYLE_DARK = (1L << 1), /* dark mode*/
@@ -797,19 +798,27 @@ typedef enum {
     RSGL_SHAPE_POLYGONF = (1L << 14),
     RSGL_SHAPE_RECTF = (1L << 15),
 
+    RSGL_STYLE_RED = (1 << 16),
+    RSGL_STYLE_BLUE = (1 << 17),
+    RSGL_STYLE_GREEN = (1 << 18),
+    RSGL_STYLE_YELLOW = (1 << 19),
+    RSGL_STYLE_TEAL = (1 << 20),
+    RSGL_STYLE_PURPLE = (1 << 21),
+    RSGL_STYLE_COLOR = RSGL_STYLE_RED | RSGL_STYLE_BLUE | RSGL_STYLE_GREEN | RSGL_STYLE_YELLOW | RSGL_STYLE_TEAL | RSGL_STYLE_PURPLE,
+
     RSGL_STYLE_SHAPE = RSGL_SHAPE_RECT | RSGL_SHAPE_POLYGON | RSGL_SHAPE_POLYGONF | RSGL_SHAPE_RECTF,
-} RSGL_widgetStyle;
+};
 
 
 /* expandable rect, returns true if a change has been made */
 bool RSGL_expandableRect_update(RSGL_rect* rect, RGFW_Event e);
 bool RSGL_expandableRectF_update(RSGL_rectF* rect, RGFW_Event e);
 
-typedef enum {
+typedef RSGL_ENUM(u8, RSGL_buttonStatus) {
     RSGL_none = 0,
     RSGL_hovered,
     RSGL_pressed,
-} RSGL_buttonStatus;
+};
 
 typedef struct RSGL_button_src {
     /* source data */
@@ -833,7 +842,12 @@ typedef struct RSGL_button_src {
         size_t slider_pos; /* the pos of a slider for x or y */
     };
 
-    u16 style;   
+    u32* keys;
+    size_t keys_len;
+
+    RSGL_window* window;
+
+    RSGL_widgetStyle style;   
 } RSGL_button_src; /* src data for a button*/
 
 typedef struct RSGL_button {
@@ -847,13 +861,12 @@ typedef struct RSGL_button {
     u32 outline;
 
     RSGL_button_src src;
-
 } RSGL_button;
 
 /* button managing functions */
 /* 
     inits the button 
-    zeros out the data by default or loads with a selected style from `RSGL_widgetStyle` 
+    zeros out the data by default
 */
 RSGLDEF RSGL_button RSGL_initButton(void); 
 
@@ -865,7 +878,7 @@ RSGLDEF RSGL_button RSGL_copyButton(RSGL_button button);
     the rect and any text you want should 
     be loaded before this function is used
 */
-RSGLDEF void RSGL_button_setStyle(RSGL_button* button, u16 buttonStyle);
+RSGLDEF void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle);
 
 RSGLDEF void RSGL_button_setRect(RSGL_button* button, RSGL_rect rect);
 RSGLDEF void RSGL_button_setRectF(RSGL_button* button, RSGL_rectF rect);
@@ -885,6 +898,12 @@ RSGLDEF void RSGL_button_setTexture(RSGL_button* button, u32 tex);
 
 RSGLDEF void RSGL_button_setColor(RSGL_button* button, RSGL_color color);
 RSGLDEF void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color);
+
+/* set the window for the button (this is used for RGFW_isPressed), NULL by default */
+RSGLDEF void RSGL_button_setWindow(RSGL_button* button, RSGL_window* window);
+
+/* set keybinding for the button, if these keys are pressed the button is marked as pressed */
+RSGLDEF void RSGL_button_setKeybind(RSGL_button* button, u32* keys, size_t keys_len);
 
 /* set button combos for a combo box */
 RSGLDEF void RSGL_button_setCombo(RSGL_button* button, char** combo, size_t combo_count);
@@ -2212,6 +2231,9 @@ RSGL_button RSGL_initButton(void) {
     button.loaded_states[1].tex = 0;
     button.loaded_states[2].tex = 0;
 
+    button.src.keys_len = 0;
+    button.src.window = NULL;
+
     return button;
 }
 
@@ -2245,7 +2267,7 @@ RSGL_button RSGL_copyButton(RSGL_button button) {
     return newButton;
 }
 
-void RSGL_button_setStyle(RSGL_button* button, u16 buttonStyle) {
+void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle) {
     if (buttonStyle == 0)
         return;
 
@@ -2263,31 +2285,98 @@ void RSGL_button_setStyle(RSGL_button* button, u16 buttonStyle) {
 
     switch (buttonStyle & RSGL_STYLE_MODE) {
         case RSGL_STYLE_DARK: {
-            RSGL_button_setOutline(button, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 : 0), RSGL_RGB(60, 60, 60));
+            RSGL_color c = RSGL_RGB(20, 20, 20);
+
+            switch (buttonStyle & RSGL_STYLE_COLOR) {
+                case RSGL_STYLE_RED:
+                    c.r += 15;
+                    break;
+                case RSGL_STYLE_BLUE:
+                    c.b += 15;
+                    break;
+                case RSGL_STYLE_GREEN:
+                    c.g += 15;
+                    break;
+                case RSGL_STYLE_YELLOW:
+                    c.r += 15;
+                    c.g += 15;
+                    break;
+                case RSGL_STYLE_TEAL:
+                    c.g += 15;
+                    c.b += 15;
+                    break;
+                case RSGL_STYLE_PURPLE:
+                    c.r += 15;
+                    c.b += 15;
+                    break;
+                default: break;
+            }
+
+            RSGL_button_setOutline(button, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 : 0), RSGL_RGB(c.r + 40, c.g + 40, c.b + 40));
             
             if  (buttonStyle & RSGL_STYLE_RADIO) {
-                RSGL_button_setColor(button, RSGL_RGB(20, 20, 20));
+                RSGL_button_setColor(button, c);
                 break;
             }
 
             if (!(buttonStyle & RSGL_STYLE_CHECKBOX)) {   
-                RSGL_button_setColor(button, RSGL_RGB(20, 20, 20));
+                RSGL_button_setColor(button, c);
                 RSGL_button press = RSGL_copyButton(*button);
-                RSGL_button_setColor(&press, RSGL_RGB(30, 30, 30));
+                RSGL_button_setColor(&press, RSGL_RGB(c.r + 10, c.g + 10, c.b + 10));
                 RSGL_button_setOnPress(button, press.src);
             }
             
             RSGL_button hover = RSGL_copyButton(*button);
-            RSGL_button_setOutline(&hover, 1, RSGL_RGB(80, 80, 80));
+            RSGL_button_setOutline(&hover, 1, RSGL_RGB(c.r + 60, c.g + 60, c.b + 60));
             RSGL_button_setOnHover(button, hover.src);
             break;
         }
         case RSGL_STYLE_LIGHT: {
-            RSGL_button_setColor(button, RSGL_RGB(200, 200, 200));
-            RSGL_button_setOutline(button, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 : 0), RSGL_RGB(60, 60, 60));
+            RSGL_color c = RSGL_RGB(200, 200, 200);
+
+            switch (buttonStyle & RSGL_STYLE_COLOR) {
+                case RSGL_STYLE_RED:
+                    c.g -= 60;
+                    c.b -= 60;
+                    break;
+                case RSGL_STYLE_BLUE:
+                    c.r -= 60;
+                    c.g -= 60;
+                    break;
+                case RSGL_STYLE_GREEN:
+                    c.r -= 60;
+                    c.b -= 60;
+                    break;
+                case RSGL_STYLE_YELLOW:
+                    c.b -= 60;
+                    break;
+                case RSGL_STYLE_TEAL:
+                    c.r -= 60;
+                    break;
+                case RSGL_STYLE_PURPLE:
+                    c.g -= 60;
+                    break;
+                default: break;
+            }
+
+            RSGL_button_setOutline(button, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 : 0), RSGL_RGB(c.r - 140, c.g - 140, c.b - 140));
+            
+            if (buttonStyle & RSGL_STYLE_RADIO) {
+                RSGL_button_setColor(button, c);
+                break;
+            }
+
+            if (!(buttonStyle & RSGL_STYLE_CHECKBOX)) {   
+                RSGL_button_setColor(button, c);
+                RSGL_button press = RSGL_copyButton(*button);
+                RSGL_button_setColor(&press, RSGL_RGB(c.r - 10, c.g - 10, c.b - 10));
+                RSGL_button_setOnPress(button, press.src);
+            }
+            
+            RSGL_button_setColor(button, c);
             
             RSGL_button press = RSGL_copyButton(*button);
-            RSGL_button_setColor(&press, RSGL_RGB(180, 180, 180));
+            RSGL_button_setColor(&press, RSGL_RGB(c.r - 20, c.g - 20, c.b - 20));
             RSGL_button_setOnPress(button, press.src);
             
             RSGL_button hover = RSGL_copyButton(*button);
@@ -2336,6 +2425,13 @@ void RSGL_button_alignText(RSGL_button* button, u8 alignment) {
 }
 void RSGL_button_setTexture(RSGL_button* button, u32 tex) { button->src.tex = tex; }
 void RSGL_button_setColor(RSGL_button* button, RSGL_color color) { button->src.color = color; }
+void RSGL_button_setWindow(RSGL_button* button, RSGL_window* window) {
+    button->src.window = window;
+}
+void RSGL_button_setKeybind(RSGL_button* button, u32* keys, size_t keys_len) {
+    button->src.keys = keys;
+    button->src.keys_len = keys_len;
+}
 void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color) {
     button->src.outlineColor = color;
     button->outline = size;
@@ -2539,6 +2635,32 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     }
 
     size_t i;
+    if (e.type == RGFW_keyPressed) {
+        for (i = 0; e.type == RGFW_keyPressed && i < b->src.keys_len; i++) {
+            if (RSGL_isPressedI(b->src.window, b->src.keys[i]) == false) 
+                break;
+
+            if (i != b->src.keys_len - 1)
+                continue;
+            
+            if (b->status != RSGL_pressed && !(b->src.style & RSGL_STYLE_SLIDER))
+                b->toggle = !b->toggle;
+            
+            b->status = RSGL_pressed;
+            return;
+        }
+
+        if (b->status == RSGL_pressed)
+            b->status = RSGL_none;
+        
+        return;
+    }
+
+    if (e.type == RGFW_keyReleased && b->status == RSGL_pressed) {
+        b->status = RSGL_none;
+        return;
+    }
+
     for (i = 0; i < b->src.array_count + 1; i++) {
         switch (e.type) {
             case RGFW_mouseButtonPressed:
