@@ -2278,7 +2278,7 @@ void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle) {
 
     if (buttonStyle & RSGL_STYLE_ROUNDED) {
         if (buttonStyle & RSGL_STYLE_TOGGLE)
-            RSGL_button_setRounding(button, RSGL_POINT(50, 50));
+            RSGL_button_setRounding(button, RSGL_POINT(button->rect.w / 2, button->rect.w / 2));
         else
             RSGL_button_setRounding(button, RSGL_POINT(10, 10));
     }
@@ -2563,7 +2563,7 @@ void RSGL_drawButton(RSGL_button button) {
             if (button.src.style & RSGL_STYLE_SLIDER_CIRCLE)
                 RSGL_drawCircle(c, RSGL_RGB(200, 200, 200));
             else if (button.src.style & RSGL_STYLE_ROUNDED)
-                RSGL_drawRoundRect(RSGL_RECT(c.x, c.y, c.d, c.d), RSGL_POINT(10, 10), RSGL_RGB(200, 200, 200));
+                RSGL_drawRoundRect(RSGL_RECT(c.x, c.y, c.d, c.d), button.src.rounding, RSGL_RGB(200, 200, 200));
             else
                 RSGL_drawRect(RSGL_RECT(c.x, c.y, c.d, c.d), RSGL_RGB(200, 200, 200));
             break;
@@ -2658,7 +2658,6 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
 
     if (e.type == RGFW_keyReleased && b->status == RSGL_pressed) {
         b->status = RSGL_none;
-        return;
     }
 
     for (i = 0; i < b->src.array_count + 1; i++) {
