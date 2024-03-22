@@ -50,19 +50,9 @@ int main() {
     RSGL_button_setStyle(&slider, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_SLIDER_HORIZONTAL | RSGL_STYLE_SLIDER_CIRCLE);
     
     RSGL_button null = RSGL_nullButton();
-    
-    
-    /*RSGL_button label = RSGL_initButton();
-    label.rect =  RSGL_RECTF(50, 250, 50, 50);
-    label.src.text.str = "name";
-    //label.src.text.color = RSGL_RGB(100, 100, 100);
-    label.src.text.c.d = 15;
-    //RSGL_button_setText(&label, "name", 5, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));   
-    //label.src.text.alignment = RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE;
-    */
    
     RSGL_button buttons[] = {
-        null, generic, null, 
+        RSGL_label("label", 6, 25), generic, null, 
         checkbox, null, generic,
         null, null, null,
         radioButtons, null, genericToggle,
@@ -70,6 +60,7 @@ int main() {
     };
 
     RSGL_container container = RSGL_initContainer(RSGL_RECT(50, 50, 300, 400), buttons, 13);
+    RSGL_container_setTitle(&container, "title", 6);
     RSGL_container_setStyle(&container, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_CONTAINER);
 
     bool running = true;
