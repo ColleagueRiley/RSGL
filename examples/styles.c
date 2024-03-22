@@ -49,14 +49,15 @@ int main() {
 
         RSGL_drawButton(darkMode);
 
+        size_t startColor = log2(RSGL_STYLE_RED) - 1;
+
         for (i = 0; i < sizeof(buttons) / sizeof(RSGL_button); i += 3) {
             size_t row = (i / 3);
 
             u32 styleColor = 0;
             if (i != 0)
-                styleColor = (1 << (15 + row)); /* 
-                    RSGL_STYLE_RED = (1 << 16)
-                    this sets the style to RSGL_STYLE_RED + the current row
+                styleColor = (1 << (startColor + row)); /* 
+                    this sets the style to RSGL_STYLE_RED (the first color) + the current row
                     making it so it loops through each color
                 */
                  
