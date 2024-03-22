@@ -631,6 +631,7 @@ RSGLDEF void RSGL_basicDraw(
 
 RSGLDEF void RSGL_drawPoint(RSGL_point p, RSGL_color c);
 RSGLDEF void RSGL_drawPointF(RSGL_pointF p, RSGL_color c);
+RSGLDEF void RSGL_plotLines(RSGL_pointF* lines, size_t points_count, u32 thickness, RSGL_color c);
 
 RSGLDEF void RSGL_drawPoint3D(RSGL_point3D p, RSGL_color c);
 RSGLDEF void RSGL_drawPoint3DF(RSGL_point3DF p, RSGL_color c);
@@ -753,7 +754,7 @@ RSGLDEF RSGL_image RSGL_drawImage(const char* image, RSGL_rect r);
     an swizzle'd texutre or atlas
 */
 
-/* stores the pixel values using `glPixelStorei` */
+/* stores the pixel values using `glP ixelStorei` */
 RSGLDEF void RSGL_pushPixelValues(i32 alignment, i32 rowLength, i32 skipPixels, i32 skipRows);
 /* sets up a swizzle mask */
 RSGLDEF void RSGL_textureSwizzleMask(u32 atlas, u32 param, i32 swizzleRgbaParams[4]);
@@ -789,21 +790,22 @@ typedef RSGL_ENUM(u32, RSGL_widgetStyle) {
     RSGL_STYLE_CHECKBOX = (1 << 9),
     RSGL_STYLE_COMBOBOX = (1 << 10),
     RSGL_STYLE_CONTAINER = (1 << 11),
+    RSGL_STYLE_NO_TAB = (1 << 12),
     RSGL_STYLE_TYPE = RSGL_STYLE_SLIDER | RSGL_STYLE_TOGGLE | RSGL_STYLE_RADIO | RSGL_STYLE_CHECKBOX | RSGL_STYLE_COMBOBOX,
 
     RSGL_SHAPE_NULL = (1L << 0),
-    RSGL_SHAPE_RECT = (1L << 12),
-    RSGL_SHAPE_POLYGON = (1L << 13),
+    RSGL_SHAPE_RECT = (1L << 13),
+    RSGL_SHAPE_POLYGON = (1L << 14),
 
-    RSGL_SHAPE_POLYGONF = (1L << 14),
-    RSGL_SHAPE_RECTF = (1L << 15),
+    RSGL_SHAPE_POLYGONF = (1L << 15),
+    RSGL_SHAPE_RECTF = (1L << 16),
 
-    RSGL_STYLE_RED = (1 << 16),
-    RSGL_STYLE_BLUE = (1 << 17),
-    RSGL_STYLE_GREEN = (1 << 18),
-    RSGL_STYLE_YELLOW = (1 << 19),
-    RSGL_STYLE_TEAL = (1 << 20),
-    RSGL_STYLE_PURPLE = (1 << 21),
+    RSGL_STYLE_RED = (1 << 17),
+    RSGL_STYLE_BLUE = (1 << 18),
+    RSGL_STYLE_GREEN = (1 << 19),
+    RSGL_STYLE_YELLOW = (1 << 20),
+    RSGL_STYLE_TEAL = (1 << 21),
+    RSGL_STYLE_PURPLE = (1 << 22),
     RSGL_STYLE_COLOR = RSGL_STYLE_RED | RSGL_STYLE_BLUE | RSGL_STYLE_GREEN | RSGL_STYLE_YELLOW | RSGL_STYLE_TEAL | RSGL_STYLE_PURPLE,
 
     RSGL_STYLE_SHAPE = RSGL_SHAPE_RECT | RSGL_SHAPE_POLYGON | RSGL_SHAPE_POLYGONF | RSGL_SHAPE_RECTF,
@@ -942,6 +944,9 @@ typedef struct RSGL_container {
     size_t buttons_len;
 
     RSGL_button src;
+
+    RSGL_button title;
+    bool held;
 } RSGL_container;
 
 RSGLDEF RSGL_button RSGL_nullButton(void);
@@ -1675,6 +1680,13 @@ void RSGL_drawCube(RSGL_cube r, RSGL_color c) {
 
 void RSGL_drawPointF(RSGL_pointF p, RSGL_color c) {
     RSGL_drawRectF((RSGL_rectF){p.x, p.y, 1.0f, 1.0f}, c);
+}
+
+void RSGL_plotLines(RSGL_pointF* lines, size_t points_count, u32 thickness, RSGL_color c) {
+    size_t i;
+    for (i = 0; i < points_count; i += 2) {
+        RSGL_drawLineF(lines[i], lines[i + 1], thickness, c);
+    }
 }
 
 void RSGL_drawPoint3DF(RSGL_point3DF p, RSGL_color c) { RSGL_drawCubeF((RSGL_cubeF){p.x, p.y, p.z, 1, 1, 1}, c); }
@@ -2462,11 +2474,19 @@ void RSGL_button_setRadioCount(RSGL_button* button, size_t array_count) {
 void RSGL_drawButton(RSGL_button button) {
     assert((button.src.style & RSGL_STYLE_SHAPE) != RSGL_SHAPE_NULL);
     
+    u8 align = 0;
+
+    if (button.src.text.str != NULL)
+        align = button.src.text.alignment;
+    
     if (button.loaded_states[button.status].tex != 0 && !(button.src.style & RSGL_STYLE_CONTAINER)) {
         button.loaded_states[button.status].array_count = button.src.array_count;
         button.src = button.loaded_states[button.status];
     }
 
+    if (align) 
+        RSGL_button_alignText(&button, align);
+    
     /* reset args, but save the old ones */
     RSGL_drawArgs args = RSGL_args;
     RSGL_rotate(button.src.drawArgs.rotate);
@@ -2749,7 +2769,8 @@ RSGL_button RSGL_nullButton(void) {
 RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize) {
     RSGL_button label = RSGL_initButton();
     RSGL_button_setRect(&label, RSGL_RECT(50, 50, 100, 50));
-    RSGL_button_setText(&label, text, text_len, RSGL_CIRCLE(0, 0, 15), RSGL_RGB(100, 100, 100));   
+    RSGL_button_setText(&label, text, text_len, RSGL_CIRCLE(0, 0, textSize), RSGL_RGB(100, 100, 100));   
+    label.src.text.alignment = RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE;
 
     return label;
 }
@@ -2757,8 +2778,12 @@ RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize) {
 RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len) {
     RSGL_container new;
     new.src = RSGL_initButton();
+    new.title = RSGL_initButton();
+    new.held = false;
     new.buttons = buttons;
     new.buttons_len = len;
+
+    RSGL_button_setRect(&new.title, RSGL_RECT(r.x, r.y - 30, r.w, 30));
 
     RSGL_button_setRect(&new.src, r);
     RSGL_container_setPos(&new, RSGL_POINT(r.x, r. y));
@@ -2767,7 +2792,12 @@ RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len)
 
 void RSGL_container_setPos(RSGL_container* container, RSGL_point p) {
     RSGL_rectF rect = RSGL_RECTF((float)p.x, (float)p.y, container->src.rect.w, container->src.rect.h);
-    RSGL_button_setRectF(&container->src, rect);    
+    RSGL_button_setRectF(&container->src, rect);   
+    RSGL_button_setRectF(&container->title, RSGL_RECTF(rect.x, rect.y - 30, rect.w, 30));    
+
+    if (container->title.src.text.str != NULL)
+        RSGL_button_alignText(&container->title, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
+    
     
     size_t i, x;
     float spacing = 0;
@@ -2805,15 +2835,35 @@ void RSGL_container_setPos(RSGL_container* container, RSGL_point p) {
     }   
 }
 
-void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle) {
-    RSGL_button_setStyle(&button->src, buttonStyle);   
+void RSGL_container_setTitle(RSGL_container* container, char* name, size_t name_len) {
+    RSGL_button_setText(&container->title, name, name_len, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
+    RSGL_button_alignText(&container->title, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
 }
 
-void RSGL_drawContainer(RSGL_container container) {
-    RSGL_drawButton(container.src);
+void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle) {
+    RSGL_button_setStyle(&button->src, buttonStyle); 
+
+    if (buttonStyle & RSGL_STYLE_ROUNDED)
+        buttonStyle ^= RSGL_STYLE_ROUNDED;
     
+    RSGL_button_setStyle(&button->title, buttonStyle);  
+}
+
+void RSGL_drawContainer(RSGL_container container) {    
+    if (container.title.toggle == false)
+        RSGL_drawButton(container.src);
+
+    if (!(container.src.src.style & RSGL_STYLE_NO_TAB)) {
+        RSGL_drawButton(container.title);
+        
+        RSGL_point cen =  RSGL_POINT(container.title.rect.x + container.title.rect.w - 20, container.title.rect.y + container.title.rect.h - 5);
+        size_t y = ((cen.y - container.title.rect.h) + 15);
+
+        RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
+    }
+
     size_t i;
-    for (i = 0; i < container.buttons_len; i++) {
+    for (i = 0; i < container.buttons_len && container.title.toggle == 0; i++) {
         if (container.buttons[i].src.tex == 0)
             continue;
         
@@ -2822,6 +2872,24 @@ void RSGL_drawContainer(RSGL_container container) {
 }
 
 i32 RSGL_container_update(RSGL_container* container, RGFW_Event event) {
+    if (!(container->src.src.style & RSGL_STYLE_NO_TAB)) {
+        if (event.type == RGFW_mouseButtonReleased &&
+            RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x + (container->title.rect.w - 35), container->title.rect.y, 35, container->title.rect.h), event.point)
+        ) {
+            container->title.toggle = !container->title.toggle;
+            container->held = false;
+        }
+
+        if (event.type == RGFW_mouseButtonPressed && 
+            RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x, container->title.rect.y, container->title.rect.w - 35, container->title.rect.h), event.point)
+        )
+            container->held = true;
+        else if (event.type == RGFW_mousePosChanged && container->held)
+            RSGL_container_setPos(container, RSGL_POINT(event.point.x, event.point.y + 30));
+        else
+            container->held = false;
+    }    
+
     size_t i;
     for (i = 0; i < container->buttons_len; i++) {
         if (container->buttons[i].src.tex == 0)
