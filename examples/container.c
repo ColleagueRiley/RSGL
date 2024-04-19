@@ -50,18 +50,19 @@ int main() {
     RSGL_button_setStyle(&slider, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_SLIDER_HORIZONTAL | RSGL_STYLE_SLIDER_CIRCLE);
     
     RSGL_button null = RSGL_nullButton();
+    RSGL_button label = RSGL_label("label", 6, 25);
    
-    RSGL_button buttons[] = {
-        RSGL_label("label", 6, 25), generic, null, 
-        checkbox, null, generic,
-        null, null, null,
-        radioButtons, null, genericToggle,
-        comboBox, null, null, slider
+    RSGL_button* buttons[] = {
+        &label, &generic, &null, 
+        &checkbox, &null, &generic,
+        &null, &null, &null,
+        &radioButtons, &null, &genericToggle,
+        &comboBox, &null, &null, &slider
     };
 
-    RSGL_container container = RSGL_initContainer(RSGL_RECT(50, 50, 300, 400), buttons, 13);
-    RSGL_container_setTitle(&container, "title", 6);
-    RSGL_container_setStyle(&container, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_CONTAINER);
+    RSGL_container* container = RSGL_initContainer(RSGL_RECT(50, 50, 300, 400), buttons, 13);
+    RSGL_container_setTitle(container, "title", 6);
+    RSGL_container_setStyle(container, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_CONTAINER);
 
     bool running = true;
     while (running) {
@@ -72,9 +73,9 @@ int main() {
             }
 
             if (win->event.type == RSGL_mouseButtonReleased && win->event.button == RSGL_mouseRight)
-                RSGL_container_setPos(&container, win->event.point);
+                RSGL_container_setPos(container, win->event.point);
             
-            RSGL_container_update(&container, win->event);
+            RSGL_container_update(container, win->event);
         }
 
         RSGL_drawContainer(container);
@@ -82,5 +83,6 @@ int main() {
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }
 
+    RSGL_freeContainer(container);
     RSGL_window_close(win);
 }

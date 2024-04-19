@@ -37,6 +37,7 @@ all:
 	make button
 	make styles
 	make container
+	make textbox
 
 debug:
 	gcc basic.c $(LIBS) $(ARGS) -o basic
@@ -48,6 +49,7 @@ debug:
 	gcc button.c $(LIBS) $(ARGS) -o button
 	gcc styles.c $(LIBS) $(ARGS) -o styles
 	gcc container.c $(LIBS) $(ARGS) -o container
+	gcc textbox.c $(LIBS) $(ARGS) -o textbox
 
 	./events
 	./shapes
@@ -58,6 +60,7 @@ debug:
 	./button
 	./styles
 	./container
+	./textbox
 	
 glfw:
 	gcc glfw.c -lglfw -lm -I../ -o glfw
@@ -69,13 +72,16 @@ events:
 	gcc events.c $(LIBS) $(ARGS) -o events
 
 textures:
-	gcc events.c $(LIBS) $(ARGS) -o textures
+	gcc textures.c $(LIBS) $(ARGS) -o textures
 
 text:
-	gcc events.c $(LIBS) $(ARGS) -o text
+	gcc text.c $(LIBS) $(ARGS) -o text
+
+textbox:
+	gcc textbox.c $(LIBS) $(ARGS) -o textbox
 
 glVer:
-	gcc events.c $(LIBS) $(ARGS) -o glVer
+	gcc glVer.c $(LIBS) $(ARGS) -o glVer
 
 basic:
 	gcc basic.c $(LIBS) $(ARGS) -o basic
