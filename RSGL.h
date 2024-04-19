@@ -724,6 +724,7 @@ RSGLDEF RSGL_circle RSGL_alignText_len(char* str, size_t str_len, RSGL_circle c,
     stops at `textEnd` or when it reaches '\0'
 */
 RSGLDEF u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd);
+RSGLDEF u32 RSGL_textLineWidth(const char* text, u32 fontSize, size_t textEnd, size_t line);
 #define RSGL_textWidthF(text, fontSize, textEnd) \
     RSGL_setFont(font);\
     RSGL_textWidthF(text, fontSize, textEnd);
@@ -790,22 +791,23 @@ typedef RSGL_ENUM(u32, RSGL_widgetStyle) {
     RSGL_STYLE_CHECKBOX = (1 << 9),
     RSGL_STYLE_COMBOBOX = (1 << 10),
     RSGL_STYLE_CONTAINER = (1 << 11),
-    RSGL_STYLE_NO_TAB = (1 << 12),
+    RSGL_STYLE_TEXTBOX = (1 << 12),
+    RSGL_STYLE_NO_TAB = (1 << 13),
     RSGL_STYLE_TYPE = RSGL_STYLE_SLIDER | RSGL_STYLE_TOGGLE | RSGL_STYLE_RADIO | RSGL_STYLE_CHECKBOX | RSGL_STYLE_COMBOBOX,
 
     RSGL_SHAPE_NULL = (1L << 0),
-    RSGL_SHAPE_RECT = (1L << 13),
-    RSGL_SHAPE_POLYGON = (1L << 14),
+    RSGL_SHAPE_RECT = (1L << 14),
+    RSGL_SHAPE_POLYGON = (1L << 15),
 
-    RSGL_SHAPE_POLYGONF = (1L << 15),
-    RSGL_SHAPE_RECTF = (1L << 16),
+    RSGL_SHAPE_POLYGONF = (1L << 16),
+    RSGL_SHAPE_RECTF = (1L << 17),
 
-    RSGL_STYLE_RED = (1 << 17),
-    RSGL_STYLE_BLUE = (1 << 18),
-    RSGL_STYLE_GREEN = (1 << 19),
-    RSGL_STYLE_YELLOW = (1 << 20),
-    RSGL_STYLE_TEAL = (1 << 21),
-    RSGL_STYLE_PURPLE = (1 << 22),
+    RSGL_STYLE_RED = (1 << 18),
+    RSGL_STYLE_BLUE = (1 << 19),
+    RSGL_STYLE_GREEN = (1 << 20),
+    RSGL_STYLE_YELLOW = (1 << 21),
+    RSGL_STYLE_TEAL = (1 << 22),
+    RSGL_STYLE_PURPLE = (1 << 23),
     RSGL_STYLE_COLOR = RSGL_STYLE_RED | RSGL_STYLE_BLUE | RSGL_STYLE_GREEN | RSGL_STYLE_YELLOW | RSGL_STYLE_TEAL | RSGL_STYLE_PURPLE,
 
     RSGL_STYLE_SHAPE = RSGL_SHAPE_RECT | RSGL_SHAPE_POLYGON | RSGL_SHAPE_POLYGONF | RSGL_SHAPE_RECTF,
@@ -827,6 +829,7 @@ typedef struct RSGL_button_src {
     struct {
         char* str;
         size_t text_len;
+        size_t text_cap;
         RSGL_circle c;
         RSGL_color color;
         u8 alignment;
@@ -842,6 +845,7 @@ typedef struct RSGL_button_src {
     union {    
         size_t array_count; /* used for the combobox and radio buttons array size */
         size_t slider_pos; /* the pos of a slider for x or y */
+        u32 cursorIndex; /* current cursor index (for textbox) */
     };
 
     u32* keys;
@@ -855,7 +859,12 @@ typedef struct RSGL_button_src {
 typedef struct RSGL_button {
     RSGL_button_src loaded_states[3]; /* based on RSGL_buttonStatus*/
     RSGL_buttonStatus status;
-    size_t radio_select; /* which ratio button the status applies to (the rest are idle)*/
+    
+    union {
+        size_t radio_select; /* which ratio button the status applies to (the rest are idle)*/
+        size_t line_count; /* number of lines (for a textbox) */
+    };
+
     bool toggle; /* for toggle buttons */
 
     RSGL_rectF rect;
@@ -939,21 +948,23 @@ RSGLDEF float RSGL_slider_update(
     RGFW_Event e /* the current event, used for checking for a mouse event */
 );
 
-typedef struct RSGL_container {
-    RSGL_button* buttons;
+typedef struct  {
+    RSGL_button** buttons;
     size_t buttons_len;
-
-    RSGL_button src;
 
     RSGL_button title;
     bool held;
-} RSGL_container;
+} RSGL_container_src;
+
+typedef RSGL_button RSGL_container;
 
 RSGLDEF RSGL_button RSGL_nullButton(void);
 RSGLDEF RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize);
 
-RSGLDEF RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len);
-RSGLDEF void RSGL_drawContainer(RSGL_container container);
+RSGLDEF RSGL_container* RSGL_initContainer(RSGL_rect r, RSGL_button** buttons, size_t len);
+RSGLDEF void RSGL_freeContainer(RSGL_container* container);
+
+RSGLDEF void RSGL_drawContainer(RSGL_container* container);
 RSGLDEF void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle);
 
 RSGLDEF void RSGL_container_setPos(RSGL_container* container, RSGL_point p);
@@ -961,29 +972,23 @@ RSGLDEF void RSGL_container_setPos(RSGL_container* container, RSGL_point p);
 RSGLDEF i32 RSGL_container_update(RSGL_container* container, RGFW_Event event);
 #ifndef RSGL_NO_TEXT
 
-/* WARNING textbox stuff is very WIP */
-typedef struct RSGL_textbox {
-    char* text;
+typedef RSGL_button RSGL_textbox;
 
-    RSGL_button box;
-    size_t textSize;
-    size_t len, cap;
+RSGLDEF RSGL_textbox* RSGL_initTextbox(size_t defaultSize);
+RSGLDEF void RSGL_textbox_free(RSGL_textbox* tb); 
 
-    i32 x;
-    RSGL_point cursor;
+RSGLDEF void RSGL_textbox_draw(RSGL_textbox* tb);
+RSGLDEF char* RSGL_textbox_getString(RSGL_textbox* tb, size_t* len);
+RSGLDEF void RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event);
+RSGLDEF void RSGL_textbox_setTextInfo(RSGL_textbox* tb, RSGL_circle c, RSGL_color color);
 
-    bool autoScroll;
-    bool toggle;
-} RSGL_textbox;
+RSGLDEF void RSGL_textbox_alignText(RSGL_textbox* tb, u8 alignment);
+RSGLDEF void RSGL_textbox_setColor(RSGL_textbox* button, RSGL_color color);
+RSGLDEF void RSGL_textbox_setOutline(RSGL_textbox* button, u32 size, RSGL_color color);
 
-
-RSGLDEF RSGL_textbox* RSGL_createTextbox(RSGL_rect box, u32 textSize, bool autoScroll);
-RSGLDEF RSGL_textbox* RSGL_createTextbox_ex(const char* text, RSGL_rect box, u32 textSize,  RSGL_point cursor, bool autoScroll);
-
-RSGLDEF void RSGL_textbox_update(RSGL_textbox* texbox, RSGL_window* win);
-RSGLDEF void RSGL_textbox_draw(RSGL_textbox* textBox, RSGL_color c, RSGL_color cursorColor);
-
-RSGLDEF void RSGL_textbox_free(RSGL_textbox* tb);
+RSGLDEF void RSGL_textbox_setStyle(RSGL_textbox* button, RSGL_widgetStyle buttonStyle);
+RSGLDEF void RSGL_textbox_setRect(RSGL_textbox* button, RSGL_rect rect);
+RSGLDEF void RSGL_textbox_setRectF(RSGL_textbox* button, RSGL_rectF rect);
 #endif /* RSGL_NO_TEXT */
 
 #endif /* RGFW_NO_WIDGETS */
@@ -1360,6 +1365,7 @@ void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     rglClearDepth(1.0f);
     #endif
 
+    RFont_update_framebuffer(win->r.w, win->r.h);
     rglClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
     rglClear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
 
@@ -2147,7 +2153,11 @@ RSGL_circle RSGL_alignText_len(char* str, size_t str_len, RSGL_circle c, RSGL_re
 }
 
 u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd) {
-    return RFont_text_width_len(RSGL_font.f, text, textEnd, fontSize, 0.0);
+    return RFont_text_width_len(RSGL_font.f, text, textEnd, fontSize, 0, 0.0);
+}
+
+u32 RSGL_textLineWidth(const char* text, u32 fontSize, size_t textEnd, size_t line) {
+    return RFont_text_width_len(RSGL_font.f, text, textEnd, fontSize, line, 0.0);
 }
 #endif /* RSGL_NO_TEXT */
 
@@ -2572,6 +2582,9 @@ void RSGL_drawButton(RSGL_button button) {
             default: break;
         }
         
+        if (button.src.style & RSGL_STYLE_TEXTBOX)
+            break;
+
         if (button.src.style & RSGL_STYLE_SLIDER) {
             RSGL_circle c;
             
@@ -2775,24 +2788,35 @@ RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize) {
     return label;
 }
 
-RSGL_container RSGL_initContainer(RSGL_rect r, RSGL_button* buttons, size_t len) {
-    RSGL_container new;
-    new.src = RSGL_initButton();
-    new.title = RSGL_initButton();
-    new.held = false;
-    new.buttons = buttons;
-    new.buttons_len = len;
+#define RSGL_CONTAINER_SRC(c) (RSGL_button*)(c + 1)
 
-    RSGL_button_setRect(&new.title, RSGL_RECT(r.x, r.y - 30, r.w, 30));
+RSGL_container* RSGL_initContainer(RSGL_rect r, RSGL_button** buttons, size_t len) {
+    RSGL_container_src* new = malloc(sizeof(RSGL_container_src) + sizeof(RSGL_button));
+    RSGL_button* src = RSGL_CONTAINER_SRC(new);
 
-    RSGL_button_setRect(&new.src, r);
-    RSGL_container_setPos(&new, RSGL_POINT(r.x, r. y));
-    return new;
+    *src = RSGL_initButton();
+    new->title = RSGL_initButton();
+    new->held = false;
+    new->buttons = buttons;
+    new->buttons_len = len;
+
+    RSGL_button_setRect(&new->title, RSGL_RECT(r.x, r.y - 30, r.w, 30));
+
+    RSGL_button_setRect(src, r);
+    RSGL_container_setPos(src, RSGL_POINT(r.x, r. y));
+    return (RSGL_container*)(new + 1);
 }
 
-void RSGL_container_setPos(RSGL_container* container, RSGL_point p) {
-    RSGL_rectF rect = RSGL_RECTF((float)p.x, (float)p.y, container->src.rect.w, container->src.rect.h);
-    RSGL_button_setRectF(&container->src, rect);   
+void RSGL_freeContainer(RSGL_container* con) {
+    free(((RSGL_container_src*)con) - 1);
+}
+
+void RSGL_container_setPos(RSGL_container* con, RSGL_point p) {
+    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
+    RSGL_button* src = RSGL_CONTAINER_SRC(container);
+
+    RSGL_rectF rect = RSGL_RECTF((float)p.x, (float)p.y, src->rect.w, src->rect.h);
+    RSGL_button_setRectF(src, rect);   
     RSGL_button_setRectF(&container->title, RSGL_RECTF(rect.x, rect.y - 30, rect.w, 30));    
 
     if (container->title.src.text.str != NULL)
@@ -2802,29 +2826,31 @@ void RSGL_container_setPos(RSGL_container* container, RSGL_point p) {
     size_t i, x;
     float spacing = 0;
 
+    RSGL_button** containers = container->buttons;
+
     for (i = 0; i < container->buttons_len; i += 3) {
         size_t y = i / 3;
 
         float newHeight = 0;
         for (x = 0; x < 3; x++) {
 
-            if (container->buttons[i + x].src.tex == 0)
+            if (containers[i + x]->src.tex == 0)
                 continue;
             
-            container->buttons[i + x].rect = RSGL_alignRectF(rect, container->buttons[i + x].rect, (1 << (1 + x)));
+            containers[i + x]->rect = RSGL_alignRectF(rect, containers[i + x]->rect, (1 << (1 + x)));
 
-            container->buttons[i + x].rect.x += ((5 + container->buttons[i + x].outline) * !x); 
-            container->buttons[i + x].rect.y = rect.y + spacing;
+            containers[i + x]->rect.x += ((5 + containers[i + x]->outline) * !x); 
+            containers[i + x]->rect.y = rect.y + spacing;
 
-            if (container->buttons[i + x].src.text.str != NULL)
-                RSGL_button_alignText(&container->buttons[i + x], container->buttons[i + x].src.text.alignment);
+            if (containers[i + x]->src.text.str != NULL)
+                RSGL_button_alignText(containers[i + x], containers[i + x]->src.text.alignment);
             
-            RSGL_button_setStyle(&container->buttons[i + x], container->buttons[i + x].src.style);
+            RSGL_button_setStyle(containers[i + x], containers[i + x]->src.style);
 
-            float height = container->buttons[i + x].rect.h + (container->buttons[i + x].outline * 2);
-            if (container->buttons[i + x].src.style & RSGL_STYLE_RADIO) {
-                height *= container->buttons[i + x].src.array_count;
-                height += 5 * container->buttons[i + x].src.array_count;
+            float height = containers[i + x]->rect.h + (containers[i + x]->outline * 2);
+            if (containers[i + x]->src.style & RSGL_STYLE_RADIO) {
+                height *= containers[i + x]->src.array_count;
+                height += 5 * containers[i + x]->src.array_count;
             }
 
             if (height > newHeight)
@@ -2835,44 +2861,65 @@ void RSGL_container_setPos(RSGL_container* container, RSGL_point p) {
     }   
 }
 
-void RSGL_container_setTitle(RSGL_container* container, char* name, size_t name_len) {
+void RSGL_container_setTitle(RSGL_container* con, char* name, size_t name_len) {
+    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
+
     RSGL_button_setText(&container->title, name, name_len, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
     RSGL_button_alignText(&container->title, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
 }
 
 void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle) {
-    RSGL_button_setStyle(&button->src, buttonStyle); 
+    RSGL_container_src* container = ((RSGL_container_src*)button) - 1;
+    RSGL_button* src = RSGL_CONTAINER_SRC(container);
+    
+    RSGL_button_setStyle(src, buttonStyle); 
 
     if (buttonStyle & RSGL_STYLE_ROUNDED)
         buttonStyle ^= RSGL_STYLE_ROUNDED;
     
-    RSGL_button_setStyle(&button->title, buttonStyle);  
+    RSGL_button_setStyle(&container->title, buttonStyle);  
 }
 
-void RSGL_drawContainer(RSGL_container container) {    
-    if (container.title.toggle == false)
-        RSGL_drawButton(container.src);
+void RSGL_drawContainer(RSGL_container* con) {   
+    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
+    RSGL_button* src = RSGL_CONTAINER_SRC(container);
 
-    if (!(container.src.src.style & RSGL_STYLE_NO_TAB)) {
-        RSGL_drawButton(container.title);
+    if (container->title.toggle == false)
+        RSGL_drawButton(*src);
+
+    if (!(src->src.style & RSGL_STYLE_NO_TAB)) {
+        RSGL_drawButton(container->title);
         
-        RSGL_point cen =  RSGL_POINT(container.title.rect.x + container.title.rect.w - 20, container.title.rect.y + container.title.rect.h - 5);
-        size_t y = ((cen.y - container.title.rect.h) + 15);
+        RSGL_point cen =  RSGL_POINT(container->title.rect.x + container->title.rect.w - 20, container->title.rect.y + container->title.rect.h - 5);
+        size_t y = ((cen.y - container->title.rect.h) + 15);
 
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
     }
 
     size_t i;
-    for (i = 0; i < container.buttons_len && container.title.toggle == 0; i++) {
-        if (container.buttons[i].src.tex == 0)
+    for (i = 0; i < container->buttons_len && container->title.toggle == 0; i++) {
+        if (container->buttons[i]->src.tex == 0)
             continue;
         
-        RSGL_drawButton(container.buttons[i]);
+        switch (container->buttons[i]->src.style & RSGL_STYLE_TYPE) {
+            case RSGL_STYLE_TEXTBOX:
+                RSGL_textbox_draw(container->buttons[i]);
+                break;
+            case RSGL_STYLE_CONTAINER:
+                RSGL_drawContainer(container->buttons[i]);
+                break;
+            default:
+                RSGL_drawButton(*container->buttons[i]);
+                break;
+        }
     }
 }
 
-i32 RSGL_container_update(RSGL_container* container, RGFW_Event event) {
-    if (!(container->src.src.style & RSGL_STYLE_NO_TAB)) {
+i32 RSGL_container_update(RSGL_container* con, RGFW_Event event) {
+    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
+    RSGL_button* src = RSGL_CONTAINER_SRC(container);
+
+    if (!(src->src.style & RSGL_STYLE_NO_TAB)) {
         if (event.type == RGFW_mouseButtonReleased &&
             RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x + (container->title.rect.w - 35), container->title.rect.y, 35, container->title.rect.h), event.point)
         ) {
@@ -2885,22 +2932,34 @@ i32 RSGL_container_update(RSGL_container* container, RGFW_Event event) {
         )
             container->held = true;
         else if (event.type == RGFW_mousePosChanged && container->held)
-            RSGL_container_setPos(container, RSGL_POINT(event.point.x, event.point.y + 30));
+            RSGL_container_setPos(con, RSGL_POINT(event.point.x, event.point.y + 30));
         else
             container->held = false;
     }    
 
+    RSGL_button** containers = container->buttons;
+
     size_t i;
     for (i = 0; i < container->buttons_len; i++) {
-        if (container->buttons[i].src.tex == 0)
+        if (containers[i]->src.tex == 0)
             continue;
         
-        if (container->buttons[i].src.style & RSGL_STYLE_SLIDER)
-            RSGL_slider_update(&container->buttons[i], event);
-        else
-            RSGL_button_update(&container->buttons[i], event);
+        switch (container->buttons[i]->src.style & RSGL_STYLE_TYPE) {
+            case RSGL_STYLE_TEXTBOX:
+                RSGL_textbox_update(containers[i], event);
+                break;
+            case RSGL_STYLE_CONTAINER:
+                RSGL_container_update(containers[i], event);
+                break;
+            case RSGL_STYLE_SLIDER:
+                RSGL_slider_update(containers[i], event);
+                break;
+            default:
+                RSGL_button_update(containers[i], event);
+                break;
+        }
 
-        if (container->buttons[i].status)
+        if (containers[i]->status)
             return i;
     }
 
@@ -2908,136 +2967,195 @@ i32 RSGL_container_update(RSGL_container* container, RGFW_Event event) {
 }
 
 #if !defined(RSGL_NO_TEXT) && defined(RGFW_keyPressed)
-
-RSGL_textbox* RSGL_createTextbox(RSGL_rect box, u32 textSize, bool autoScroll) {
-    return RSGL_createTextbox_ex(NULL, box, textSize, RSGL_POINT(0, 0), autoScroll);
-}
-
-
-RSGL_textbox* RSGL_createTextbox_ex(const char* text, RSGL_rect box, u32 textSize,  RSGL_point cursor, bool autoScroll) {
+RSGL_textbox* RSGL_initTextbox(size_t defaultSize) {
+    if (defaultSize == 0)
+        defaultSize = 2048;
+    
     RSGL_textbox* textBox = (RSGL_textbox*)malloc(sizeof(RSGL_textbox));
-    textBox->box.rect = RSGL_RECTF(box.x, box.y, box.w, box.h);
-    textBox->textSize = 20;
-    textBox->toggle = false;
+    *textBox = RSGL_initButton();
 
-    textBox->text = (char*)malloc(sizeof(char) * 1058 * 8);
+    textBox->src.style |= RSGL_STYLE_TEXTBOX;
     
-    textBox->len = 0;
-    textBox->cap = 1058 * 8;
+    textBox->src.text.str = malloc(sizeof(char) * defaultSize + 1);
+    textBox->src.text.str[0] = '\0';
 
-    textBox->text[0] = '\0';
-    textBox->autoScroll = false;
-    
-    textBox->cursor = cursor;
-    textBox->x = 0;
-
-    if (text != NULL) {
-        size_t len = strlen(text);
-        strncpy(textBox->text, text, len);
-
-        textBox->len = len;
-    }
+    textBox->src.cursorIndex = 0;
+    textBox->line_count = 0;
+    textBox->src.text.text_cap = defaultSize;
 
     return textBox;
 }
 
-void RSGL_textbox_update(RSGL_textbox* textBox, RSGL_window* win) {
-    RSGL_button_update(&textBox->box, win->event);
-
-    if (win->event.type == RSGL_mouseButtonPressed)
-        textBox->toggle = (textBox->box.status == RSGL_pressed);
-
-    if (win->event.type != RSGL_keyPressed)
-        return;
-    
-    if (RSGL_isPressedI(win, RGFW_Left)) {
-        if (textBox->cursor.x)
-            textBox->cursor.x--;
-        
-        if (textBox->text[textBox->cursor.x] == '\n')
-            textBox->cursor.y--;
-    }
-    
-    if (RSGL_isPressedI(win, RGFW_Right) && textBox->cursor.x < textBox->len) {
-        textBox->cursor.x++;
-
-        //if (textBox->text[textBox->cursor.x - 1] == '\n')
-        //    textBox->cursor.y++;
-    }
-
-    if (RSGL_isPressedI(win, RGFW_Up) && textBox->cursor.y) {
-        u32 x;
-        for (x = textBox->cursor.x; x >= 0; x--)
-            if (textBox->text[x] == '\n') {
-                textBox->cursor.x = x;
-                textBox->cursor.y--;
-                break;
-            }
-    }
-    
-    if (RSGL_isPressedI(win, RGFW_Down)) {
-        u32 x;
-        for (x = textBox->cursor.x; x < textBox->textSize && textBox->text[x]; x++)
-            if (textBox->text[x] == '\n') {
-                textBox->cursor.x = x;
-                textBox->cursor.y++;
-                break;
-            }
-    }
-
-    if (textBox->toggle == false)
-        return;
-    
-    char ch =  RGFW_keystrToChar(win->event.keyName);
-
-    size_t index, lineCount = 1;
-    for (index = 0; (ch == '\n') && textBox->len > index; index++)
-        if (textBox->text[index] == '\n')
-            lineCount++;
-    
-    if (ch == '\0')
-        return;
-    
-    if (
-        (RSGL_textWidth(textBox->text + textBox->x, textBox->textSize, textBox->len) + textBox->box.rect.x >= textBox->box.rect.w && ch != '\n') ||
-        (ch == '\n' && lineCount * textBox->textSize >= textBox->box.rect.h)
-    ) {
-        for (i32 i = 0; i < 2 && (textBox->autoScroll && RSGL_textWidth(textBox->text + textBox->x, textBox->textSize, textBox->len) + textBox->box.rect.x >= textBox->box.rect.w && ch != '\n'); i++) 
-            textBox->x++;
-        
-        return;
-    }
-
-    if (ch == '\n')
-        textBox->cursor.y++;
-
-    if (textBox->len != textBox->cursor.x)
-        memcpy(textBox->text + textBox->cursor.x + 1, textBox->text + textBox->cursor.x, textBox->len - textBox->cursor.x);
-    
-    if (textBox->len + 1 > textBox->cap) {
-        textBox->cap += 40;
-        textBox->text = (char*)realloc(textBox->text, sizeof(char) * textBox->cap);
-    }
-
-    textBox->text[textBox->cursor.x] = ch;
-    textBox->len++;
-    textBox->text[textBox->len] = '\0';
-    textBox->cursor.x++;
-}
-
-void RSGL_textbox_draw(RSGL_textbox* textBox, RSGL_color c, RSGL_color cursorColor) {
-    u32 offset = (textBox->cursor.x ? RSGL_textWidth(textBox->text + (u32)textBox->box.rect.x, textBox->textSize, textBox->cursor.x) : 0);
-
-    if (textBox->toggle)
-        RSGL_drawRectF(RSGL_RECTF(textBox->box.rect.x + offset, (textBox->box.rect.y + 2) + (textBox->cursor.y * 20), 1, 16), cursorColor);
-    
-    RSGL_drawText(textBox->text + (u32)textBox->x, RSGL_CIRCLE(textBox->box.rect.x, textBox->box.rect.y - 5, textBox->textSize), c);
-}
 void RSGL_textbox_free(RSGL_textbox* tb) {
-    free(tb->text);
+    free(tb->src.text.str);
     free(tb);
 }
 
+void RSGL_textbox_setTextInfo(RSGL_textbox* tb, RSGL_circle c, RSGL_color color) {
+    RSGL_button_setText(tb, tb->src.text.str, tb->src.text.text_len, c, color);
+}
+
+void RSGL_textbox_alignText(RSGL_textbox* tb, u8 alignment) {
+    RSGL_button_alignText(tb, alignment);
+}
+void RSGL_textbox_setColor(RSGL_textbox* tb, RSGL_color color) {
+    RSGL_button_setColor(tb, color);
+}
+void RSGL_textbox_setOutline(RSGL_textbox* tb, u32 size, RSGL_color color) {
+    RSGL_button_setOutline(tb, size, color);
+}
+void RSGL_textbox_setStyle(RSGL_textbox* tb, RSGL_widgetStyle buttonStyle) {
+    RSGL_button_setStyle(tb, buttonStyle);
+}
+void RSGL_textbox_setRect(RSGL_textbox* tb, RSGL_rect rect) {
+    RSGL_button_setRect(tb, rect);
+}
+void RSGL_textbox_setRectF(RSGL_textbox* tb, RSGL_rectF rect) {
+    RSGL_button_setRectF(tb, rect);
+}
+
+void RSGL_textbox_addChar(RSGL_textbox* tb, char ch) {
+    if (ch == 0)
+        return;
+    
+    size_t i, y = 0;
+    for (i = 0; i < tb->src.cursorIndex && tb->src.text.str[i]; i++) {
+        if (tb->src.text.str[i] == '\n')
+            y++;
+    }
+
+    u32 width = RSGL_textLineWidth(tb->src.text.str, tb->src.text.c.d, tb->src.text.text_len, y + 1);
+            
+    if (ch == '\n' && (tb->line_count + tb->src.text.c.d) < tb->rect.h) {
+        tb->line_count += tb->src.text.c.d;
+    }
+    else if (ch == '\n' || width > tb->rect.w)
+        return;
+
+    if (tb->src.cursorIndex > tb->src.text.text_cap) {
+        return;
+    }
+
+    memcpy(tb->src.text.str + tb->src.cursorIndex + 1, 
+            tb->src.text.str + tb->src.cursorIndex, 
+            tb->src.text.text_len - tb->src.cursorIndex
+        );
+    
+    tb->src.text.str[tb->src.cursorIndex] = ch;
+    tb->src.text.text_len++; 
+    tb->src.cursorIndex++;
+    tb->src.text.str[tb->src.text.text_len] = '\0';  
+}
+
+i32 RSGL_strLineLenL(const char* str) {
+    char* s = ((char*)str) - 1;
+    for (s; *s && *(s + 1) != '\n'; s--);
+    
+    return (str - s) + 1;
+}
+
+size_t RSGL_strLineLenR(const char* str) {
+    char* s = (char*)str;
+    for (s; *s && *(s - 1) != '\n'; s++);
+
+    return (s - str);
+}
+
+void RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
+    RSGL_button_update(tb, event);   
+
+    if (event.type == RSGL_mouseButtonPressed && tb->status != RSGL_pressed)
+        tb->toggle = false;
+    else if (event.type == RSGL_mouseButtonPressed)
+        tb->toggle = true;
+    
+    if (event.type != RSGL_keyPressed || tb->toggle == false)
+        return;
+
+    if (tb->src.cursorIndex > tb->src.text.text_cap)
+        return;
+    
+    switch (event.keyCode) {
+        case RGFW_BackSpace:
+            if (tb->src.cursorIndex == 0)
+                return;
+
+            if (tb->src.text.str[tb->src.cursorIndex - 1] == '\n') {
+                tb->line_count -= tb->src.text.c.d; 
+            }
+            
+            strcpy(tb->src.text.str + tb->src.cursorIndex - 1, 
+                tb->src.text.str + tb->src.cursorIndex);
+            
+            tb->src.cursorIndex--;
+            return;
+        case RGFW_Tab: {
+            u8 i = 0;
+            for (i = 0; i < 4; i++)
+                RSGL_textbox_addChar(tb, ' ');
+            return;
+        }
+        case RGFW_Left:
+            if (tb->src.cursorIndex == 0)
+                return;
+            
+            tb->src.cursorIndex--;
+            return;
+        case RGFW_Right:
+            if (tb->src.cursorIndex >= tb->src.text.text_len)
+                return;
+            
+            tb->src.cursorIndex++;
+            return;
+        case RGFW_Up: {
+            i32 val = RSGL_strLineLenL(tb->src.text.str + tb->src.cursorIndex);
+            if (tb->src.cursorIndex - val < 0)
+                break;
+            
+            tb->src.cursorIndex -= val;
+            return;
+        }
+        case RGFW_Down:
+            size_t val = RSGL_strLineLenR(tb->src.text.str + tb->src.cursorIndex);
+
+            if (tb->src.cursorIndex + val >= tb->src.text.text_len)
+                break;
+            
+            tb->src.cursorIndex += val;
+            return;
+        default:
+            return RSGL_textbox_addChar(tb, RGFW_keystrToChar(event.keyName));
+    }
+}
+
+char* RSGL_textbox_getString(RSGL_textbox* tb, size_t* len) {
+    if (len != NULL)
+        *len = tb->src.text.text_len;
+    
+    return tb->src.text.str;
+}
+
+void RSGL_textbox_draw(RSGL_textbox* tb) {
+    RSGL_drawButton(*tb);
+    
+    u32 x = 0; 
+    if (tb->src.cursorIndex)
+        x = RSGL_textWidth(tb->src.text.str, tb->src.text.c.d, tb->src.cursorIndex);
+
+    if (tb->src.text.alignment & RSGL_ALIGN_CENTER)
+        x /= 2;
+
+    size_t i, y = 0;
+    for (i = 0; i < tb->src.cursorIndex && tb->src.text.str[i]; i++) {
+        if (tb->src.text.str[i] == '\n')
+            y++;
+    }
+
+    RSGL_drawRect(RSGL_RECT(tb->src.text.c.x + x - 2, 
+                            2 + tb->src.text.c.y + y * tb->src.text.c.d, 
+                            1, tb->src.text.c.d),
+                 tb->src.outlineColor);
+}
 #endif /* RSGL_NO_TEXT */
 
 #endif /*  RGFW_NO_WIDGETS */
