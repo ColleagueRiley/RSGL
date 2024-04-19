@@ -252,10 +252,11 @@ inline size_t RFont_text_width_spacing(RFont_font* font, const char* text, float
  * @param text The string to draw 
  * @param len The length of the string
  * @param size The size of the text
+ * @param stopNL the number of \n s until it stops (0 = don't stop until the end)
  * @param spacing The spacing of the text
  * @return The width of the text based on the size
 */
-inline size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 size, float spacing);
+inline size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing);
 
 /**
  * @brief Draw a text string using the font.
@@ -624,20 +625,25 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
 }
 
 size_t RFont_text_width(RFont_font* font, const char* text, u32 size) {
-   return RFont_text_width_len(font, text, 0, size, 0.0f);
+   return RFont_text_width_len(font, text, 0, size, 0, 0.0f);
 }
 
 size_t RFont_text_width_spacing(RFont_font* font, const char* text, float spacing, u32 size) {
-   return RFont_text_width_len(font, text, 0, size, spacing);
+   return RFont_text_width_len(font, text, 0, size, 0, spacing);
 }
 
-size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 size, float spacing) {
-   float x;
+size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing) {
+   float x = 0;
+   size_t y = 1;
 
    char* str;
    
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {        
       if (*str == '\n') { 
+         if (y == stopNL)
+            return x;
+         
+         y++;
          x = 0;
          continue;
       }
