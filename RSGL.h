@@ -3115,7 +3115,7 @@ void RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
             tb->src.cursorIndex -= val;
             return;
         }
-        case RGFW_Down:
+        case RGFW_Down: {
             size_t val = RSGL_strLineLenR(tb->src.text.str + tb->src.cursorIndex);
 
             if (tb->src.cursorIndex + val >= tb->src.text.text_len)
@@ -3123,6 +3123,7 @@ void RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
             
             tb->src.cursorIndex += val;
             return;
+        }
         default:
             return RSGL_textbox_addChar(tb, RGFW_keystrToChar(event.keyName));
     }
