@@ -24,6 +24,11 @@ RSGL currently supports Linux, BSD, Windows and MacOS.
 - Allows you to use other libraries instead of the default RSGL backend.
 - Free and Open Source
 
+# Contacts
+- email : ColleagueRiley@gmail.com 
+- discord : ColleagueRiley
+- discord server : https://discord.gg/pXVNgVVbvh
+
 # Modules 
 ## RSGL-Architecture diagram
 ![The RSGL Architecture](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL-Architecture.png?raw=true)
