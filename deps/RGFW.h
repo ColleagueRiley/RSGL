@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2023 ColleagueRiley
+* Copyright (C) 2023-24 ColleagueRiley
 *
 * libpng license
 *
@@ -127,8 +127,8 @@ extern "C" {
 
 	/* this name looks better */
 	/* plus it helps with cross-compiling because RGFW_X11 won't be accidently defined */
-#define RGFW_WINDOWS 
-#include <windows.h>
+#define RGFW_WINDOWS
+#include <windef.h>
 #include <XInput.h>
 
 #else 
@@ -141,7 +141,6 @@ extern "C" {
 
 #if defined(__APPLE__) && !defined(RGFW_MACOS_X11) && !defined(RGFW_X11)
 #define RGFW_MACOS
-#include <CoreVideo/CVDisplayLink.h>
 #endif
 
 #if (defined(RGFW_OPENGL_ES1) || defined(RGFW_OPENGL_ES2)) && !defined(RGFW_EGL)
@@ -375,6 +374,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		u16 joystick; /* which joystick this event applies to (if applicable to any) */
 
 		u8 button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed*/
+		double scroll; /* the raw mouse scroll value */
 
 		u8 axisesCount; /* number of axises */
 		RGFW_vector axis[2]; /* x, y of axises (-100 to 100) */
@@ -383,8 +383,8 @@ typedef struct { i32 x, y; } RGFW_vector;
 	/* source data for the window (used by the APIs) */
 	typedef struct RGFW_window_src {
 #ifdef RGFW_WINDOWS
-		HWND window; /*!< source display */
-		HDC display; /*!< source window */
+		HWND window; /*!< source window */
+		HDC hdc; /*!< source HDC */
 		u32 hOffset; /*!< height offset for window */
 #endif
 #ifdef RGFW_X11
@@ -394,7 +394,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #endif
 #ifdef RGFW_MACOS
 		u32 display;
-		CVDisplayLinkRef displayLink;
+		void* displayLink;
 		void* window;
 #endif
 
@@ -758,8 +758,8 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 	/*! Supporting functions */
 	RGFWDEF void RGFW_window_checkFPS(RGFW_window* win); /*!< updates fps / sets fps to cap (ran by RGFW_window_checkEvent)*/
-	RGFWDEF u32 RGFW_getTime(void); /* get time in seconds */
-	RGFWDEF u32 RGFW_getTimeNS(void); /* get time in nanoseconds */
+	RGFWDEF u64 RGFW_getTime(void); /* get time in seconds */
+	RGFWDEF u64 RGFW_getTimeNS(void); /* get time in nanoseconds */
 	RGFWDEF u32 RGFW_getFPS(void); /* get current FPS (win->event.fps) */
 	RGFWDEF void RGFW_sleep(u32 microsecond); /* sleep for a set time */
 #endif /* RGFW_HEADER */
@@ -837,7 +837,16 @@ typedef struct { i32 x, y; } RGFW_vector;
 #include <math.h>
 #include <assert.h>
 
+#ifdef RGFW_WINDOWS
+
+#define WIN32_LEAN_AND_MEAN
+
+#include <windows.h>
+
+#endif
+
 #ifdef RGFW_MACOS
+#include <CoreVideo/CVDisplayLink.h>
 
 	/*
 		based on silicon.h
@@ -950,7 +959,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #define SI_ARRAY_HEADER(s) ((siArrayHeader*)s - 1)
 
 	void* si_array_init_reserve(size_t sizeof_element, size_t count) {
-		void* ptr = malloc(sizeof(siArrayHeader) + (sizeof_element * count));
+		siArrayHeader* ptr = malloc(sizeof(siArrayHeader) + (sizeof_element * count));
 		void* array = ptr + sizeof(siArrayHeader);
 
 		siArrayHeader* header = SI_ARRAY_HEADER(array);
@@ -1241,6 +1250,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 	}
 #endif
 
+
 #define RGFW_ASSERT(check, str) {\
 	if (!(check)) { \
 		printf(str); \
@@ -1280,21 +1290,28 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 #ifdef RGFW_ALLOC_DROPFILES
 		win->event.droppedFiles = (char**) RGFW_MALLOC(sizeof(char*) * RGFW_MAX_DROPS);
-		i32 i;
+		u32 i;
 		for (i = 0; i < RGFW_MAX_DROPS; i++)
 			win->event.droppedFiles[i] = (char*) RGFW_CALLOC(RGFW_MAX_PATH, sizeof(char));
 #endif
 
-#ifndef RGFW_X11 
+#ifdef RGFW_X11 
+		/* open X11 display */
+		/* this is done here so the screen size can be accessed */
+		win->src.display = XOpenDisplay(NULL);
+		assert(win->src.display != NULL);
+#endif
+
+		#ifndef RGFW_X11 
 		RGFW_area screenR = RGFW_getScreenSize();
-#else
+		#else
 		win->src.display = XOpenDisplay(NULL);
 		assert(win->src.display != NULL);
 
-		Screen* scrn = DefaultScreenOfDisplay((Display*) win->src.display);
+		Screen* scrn = DefaultScreenOfDisplay((Display*)win->src.display);
 		RGFW_area screenR = RGFW_AREA(scrn->width, scrn->height);
-#endif
-
+		#endif
+		
 		if (args & RGFW_FULLSCREEN)
 			rect = RGFW_RECT(0, 0, screenR.w, screenR.h);
 
@@ -1361,14 +1378,14 @@ typedef struct { i32 x, y; } RGFW_vector;
 		bi.bV5RedMask = 0x000000ff;
 		bi.bV5AlphaMask = 0xff000000;
 
-		win->src.bitmap = CreateDIBSection(win->src.display,
+		win->src.bitmap = CreateDIBSection(win->src.hdc,
 			(BITMAPINFO*) &bi,
 			DIB_RGB_COLORS,
 			(void**) &win->buffer,
 			NULL,
 			(DWORD) 0);
 
-		win->src.hdcMem = CreateCompatibleDC(win->src.display);
+		win->src.hdcMem = CreateCompatibleDC(win->src.hdc);
 #endif
 #endif
 	}
@@ -1383,12 +1400,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 #ifdef RGFW_VULKAN
 	RGFW_vulkanInfo RGFW_vulkan_info;
-
-	static VKAPI_ATTR VkBool32 VKAPI_CALL RGFW_vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-		fprintf(stderr, "validation layer: %s\n", pCallbackData->pMessage);
-
-		return VK_FALSE;
-	}
 
 	RGFW_vulkanInfo* RGFW_initVulkan(RGFW_window* win) {
 		assert(win != NULL);
@@ -1478,7 +1489,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		instance_create_info.pApplicationInfo = &appInfo;
 		instance_create_info.enabledExtensionCount = extension ? 2 : 0,
-			instance_create_info.ppEnabledExtensionNames = (char* [2]){
+			instance_create_info.ppEnabledExtensionNames = (const char* [2]){
 					VK_KHR_SURFACE_EXTENSION_NAME,
 					extension
 		};
@@ -1788,9 +1799,9 @@ typedef struct { i32 x, y; } RGFW_vector;
 #define RGFW_HOLD_MOUSE			(1L<<2) /*!< hold the moues still */
 
 #ifdef RGFW_WINDOWS
+#include <processthreadsapi.h>
 #include <wchar.h>
 #include <locale.h>
-#include <winuser.h>
 #include <windowsx.h>
 #include <shellapi.h>
 #include <shellscalingapi.h>
@@ -1967,9 +1978,15 @@ typedef struct { i32 x, y; } RGFW_vector;
 #ifndef RGFW_WINDOWS
 	u32 RGFW_isPressedJS(RGFW_window* win, u16 c, u8 button) { return win->src.jsPressed[c][button]; }
 #else
+
+	typedef DWORD (WINAPI * PFN_XInputGetState)(DWORD,XINPUT_STATE*);
+	PFN_XInputGetState XInputGetStateSRC = NULL;
+	#define XInputGetState XInputGetStateSRC
+	static HMODULE RGFW_XInput_dll = NULL;
+	
 	u32 RGFW_isPressedJS(RGFW_window* win, u16 c, u8 button) {
 		XINPUT_STATE state;
-		if (XInputGetState(c, &state) == ERROR_DEVICE_NOT_CONNECTED)
+		if (XInputGetState == NULL || XInputGetState(c, &state) == ERROR_DEVICE_NOT_CONNECTED)
 			return 0;
 
 		if (button == RGFW_JS_A) return state.Gamepad.wButtons & XINPUT_GAMEPAD_A;
@@ -2050,7 +2067,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB 0x20a9
 #endif
 
-	static u32* RGFW_initAttribs(i32 useSoftware) {
+	static u32* RGFW_initAttribs(u32 useSoftware) {
 		static u32 attribs[] = {
 								#ifndef RGFW_MACOS
 								RGFW_GL_RENDER_TYPE,
@@ -2351,7 +2368,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 			return NULL;
 		}
 
-		i32 i;
+		u32 i;
 		for (i = 0; i < fbcount; i++) {
 			XVisualInfo* vi = glXGetVisualFromFBConfig((Display*) win->src.display, fbc[i]);
 			if (vi == NULL)
@@ -3017,7 +3034,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 #ifdef RGFW_ALLOC_DROPFILES
 		{
-			i32 i;
+			u32 i;
 			for (i = 0; i < RGFW_MAX_DROPS; i++)
 				RGFW_FREE(win->event.droppedFiles[i]);
 
@@ -3131,7 +3148,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		*target++ = a.w;
 		*target++ = a.h;
 
-		i32 i;
+		u32 i;
 
 		for (i = 0; i < a.w * a.h; i++) {
 			if (channels == 3)
@@ -3178,7 +3195,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		u8* source = (u8*) image;
 		XcursorPixel* target = native->pixels;
 
-		i32 i;
+		u32 i;
 		for (i = 0; i < a.w * a.h; i++, target++, source += 4) {
 			u8 alpha = 0xFF;
 			if (channels == 4)
@@ -3793,8 +3810,47 @@ typedef struct { i32 x, y; } RGFW_vector;
 			return DefWindowProcA(hWnd, message, wParam, lParam);
 		}
 	}
+	
+	#ifndef RGFW_NO_DPI
+	static HMODULE RGFW_Shcore_dll = NULL;
+	typedef HRESULT (WINAPI * PFN_GetDpiForMonitor)(HMONITOR,MONITOR_DPI_TYPE,UINT*,UINT*);
+	PFN_GetDpiForMonitor GetDpiForMonitorSRC = NULL;
+	#define GetDpiForMonitor GetDpiForMonitorSRC
+	#endif
+
+	void RGFW_loadXInput(void) {
+		u32 i;
+		static const char* names[] = { 
+			"xinput1_4.dll",
+			"xinput1_3.dll",
+			"xinput9_1_0.dll",
+			"xinput1_2.dll",
+			"xinput1_1.dll"
+		};
+
+		for (i = 0; i < sizeof(names) / sizeof(const char*);  i++) {
+			RGFW_XInput_dll = LoadLibraryA(names[i]);
+
+			if (RGFW_XInput_dll) {
+				XInputGetStateSRC = (PFN_XInputGetState)GetProcAddress(RGFW_XInput_dll, "XInputGetState");
+			
+				if (XInputGetStateSRC == NULL)
+					printf("Failed to load XInputGetState");
+			}
+		}
+	}
 
 	RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, u16 args) {
+		if (RGFW_XInput_dll == NULL)
+			RGFW_loadXInput();
+		
+		#ifndef RGFW_NO_DPI
+		if (RGFW_Shcore_dll == NULL) {
+			RGFW_Shcore_dll = LoadLibraryA("shcore.dll");
+			GetDpiForMonitorSRC = (PFN_GetDpiForMonitor)GetProcAddress(RGFW_Shcore_dll, "GetDpiForMonitor");
+		}
+		#endif
+
 #ifdef RGFW_WGL_LOAD
 		if (wglinstance == NULL) {
 			wglinstance = LoadLibraryA("opengl32.dll");
@@ -3814,6 +3870,10 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 		RGFW_window* win = RGFW_window_basic_init(rect, args);
 
+		if (RGFW_root == NULL) {
+			RGFW_root = win;
+		}
+		
 		HINSTANCE inh = GetModuleHandleA(NULL);
 
 		WNDCLASSA Class = { 0 }; /* Setup the Window class. */
@@ -3851,7 +3911,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 			win->src.winArgs |= RGFW_ALLOW_DND;
 			DragAcceptFiles(win->src.window, TRUE);
 		}
-		win->src.display = GetDC(win->src.window);
+		win->src.hdc = GetDC(win->src.window);
 
 #ifdef RGFW_DIRECTX
 		assert(FAILED(CreateDXGIFactory(&__uuidof(IDXGIFactory), (void**) &RGFW_dxInfo.pFactory)) == 0);
@@ -3915,7 +3975,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 #endif
 
 #ifdef RGFW_OPENGL 
-
 		HDC dummy_dc = GetDC(dummyWin);
 
 		PIXELFORMATDESCRIPTOR pfd = {
@@ -3952,22 +4011,22 @@ typedef struct { i32 x, y; } RGFW_vector;
 				pfd.dwFlags |= PFD_GENERIC_FORMAT | PFD_GENERIC_ACCELERATED;
 
 			if (wglChoosePixelFormatARB != NULL) {
-				int* pixel_format_attribs = RGFW_initAttribs(args & RGFW_OPENGL_SOFTWARE);
+				i32* pixel_format_attribs = (i32*)RGFW_initAttribs(args & RGFW_OPENGL_SOFTWARE);
 
 				int pixel_format;
 				UINT num_formats;
-				wglChoosePixelFormatARB(win->src.display, pixel_format_attribs, 0, 1, &pixel_format, &num_formats);
+				wglChoosePixelFormatARB(win->src.hdc, pixel_format_attribs, 0, 1, &pixel_format, &num_formats);
 				if (!num_formats) {
 					printf("Failed to set the OpenGL 3.3 pixel format.\n");
 				}
 
-				DescribePixelFormat(win->src.display, pixel_format, sizeof(pfd), &pfd);
-				if (!SetPixelFormat(win->src.display, pixel_format, &pfd)) {
+				DescribePixelFormat(win->src.hdc, pixel_format, sizeof(pfd), &pfd);
+				if (!SetPixelFormat(win->src.hdc, pixel_format, &pfd)) {
 					printf("Failed to set the OpenGL 3.3 pixel format.\n");
 				}
 			}
 
-			i32 index = 0;
+			u32 index = 0;
 			i32 attribs[40];
 
 			SET_ATTRIB(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
@@ -3986,35 +4045,32 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 			SET_ATTRIB(0, 0);
 
-			win->src.rSurf = wglCreateContextAttribsARB(win->src.display, NULL, attribs);
+			win->src.rSurf = wglCreateContextAttribsARB(win->src.hdc, NULL, attribs);
 		} else {
 			fprintf(stderr, "Failed to create an accelerated OpenGL Context\n");
 
-			int pixel_format = ChoosePixelFormat(win->src.display, &pfd);
-			SetPixelFormat(win->src.display, pixel_format, &pfd);
+			int pixel_format = ChoosePixelFormat(win->src.hdc, &pfd);
+			SetPixelFormat(win->src.hdc, pixel_format, &pfd);
 
-			win->src.rSurf = wglCreateContext(win->src.display);
-			wglMakeCurrent(win->src.display, win->src.rSurf);
+			win->src.rSurf = wglCreateContext(win->src.hdc);
 		}
-#endif
-
-#ifdef RGFW_OPENGL
-		if (RGFW_root != NULL && wglShareLists((HGLRC) RGFW_root->src.rSurf, (HGLRC) win->src.rSurf) == 0)
-			fprintf(stderr, "Failed to link to dummy context : %li\n", GetLastError());
+		
+		wglMakeCurrent(win->src.hdc, win->src.rSurf);
+		wglShareLists(RGFW_root->src.rSurf, win->src.rSurf);
 #endif
 
 #ifdef RGFW_OSMESA
-#ifdef RGFW_LINK_OSMESA
-		OSMesaMakeCurrentSource = (PFN_OSMesaMakeCurrent) GetProcAddress(win->src.display, "OSMesaMakeCurrent");
-		OSMesaCreateContextSource = (PFN_OSMesaCreateContext) GetProcAddress(win->src.display, "OSMesaCreateContext");
-		OSMesaDestroyContextSource = (PFN_OSMesaDestroyContext) GetProcAddress(win->src.display, "OSMesaDestroyContext");
+#ifdef RGFW_LINK_OSM ESA
+		OSMesaMakeCurrentSource = (PFN_OSMesaMakeCurrent) GetProcAddress(win->src.hdc, "OSMesaMakeCurrent");
+		OSMesaCreateContextSource = (PFN_OSMesaCreateContext) GetProcAddress(win->src.hdc, "OSMesaCreateContext");
+		OSMesaDestroyContextSource = (PFN_OSMesaDestroyContext) GetProcAddress(win->src.hdc, "OSMesaDestroyContext");
 #endif
 #endif
 
 #ifdef RGFW_OPENGL
-		ReleaseDC(win->src.window, win->src.display);
-		win->src.display = GetDC(win->src.window);
-		wglMakeCurrent(win->src.display, win->src.rSurf);
+		ReleaseDC(win->src.window, win->src.hdc);
+		win->src.hdc = GetDC(win->src.window);
+		wglMakeCurrent(win->src.hdc, win->src.rSurf);
 #endif
 
 		DestroyWindow(dummyWin);
@@ -4035,9 +4091,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 			RGFW_window_showMouse(win, 0);
 
 		ShowWindow(win->src.window, SW_SHOWNORMAL);
-
-		if (RGFW_root == NULL)
-			RGFW_root = win;
 
 		return win;
 	}
@@ -4084,7 +4137,9 @@ typedef struct { i32 x, y; } RGFW_vector;
 		size_t i;
 		for (i = 0; i < 4; i++) {
 			XINPUT_STATE state;
-			if (XInputGetState((DWORD) i, &state) == ERROR_DEVICE_NOT_CONNECTED)
+			if (XInputGetState == NULL ||
+				XInputGetState((DWORD) i, &state) == ERROR_DEVICE_NOT_CONNECTED
+			)
 				return 0;
 
 			e->button = 0;
@@ -4203,8 +4258,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 		win->event.inFocus = (GetForegroundWindow() == win->src.window);
 
-		XInputEnable(win->event.inFocus);
-
 		if (RGFW_checkXInput(&win->event))
 			return &win->event;
 
@@ -4268,6 +4321,8 @@ typedef struct { i32 x, y; } RGFW_vector;
 					win->event.button = RGFW_mouseScrollUp;
 				else
 					win->event.button = RGFW_mouseScrollDown;
+
+				win->event.scroll = (SHORT) HIWORD(msg.wParam) / (double) WHEEL_DELTA;
 
 				win->event.type = RGFW_mouseButtonPressed;
 				break;
@@ -4439,10 +4494,12 @@ typedef struct { i32 x, y; } RGFW_vector;
 		monitor.rect.h = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
 
 #ifndef RGFW_NO_DPI
-		u32 x, y;
-		GetDpiForMonitor(src, MDT_ANGULAR_DPI, &x, &y);
-		monitor.scaleX = (float) (x) / (float) USER_DEFAULT_SCREEN_DPI;
-		monitor.scaleY = (float) (y) / (float) USER_DEFAULT_SCREEN_DPI;
+		if (GetDpiForMonitor != NULL) {
+			u32 x, y;
+			GetDpiForMonitor(src, MDT_ANGULAR_DPI, &x, &y);
+			monitor.scaleX = (float) (x) / (float) USER_DEFAULT_SCREEN_DPI;
+			monitor.scaleY = (float) (y) / (float) USER_DEFAULT_SCREEN_DPI;
+		}
 #endif
 
 		HDC hdc = GetDC(NULL);
@@ -4616,6 +4673,25 @@ typedef struct { i32 x, y; } RGFW_vector;
 			RGFW_dxInfo.pAdapter->lpVtbl->Release(RGFW_dxInfo.pAdapter);
 			RGFW_dxInfo.pFactory->lpVtbl->Release(RGFW_dxInfo.pFactory);
 #endif
+		
+			if (RGFW_XInput_dll != NULL) {
+				FreeLibrary(RGFW_XInput_dll);
+				RGFW_XInput_dll = NULL;
+			}
+
+			#ifndef RGFW_NO_DPI
+			if (RGFW_Shcore_dll != NULL) {
+				FreeLibrary(RGFW_Shcore_dll);
+				RGFW_Shcore_dll = NULL;
+			}
+			#endif
+
+			#ifdef RGFW_WGL_LOAD
+			if (wglinstance != NULL) {
+				FreeLibrary(wglinstance);
+				wglinstance = NULL;
+			}
+			#endif
 
 			RGFW_root = NULL;
 		}
@@ -4634,7 +4710,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #ifdef RGFW_OPENGL
 		wglDeleteContext((HGLRC) win->src.rSurf); /* delete opengl context */
 #endif
-		DeleteDC(win->src.display); /* delete device context */
+		DeleteDC(win->src.hdc); /* delete device context */
 		DestroyWindow(win->src.window); /* delete window */
 
 #if defined(RGFW_OSMESA)
@@ -4644,7 +4720,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 #ifdef RGFW_ALLOC_DROPFILES
 		{
-			i32 i;
+			u32 i;
 			for (i = 0; i < RGFW_MAX_DROPS; i++)
 				RGFW_FREE(win->event.droppedFiles[i]);
 
@@ -4771,7 +4847,8 @@ typedef struct { i32 x, y; } RGFW_vector;
 	void RGFW_window_showMouse(RGFW_window* win, i8 show) {
 		assert(win != NULL);
 
-		ShowCursor(show);
+		SetClassLongPtrA(win->src.window, GCLP_HCURSOR, (LPARAM) LoadCursorA(NULL, NULL));
+		SetCursor(LoadCursorA(NULL, NULL));
 	}
 	void RGFW_window_moveMouse(RGFW_window* win, RGFW_vector p) {
 		assert(win != NULL);
@@ -5256,7 +5333,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		}
 
 		if (win->event.droppedFilesCount) {
-			i32 i;
+			u32 i;
 			for (i = 0; i < win->event.droppedFilesCount; i++)
 				win->event.droppedFiles[i][0] = '\0';
 		}
@@ -5326,6 +5403,8 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 			else if (deltaY < 0)
 				win->event.button = RGFW_mouseScrollDown;
+
+			win->event.scroll = deltaY;
 
 			win->event.type = RGFW_mouseButtonReleased;
 			break;
@@ -5619,7 +5698,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 #ifdef RGFW_ALLOC_DROPFILES
 		{
-			i32 i;
+			u32 i;
 			for (i = 0; i < RGFW_MAX_DROPS; i++)
 				RGFW_FREE(win->event.droppedFiles[i]);
 
@@ -5677,10 +5756,10 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 #ifdef RGFW_OPENGL
 #ifdef RGFW_X11
-		glXMakeCurrent((Display*) win->src.window, (Drawable) win->src.display, (GLXContext) win->src.rSurf);
+		glXMakeCurrent((Display*) win->src.display, (Drawable) win->src.window, (GLXContext) win->src.rSurf);
 #endif
 #ifdef RGFW_WINDOWS
-		wglMakeCurrent(win->src.display, (HGLRC) win->src.rSurf);
+		wglMakeCurrent(win->src.hdc, (HGLRC) win->src.rSurf);
 #endif
 #if defined(RGFW_MACOS)
 		objc_msgSend_void(win->src.rSurf, sel_registerName("makeCurrentContext"));
@@ -5814,7 +5893,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #endif
 #ifdef RGFW_WINDOWS
 			HGDIOBJ oldbmp = SelectObject(win->src.hdcMem, win->src.bitmap);
-			BitBlt(win->src.display, 0, 0, win->r.w, win->r.h, win->src.hdcMem, 0, 0, SRCCOPY);
+			BitBlt(win->src.hdc, 0, 0, win->r.w, win->r.h, win->src.hdcMem, 0, 0, SRCCOPY);
 			SelectObject(win->src.hdcMem, oldbmp);
 #endif	
 #if defined(RGFW_MACOS)
@@ -5859,7 +5938,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		glXSwapBuffers((Display*) win->src.display, (Window) win->src.window);
 #endif
 #ifdef RGFW_WINDOWS
-		SwapBuffers(win->src.display);
+		SwapBuffers(win->src.hdc);
 #endif
 #if defined(RGFW_MACOS)
 		NSOpenGLContext_flushBuffer(win->src.rSurf);
@@ -5896,10 +5975,19 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 	void RGFW_window_mouseHold(RGFW_window* win) {
 		win->src.winArgs |= RGFW_HOLD_MOUSE;
+
+		#ifdef RGFW_WINDOWS
+		RECT rect = {win->r.x, win->r.y, win->r.x + win->r.w, win->r.y + win->r.h};
+		ClipCursor(&rect);
+		#endif
 	}
 
 	void RGFW_window_mouseUnhold(RGFW_window* win) {
 		win->src.winArgs ^= RGFW_HOLD_MOUSE;
+
+		#ifdef RGFW_WINDOWS
+		ClipCursor(NULL);
+		#endif
 	}
 
 	void RGFW_sleep(u32 ms) {
@@ -5933,26 +6021,34 @@ typedef struct { i32 x, y; } RGFW_vector;
 		}
 
 		currentFrameTime = (float) RGFW_getTime();
+
+		if (elapsedTime < targetFrameTime) {
+			u32 sleepTime = (u32) ((targetFrameTime - elapsedTime) * 1e3);
+			RGFW_sleep(sleepTime);
+		}
+
+		currentFrameTime = (float) RGFW_getTime();
 	}
 
 #ifdef __APPLE__
 #include <mach/mach_time.h>
 #endif
 
-	u32 RGFW_getTimeNS(void) {
-#ifdef _MSC_VER
+	u64 RGFW_getTimeNS(void) {
+#ifdef RGFW_WINDOWS
 		LARGE_INTEGER frequency;
 		QueryPerformanceFrequency(&frequency);
 
 		LARGE_INTEGER counter;
 		QueryPerformanceCounter(&counter);
 
-		return (u32) (counter.QuadPart * 1e9 / frequency.QuadPart);
+		return (u64) (counter.QuadPart * 1e9 / frequency.QuadPart);
 #elif defined(__unix__)
 		struct timespec ts = { 0 };
-		clock_gettime(1, &ts);
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		unsigned long long int nanoSeconds = (unsigned long long int)ts.tv_sec*1000000000LLU + (unsigned long long int)ts.tv_nsec;
 
-		return ts.tv_nsec;
+		return nanoSeconds;
 #elif defined(__APPLE__)
 		static mach_timebase_info_data_t timebase_info;
 		if (timebase_info.denom == 0) {
@@ -5960,22 +6056,23 @@ typedef struct { i32 x, y; } RGFW_vector;
 		}
 		return mach_absolute_time() * timebase_info.numer / timebase_info.denom;
 #endif
+		return 0;
 	}
 
-	u32 RGFW_getTime(void) {
-#ifdef _MSC_VER
+	u64 RGFW_getTime(void) {
+#ifdef RGFW_WINDOWS
 		LARGE_INTEGER frequency;
 		QueryPerformanceFrequency(&frequency);
 
 		LARGE_INTEGER counter;
 		QueryPerformanceCounter(&counter);
-
-		return (u32) (counter.QuadPart / (double) frequency.QuadPart);
+		return (u64) (counter.QuadPart / (double) frequency.QuadPart);
 #elif defined(__unix__)
 		struct timespec ts = { 0 };
-		clock_gettime(1, &ts);
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		unsigned long long int nanoSeconds = (unsigned long long int)ts.tv_sec*1000000000LLU + (unsigned long long int)ts.tv_nsec;
 
-		return ts.tv_sec;
+		return (double)(nanoSeconds) * 1e-9;
 #elif defined(__APPLE__)
 		static mach_timebase_info_data_t timebase_info;
 		if (timebase_info.denom == 0) {
@@ -5983,6 +6080,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		}
 		return (double) mach_absolute_time() * (double) timebase_info.numer / ((double) timebase_info.denom * 1e9);
 #endif
+		return 0;
 	}
 
 	u32 RGFW_getFPS(void) {
@@ -5993,7 +6091,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 		static i16 frameCount;
 		double currentSeconds = (double) RGFW_getTime();//glfwGetTime();
 		double elapsedSeconds = currentSeconds - previousSeconds;
-
 		static double fps = 0;
 
 		if (elapsedSeconds > 0.25) {
@@ -6022,7 +6119,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #define RGFW_F10 RGFW_OS_BASED_VALUE(0xffc7, 0x79, 110)
 #define RGFW_F11 RGFW_OS_BASED_VALUE(0xffc8, 0x7A, 104)
 #define RGFW_F12 RGFW_OS_BASED_VALUE(0xffc9, 0x7B, 112)
-#define RGFW_F13 RGFW_OS_BASED_VALUE(0xffca 0x7C, 106)
+#define RGFW_F13 RGFW_OS_BASED_VALUE(0xffca, 0x7C, 106)
 #define RGFW_F14 RGFW_OS_BASED_VALUE(0xffcb, 0x7D, 108)
 #define RGFW_F15 RGFW_OS_BASED_VALUE(0xffcc, 0x7E, 114)
 
