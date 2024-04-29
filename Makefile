@@ -4,7 +4,7 @@
 CC = gcc
 AR = ar
 
-LIBS := -lopengl32 -lshell32 -lgdi32 -lXInput -lShcore
+LIBS := -lopengl32 -lgdi32
 EXT = dll
 
 ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
@@ -30,7 +30,7 @@ else
 endif
 
 ifeq ($(detected_OS),Windows)
-	LIBS := -lopengl32 -lshell32 -lgdi32 -lXInput -lShcore
+	LIBS := -lopengl32 -lgdi32
 	EXT = dll
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X

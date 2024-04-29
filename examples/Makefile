@@ -3,7 +3,7 @@
 
 CC = gcc
 
-LIBS := -I.. -lopengl32 -lshell32 -lgdi32 -lm -lXInput -lShcore
+LIBS := -I.. -lopengl32 -lgdi32
 ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
     detected_OS := Windows
 else
@@ -18,7 +18,7 @@ endif
 endif
 
 ifeq ($(detected_OS),Windows)
-	LIBS := -I.. -lopengl32 -lXInput -lShcore -lshell32 -lgdi32 -lm
+	LIBS := -I.. -lopengl -lgdi32
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
 	LIBS := -I.. -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
