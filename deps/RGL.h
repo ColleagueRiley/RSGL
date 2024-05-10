@@ -43,6 +43,8 @@ MACRO #DEFINE ARGUMENTS
 #define RGL_OPENGL_ES2 - Load and use  opengl ES version 2 functionaries
 #define RGL_OPENGL_ES3 - Load and use  opengl ES version 3 functionaries
 
+#define RGL_NO_RENDER - Don't render anything
+
 Values
 
 #define RGL_MAX_BATCHES <x> - Set the max amount of batches (a batch is created when a different mode or texture is used), 
@@ -104,9 +106,9 @@ typedef ptrdiff_t GLsizeiptr;
 #ifndef RGL_H
 #define RGL_H
 
-#ifndef RGL_OPENGL_LEGACY
+#if !defined(RGL_OPENGL_LEGACY)
 #define RGL_MODERN_OPENGL
-#if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_33) && !defined(RGL_OPENGL_43)
+#if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_33) && !defined(RGL_OPENGL_43) && !defined(RGL_NO_RENDER)
 #define RGL_OPENGL_33
 #endif
 #endif
@@ -1242,7 +1244,7 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
     if (RGLinfo.legacy)
         return;
 
-#ifdef RGL_MODERN_OPENGL
+#if defined(RGL_MODERN_OPENGL) && !defined(RGL_NO_RENDER)
     if (RGLinfo.vertexCounter > 0) {
         #if !defined(RGL_OPENGL_21) && !defined(RGL_OPENGL_ES2)
         glBindVertexArray(RGLinfo.vao);

@@ -127,9 +127,29 @@ extern "C" {
 
 	/* this name looks better */
 	/* plus it helps with cross-compiling because RGFW_X11 won't be accidently defined */
+	
 #define RGFW_WINDOWS
+
+#if defined(_WIN32)
+#define WIN32
+#endif
+
+#if defined(_WIN64)
+#define WIN64
+#define _AMD64_
+#undef _X86_
+#else
+#undef _AMD64_
+#define _X86_
+#endif
+
 #include <windef.h>
+
+#ifdef __MINGW32__
+#include <xinput.h>
+#else
 #include <XInput.h>
+#endif
 
 #else 
 #if defined(__unix__) || defined(RGFW_MACOS_X11) || defined(RGFW_X11)
@@ -1131,15 +1151,14 @@ typedef struct { i32 x, y; } RGFW_vector;
 			(NSAlloc(nsclass), func, array, len);
 	}
 
-	void NSView_registerForDraggedTypes(void* view, NSPasteboardType* newTypes, size_t len) {
+	void NSregisterForDraggedTypes(void* view, NSPasteboardType* newTypes, size_t len) {
 		NSString** ntypes = cstrToNSStringArray(newTypes, len);
 
 		void* func = sel_registerName("registerForDraggedTypes:");
 
-		NSArray* array = ((id(*)(id, SEL, NSPasteboardType*, NSUInteger))objc_msgSend)
-			(NSAlloc(objc_getClass("NSArray")), sel_registerName("initWithObjects:count:"), ntypes, len);
+		NSArray* array = c_array_to_NSArray(ntypes, len);
 
-		objc_msgSend_void_id(view, func, array);
+		objc_msgSend_void_id(view, sel_registerName("registerForDraggedTypes:"), array);
 
 		NSRelease(array);
 	}
@@ -1272,7 +1291,7 @@ typedef struct { i32 x, y; } RGFW_vector;
     attribs[index++] = a; \
 }
 
-#ifdef RGFW_X11
+#if defined(RGFW_X11) || defined(RGFW_WINDOWS)
 	void RGFW_window_showMouse(RGFW_window* win, i8 show) {
 		static u8 RGFW_blk[] = { 0, 0, 0, 0 };
 		if (show == 0)
@@ -2541,9 +2560,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 		RGFW_window_setMouseDefault(win);
 
-		if (args & RGFW_HIDE_MOUSE)
-			RGFW_window_showMouse(win, 0);
-
 		RGFW_windowsOpen++;
 
 		return win; /*return newly created window*/
@@ -2581,6 +2597,48 @@ typedef struct { i32 x, y; } RGFW_vector;
 		assert(win != NULL);
 
 		win->event.type = 0;
+
+#ifdef __linux__
+		{
+			u8 i;
+			for (i = 0; i < win->src.joystickCount; i++) {
+				struct js_event e;
+
+
+				if (!win->src.joysticks[i])
+					continue;
+
+				i32 flags = fcntl(win->src.joysticks[i], F_GETFL, 0);
+				fcntl(win->src.joysticks[i], F_SETFL, flags | O_NONBLOCK);
+
+				ssize_t bytes;
+				while ((bytes = read(win->src.joysticks[i], &e, sizeof(e))) > 0) {
+					switch (e.type) {
+					case JS_EVENT_BUTTON:
+						win->event.type = e.value ? RGFW_jsButtonPressed : RGFW_jsButtonReleased;
+						win->event.button = e.number;
+						win->src.jsPressed[i][e.number] = e.value;
+						return &win->event;
+					case JS_EVENT_AXIS:
+						ioctl(win->src.joysticks[i], JSIOCGAXES, &win->event.axisesCount);
+
+						if ((e.number == 0 || e.number % 2) && e.number != 1)
+							xAxis = e.value;
+						else
+							yAxis = e.value;
+
+						win->event.axis[e.number / 2].x = xAxis;
+						win->event.axis[e.number / 2].y = yAxis;
+						win->event.type = RGFW_jsAxisMove;
+						win->event.joystick = e.number / 2;
+						return &win->event;
+
+					default: break;
+					}
+				}
+			}
+		}
+#endif
 
 		XEvent E; /* raw X11 event */
 
@@ -2637,6 +2695,14 @@ typedef struct { i32 x, y; } RGFW_vector;
 		case ButtonPress:
 		case ButtonRelease:
 			win->event.type = (E.type == ButtonPress) ? RGFW_mouseButtonPressed : RGFW_mouseButtonReleased;
+		
+			if (win->event.button == RGFW_mouseScrollUp) {
+				win->event.scroll = 1;
+			}
+			else if (win->event.button == RGFW_mouseScrollDown) {
+				win->event.scroll = -1;
+			}
+
 			win->event.button = E.xbutton.button;
 			break;
 
@@ -2687,8 +2753,8 @@ typedef struct { i32 x, y; } RGFW_vector;
 						4,
 						&actualType,
 						&actualFormat,
-						&count,
-						&bytesAfter,
+						(unsigned long*) &count,
+						(unsigned long*) &bytesAfter,
 						(u8**) &formats);
 				} else {
 					formats = (Atom*) RGFW_MALLOC(E.xclient.data.l[2] + E.xclient.data.l[3] + E.xclient.data.l[4]);
@@ -2926,46 +2992,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 			break;
 		}
 		default: {
-#ifdef __linux__
-			u8 i;
-			for (i = 0; i < win->src.joystickCount; i++) {
-				struct js_event e;
-
-				if (!win->src.joysticks[i])
-					continue;
-
-				i32 flags = fcntl(win->src.joysticks[i], F_GETFL, 0);
-				fcntl(win->src.joysticks[i], F_SETFL, flags | O_NONBLOCK);
-
-				ssize_t bytes;
-				while ((bytes = read(win->src.joysticks[i], &e, sizeof(e))) > 0) {
-					switch (e.type) {
-					case JS_EVENT_BUTTON:
-						win->event.type = e.value ? RGFW_jsButtonPressed : RGFW_jsButtonReleased;
-						win->event.button = e.number;
-
-						win->src.jsPressed[i][e.number] = e.value;
-						break;
-					case JS_EVENT_AXIS:
-						ioctl(win->src.joysticks[i], JSIOCGAXES, &win->event.axisesCount);
-
-						if ((e.number == 0 || e.number % 2) && e.number != 1)
-							xAxis = e.value;
-						else
-							yAxis = e.value;
-
-						win->event.axis[e.number / 2].x = xAxis / 327.67;
-						win->event.axis[e.number / 2].y = yAxis / 327.67;
-						win->event.type = RGFW_jsAxisMove;
-						win->event.joystick = e.number / 2;
-						break;
-
-					default: break;
-					}
-				}
-			}
-#endif
-
 			break;
 		}
 		}
@@ -2976,12 +3002,13 @@ typedef struct { i32 x, y; } RGFW_vector;
 			win->src.winArgs &= ~RGFW_MOUSE_CHANGED;
 		}
 
-		RGFW_vector mouse = RGFW_getGlobalMousePoint();
-		if (win->src.winArgs & RGFW_HOLD_MOUSE && win->event.inFocus &&
-			(mouse.x != win->r.x + (win->r.w / 2) || mouse.y != win->r.y + (win->r.h / 2))) {
-			RGFW_window_moveMouse(win, RGFW_VECTOR(win->r.x + (win->r.w / 2), win->r.y + (win->r.h / 2)));
-		}
-
+			if (win->src.winArgs & RGFW_HOLD_MOUSE && win->event.inFocus && win->event.type == RGFW_mousePosChanged) {
+				RGFW_window_moveMouse(win, RGFW_VECTOR(win->r.x + (win->r.w / 2), win->r.y + (win->r.h / 2)));
+				
+				if (XEventsQueued((Display*) win->src.display, QueuedAfterReading) <= 1)
+					XSync(win->src.display, True);
+			}
+			
 
 		XFlush((Display*) win->src.display);
 
@@ -3226,8 +3253,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 		XWarpPointer(win->src.display, None, None, 0, 0, 0, 0, -event.xbutton.x, -event.xbutton.y);
 		XWarpPointer(win->src.display, None, None, 0, 0, 0, 0, v.x, v.y);
-
-		//XWarpPointer (win->src.display, None, root, 0, 0, 0, 0, v.x, v.y);
 	}
 
 	RGFWDEF void RGFW_window_disableMouse(RGFW_window* win) {
@@ -3760,8 +3785,9 @@ typedef struct { i32 x, y; } RGFW_vector;
 #define WGL_SAMPLES_ARB 0x2042
 #define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB 0x20a9
 
+static HMODULE wglinstance = NULL;
+
 #ifdef RGFW_WGL_LOAD
-	static HMODULE wglinstance = NULL;
 	typedef HGLRC(WINAPI* PFN_wglCreateContext)(HDC);
 	typedef BOOL(WINAPI* PFN_wglDeleteContext)(HGLRC);
 	typedef PROC(WINAPI* PFN_wglGetProcAddress)(LPCSTR);
@@ -3786,7 +3812,13 @@ typedef struct { i32 x, y; } RGFW_vector;
 #endif
 
 #ifdef RGFW_OPENGL
-	void* RGFW_getProcAddress(const char* procname) { return (void*) wglGetProcAddress(procname); }
+	void* RGFW_getProcAddress(const char* procname) { 
+		void* proc = (void*) wglGetProcAddress(procname);
+		if (proc)
+			return proc;
+
+		return (void*) GetProcAddress(wglinstance, procname); 
+	}
 
 	typedef BOOL(APIENTRY* PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int* piAttribIList, const FLOAT* pfAttribFList, UINT nMaxFormats, int* piFormats, UINT* nNumFormats);
 	static PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = NULL;
@@ -3851,18 +3883,17 @@ typedef struct { i32 x, y; } RGFW_vector;
 		}
 		#endif
 
-#ifdef RGFW_WGL_LOAD
 		if (wglinstance == NULL) {
 			wglinstance = LoadLibraryA("opengl32.dll");
-
+#ifdef RGFW_WGL_LOAD
 			wglCreateContextSRC = (PFN_wglCreateContext) GetProcAddress(wglinstance, "wglCreateContext");
 			wglDeleteContextSRC = (PFN_wglDeleteContext) GetProcAddress(wglinstance, "wglDeleteContext");
 			wglGetProcAddressSRC = (PFN_wglGetProcAddress) GetProcAddress(wglinstance, "wglGetProcAddress");
 			wglMakeCurrentSRC = (PFN_wglMakeCurrent) GetProcAddress(wglinstance, "wglMakeCurrent");
 			wglGetCurrentDCSRC = (PFN_wglGetCurrentDC) GetProcAddress(wglinstance, "wglGetCurrentDC");
 			wglGetCurrentContextSRC = (PFN_wglGetCurrentContext) GetProcAddress(wglinstance, "wglGetCurrentContext");
-		}
 #endif
+		}
 
 		if (name[0] == 0) name = (char*) " ";
 
@@ -4028,15 +4059,15 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 			u32 index = 0;
 			i32 attribs[40];
-
-			SET_ATTRIB(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
+#define  WGL_CONTEXT_CORE_PROFILE_BIT_ARB        0x00000001
+			SET_ATTRIB(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB);
 
 			if (RGFW_majorVersion || RGFW_minorVersion) {
 				SET_ATTRIB(WGL_CONTEXT_MAJOR_VERSION_ARB, RGFW_majorVersion);
 				SET_ATTRIB(WGL_CONTEXT_MINOR_VERSION_ARB, RGFW_minorVersion);
 			}
 
-			SET_ATTRIB(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB);
+			SET_ATTRIB(WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB);
 
 			if (RGFW_majorVersion || RGFW_minorVersion) {
 				SET_ATTRIB(WGL_CONTEXT_MAJOR_VERSION_ARB, RGFW_majorVersion);
@@ -4146,6 +4177,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 			if (state.Gamepad.wButtons & XINPUT_GAMEPAD_A && !(buttons[i] & XINPUT_GAMEPAD_A)) {
 				e->button = RGFW_JS_A;
 				e->type = RGFW_jsButtonPressed;
+				buttons[i] = state.Gamepad.wButtons;
 				return 1;
 			} else if (state.Gamepad.wButtons & XINPUT_GAMEPAD_B && !(buttons[i] & XINPUT_GAMEPAD_B))
 				e->button = RGFW_JS_B;
@@ -4177,13 +4209,50 @@ typedef struct { i32 x, y; } RGFW_vector;
 			triggers[i][0] = state.Gamepad.bLeftTrigger;
 			triggers[i][1] = state.Gamepad.bRightTrigger;
 
-			buttons[i] = state.Gamepad.wButtons;
-
 			if (e->button) {
+				buttons[i] = state.Gamepad.wButtons;
 				e->type = RGFW_jsButtonPressed;
 				return 1;
 			}
 
+			if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_A) && (buttons[i] & XINPUT_GAMEPAD_A)) {
+				e->button = RGFW_JS_A;
+				e->type = RGFW_jsButtonReleased;
+				buttons[i] = state.Gamepad.wButtons;
+				return 1;
+			} else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_B) && (buttons[i] & XINPUT_GAMEPAD_B))
+				e->button = RGFW_JS_B;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_Y) && (buttons[i] & XINPUT_GAMEPAD_Y))
+				e->button = RGFW_JS_Y;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_X) && (buttons[i] & XINPUT_GAMEPAD_X))
+				e->button = RGFW_JS_X;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_START) && (buttons[i] & XINPUT_GAMEPAD_START))
+				e->button = RGFW_JS_START;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_BACK) && (buttons[i] & XINPUT_GAMEPAD_BACK))
+				e->button = RGFW_JS_SELECT;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_UP) && (buttons[i] & XINPUT_GAMEPAD_DPAD_UP))
+				e->button = RGFW_JS_UP;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN) && (buttons[i] & XINPUT_GAMEPAD_DPAD_DOWN))
+				e->button = RGFW_JS_DOWN;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT) && (buttons[i] & XINPUT_GAMEPAD_DPAD_LEFT))
+				e->button = RGFW_JS_LEFT;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) && (buttons[i] & XINPUT_GAMEPAD_DPAD_RIGHT))
+				e->button = RGFW_JS_RIGHT;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) && (buttons[i] & XINPUT_GAMEPAD_LEFT_SHOULDER))
+				e->button = RGFW_JS_L1;
+			else if (!(state.Gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) && (buttons[i] & XINPUT_GAMEPAD_RIGHT_SHOULDER))
+				e->button = RGFW_JS_R1;
+			else if (state.Gamepad.bLeftTrigger == 0 && triggers[i][0] != 0)
+				e->button = RGFW_JS_L2;
+			else if (state.Gamepad.bRightTrigger == 0 && triggers[i][1] != 0)
+				e->button = RGFW_JS_R2;
+			
+			buttons[i] = state.Gamepad.wButtons;
+
+			if (e->button) {
+				e->type = RGFW_jsButtonReleased;
+				return 1;
+			}
 #define INPUT_DEADZONE  ( 0.24f * (float)(0x7FFF) )  // Default to 24% of the +/- 32767 range.   This is a reasonable default value but can be altered if needed.
 
 			if ((state.Gamepad.sThumbLX < INPUT_DEADZONE &&
@@ -4631,7 +4700,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 		char* icon = MAKEINTRESOURCEA(mouse);
 
-		RGFW_window_showMouse(win, 1);
 		SetClassLongPtrA(win->src.window, GCLP_HCURSOR, (LPARAM) LoadCursorA(NULL, icon));
 		SetCursor(LoadCursorA(NULL, icon));
 	}
@@ -4686,12 +4754,10 @@ typedef struct { i32 x, y; } RGFW_vector;
 			}
 			#endif
 
-			#ifdef RGFW_WGL_LOAD
 			if (wglinstance != NULL) {
 				FreeLibrary(wglinstance);
 				wglinstance = NULL;
 			}
-			#endif
 
 			RGFW_root = NULL;
 		}
@@ -4844,12 +4910,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 		return win->src.joystickCount - 1;
 	}
 
-	void RGFW_window_showMouse(RGFW_window* win, i8 show) {
-		assert(win != NULL);
-
-		SetClassLongPtrA(win->src.window, GCLP_HCURSOR, (LPARAM) LoadCursorA(NULL, NULL));
-		SetCursor(LoadCursorA(NULL, NULL));
-	}
 	void RGFW_window_moveMouse(RGFW_window* win, RGFW_vector p) {
 		assert(win != NULL);
 
@@ -4926,12 +4986,14 @@ typedef struct { i32 x, y; } RGFW_vector;
 	bool acceptsFirstResponder() { return true; }
 	bool performKeyEquivalent(NSEvent* event) { return true; }
 
-	NSDragOperation draggingEntered(NSDraggingInfo* sender) { return NSDragOperationCopy; }
-	NSDragOperation draggingUpdated(NSDraggingInfo* sender) { return NSDragOperationCopy; }
-	bool prepareForDragOperation(NSDraggingInfo* sender) { return true; }
+	NSDragOperation draggingEntered(id self, SEL sel, id sender) { return NSDragOperationCopy; }
+	NSDragOperation draggingUpdated(id self, SEL sel, id sender) { return NSDragOperationCopy; }
+	bool prepareForDragOperation(void) { return true; }
+
+	void RGFW__osxDraggingEnded(id self, SEL sel, id sender) { return; }
 
 	/* NOTE(EimaMei): Usually, you never need 'id self, SEL cmd' for C -> Obj-C methods. This isn't the case. */
-	bool performDragOperation(id self, SEL cmd, NSDraggingInfo* sender) {
+	bool performDragOperation(id self, SEL sel, id sender) {
 		NSWindow* window = objc_msgSend_id(sender, sel_registerName("draggingDestinationWindow"));
 		u32 i;
 		bool found = false;
@@ -5024,6 +5086,15 @@ typedef struct { i32 x, y; } RGFW_vector;
 			}
 		}
 	}
+
+	#ifdef __cplusplus
+	#define APPKIT_EXTERN		extern "C"
+	#else
+	#define APPKIT_EXTERN		extern
+	#endif
+
+	APPKIT_EXTERN NSPasteboardType const NSPasteboardTypeURL = "public.url";                        API_AVAILABLE(macos(10.13)); // Equivalent to kUTTypeURL
+	APPKIT_EXTERN NSPasteboardType const NSPasteboardTypeFileURL  = "public.file-url";                  API_AVAILABLE(macos(10.13)); // Equivalent to kUTTypeFileURL
 
 	RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, u16 args) {
 		static u8 RGFW_loaded = 0;
@@ -5150,14 +5221,26 @@ typedef struct { i32 x, y; } RGFW_vector;
 		if (args & RGFW_ALLOW_DND) {
 			win->src.winArgs |= RGFW_ALLOW_DND;
 
-			NSPasteboardType array[] = { "public.url", "public.file-url", NSPasteboardTypeString, NULL };
-			NSView_registerForDraggedTypes(win->src.view, array, 3);
+/*
+		NSPasteboardType types[] = {NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString};
+
+		siArray(NSPasteboardType) array = sic_arrayInit(types, sizeof(id), countof(types));
+		NSWindow_registerForDraggedTypes(win->hwnd, array);
+
+		win->dndHead = win->dndPrev = out;
+*/
+
+			NSPasteboardType array[] = {NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString};
+			NSregisterForDraggedTypes(win->src.window, array, 3);
 
 			/* NOTE(EimaMei): Drag 'n Drop requires too many damn functions for just a Drag 'n Drop event. */
-			class_addMethod(delegateClass, sel_registerName("draggingEntered:"), (IMP) draggingEntered, "");
-			class_addMethod(delegateClass, sel_registerName("draggingUpdated:"), (IMP) draggingUpdated, "");
-			class_addMethod(delegateClass, sel_registerName("prepareForDragOperation:"), (IMP) prepareForDragOperation, "");
-			class_addMethod(delegateClass, sel_registerName("performDragOperation:"), (IMP) performDragOperation, "");
+			class_addMethod(delegateClass, "draggingEntered:", draggingEntered, "l@:@");
+			class_addMethod(delegateClass, "draggingUpdated:", draggingUpdated, "l@:@");
+			class_addMethod(delegateClass, "draggingExited:", RGFW__osxDraggingEnded, "v@:@");
+			class_addMethod(delegateClass, "draggingEnded:", RGFW__osxDraggingEnded, "v@:@");
+			class_addMethod(delegateClass, "prepareForDragOperation:", prepareForDragOperation, "B@:@");
+			class_addMethod(delegateClass, "performDragOperation:", performDragOperation, "B@:@");
+
 		}
 
 		id delegate = objc_msgSend_id(NSAlloc(delegateClass), sel_registerName("init"));
@@ -5311,8 +5394,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		static void* eventFunc = NULL;
 		if (eventFunc == NULL)
 			eventFunc = sel_registerName("nextEventMatchingMask:untilDate:inMode:dequeue:");
-
-
+		
 		if (win->event.type == RGFW_windowAttribsChange && win->event.keyCode != 120) {
 			win->event.keyCode = 120;
 			return &win->event;
@@ -5368,6 +5450,13 @@ typedef struct { i32 x, y; } RGFW_vector;
 			NSPoint p = ((NSPoint(*)(id, SEL)) objc_msgSend)(e, sel_registerName("locationInWindow"));
 
 			win->event.point = RGFW_VECTOR((u32) p.x, (u32) (win->r.h - p.y));
+
+			if (win->src.winArgs & RGFW_HOLD_MOUSE) {
+				RGFW_vector mouse = RGFW_getGlobalMousePoint();
+				if ((mouse.x != win->r.x + (win->r.w / 2) || mouse.y != win->r.y + (win->r.h / 2))) {
+					RGFW_window_moveMouse(win, RGFW_VECTOR(win->r.x + (win->r.w / 2), win->r.y + (win->r.h / 2)));
+				}
+			}
 			break;
 
 		case NSEventTypeLeftMouseDown:
@@ -5419,13 +5508,6 @@ typedef struct { i32 x, y; } RGFW_vector;
 		}
 
 		objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), e);
-
-		if (win->src.winArgs & RGFW_HOLD_MOUSE) {
-			RGFW_vector mouse = RGFW_getGlobalMousePoint();
-			if (win->event.inFocus && (mouse.x != win->r.x + (win->r.w / 2) || mouse.y != win->r.y + (win->r.h / 2))) {
-				RGFW_window_moveMouse(win, RGFW_VECTOR(win->r.x + (win->r.w / 2), win->r.y + (win->r.h / 2)));
-			}
-		}
 
 		return &win->event;
 	}
@@ -5535,10 +5617,12 @@ typedef struct { i32 x, y; } RGFW_vector;
 	}
 
 	void RGFW_window_showMouse(RGFW_window* win, i8 show) {
-		if (show)
+		if (show) {
 			CGDisplayShowCursor(kCGDirectMainDisplay);
-		else
+		}
+		else {
 			CGDisplayHideCursor(kCGDirectMainDisplay);
+		}
 	}
 
 	void RGFW_window_setMouseStandard(RGFW_window* win, void* mouse) {
@@ -5549,9 +5633,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 	void RGFW_window_moveMouse(RGFW_window* win, RGFW_vector v) {
 		assert(win != NULL);
 
-		CGEventRef moveEvent = CGEventCreateMouseEvent(NULL, kCGEventMouseMoved, CGPointMake(v.x, v.y), kCGMouseButtonLeft);
-		CGEventPost(kCGHIDEventTap, moveEvent);
-		CFRelease(moveEvent);
+		CGWarpMouseCursorPosition(CGPointMake(v.x, v.y));
 	}
 
 
@@ -5991,7 +6073,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 	}
 
 	void RGFW_sleep(u32 ms) {
-#ifndef _MSC_VER
+#ifndef RGFW_WINDOWS
 		struct timespec time;
 		time.tv_sec = 0;
 		time.tv_nsec = ms * 1000;
