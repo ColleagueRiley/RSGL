@@ -1,8 +1,8 @@
 # RSGL 
-### Riley's Simple GUI Library
+### Riley's Simple Graphics Library
 ![The RSGL logo](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL_logo.png?raw=true)
 
-RSGL is a modular simple-to-use cross-platform software development and GUI library. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
+RSGL is a modular simple-to-use cross-platform graphics library. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
 
 RSGL currently supports Linux, BSD, Windows and MacOS.
 
@@ -36,7 +36,7 @@ RSGL currently supports Linux, BSD, Windows and MacOS.
 ## Defines
   - `#define RSGL_NO_WIDGETS` - makes it so RSGL doesn't include widget functions
   - `#define RSGL_NO_AUDIO` - makes it so RSGL doesn't include audio functions
-  - `#define RSGL_NO_WINDOW` - makes it so RSGL_window is no longer included, RSGL_graphics is used instead. This is for using a different windowing library other than RGFW
+  - `#define RSGL_NO_RGFW` - This is for using a different windowing library other than RGFW. RSGL_graphics is used instead, as seen in `examples/glfw.c`
   - `#define RSGL_NO_TEXT` - makes it so RSGL does not include text rendering functions
   - `#define RGFW_NO_WIDGETS` - makes it so RSGL does not include widgets
   - `#define RSGL_NO_AUDIO` - makes it so RSGL does not include audio functions
@@ -150,7 +150,7 @@ It also shows multiple ways of drawing a triangle
 `example/events.c` is an example that shows off all the events that RSGL has and prints out their event data into the terminal
 
 ## glfw.c
-`examples/glfw.c` is an example that shows off how you can use RSGL's rendering functions separate from the windowing backend
+`examples/glfw.c` is an example that shows off how you can use RSGL with GLFW instead of with RGFW.
 
 ## glVer.c
 `examples/glVer.c` is an example that shows how RSGL can switch between legacy and modern OpenGL\
@@ -180,7 +180,7 @@ There is also a switch button that allows you to toggle dark mode.
   All of RSGL's (non-native) dependencies are built-in.
 
 ## RGFW
-  RGFW, Riley's Gui library FrameWork.\
+  RGFW, Riley's Graphics FrameWork.\
   RSGL is built off of RGFW, it handles window management for RSGL.
 
   RGFW is a flexible, lightweight, single-header-file alternative to GLFW. \ 
@@ -206,23 +206,7 @@ There is also a switch button that allows you to toggle dark mode.
 
   Miniaudio's website, https://miniaud.io/
 
-## Silicon
-  Silicon is a single-header C binding for MacOS's Cocoas library. This library makes working with Apple's API a lot better because you don't have to directly work with Objective-C.
-  
-  RSGL uses silicon via RGFW
-
-  [Silicon on Github](https://github.com/EimaMei/Silicon)
-
 # other credits
-
-## Raylib
-  Because this project was created before I knew about Raylib, I am very surprised to see how similar RSGL is to Raylib.
-
-  Raylib and its community seem to have a very similar view of what a good GUI library should be like. So thank you Raylib for showing me that RSGL is not alone.
-
-  Some newer additions were inspired by Raylib including its modular design and RLGL (which RGL is based on).
-
-  Why use RSGL instead of Raylib? RSGL has more dynamic features and is more lightweight.\
 
 ## Eima
   Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project and has helped me come up with new ideas and improvements for the project. He also contributed some code to the project. 
