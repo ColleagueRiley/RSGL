@@ -3,7 +3,7 @@
 
 CC = gcc
 
-LIBS := -I.. -lopengl32 -lgdi32
+LIBS := -I.. -lopengl32 -lgdi32 -lWinmm
 ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
     detected_OS := Windows
 else
@@ -61,9 +61,18 @@ debug:
 	./styles
 	./container
 	./textbox
-	
+
+GLFW := -lglfw3 -lopengl32 -lgdi32
+
+ifeq ($(detected_OS),Darwin)        # Mac OS X
+	GLFW := -lglfw -framework OpenGL
+endif
+ifeq ($(detected_OS),Linux)
+    GLFW := -lglfw -lgl 
+endif
+
 glfw:
-	gcc glfw.c -lglfw -lm -I../ -o glfw
+	gcc glfw.c $(GLFW) -lm -I../ -o glfw
 
 shapes:
 	gcc shapes.c $(LIBS) $(ARGS) -o shapes
