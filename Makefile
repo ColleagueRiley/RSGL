@@ -4,6 +4,8 @@
 CC = gcc
 AR = ar
 
+CUSTOM_CFLAGS = -lm
+
 LIBS := -lopengl32 -lgdi32
 EXT = dll
 
@@ -44,17 +46,19 @@ endif
 
 all:
 	make RSGL.o	
-	$(CC) RSGL.o -shared -O3 $(LIBS) -lm -o libRSGL.$(EXT)
+	$(CC) $(CUSTOM_CFLAGS) RSGL.o -shared -O3 $(LIBS) -lm -o libRSGL.$(EXT)
 	$(AR) rcs libRSGL.a *.o
 	make examples
 
+static:
+	make RSGL.o
+	$(AR) rcs libRSGL.a *.o
+	
 RSGL.o:
-	cp RSGL.h RSGL.c
-	$(CC) -c -Wall RSGL.c -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
-	rm RSGL.c
+	$(CC) $(CUSTOM_CFLAGS) -x c -c -Wall RSGL.h -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
 
 examples:
-	cd examples && make
+	cd examples && make CUSTOM_CFLAGS=$(CUSTOM_CFLAGS)
 
 clean:
 	rm -f libRSGL.so RSGL.o libRSGL.a

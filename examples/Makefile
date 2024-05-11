@@ -4,7 +4,7 @@
 CC = gcc
 
 LIBS := -I.. -lopengl32 -lgdi32 -lWinmm
-ifneq (,$(filter $(CC),winegcc x86_64-w64-mingw32-gcc))
+ifneq (,$(filter $(CC) $(CUSTOM_CFLAGS),winegcc x86_64-w64-mingw32-gcc))
     detected_OS := Windows
 else
 ifeq '$(findstring ;,$(PATH))' ';'
@@ -40,16 +40,16 @@ all:
 	make textbox
 
 debug:
-	gcc basic.c $(LIBS) $(ARGS) -o basic
-	gcc shapes.c $(LIBS) $(ARGS) -o shapes
-	gcc events.c $(LIBS) $(ARGS) -o events
-	gcc textures.c $(LIBS) $(ARGS) -o textures
-	gcc text.c $(LIBS) $(ARGS) -o text
-	gcc glVer.c $(LIBS) $(ARGS) -o glVer
-	gcc button.c $(LIBS) $(ARGS) -o button
-	gcc styles.c $(LIBS) $(ARGS) -o styles
-	gcc container.c $(LIBS) $(ARGS) -o container
-	gcc textbox.c $(LIBS) $(ARGS) -o textbox
+	$(CC) $(CUSTOM_CFLAGS) basic.c $(LIBS) $(ARGS) -o basic
+	$(CC) $(CUSTOM_CFLAGS) shapes.c $(LIBS) $(ARGS) -o shapes
+	$(CC) $(CUSTOM_CFLAGS) events.c $(LIBS) $(ARGS) -o events
+	$(CC) $(CUSTOM_CFLAGS) textures.c $(LIBS) $(ARGS) -o textures
+	$(CC) $(CUSTOM_CFLAGS) text.c $(LIBS) $(ARGS) -o text
+	$(CC) $(CUSTOM_CFLAGS) glVer.c $(LIBS) $(ARGS) -o glVer
+	$(CC) $(CUSTOM_CFLAGS) button.c $(LIBS) $(ARGS) -o button
+	$(CC) $(CUSTOM_CFLAGS) styles.c $(LIBS) $(ARGS) -o styles
+	$(CC) $(CUSTOM_CFLAGS) container.c $(LIBS) $(ARGS) -o container
+	$(CC) $(CUSTOM_CFLAGS) textbox.c $(LIBS) $(ARGS) -o textbox
 
 	./events
 	./shapes
@@ -72,37 +72,37 @@ ifeq ($(detected_OS),Linux)
 endif
 
 glfw:
-	gcc glfw.c $(GLFW) -lm -I../ -o glfw
+	$(CC) $(CUSTOM_CFLAGS) glfw.c $(GLFW) -lm -I../ -o glfw
 
 shapes:
-	gcc shapes.c $(LIBS) $(ARGS) -o shapes
+	$(CC) $(CUSTOM_CFLAGS) shapes.c $(LIBS) $(ARGS) -o shapes
 
 events:
-	gcc events.c $(LIBS) $(ARGS) -o events
+	$(CC) $(CUSTOM_CFLAGS) events.c $(LIBS) $(ARGS) -o events
 
 textures:
-	gcc textures.c $(LIBS) $(ARGS) -o textures
+	$(CC) $(CUSTOM_CFLAGS) textures.c $(LIBS) $(ARGS) -o textures
 
 text:
-	gcc text.c $(LIBS) $(ARGS) -o text
+	$(CC) $(CUSTOM_CFLAGS) text.c $(LIBS) $(ARGS) -o text
 
 textbox:
-	gcc textbox.c $(LIBS) $(ARGS) -o textbox
+	$(CC) $(CUSTOM_CFLAGS) textbox.c $(LIBS) $(ARGS) -o textbox
 
 glVer:
-	gcc glVer.c $(LIBS) $(ARGS) -o glVer
+	$(CC) $(CUSTOM_CFLAGS) glVer.c $(LIBS) $(ARGS) -o glVer
 
 basic:
-	gcc basic.c $(LIBS) $(ARGS) -o basic
+	$(CC) $(CUSTOM_CFLAGS) basic.c $(LIBS) $(ARGS) -o basic
 
 button:
-	gcc button.c $(LIBS) $(ARGS) -o button
+	$(CC) $(CUSTOM_CFLAGS) button.c $(LIBS) $(ARGS) -o button
 
 styles:
-	gcc styles.c $(LIBS) $(ARGS) -o styles
+	$(CC) $(CUSTOM_CFLAGS) styles.c $(LIBS) $(ARGS) -o styles
 
 container:
-	gcc container.c $(LIBS) $(ARGS) -o container
+	$(CC) $(CUSTOM_CFLAGS) container.c $(LIBS) $(ARGS) -o container
 
 clean:
 	rm -f events glfw shapes textures RSGL.o *.exe
