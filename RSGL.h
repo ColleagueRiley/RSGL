@@ -46,6 +46,7 @@
     #define RSGL_LEGACY_OPENGL - use legacy opengl functions
     
     #define RSGL_NO_STB_IMAGE - do not include stb_image.h (& don't define image loading funcs)
+    #define RSGL_NO_STB_IMAGE_IMP - declare stb funcs but don't define
     #define RSGL_NO_DEPS_FOLDER - Do not use '/deps' for the deps includes, use "./"
 
     RGFW (more RGFW documentation in RGFW.h):
@@ -689,15 +690,9 @@ RSGLDEF void RSGL_basicDraw(
 void RSGL_basicDrawRAW(u32 RGL_TYPE, float* points, size_t point_size, float* texPoints,
                                     float* colors, size_t color_size, size_t len);
 /* 2D shape drawing */
-typedef struct RSGL_DRAW_INFO {
-    RGL_BATCH* batches;          /* Draw calls array, depends on tex */
-
-    float* vertices;
-	float* colors;
-    float* tcoords;
-} RSGL_DRAW_INFO;
-
-RSGL_DRAW_INFO RSGL_getDrawInfo(void);
+#ifndef RGL_OPENGL_LEGACY
+RGL_INFO RSGL_getDrawInfo(void);
+#endif
 
 /* in the function names, F means float */
 
@@ -1249,7 +1244,7 @@ int main() {
 #endif
 #endif /* RSGL_NO_TEXT */
 
-#ifndef RSGL_NO_STB_IMAGE
+#if !defined(RSGL_NO_STB_IMAGE) && !defined(RSGL_NO_STB_IMAGE_IMP)
 
 #ifndef RSGL_NO_DEPS_FOLDER
 #include "deps/stb_image.h"
@@ -1257,6 +1252,10 @@ int main() {
 #include <stb_image.h>
 #endif
 
+#endif
+
+#ifdef RSGL_NO_STB_IMAGE_IMP
+u8* stbi_load            (char const *filename, int *x, int *y, int *channels_in_file, int desired_channels);
 #endif
 
 #include <time.h>
@@ -1418,13 +1417,11 @@ void RSGL_basicDrawRAW(u32 RGL_TYPE, float* points, size_t point_size, float* te
     }
 }
 
-RSGL_DRAW_INFO RSGL_getDrawInfo(void) {
-    RSGL_DRAW_INFO info;
-    info.batches = RGLinfo.batches;
-    info.colors = RGLinfo.color;
-    info.tcoords = RGLinfo.tcoords;
-    info.vertices = RGLinfo.vertices;
+#ifndef RGL_OPENGL_LEGACY
+RGL_INFO RSGL_getDrawInfo(void) {
+    return RGLinfo;
 }
+#endif
 
 void RSGL_legacy(i32 legacy) {
     rglLegacy(legacy);
@@ -3149,8 +3146,34 @@ void RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
 
     if (event.type == RSGL_mouseButtonPressed && tb->status != RSGL_pressed)
         tb->toggle = false;
-    else if (event.type == RSGL_mouseButtonPressed)
+    else if (event.type == RSGL_mouseButtonPressed) {
         tb->toggle = true;
+        
+        RSGL_point touch = event.point;
+        touch.x -= tb->rect.x; 
+        touch.y -= tb->rect.y;
+
+        touch.y = touch.y / tb->src.text.c.d;
+        size_t index = 0, indexY = 0;
+        for (index; tb->src.text.str[index] && indexY < touch.y; index++) {
+            if (tb->src.text.str[index] == '\n')
+                indexY++;
+        }
+        
+        size_t indexX = 0;
+
+        if (index < tb->src.text.text_len) {
+            size_t len = RSGL_strLineLenR(tb->src.text.str);
+        
+            for (indexX = 0; 
+                    RSGL_textLineWidth(tb->src.text.str, tb->src.text.c.d, indexX + 1, indexY) < touch.x && 
+                    indexX < len; 
+                indexX++);
+        }
+
+        if (index + indexX < tb->src.text.text_len)
+            tb->src.cursorIndex = index + indexX;
+    }
     
     if (event.type != RSGL_keyPressed || tb->toggle == false)
         return;
@@ -3195,16 +3218,19 @@ void RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
             if (tb->src.cursorIndex - val < 0)
                 break;
             
-            tb->src.cursorIndex -= val;
+            for (size_t i = 0; i < 2; i++)
+                if ((u32)(tb->src.cursorIndex - val) < tb->src.cursorIndex)
+                    tb->src.cursorIndex -= val;
+            
             return;
         }
         case RSGL_Down: {
             size_t val = RSGL_strLineLenR(tb->src.text.str + tb->src.cursorIndex);
-
-            if (tb->src.cursorIndex + val >= tb->src.text.text_len)
-                break;
             
-            tb->src.cursorIndex += val;
+            for (size_t i = 0; i < 2; i++)
+                if (tb->src.cursorIndex + val < tb->src.text.text_len)
+                    tb->src.cursorIndex += val;
+            
             return;
         } 
         default:
