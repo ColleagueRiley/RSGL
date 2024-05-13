@@ -348,6 +348,57 @@ RGLDEF RGL_MATRIX rglMatrixMultiply(float left[16], float right[16]);  /* Multip
 
 RGLDEF i32 rglCheckRenderBatchLimit(int vCount);                             /* Check internal buffer overflow for a given number of vertex */
 
+typedef struct RGL_INFO {
+	RGL_MATRIX transform; /* transformation matrix*/
+    #ifdef RGL_ALLOC_MATRIX_STACK 
+    RGL_MATRIX* stack
+    #else
+    RGL_MATRIX stack[RGL_MAX_MATRIX_STACK_SIZE]; /* RGL_MATRIX stack for push/pop */
+    #endif
+
+    RGL_MATRIX* matrix;              /* Current matrix pointer */
+    RGL_MATRIX modelview;                   /* Default modelview matrix */
+    RGL_MATRIX projection;                  /* Default projection matrix */
+    RGL_BATCH* batches;          /* Draw calls array, depends on tex */
+
+    u16* indices;
+    
+    float* vertices;
+	float* colors;
+    float* tcoords;
+
+    i32 vertexCounter;                  /* Current active render batch vertex counter (generic, used for all batches) */
+    
+    i32 matrixMode;              /* Current matrix mode */
+
+	u8 transformRequired;
+
+    i32 stackCounter;                   /* RGL_MATRIX stack counter */
+
+    u32 tex;      /* Default texture used on shapes/poly drawing (required by shader)*/
+
+    #ifdef RGL_MODERN_OPENGL
+    u32 vShader;      /* Default vertex shader id (used by default shader program)*/
+    u32 fShader;      /* Default fragment shader id (used by default shader program)*/
+    u32 mvp;
+    #endif
+
+    u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
+    u32 defaultTex;
+    u32 elementCount;
+
+    i32 bufferCount;            /* Number of vertex buffers (multi-buffering support) */
+    i32 currentBuffer;          /* Current buffer tracking in case of multi-buffering */
+    i32 drawCounter;            /* Draw calls counter */
+
+    float lineWidth;    /* Default lineWidth used on shapes/poly drawing (required by shader)*/
+    float tcoord[3];
+    float color[4];
+
+    u32 vao, vbo, tbo, cbo, ebo; /* array object and array buffers */
+    u8 legacy;
+} RGL_INFO;
+
 #ifndef RGL_NO_GL_LOADER
 #define RGL_PROC_DEF(proc, name) name##SRC = (name##PROC)proc(#name)
 
@@ -481,57 +532,6 @@ extern int RGL_loadGLModern(RGLloadfunc proc);
 #endif
 
 #ifndef RGL_OPENGL_LEGACY
-typedef struct RGL_INFO {
-	RGL_MATRIX transform; /* transformation matrix*/
-    #ifdef RGL_ALLOC_MATRIX_STACK 
-    RGL_MATRIX* stack
-    #else
-    RGL_MATRIX stack[RGL_MAX_MATRIX_STACK_SIZE]; /* RGL_MATRIX stack for push/pop */
-    #endif
-
-    RGL_MATRIX* matrix;              /* Current matrix pointer */
-    RGL_MATRIX modelview;                   /* Default modelview matrix */
-    RGL_MATRIX projection;                  /* Default projection matrix */
-    RGL_BATCH* batches;          /* Draw calls array, depends on tex */
-
-    u16* indices;
-    
-    float* vertices;
-	float* colors;
-    float* tcoords;
-
-    i32 vertexCounter;                  /* Current active render batch vertex counter (generic, used for all batches) */
-    
-    i32 matrixMode;              /* Current matrix mode */
-
-	u8 transformRequired;
-
-    i32 stackCounter;                   /* RGL_MATRIX stack counter */
-
-    u32 tex;      /* Default texture used on shapes/poly drawing (required by shader)*/
-
-    #ifdef RGL_MODERN_OPENGL
-    u32 vShader;      /* Default vertex shader id (used by default shader program)*/
-    u32 fShader;      /* Default fragment shader id (used by default shader program)*/
-    u32 mvp;
-    #endif
-
-    u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
-    u32 defaultTex;
-    u32 elementCount;
-
-    i32 bufferCount;            /* Number of vertex buffers (multi-buffering support) */
-    i32 currentBuffer;          /* Current buffer tracking in case of multi-buffering */
-    i32 drawCounter;            /* Draw calls counter */
-
-    float lineWidth;    /* Default lineWidth used on shapes/poly drawing (required by shader)*/
-    float tcoord[3];
-    float color[4];
-
-    u32 vao, vbo, tbo, cbo, ebo; /* array object and array buffers */
-    u8 legacy;
-} RGL_INFO;
-
 RGL_INFO RGLinfo;
 #endif /* RGL_MODERN_OPENGL */
 
