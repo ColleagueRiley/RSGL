@@ -173,8 +173,11 @@ these include, a default style button, a checkbox, a toggle button, radio button
 `examples/button.c` is an example that shows off button styles, there are groups of buttons for each style.
 There is also a switch button that allows you to toggle dark mode.
 
-# container.c
+## container.c
 `examples/container.c` is an example that shows how to create and manage a widget container
+
+## custom_render_gl1.c
+`examples/custom_render_gl1` is an example that shows how you'd implement a custom rendering system.
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in.
