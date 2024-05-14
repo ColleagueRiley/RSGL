@@ -27,25 +27,13 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        compiler: [mingw-w64, msvc16]
-        bits: [32, 64]
+        compiler: [mingw-w64]
+        bits: [64]
         include:
-        - compiler: mingw-w64
-          bits: 32
-          ARCH: "i686"
-          WINDRES_ARCH: pe-i386
         - compiler: mingw-w64
           bits: 64
           ARCH: "x86_64"
           WINDRES_ARCH: pe-x86-64
-        - compiler: msvc16
-          bits: 32
-          ARCH: "x86"
-          VSARCHPATH: "Win32" 
-        - compiler: msvc16
-          bits: 64
-          ARCH: "x64" 
-          VSARCHPATH: "x64"
 
     env:
       RELEASE_NAME: RSGL-dev_win${{ matrix.bits }}_${{ matrix.compiler }}
@@ -71,22 +59,6 @@ jobs:
         mkdir include
         mkdir lib
         cd ../../../RSGL
-
-    # Setup MSBuild.exe path if required
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
-      if: matrix.compiler == 'msvc16'
-
-    - name: Build Library (MinGW-w64 32bit)
-      run: |
-        x86_64-w64-mingw32-gcc.exe --version
-        windres.exe --version
-        dir C:\msys64\mingw64\bin
-        make static CUSTOM_CFLAGS=-m32
-      shell: cmd
-      if: |
-        matrix.compiler == 'mingw-w64' &&
-        matrix.bits == 32
         
     - name: Build Library (MinGW-w64 64bit)
       run: |
@@ -100,18 +72,6 @@ jobs:
       if: |
         matrix.compiler == 'mingw-w64' &&
         matrix.bits == 64
-
-#    - name: Build Library (MSVC16)
- #     run: |
-  #      cd projects/VS2022
-   #     msbuild.exe RSGL.sln /target:RSGL /property:Configuration=Release /property:Platform=${{ matrix.ARCH }}
-    #    copy /Y .\build\RSGL\bin\${{ matrix.VSARCHPATH }}\Release\RSGL.lib .\..\..\build\${{ env.RELEASE_NAME }}\lib\RSGL.lib
-     #   msbuild.exe RSGL.sln /target:RSGL /property:Configuration=Release.DLL /property:Platform=${{ matrix.ARCH }}
-      #  copy /Y .\build\RSGL\bin\${{ matrix.VSARCHPATH }}\Release.DLL\RSGL.dll .\..\..\build\${{ env.RELEASE_NAME }}\lib\RSGL.dll
-       # copy /Y .\build\RSGL\bin\${{ matrix.VSARCHPATH }}\Release.DLL\RSGL.lib .\..\..\build\${{ env.RELEASE_NAME }}\lib\RSGLdll.lib
-        #cd ../..
-      #shell: cmd
-      #if: matrix.compiler == 'msvc16'
 
     - name: Generate Artifacts
       run: |
