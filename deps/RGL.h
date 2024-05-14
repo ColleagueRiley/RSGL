@@ -86,7 +86,7 @@ RLGL (raylib / Raysay5) - 	{UPDATE : Most of this code was actually based on or 
 typedef char GLchar;
 typedef int	 GLsizei;
 typedef ptrdiff_t GLintptr;
-typedef ptrdiff_t GLsizeiptr;
+typedef uintptr_t GLsizeiptr;
 
 #define GL_VERTEX_SHADER   0x8B31
 #define GL_FRAGMENT_SHADER 0x8B30
@@ -593,6 +593,12 @@ void rglDeleteTextures(GLsizei n, const GLuint * textures) {
     #endif
         glDeleteTextures(n, textures);
 }
+
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH 0x0CF2
+#define GL_UNPACK_SKIP_PIXELS 0x0CF4
+#define GL_UNPACK_SKIP_ROWS 0x0CF3
+#endif
 
 void rglPushPixelValues(i32 alignment, i32 rowLength, i32 skipPixels, i32 skipRows) {
     #if !defined(RGL_MODERN_OPENGL) && !defined(RGL_OPENGL_LEGACY)

@@ -875,6 +875,12 @@ u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    return id;
 }
 
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH 0x0CF2
+#define GL_UNPACK_SKIP_PIXELS 0x0CF4
+#define GL_UNPACK_SKIP_ROWS 0x0CF3
+#endif
+
 
 void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
 void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
@@ -886,9 +892,9 @@ void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels,
 
 void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h) {
    glEnable(GL_TEXTURE_2D);
-
+   
 	GLint alignment, rowLength, skipPixels, skipRows;
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+   glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
@@ -908,7 +914,7 @@ void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, flo
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#ifdef RFONT_RENDER_RGL
+#if defined(RFONT_RENDER_RGL) && !defined(RFONT_CUSTOM_GL)
 
 void RFont_render_set_color(float r, float g, float b, float a) {
    rglColor4f(r, g, b, a);
@@ -916,10 +922,10 @@ void RFont_render_set_color(float r, float g, float b, float a) {
 
 void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
-   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+   glHint(GL_PERSPECTIVE_CORRECTION_HINT, RGL_NICEST);
    glShadeModel(GL_SMOOTH);
 
-   rglMatrixMode(GL_MODELVIEW);
+   rglMatrixMode(RGL_MODELVIEW);
    rglLoadIdentity();
 	rglPushMatrix();
 
@@ -930,8 +936,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_BLEND);
    glEnable(GL_TEXTURE_2D);
    
-   if (glActiveTexture != NULL)
-      glActiveTexture(GL_TEXTURE0);
+   glActiveTexture(GL_TEXTURE0);
 
    rglSetTexture(atlas);
    
@@ -956,7 +961,7 @@ void RFont_render_legacy(u8 legacy) { rglLegacy(legacy); }
 void RFont_render_init() {}
 #endif /* RFONT_RENDER_RGL */
 
-#if defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)
+#if defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL) && !defined(RFONT_CUSTOM_GL)
 
 void RFont_render_set_color(float r, float g, float b, float a) {
    glColor4f(r, g, b, a);
