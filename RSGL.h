@@ -207,17 +207,32 @@ RSGL GL defs
 #define RSGL_TEXTURE_SWIZZLE_RGBA           0x8E46
 
 /* this can be used in RSGL_basicDraw */
+#define RSGL_POINTS                               0x0000
 #define RSGL_LINES                                0x0001      /* GL_LINES */
-#define RSGL_TRIANGLES                            0x0004      /* GL_TRIANGLES */
-#define RSGL_QUADS                                0x0007      /* GL_QUADS */
-#define RSGL_TRIANGLE_FAN                         0x0006      /* GL_QUADS */
+#define RSGL_LINE_LOOP                            0x0002
+#define RSGL_LINE_STRIP                           0x0003
+#define RSGL_TRIANGLES                            0x0004      /* GL_TRIANGLES */  
+#define RSGL_TRIANGLE_STRIP                       0x0005
+#define RSGL_TRIANGLE_FAN                         0x0006      /* GL_TRIANGLE_FAN  */  
+#define RSGL_QUADS                                 0x0007
 
 /* these ensure GL_DEPTH_TEST is disabled when they're being rendered */
+#define RSGL_POINTS_2D                               0x0010
 #define RSGL_LINES_2D                                0x0011      /* GL_LINES */
-#define RSGL_TRIANGLES_2D                            0x0014      /* GL_TRIANGLES */
-#define RSGL_QUADS_2D                                0x0016      /* GL_QUADS */
-#define RSGL_TRIANGLE_FAN_2D                         0x0017      /* GL_QUADS */
+#define RSGL_LINE_LOOP_2D                            0x0012
+#define RSGL_LINE_STRIP_2D                           0x0013
+#define RSGL_TRIANGLES_2D                            0x0014      /* GL_TRIANGLES */  
+#define RSGL_TRIANGLE_STRIP_2D                       0x0015
+#define RSGL_TRIANGLE_FAN_2D                         0x0016      /* GL_TRIANGLE_FAN  */ 
 
+#ifndef RSGL_viewport 
+#define RSGL_viewport glViewport
+#endif
+
+#ifndef RSGL_api_clear
+#define RSGL_api_clear glClear
+#define RSGL_api_clearColor glClearColor
+#endif
 
 /* 
 keys = 
@@ -785,6 +800,12 @@ RSGLDEF u32 RSGL_textLineWidth(const char* text, u32 fontSize, size_t textEnd, s
     RSGL_textWidthF(text, fontSize, textEnd);
 #endif /* RSGL_NO_TEXT */
 
+/* 
+these and the texture functions below must be defined by hand if you  have
+RSGL_NO_TEXTURE_DEFINE defined
+*/
+
+
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
 RSGLDEF u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
 /* updates an existing texture wiht a new bitmap */
@@ -802,8 +823,10 @@ RSGLDEF RSGL_image RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) ((RSGL_image) RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0}))
 
-#define RSGL_deleteTexture(texture) rglDeleteTextures(1, &texture);
-#define RSGL_deleteTextures(texture, num) rglDeleteTextures(num, &texture);
+#ifndef RSGL_NO_TEXTURE_DEFINE
+#define RSGL_deleteTexture(texture) glDeleteTextures(1, &texture);
+#define RSGL_deleteTextures(texture, num) glDeleteTextures(num, texture);
+#endif
 
 /* 
     these two functions can be used before RSGL_createTexture in order to create 
@@ -1210,10 +1233,14 @@ int main() {
 
 #define RGL_IMPLEMENTATION
 
+#ifndef RSGL_CUSTOM_DRAW
+
 #ifndef RSGL_NO_DEPS_FOLDER
 #include "deps/RGL.h"
 #else
 #include "RGL.h"
+#endif
+
 #endif
 
 #ifndef RSGL_NO_RGFW
@@ -1392,7 +1419,9 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
             if (i && i <= RSGL_args.gradient_len)
                 rglColor4ub(RSGL_args.gradient[i - 1].r, RSGL_args.gradient[i - 1].g, RSGL_args.gradient[i - 1].b, RSGL_args.gradient[i - 1].a);
             
-            rglTexCoord2f(texPoints[tIndex], texPoints[tIndex + 1]);
+            if (texPoints != NULL)
+                rglTexCoord2f(texPoints[tIndex], texPoints[tIndex + 1]);
+            
             rglVertex3f(points[pIndex + 0], points[pIndex + 1], points[pIndex + 2]);
 
             pIndex += 3;
@@ -1406,7 +1435,6 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
         RSGL_clearArgs();
     }
 }
-#endif
 
 void RSGL_basicDrawRAW(u32 RGL_TYPE, float* points, size_t point_size, float* texPoints,
                                     float* colors, size_t color_size, size_t len) {  
@@ -1443,6 +1471,7 @@ void RSGL_basicDrawRAW(u32 RGL_TYPE, float* points, size_t point_size, float* te
         RSGL_clearArgs();
     }
 }
+#endif
 
 void RSGL_legacy(i32 legacy) {
     RSGL_args.legacy = legacy;
@@ -1465,19 +1494,19 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     RSGL_window_makeCurrent(win);
 
     if (RSGL_windowsOpen == 0) {
+        #ifndef RSGL_CUSTOM_DRAW
         #ifdef RGFW_OPENGL
         rglInit((void*)RGFW_getProcAddress);
         #else
         rglInit(NULL);
         #endif
+        #endif
 
-        glViewport(0, 0, win->r.w, win->r.h);
+        RSGL_viewport(0, 0, win->r.w, win->r.h);
         
-        glDepthFunc(RGL_LEQUAL);
-
         #ifdef RGL_OPENGL_43
         glClearDepth(1.0f);
-        rglBlendFunc(RGL_SRC_ALPHA, RGL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         #endif
 
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
@@ -1498,7 +1527,7 @@ RGFW_Event* RSGL_window_checkEvent(RSGL_window* win) {
     RGFW_Event* e = RGFW_window_checkEvent(win);
 
     if (win->event.type == RGFW_windowAttribsChange)
-        glViewport(0, 0, win->r.w, win->r.h);
+        RSGL_viewport(0, 0, win->r.w, win->r.h);
 
     return e;
 }
@@ -1522,17 +1551,21 @@ void RSGL_window_makeCurrent(RSGL_window* win) {
 
 void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     RSGL_window_makeCurrent(win);
-    RSGL_window_swapBuffers(win);
 
     #ifdef RGL_OPENGL_43
     glClearDepth(1.0f);
     #endif
 
     RFont_update_framebuffer(win->r.w, win->r.h);
-    glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-    glClear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
 
+    RSGL_api_clearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    RSGL_api_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    #ifndef RSGL_CUSTOM_DRAW
     rglRenderBatch();
+    #endif
+
+    RSGL_window_swapBuffers(win);
 }
 
 void RSGL_window_close(RSGL_window* win) {
@@ -1547,12 +1580,12 @@ void RSGL_window_close(RSGL_window* win) {
         free(RSGL_font.fonts);
         #endif
 
-        #ifndef GRAPHICS_API_OPENGL_11
+        #if !defined(GRAPHICS_API_OPENGL_11) && !defined(RSGL_CUSTOM_DRAW)
         rglClose();
         #endif
         
         for (i = 0; i < RSGL_images_len; i++)
-            glDeleteTextures(1, &RSGL_images[i].tex);
+            RSGL_deleteTexture(RSGL_images[i].tex);
     }
 
     RGFW_window_close(win);
@@ -1688,14 +1721,15 @@ RSGL_GRAPHICS_CONTEXT
 
 
 void RSGL_initGraphics(RSGL_area r, void* loader) {
+    #ifndef RSGL_CUSTOM_DRAW
     rglInit(loader);
-    glViewport(0, 0, r.w, r.h);
-    
-    glDepthFunc(RGL_LEQUAL);
+    #endif
 
+    RSGL_viewport(0, 0, r.w, r.h);
+    
     #ifdef RGL_OPENGL_43
     glClearDepth(1.0f);
-    glBlendFunc(RGL_SRC_ALPHA, RGL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     #endif
 
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
@@ -1710,15 +1744,18 @@ void RSGL_graphics_clear(RSGL_color color) {
     glClearDepth(1.0f);
     #endif
 
-    glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-    glClear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
+    RSGL_api_clearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    RSGL_api_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    #ifndef RSGL_CUSTOM_DRAW
     rglRenderBatch();
+    #endif
 }
 
 void RSGL_graphics_updateSize(RSGL_area r) {
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
     RFont_update_framebuffer(r.w, r.h);
-    glViewport(0, 0, r.w, r.h);
+    RSGL_viewport(0, 0, r.w, r.h);
 }
 
 void RSGL_graphics_free() {
@@ -1730,7 +1767,7 @@ void RSGL_graphics_free() {
     free(RSGL_font.fonts);
     #endif
 
-    #ifndef GRAPHICS_API_OPENGL_11
+    #if !defined(GRAPHICS_API_OPENGL_11) && !defined(RSGL_CUSTOM_DRAW)
     rglClose();
     #endif
 }
@@ -1935,6 +1972,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     if (RSGL_args.fill == false)
         return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
     
+    RSGL_point3DF center =  RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f);
     o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
     
     float displacement = 360.0f / (float)sides;
@@ -1944,14 +1982,14 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     size_t tIndex = 0; 
 
     u32 i;
-    for (i = 0; i < arc.y - arc.x; i++) {
+    for (i = arc.x; i < arc.y; i++) {
         RSGL_pointF p = {sinf(angle * DEG2RAD), cosf(angle * DEG2RAD)};
 
         texcoords[tIndex] = (-p.x + 1.0f) * 0.5;
         texcoords[tIndex + 1] = (-p.y + 1.0f) * 0.5;
 
-        verts[vIndex] = o.x + (o.w) + (p.x * o.w);
-        verts[vIndex + 1] = o.y + (o.h) + (p.y * o.h); 
+        verts[vIndex] = o.x + o.w + (p.x * o.w);
+        verts[vIndex + 1] = o.y + o.h + (p.y * o.h); 
         verts[vIndex + 2] = 0.0;
 
         angle += displacement;
@@ -1962,9 +2000,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     texcoords[tIndex + 1] = 0;
     texcoords[tIndex + 2] = 0;
 
-    RSGL_basicDraw(RSGL_TRIANGLE_FAN_2D, verts, texcoords, RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c, i);
-
-    if (RSGL_argsClear) RSGL_clearArgs();
+    RSGL_basicDraw(RSGL_TRIANGLE_FAN_2D, verts, texcoords, center, c, vIndex / 3);
 }
 
 void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (int)sides}, c); }
@@ -2044,8 +2080,7 @@ void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness
 }
 
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
-    static float verts[360 * 2 * 3];
-
+    RSGL_point3DF center = RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f);
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
  
     float displacement = 360.0f / (float)sides;
@@ -2054,17 +2089,20 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
     i32 i;
 
     for (i = arc.x; i < arc.y * 4; i += 4) {
-        verts[i] = o.x + (sinf(DEG2RAD * centralAngle) * o.w);
-        verts[i + 1] = o.x + (sinf(DEG2RAD * centralAngle) * o.w);
-        verts[i + 2] = 0.0;
+        static float verts[6];
+
+        verts[0] = o.x + (sinf(DEG2RAD * centralAngle) * o.w);
+        verts[1] = o.y + (cosf(DEG2RAD * centralAngle) * o.w);
+        verts[2] = 0.0;
         
         centralAngle += displacement;
-        verts[i + 3] = o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.h), 0.0;
-        verts[i + 4] = o.x + (sinf(DEG2RAD * centralAngle) * o.w), o.y + (cosf(DEG2RAD * centralAngle) * o.h), 0.0;
-        verts[i + 5] = 0;
-    }
+        verts[3] = o.x + (sinf(DEG2RAD * centralAngle) * o.w);
+        verts[4] = o.y + (cosf(DEG2RAD * centralAngle) * o.h);
+        verts[5] = 0;
 
-    RSGL_basicDraw(RSGL_LINES_2D, verts, NULL, RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c, (i - arc.x));
+            
+        RSGL_basicDraw(RSGL_LINES_2D, verts, NULL, center, c, 6);
+    }
 }
 
 void RSGL_drawPolygonFOutline(RSGL_rectF o, u32 sides, u32 thickness, RSGL_color c) {
@@ -2093,8 +2131,14 @@ void RSGL_drawOvalFOutline(RSGL_rectF o, u32 thickness, RSGL_color c) {
     RSGL_drawPolygonFOutlinePro(o, verts, (RSGL_pointF){0, verts}, c);
 }
 
+#ifndef RSGL_NO_TEXTURE_DEFINE
 /* textures / images */
 u32 RSGL_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
+
+    #ifndef GL_RG
+    #define GL_RG 0x8227
+    #endif
+
     unsigned int id = 0;
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -2173,6 +2217,7 @@ void RSGL_atlasAddBitmap(u32 atlas, u8* bitmap, float x, float y, float w, float
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
+#endif
 
 #ifndef RSGL_NO_STB_IMAGE
 RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
