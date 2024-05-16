@@ -166,6 +166,8 @@ int main(void)
 
     glfwDestroyWindow(window);
 
+    RSGL_textbox_free(tb);
+
     RSGL_graphics_free();
 
     glfwTerminate();

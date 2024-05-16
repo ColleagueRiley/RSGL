@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 int main(void) {
-    RSGL_window* win = RSGL_createWindow("RSGL event example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
+    RSGL_window* win = RSGL_createWindow("RSGL shapes example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
     win->fpsCap = 60;
 
     bool running = true;

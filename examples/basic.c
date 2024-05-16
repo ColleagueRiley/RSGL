@@ -92,14 +92,25 @@ int main() {
         RSGL_window_clear(win, RSGL_RGB(255, 255, 255));    
 
         {                
-            RSGL_point3DF points[3] = {RSGL_POINT3DF(20, win->r.h - 20, 0.0f), RSGL_POINT3DF(win->r.w - 20,win->r.h - 20, 0.0f), RSGL_POINT3DF((win->r.w - 40) / 2, 20, 0.0f)};
-            RSGL_pointF tex[3];
-    
+            float points[] = {
+                                        20,                           win->r.h - 20,       0.0f, 
+                                        win->r.w - 20,                win->r.h - 20,       0.0f, 
+                                        (win->r.w - 40) / 2,          20,                  0.0f
+                                      };
+            
+            float texPoints[] = {   
+                        0.0f, 1.0f, 
+                        1.0f, 1.0f,
+                        ((float)(points[6] - points[0])/points[3]< 1) ? (float)(points[6] - points[0]) / points[3] : 0, 0.0f,
+            };
+
             RSGL_setGradient(gradient, 3);
 
-            RSGL_point3DF center = {points[2].x, (points[2].y + points[0].y) / 2.0f, 0};
-            RSGL_basicDraw(RSGL_TRIANGLES_2D, points, tex, center, RSGL_RGB(255, 255, 0), 3);
-            
+            RSGL_point3DF center = {points[(3 * 2)], (points[(3 * 2) + 1] + points[1]) / 2.0f, 0};
+            RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, center, RSGL_RGB(255, 255, 0), 3);
+
+
+
             if (running == false)
                 break;
             

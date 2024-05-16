@@ -2,11 +2,11 @@
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 
+
 int main() {
     RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
 
     RSGL_setFont(RSGL_loadFont("COMICSANS.ttf"));
-    
     RSGL_textbox* tb = RSGL_initTextbox(0);
     RSGL_textbox_setTextInfo(tb, RSGL_CIRCLE(0, 0, 20), RSGL_RGB(100, 100, 100));
     

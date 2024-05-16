@@ -179,8 +179,14 @@ There is also a switch button that allows you to toggle dark mode.
 ## custom_render_gl1.c
 `examples/custom_render_gl1` is an example that shows how you'd implement a custom rendering system.
 
+## custom_render_template.c
+`examples/custom_render_gl1` is an example/template for implementing a completely custom rendering system.
+
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in.
+
+  All of RSGL's dependencies can also be cut out and/or replaced.\
+  In theory, you could use RSGL as a single-header file without the other headers.
 
 ## RGFW
   RGFW, Riley's Graphics FrameWork.\
