@@ -1501,8 +1501,6 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         rglInit(NULL);
         #endif
         #endif
-
-        RSGL_viewport(0, 0, win->r.w, win->r.h);
         
         #ifdef RGL_OPENGL_43
         glClearDepth(1.0f);
@@ -1724,9 +1722,7 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     #ifndef RSGL_CUSTOM_DRAW
     rglInit(loader);
     #endif
-
-    RSGL_viewport(0, 0, r.w, r.h);
-    
+  
     #ifdef RGL_OPENGL_43
     glClearDepth(1.0f);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
