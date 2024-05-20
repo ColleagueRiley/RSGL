@@ -815,8 +815,11 @@ RSGLDEF RSGL_image RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) ((RSGL_image) RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0}))
 
-#define RSGL_deleteTexture(texture) rglDeleteTextures(1, &texture);
-#define RSGL_deleteTextures(texture, num) rglDeleteTextures(num, &texture);
+#define RSGL_viewport glViewport
+#define RSGL_api_clear glClear
+#define RSGL_api_clearColor glClearColor
+#define RSGL_deleteTexture(texture) glDeleteTextures(1, &texture);
+#define RSGL_deleteTextures(texture, num) glDeleteTextures(num, &texture);
 
 /* 
     these two functions can be used before RSGL_createTexture in order to create 
@@ -1493,10 +1496,6 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         #endif
         #endif
 
-        glViewport(0, 0, win->r.w, win->r.h);
-        
-        glDepthFunc(GL_LEQUAL);
-
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
         #ifndef RSGL_NO_TEXT
@@ -1515,7 +1514,7 @@ RGFW_Event* RSGL_window_checkEvent(RSGL_window* win) {
     RGFW_Event* e = RGFW_window_checkEvent(win);
 
     if (win->event.type == RGFW_windowAttribsChange)
-        glViewport(0, 0, win->r.w, win->r.h);
+        RSGL_viewport(0, 0, win->r.w, win->r.h);
 
     return e;
 }
@@ -1542,8 +1541,8 @@ void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     RSGL_window_swapBuffers(win);
 
     RFont_update_framebuffer(win->r.w, win->r.h);
-    glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    RSGL_api_clearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    RSGL_api_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     #ifndef RSGL_CUSTOM_DRAW
     rglRenderBatch();
@@ -1567,7 +1566,7 @@ void RSGL_window_close(RSGL_window* win) {
         #endif
         
         for (i = 0; i < RSGL_images_len; i++)
-            glDeleteTextures(1, &RSGL_images[i].tex);
+            RSGL_deleteTexture(RSGL_images[i].tex);
     }
 
     RGFW_window_close(win);
@@ -1707,7 +1706,7 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     rglInit(loader);
     #endif
 
-    glViewport(0, 0, r.w, r.h);
+    RSGL_viewport(0, 0, r.w, r.h);
     
     glDepthFunc(RGL_LEQUAL);
 
@@ -1728,8 +1727,8 @@ void RSGL_graphics_clear(RSGL_color color) {
     glClearDepth(1.0f);
     #endif
 
-    glClearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-    glClear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
+    RSGL_api_clearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    RSGL_api_clear(RGL_COLOR_BUFFER_BIT | RGL_DEPTH_BUFFER_BIT);
 
     #ifndef RSGL_CUSTOM_DRAW
     rglRenderBatch();
@@ -1739,7 +1738,7 @@ void RSGL_graphics_clear(RSGL_color color) {
 void RSGL_graphics_updateSize(RSGL_area r) {
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
     RFont_update_framebuffer(r.w, r.h);
-    glViewport(0, 0, r.w, r.h);
+    RSGL_viewport(0, 0, r.w, r.h);
 }
 
 void RSGL_graphics_free() {
@@ -2122,6 +2121,7 @@ void RSGL_drawOvalFOutline(RSGL_rectF o, u32 thickness, RSGL_color c) {
     RSGL_drawPolygonFOutlinePro(o, verts, (RSGL_pointF){0, verts}, c);
 }
 
+#ifndef RSGL_NO_TEXTURE_DEFINE
 #ifndef GL_RG
 #define GL_RG                             0x8227
 #endif
@@ -2206,6 +2206,7 @@ void RSGL_atlasAddBitmap(u32 atlas, u8* bitmap, float x, float y, float w, float
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
+#endif
 
 #ifndef RSGL_NO_STB_IMAGE
 RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
@@ -2355,7 +2356,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 void RFont_render_init() { }
 
 void RFont_render_free(u32 atlas) {
-   glDeleteTextures(1, &atlas);
+   RSGL_deleteTexture(atlas);
 }
 
 void RFont_render_legacy(u8 legacy) { }
