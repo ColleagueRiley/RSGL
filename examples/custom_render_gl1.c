@@ -1,37 +1,35 @@
 #define RSGL_NO_AUDIO /* RSGL uses miniaudio.h, and I don't want to compile it if I'm not using it */
 #define RSGL_IMPLEMENTATION
-#define RGL_NO_RENDER
+#define GL_NO_RENDER
 #define RSGL_CUSTOM_DRAW
 #define RFONT_RENDER_LEGACY
-#define RFONT_RENDER_RGL
-#define RFONT_CUSTOM_GL
-#define RGL_LOAD
-#define RGL_OPENGL_LEGACY
+#define GL_LOAD
 
 #include "RSGL.h"
 
 void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF center, RSGL_color c, size_t len) {  
+    if (GL_TYPE > 0x0010)
+        GL_TYPE -= 0x0010;
+    
     i32 i;
     
-    if (GL_TYPE > 0x0010) {
-        GL_TYPE -= 0x0010;
-    }
-    
-    glPushMatrix();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    if (!center.x && !center.y)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, RSGL_args.texture);
     glLineWidth(RSGL_args.lineWidth);
 
     glColor4ub(c.r, c.g, c.b, c.a);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
-    glMatrixMode(GL_MODELVIEW);
-
-    glOrtho(0, RSGL_args.currentRect.w, RSGL_args.currentRect.h, 0, -RSGL_args.currentRect.w, RSGL_args.currentRect.w);
 
     if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z) {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+
         if (RSGL_args.center.x != -1 && RSGL_args.center.y != -1 &&  RSGL_args.center.z != -1)
             center = RSGL_args.center;
 
@@ -42,9 +40,10 @@ void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF 
         glTranslatef(-center.x, -center.y, -center.z);
     }
 
+    glBegin(GL_TYPE);
         size_t pIndex = 0;
         size_t tIndex = 0;
-    glBegin(GL_TYPE);
+
         for (i = 0; i < len; i++) {
             if (i && i <= RSGL_args.gradient_len)
                 glColor4ub(RSGL_args.gradient[i - 1].r, RSGL_args.gradient[i - 1].g, RSGL_args.gradient[i - 1].b, RSGL_args.gradient[i - 1].a);
@@ -56,55 +55,15 @@ void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF 
             tIndex += 2;
         }
     glEnd();
-    glPopMatrix();
+
+    if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z)
+        glPopMatrix();
 
     if (RSGL_argsClear) {
         RSGL_setTexture(0);
         RSGL_clearArgs();
     }
 }
-
-void RFont_render_set_color(float r, float g, float b, float a) {
-   glColor4f(r, g, b, a);
-}
-
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
-   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-   glShadeModel(GL_SMOOTH);
-
-   glMatrixMode(GL_MODELVIEW);
-   glLoadIdentity();
-
-   glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-   glEnable(GL_CULL_FACE);    
-
-   glEnable(GL_BLEND);
-   glEnable(GL_TEXTURE_2D);
-
-   glBindTexture(GL_TEXTURE_2D, atlas);
-
-	glPushMatrix();
-
-	glBegin(GL_TRIANGLES);
-
-	size_t i;
-	for (i = 0; i < (nverts * 2); i += 2) {
-		if (tcoords != NULL)
-            glTexCoord2f(tcoords[i], tcoords[i + 1]);
-		
-        glVertex2f(verts[i], verts[i + 1]);
-	}
-	glEnd();
-	glPopMatrix();
-
-   glBindTexture(GL_TEXTURE_2D, 0);
-   glDisable(GL_TEXTURE_2D);
-   glDisable(GL_BLEND);
-}
-
-void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
-void RFont_render_legacy(u8 legacy) { }
-void RFont_render_init() {}
 
 int main() {
     RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);

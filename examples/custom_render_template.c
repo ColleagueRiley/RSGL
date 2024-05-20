@@ -86,18 +86,6 @@ void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF 
     }
 }
 
-void RFont_render_set_color(float r, float g, float b, float a) {
-
-}
-
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
-
-}
-
-void RFont_render_free(u32 atlas) {  }
-void RFont_render_legacy(u8 legacy) { }
-void RFont_render_init() {}
-
 int main() {
     RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);
 

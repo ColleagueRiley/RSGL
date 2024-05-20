@@ -93,9 +93,9 @@ int main() {
 
         {                
             float points[] = {
-                                        20,                           win->r.h - 20,       0.0f, 
-                                        win->r.w - 20,                win->r.h - 20,       0.0f, 
-                                        (win->r.w - 40) / 2,          20,                  0.0f
+                                        RSGL_GET_WORLD_POINT(20, win->r.h - 20, 0.0f), 
+                                        RSGL_GET_WORLD_POINT(win->r.w - 20, win->r.h - 20,  0.0f), 
+                                        RSGL_GET_WORLD_POINT((win->r.w - 40) / 2, 20, 0.0f)
                                       };
             
             float texPoints[] = {   

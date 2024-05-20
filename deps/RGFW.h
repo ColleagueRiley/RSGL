@@ -130,12 +130,16 @@ extern "C" {
 	
 #define RGFW_WINDOWS
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(WIN32)
 #define WIN32
 #endif
 
 #if defined(_WIN64)
+
+#ifndef WIN64
 #define WIN64
+#endif
+
 #define _AMD64_
 #undef _X86_
 #else

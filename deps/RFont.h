@@ -680,6 +680,7 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
 
    float startX = x;
    u32 i = 0;
+   u32 tIndex = 0;
 
    char* str;
 
@@ -713,55 +714,62 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
       
       verts[i] = RFONT_GET_WORLD_X((i32)realX, RFont_width); 
       verts[i + 1] = RFONT_GET_WORLD_Y(realY, RFont_height);
+      verts[i + 2] = 0;
       /*  */
-      verts[i + 2] = RFONT_GET_WORLD_X((i32)realX, RFont_width);
-      verts[i + 3] = RFONT_GET_WORLD_Y(realY + glyph.h , RFont_height);
-      /*  */
-      verts[i + 4] = RFONT_GET_WORLD_X((i32)(realX + glyph.w), RFont_width);
-      verts[i + 5] = RFONT_GET_WORLD_Y(realY + glyph.h , RFont_height);
-      /*  */
+      verts[i + 3] = RFONT_GET_WORLD_X((i32)realX, RFont_width);
+      verts[i + 4] = RFONT_GET_WORLD_Y(realY + glyph.h , RFont_height);
+      verts[i + 5] = 0;
       /*  */
       verts[i + 6] = RFONT_GET_WORLD_X((i32)(realX + glyph.w), RFont_width);
-      verts[i + 7] = RFONT_GET_WORLD_Y(realY, RFont_height);
+      verts[i + 7] = RFONT_GET_WORLD_Y(realY + glyph.h , RFont_height);
+      verts[i + 8] = 0;
       /*  */
-      verts[i + 8] = RFONT_GET_WORLD_X((i32)realX, RFont_width); 
-      verts[i + 9] = RFONT_GET_WORLD_Y(realY, RFont_height);
+      /*  */
+      verts[i + 9] = RFONT_GET_WORLD_X((i32)(realX + glyph.w), RFont_width);
+      verts[i + 10] = RFONT_GET_WORLD_Y(realY, RFont_height);
+      verts[i + 11] = 0;
+      /*  */
+      verts[i + 12] = RFONT_GET_WORLD_X((i32)realX, RFont_width); 
+      verts[i + 13] = RFONT_GET_WORLD_Y(realY, RFont_height);
+      verts[i + 14] = 0;
       /*  */
 
-      verts[i + 10] = RFONT_GET_WORLD_X((i32)(realX + glyph.w), RFont_width);
-      verts[i + 11] = RFONT_GET_WORLD_Y(realY + glyph.h , RFont_height);
+      verts[i + 15] = RFONT_GET_WORLD_X((i32)(realX + glyph.w), RFont_width);
+      verts[i + 16] = RFONT_GET_WORLD_Y(realY + glyph.h , RFont_height);
+      verts[i + 17] = 0;
 
       /* texture coords */
 
       //#if defined(RFONT_RENDER_LEGACY) || defined(RFONT_RENDER_RGL)
-      tcoords[i] = RFONT_GET_TEXPOSX(glyph.x);
-      tcoords[i + 1] = 0;
+      tcoords[tIndex] = RFONT_GET_TEXPOSX(glyph.x);
+      tcoords[tIndex + 1] = 0;
       //#endif
 
       /*  */
-      tcoords[i + 2] = RFONT_GET_TEXPOSX(glyph.x); 
-      tcoords[i + 3] = RFONT_GET_TEXPOSY(glyph.h);
+      tcoords[tIndex + 2] = RFONT_GET_TEXPOSX(glyph.x); 
+      tcoords[tIndex + 3] = RFONT_GET_TEXPOSY(glyph.h);
       /*  */
-      tcoords[i + 4] = RFONT_GET_TEXPOSX(glyph.x2);
-      tcoords[i + 5] = RFONT_GET_TEXPOSY(glyph.h);
+      tcoords[tIndex + 4] = RFONT_GET_TEXPOSX(glyph.x2);
+      tcoords[tIndex + 5] = RFONT_GET_TEXPOSY(glyph.h);
       /*  */
       /*  */
-      tcoords[i + 6] = RFONT_GET_TEXPOSX(glyph.x2);
-      tcoords[i + 7] = 0;
+      tcoords[tIndex + 6] = RFONT_GET_TEXPOSX(glyph.x2);
+      tcoords[tIndex + 7] = 0;
       /*  */
-      tcoords[i + 8] = RFONT_GET_TEXPOSX(glyph.x);
-      tcoords[i + 9] = 0;
+      tcoords[tIndex + 8] = RFONT_GET_TEXPOSX(glyph.x);
+      tcoords[tIndex + 9] = 0;
       /*  */ 
-      tcoords[i + 10] = RFONT_GET_TEXPOSX(glyph.x2);
-      tcoords[i + 11] = RFONT_GET_TEXPOSY(glyph.h);
+      tcoords[tIndex + 10] = RFONT_GET_TEXPOSX(glyph.x2);
+      tcoords[tIndex + 11] = RFONT_GET_TEXPOSY(glyph.h);
 
-      i += 12;
+      i += 18;
+      tIndex += 12;
 
       x += glyph.advance + spacing;
    }
 
    #ifndef RFONT_NO_GRAPHICS
-   RFont_render_text(font->atlas, verts, tcoords, i / 2);
+   RFont_render_text(font->atlas, verts, tcoords, i / 3);
    #endif
 
    return x;
@@ -922,7 +930,7 @@ void RFont_render_set_color(float r, float g, float b, float a) {
 
 void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
-   glHint(GL_PERSPECTIVE_CORRECTION_HINT, RGL_NICEST);
+   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
    glShadeModel(GL_SMOOTH);
 
    rglMatrixMode(RGL_MODELVIEW);
@@ -943,8 +951,11 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 	rglBegin(RGL_TRIANGLES_2D);
 
 	size_t i;
-	for (i = 0; i < (nverts * 2); i += 2) {
-		rglTexCoord2f(tcoords[i], tcoords[i + 1]);
+   size_t tIndex = 0;
+
+	for (i = 0; i < (nverts * 3); i += 3) {
+		rglTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
+      tIndex += 2;
 		
       rglVertex2f(verts[i], verts[i + 1]);
 	}
@@ -991,10 +1002,13 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 	glBegin(GL_TRIANGLES);
 
 	size_t i;
-	for (i = 0; i < (nverts * 2); i += 2) {
-		glTexCoord2f(tcoords[i], tcoords[i + 1]);
-		
-        glVertex2f(verts[i], verts[i + 1]);
+   size_t tIndex = 0;
+
+	for (i = 0; i < (nverts * 3); i += 3) {
+		glTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
+		tIndex += 2;
+
+      glVertex2f(verts[i], verts[i + 1]);
 	}
 	glEnd();
 	glPopMatrix();
@@ -1161,8 +1175,11 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
       glBegin(GL_TRIANGLES);
 
       size_t i;
-      for (i = 0; i < (nverts * 2); i += 2) {
-         glTexCoord2f(tcoords[i], tcoords[i + 1]);
+      size_t tIndex = 0;
+
+      for (i = 0; i < (nverts * 3); i += 3) {
+         glTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
+         tIndex += 2;
          
          glVertex2f(verts[i], verts[i + 1]);
       }
@@ -1175,8 +1192,8 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 
       glEnableVertexAttribArray(0);
       glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.vbo);
-      glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), verts, GL_DYNAMIC_DRAW);
-      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+      glBufferData(GL_ARRAY_BUFFER, nverts * 3 * sizeof(float), verts, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
       glEnableVertexAttribArray(1);
       glBindBuffer(GL_ARRAY_BUFFER, RFont_gl.tbo);
