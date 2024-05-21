@@ -30,8 +30,8 @@ int main() {
             if ((win->event.type == RSGL_keyPressed && RSGL_isPressedI(win, RGFW_Space)) || 
                 toggleLegacy.status == RSGL_pressed
             ) {
-                RSGL_legacy(!RGLinfo.legacy);
-                toggleLegacy.toggle = !RGLinfo.legacy;
+                RSGL_legacy(!RSGL_args.legacy);
+                toggleLegacy.toggle = !RSGL_args.legacy;
             }
         }
 

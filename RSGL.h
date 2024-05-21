@@ -763,9 +763,9 @@ RSGLDEF const char* RFont_fmt(const char* string, ...);
 #define RSGL_strFmt RFont_fmt
 
 /* loads a font into RSGL, returns it's index into the RSGL_fonts array, this is used as an id in later functions */
-RSGLDEF u32 RSGL_loadFont(const char* font);
+RSGLDEF i32 RSGL_loadFont(const char* font);
 /* sets font as the current font in use based on index in RSGL_font, given when it was loaded */
-RSGLDEF void RSGL_setFont(u32 font);
+RSGLDEF void RSGL_setFont(i32 font);
 
 typedef struct RFont_font RFont_font;
 /* sets source RFont font as the current font, given when it was loaded */
@@ -1413,7 +1413,9 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
             if (i && i <= RSGL_args.gradient_len)
                 rglColor4ub(RSGL_args.gradient[i - 1].r, RSGL_args.gradient[i - 1].g, RSGL_args.gradient[i - 1].b, RSGL_args.gradient[i - 1].a);
             
-            rglTexCoord2f(texPoints[tIndex], texPoints[tIndex + 1]);
+            if (texPoints != NULL)
+                rglTexCoord2f(texPoints[tIndex], texPoints[tIndex + 1]);
+            
             rglVertex3f(points[pIndex + 0], points[pIndex + 1], points[pIndex + 2]);
 
             pIndex += 3;
@@ -2268,13 +2270,23 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
 
 #ifndef RSGL_NO_TEXT
 
+#ifdef WIN32
+#include <io.h>
+#define F_OK 0
+#define access _access
+#endif
 
-u32 RSGL_loadFont(const char* font) {
+i32 RSGL_loadFont(const char* font) {
     u32 i;
     for (i = 0; i < RSGL_font.len; i++) 
         if (RSGL_font.fonts[i].name == font)
             return i;
     
+    if (access(font, F_OK)) {
+        printf("RSGL_loadFont File %s does not exist.\n", font);
+        return -1;
+    }
+
     if (RSGL_font.len == RSGL_font.cap) {
         RSGL_font.cap += RSGL_NEW_FONTS;
 
@@ -2293,7 +2305,12 @@ u32 RSGL_loadFont(const char* font) {
     return RSGL_font.len - 1;
 }
 
-void RSGL_setFont(u32 font) {
+void RSGL_setFont(i32 font) {
+    if (font == -1) {
+        printf("RSGL_setFont : invalid font\n");
+        return;
+    }
+
     RSGL_font.f = RSGL_font.fonts[font].f;
 }
 
@@ -2308,7 +2325,7 @@ void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color) {
 #endif
 
 void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color) {
-    if (text == NULL || text[0] == '\0')
+    if (text == NULL || text[0] == '\0' || RSGL_font.f == NULL)
         return;
 
     RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
@@ -2333,6 +2350,9 @@ RSGL_circle RSGL_alignText_len(char* str, size_t str_len, RSGL_circle c, RSGL_re
 }
 
 u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd) {
+    if (RSGL_font.f == NULL)
+        return 0;
+    
     return RFont_text_width_len(RSGL_font.f, text, textEnd, fontSize, 0, 0.0);
 }
 
@@ -3109,8 +3129,9 @@ i32 RSGL_container_update(RSGL_container* con, RGFW_Event event) {
             RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x, container->title.rect.y, container->title.rect.w - 35, container->title.rect.h), event.point)
         )
             container->held = true;
-        else if (event.type == RSGL_mousePosChanged && container->held)
-            RSGL_container_setPos(con, RSGL_POINT(event.point.x, event.point.y + 30));
+        else if (event.type == RSGL_mousePosChanged && container->held) {
+            RSGL_container_setPos(con, RSGL_POINT(event.point.x - container->title.rect.x, event.point.y + 30));
+        } 
         else
             container->held = false;
     }    

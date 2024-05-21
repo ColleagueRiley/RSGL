@@ -50,6 +50,10 @@ all:
 	$(AR) rcs libRSGL.a *.o
 	make examples
 
+debug:
+	make
+	cd examples && make debug CUSTOM_CFLAGS=$(CUSTOM_CFLAGS)
+
 static:
 	make RSGL.o
 	$(AR) rcs libRSGL.a *.o
@@ -57,7 +61,7 @@ static:
 RSGL.o:
 	$(CC) $(CUSTOM_CFLAGS) -x c -c -Wall RSGL.h -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
 
-examples:
+build_examples:
 	cd examples && make CUSTOM_CFLAGS=$(CUSTOM_CFLAGS)
 
 clean:
