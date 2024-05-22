@@ -34,7 +34,9 @@
 	#define RGFW_BUFFER - (optional) just draw directly to (RGFW) window pixel buffer that is drawn to screen (the buffer is in the RGBA format)
 	#define RGFW_EGL - (optional) use EGL for loading an OpenGL context (instead of the system's opengl api)
 	#define RGFW_OPENGL_ES1 - (optional) use EGL to load and use Opengl ES (version 1) for backend rendering (instead of the system's opengl api)
+									This version doesn't work for desktops (I'm pretty sure)
 	#define RGFW_OPENGL_ES2 - (optional) use OpenGL ES (version 2)
+	#define RGFW_OPENGL_ES3 - (optional) use OpenGL ES (version 3)
 	#define RGFW_VULKAN - (optional) use vulkan for the rendering backend (rather than opengl)
 	#define RGFW_DIRECTX - (optional) use directX for the rendering backend (rather than opengl) (windows only, defaults to opengl for unix)
 	#define RGFW_NO_API - (optional) don't use any rendering API (no opengl, no vulkan, no directX)
@@ -167,7 +169,7 @@ extern "C" {
 #define RGFW_MACOS
 #endif
 
-#if (defined(RGFW_OPENGL_ES1) || defined(RGFW_OPENGL_ES2)) && !defined(RGFW_EGL)
+#if (defined(RGFW_OPENGL_ES1) || defined(RGFW_OPENGL_ES2) || defined(RGFW_OPENGL_ES3)) && !defined(RGFW_EGL)
 #define RGFW_EGL
 #endif
 #if defined(RGFW_EGL) && defined(__APPLE__)
@@ -391,7 +393,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		u32 inFocus;  /*if the window is in focus or not*/
 
 		u32 fps; /*the current fps of the window [the fps is checked when events are checked]*/
-		u32 current_ticks, frames; /* this is used for counting the fps */
+		u64 frameTime, frameTime2; /* this is used for counting the fps */
 
 		u8 lockState;
 
@@ -785,8 +787,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 	RGFWDEF void RGFW_window_checkFPS(RGFW_window* win); /*!< updates fps / sets fps to cap (ran by RGFW_window_checkEvent)*/
 	RGFWDEF u64 RGFW_getTime(void); /* get time in seconds */
 	RGFWDEF u64 RGFW_getTimeNS(void); /* get time in nanoseconds */
-	RGFWDEF u32 RGFW_getFPS(void); /* get current FPS (win->event.fps) */
-	RGFWDEF void RGFW_sleep(u32 microsecond); /* sleep for a set time */
+	RGFWDEF void RGFW_sleep(u64 microsecond); /* sleep for a set time */
 #endif /* RGFW_HEADER */
 
 	/*
@@ -1311,6 +1312,10 @@ typedef struct { i32 x, y; } RGFW_vector;
 
 	RGFW_window* RGFW_window_basic_init(RGFW_rect rect, u16 args) {
 		RGFW_window* win = (RGFW_window*) RGFW_MALLOC(sizeof(RGFW_window)); /* make a new RGFW struct */
+
+		#ifdef RGFW_WINDOWS
+		timeBeginPeriod(1);
+		#endif
 
 #ifdef RGFW_ALLOC_DROPFILES
 		win->event.droppedFiles = (char**) RGFW_MALLOC(sizeof(char*) * RGFW_MAX_DROPS);
@@ -2264,8 +2269,9 @@ typedef struct { i32 x, y; } RGFW_vector;
 			EGL_RENDERABLE_TYPE,
 			#ifdef RGFW_OPENGL_ES1
 			EGL_OPENGL_ES1_BIT,
-			#endif
-			#ifdef RGFW_OPENGL_ES2
+			#elif defined(RGFW_OPENGL_ES3)
+			EGL_OPENGL_ES3_BIT,
+			#elif defined(RGFW_OPENGL_ES2)
 			EGL_OPENGL_ES2_BIT,
 			#else
 			EGL_OPENGL_BIT,
@@ -2295,12 +2301,13 @@ typedef struct { i32 x, y; } RGFW_vector;
 		RGFW_GL_ADD_ATTRIB(EGL_SAMPLES, RGFW_SAMPLES);
 
 		if (RGFW_majorVersion) {
+			attribs[1] = RGFW_majorVersion;
 			RGFW_GL_ADD_ATTRIB(EGL_CONTEXT_OPENGL_PROFILE_MASK, EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT);
 			RGFW_GL_ADD_ATTRIB(EGL_CONTEXT_MAJOR_VERSION, RGFW_majorVersion);
 			RGFW_GL_ADD_ATTRIB(EGL_CONTEXT_MINOR_VERSION, RGFW_minorVersion);
 		}
 
-		#if defined(RGFW_OPENGL_ES1) || defined(RGFW_OPENGL_ES2)
+		#if defined(RGFW_OPENGL_ES1) || defined(RGFW_OPENGL_ES2) || defined(RGFW_OPENGL_ES3)
 		eglBindAPI(EGL_OPENGL_ES_API);
 		#else
 		eglBindAPI(EGL_OPENGL_API);		
@@ -5969,9 +5976,6 @@ static HMODULE wglinstance = NULL;
 	void RGFW_window_swapBuffers(RGFW_window* win) {
 		assert(win != NULL);
 
-		win->event.frames++;
-		RGFW_window_checkFPS(win);
-
 		RGFW_window_makeCurrent(win);
 
 		/* clear the window*/
@@ -6051,24 +6055,25 @@ static HMODULE wglinstance = NULL;
 #endif
 		}
 
-		if (win->src.winArgs & RGFW_NO_GPU_RENDER)
-			return;
+		if (!(win->src.winArgs & RGFW_NO_GPU_RENDER)) {
+			#ifdef RGFW_EGL
+					eglSwapBuffers(win->src.EGL_display, win->src.EGL_surface);
+			#elif defined(RGFW_OPENGL)
+			#if defined(RGFW_X11) && defined(RGFW_OPENGL)
+					glXSwapBuffers((Display*) win->src.display, (Window) win->src.window);
+			#elif defined(RGFW_WINDOWS)
+					SwapBuffers(win->src.hdc);
+			#elif defined(RGFW_MACOS)
+					NSOpenGLContext_flushBuffer(win->src.rSurf);
+			#endif
+			#endif
 
-#ifdef RGFW_EGL
-		eglSwapBuffers(win->src.EGL_display, win->src.EGL_surface);
-#elif defined(RGFW_OPENGL)
-#if defined(RGFW_X11) && defined(RGFW_OPENGL)
-		glXSwapBuffers((Display*) win->src.display, (Window) win->src.window);
-#elif defined(RGFW_WINDOWS)
-		SwapBuffers(win->src.hdc);
-#elif defined(RGFW_MACOS)
-		NSOpenGLContext_flushBuffer(win->src.rSurf);
-#endif
-#endif
+			#if defined(RGFW_WINDOWS) && defined(RGFW_DIRECTX)
+					win->src.swapchain->lpVtbl->Present(win->src.swapchain, 0, 0);
+			#endif
+		}
 
-#if defined(RGFW_WINDOWS) && defined(RGFW_DIRECTX)
-		win->src.swapchain->lpVtbl->Present(win->src.swapchain, 0, 0);
-#endif
+		RGFW_window_checkFPS(win);
 	}
 
 	void RGFW_window_maximize(RGFW_window* win) {
@@ -6110,11 +6115,11 @@ static HMODULE wglinstance = NULL;
 		#endif
 	}
 
-	void RGFW_sleep(u32 ms) {
+	void RGFW_sleep(u64 ms) {
 #ifndef RGFW_WINDOWS
 		struct timespec time;
 		time.tv_sec = 0;
-		time.tv_nsec = ms * 1000;
+		time.tv_nsec = ms * 1e+6;
 
 		nanosleep(&time, NULL);
 #else
@@ -6122,32 +6127,31 @@ static HMODULE wglinstance = NULL;
 #endif
 	}
 
-	static float currentFrameTime = 0;
-
 	void RGFW_window_checkFPS(RGFW_window* win) {
-		assert(win != NULL);
+		u64 deltaTime = RGFW_getTimeNS() - win->event.frameTime;
 
-		win->event.fps = RGFW_getFPS();
+		u64 fps = round(1e+9 / deltaTime);
+		win->event.fps = fps;
 
-		if (win->fpsCap == 0)
-			return;
+		if (win->fpsCap && fps > win->fpsCap) {
+			u64 frameTimeNS = 1e+9 / win->fpsCap;
+			u64 sleepTimeMS = (frameTimeNS - deltaTime) / 1e6;
 
-		double targetFrameTime = 1.0 / win->fpsCap;
-		double elapsedTime = RGFW_getTime() - currentFrameTime;
-
-		if (elapsedTime < targetFrameTime) {
-			u32 sleepTime = (u32) ((targetFrameTime - elapsedTime) * 1e3);
-			RGFW_sleep(sleepTime);
+			if (sleepTimeMS > 0) {
+				RGFW_sleep(sleepTimeMS);
+				win->event.frameTime = 0;
+			}
 		}
 
-		currentFrameTime = (float) RGFW_getTime();
+		win->event.frameTime = RGFW_getTimeNS();
+		
+		if (win->fpsCap) {
+			u64 deltaTime = RGFW_getTimeNS() - win->event.frameTime2;
 
-		if (elapsedTime < targetFrameTime) {
-			u32 sleepTime = (u32) ((targetFrameTime - elapsedTime) * 1e3);
-			RGFW_sleep(sleepTime);
+			win->event.fps = round(1e+9 / deltaTime);
+			
+			win->event.frameTime2 = RGFW_getTimeNS();
 		}
-
-		currentFrameTime = (float) RGFW_getTime();
 	}
 
 #ifdef __APPLE__
@@ -6165,7 +6169,7 @@ static HMODULE wglinstance = NULL;
 		return (u64) (counter.QuadPart * 1e9 / frequency.QuadPart);
 #elif defined(__unix__)
 		struct timespec ts = { 0 };
-		clock_gettime(CLOCK_MONOTONIC, &ts);
+		clock_gettime(1, &ts);
 		unsigned long long int nanoSeconds = (unsigned long long int)ts.tv_sec*1000000000LLU + (unsigned long long int)ts.tv_nsec;
 
 		return nanoSeconds;
@@ -6189,7 +6193,7 @@ static HMODULE wglinstance = NULL;
 		return (u64) (counter.QuadPart / (double) frequency.QuadPart);
 #elif defined(__unix__)
 		struct timespec ts = { 0 };
-		clock_gettime(CLOCK_MONOTONIC, &ts);
+		clock_gettime(1, &ts);
 		unsigned long long int nanoSeconds = (unsigned long long int)ts.tv_sec*1000000000LLU + (unsigned long long int)ts.tv_nsec;
 
 		return (double)(nanoSeconds) * 1e-9;
@@ -6201,27 +6205,6 @@ static HMODULE wglinstance = NULL;
 		return (double) mach_absolute_time() * (double) timebase_info.numer / ((double) timebase_info.denom * 1e9);
 #endif
 		return 0;
-	}
-
-	u32 RGFW_getFPS(void) {
-		static double previousSeconds = 0.0;
-		if (previousSeconds == 0.0)
-			previousSeconds = (double) RGFW_getTime();//glfwGetTime();
-
-		static i16 frameCount;
-		double currentSeconds = (double) RGFW_getTime();//glfwGetTime();
-		double elapsedSeconds = currentSeconds - previousSeconds;
-		static double fps = 0;
-
-		if (elapsedSeconds > 0.25) {
-			previousSeconds = currentSeconds;
-			fps = (double) frameCount / elapsedSeconds;
-			frameCount = 0;
-		}
-
-		frameCount++;
-
-		return (u32) fps;
 	}
 
 #endif /*RGFW_IMPLEMENTATION*/
