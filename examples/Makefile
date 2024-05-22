@@ -18,7 +18,7 @@ endif
 endif
 
 ifeq ($(detected_OS),Windows)
-	LIBS := -I.. -lopengl32 -lgdi32
+	LIBS := -I.. -lopengl32 -lgdi32 -lWinmm
 endif
 ifeq ($(detected_OS),Darwin)        # Mac OS X
 	LIBS := -I.. -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
@@ -62,7 +62,7 @@ debug:
 	./container
 	./textbox
 
-GLFW := -lglfw3 -lopengl32 -lgdi32
+GLFW := -lglfw3 -lopengl32 -lgdi32 -lWinmm
 
 ifeq ($(detected_OS),Darwin)        # Mac OS X
 	GLFW := -lglfw -framework OpenGL
