@@ -1308,7 +1308,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 #endif
 
 	#ifdef RGFW_WINDOWS
-	u32 timeBeginPeriod(u32 uPeriod);
+	__declspec(dllimport) u32 __stdcall timeBeginPeriod(u32 uPeriod);
 	#endif
 
 	RGFWDEF RGFW_window* RGFW_window_basic_init(RGFW_rect rect, u16 args);
@@ -1320,7 +1320,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		#ifdef RGFW_WINDOWS
 		timeBeginPeriod(1);
 		#endif
-
+ 
 #ifdef RGFW_ALLOC_DROPFILES
 		win->event.droppedFiles = (char**) RGFW_MALLOC(sizeof(char*) * RGFW_MAX_DROPS);
 		u32 i;
@@ -6356,7 +6356,7 @@ static HMODULE wglinstance = NULL;
 	void NSCursor_performSelector(void* cursor, void* selector);
 #endif
 
-	/* mouse icons */
+/* mouse icons */
 #define RGFW_MOUSE_ARROW 				RGFW_OS_BASED_VALUE(68,   32512, NSCursor_arrowStr("arrowCursor"))
 #define RGFW_MOUSE_IBEAM 				RGFW_OS_BASED_VALUE(152,  32513, NSCursor_arrowStr("IBeamCursor"))
 #define RGFW_MOUSE_CROSSHAIR		 	RGFW_OS_BASED_VALUE(34,   32515, NSCursor_arrowStr("crosshairCursor"))

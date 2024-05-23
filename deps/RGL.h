@@ -1486,8 +1486,12 @@ int rglCheckRenderBatchLimit(int vCount) {
 /* Initialize drawing mode (how to organize vertex) */
 void rglBegin(int mode) {
     if (RGLinfo.legacy) {
-        if (mode > 0x0010)
+        if (mode > 0x0010) {
             mode -= 0x0010;
+            glDisable(GL_DEPTH_TEST);
+        }
+        else 
+            glEnable(GL_DEPTH_TEST);
         
         return glBegin(mode);
     }
