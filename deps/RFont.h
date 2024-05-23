@@ -99,6 +99,10 @@ int main () {
    typedef u8 b8;
 #endif
 
+#ifndef RFONT_UNUSED
+#define RFONT_UNUSED(x) if (x){}
+#endif
+
 /* 
 You can define these yourself if 
 you want to change anything
@@ -454,7 +458,7 @@ RFont_font* RFont_font_init(const char* font_name) {
    char* ttf_buffer = (char*)malloc(sizeof(char) * size); 
    fseek(ttf_file, 0U, SEEK_SET);
 
-   fread(ttf_buffer, 1, size, ttf_file);
+   RFONT_UNUSED( fread(ttf_buffer, 1, size, ttf_file) )
 
 
    return RFont_font_init_data((u8*)ttf_buffer, 1);
@@ -585,7 +589,7 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
 
    font->glyph_len++;
 
-   i32 x0, y0, x1, y1, w, h;
+   i32 x0, y0, x1, y1, w = 0, h = 0;
    if (stbtt_GetGlyphBox(&font->info, glyph->src, &x0, &y0, &x1, &y1) == 0)
       return (RFont_glyph){0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -815,13 +819,15 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
 #endif
 
 void RFont_debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam) {
+    RFONT_UNUSED(source) RFONT_UNUSED(id) RFONT_UNUSED(severity) RFONT_UNUSED(length) RFONT_UNUSED(userParam)
+
     if (type != GL_DEBUG_TYPE_ERROR)
         return;
 
     printf("OpenGL Debug Message: %s\n", message);
 }
 
-void RFont_opengl_getError() {
+void RFont_opengl_getError(void) {
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR) {
          switch (err) {
@@ -1018,7 +1024,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 }
 
 void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
-void RFont_render_legacy(u8 legacy) { }
+void RFont_render_legacy(u8 legacy) { RFONT_UNUSED(legacy) }
 void RFont_render_init() {}
 #endif /* defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)  */
 
@@ -1202,7 +1208,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 
       float* colors = malloc(sizeof(float) * nverts * 4);
 
-      int i = 0;
+      u32 i = 0;
       for (i = 0; i < (nverts * 4); i += 4) {
          colors[i] = RFont_color[0];
          colors[i + 1] = RFont_color[1];
@@ -1220,7 +1226,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
       GLushort* indices = malloc(sizeof(GLushort) * 6 * nverts);
       int k = 0;
 
-      int j;
+      u32 j;
       for (j = 0; j < (6 * nverts); j += 6) {
          indices[j] = 4*  k;
          indices[j + 1] = 4*k + 1;

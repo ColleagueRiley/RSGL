@@ -728,6 +728,8 @@ void rglSetTexture(u32 id) {
 #endif
 }
 
+#define RGL_UNUSED(x) if (x){}
+
 void rglSetProgram(u32 id) {
 #ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.program == id)
@@ -741,6 +743,8 @@ void rglSetProgram(u32 id) {
     RGLinfo.vertexCounter += RGLinfo.batches[RGLinfo.drawCounter - 1].vertexAlignment;
     RGLinfo.drawCounter++;
     RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount = 0;
+#else
+    RGL_UNUSED(id);
 #endif
 }
 
@@ -798,7 +802,7 @@ void rglUpdateTexture(u32 texture, u8* bitmap, u32 width, u32 height, u8 channel
 #ifdef RGL_DEBUG
 #include <stdio.h>
 
-void RGL_opengl_getError() {
+void RGL_opengl_getError(void) {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {
 		switch (err) {
@@ -1193,6 +1197,8 @@ void rglInit(void *loader) {
     #ifdef RGL_DEBUG
     rglGetError();
     #endif
+#else
+    RGL_UNUSED(loader);
 #endif
 }
 
@@ -1267,6 +1273,8 @@ void rglRenderBatch() {
 }
 
 void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocation, u32 colorLocation) {
+    /* for legacy rendering */
+    RGL_UNUSED(program); RGL_UNUSED(vertexLocation)  RGL_UNUSED(texCoordLocation) RGL_UNUSED(colorLocation)
 #ifndef RGL_OPENGL_LEGACY
     if (RGLinfo.legacy)
         return;
@@ -1433,6 +1441,8 @@ void rglLegacy(u8 state) {
     #ifndef RGL_OPENGL_LEGACY
     if (state != 2)
         RGLinfo.legacy = state;
+    #else
+    RGL_UNUSED(state);
     #endif
 }
 
