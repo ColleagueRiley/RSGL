@@ -94,6 +94,12 @@ int main() {
     RSGL_textbox_setStyle(tb, RSGL_STYLE_DARK);
     RSGL_textbox_alignText(tb, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
 
+    RSGL_button toggle = RSGL_initButton();
+    
+    /* this can be a rect or polygon */
+    RSGL_button_setPolygon(&toggle, RSGL_RECT(250, 50, 100, 50), 36);    
+    RSGL_button_setStyle(&toggle, RSGL_STYLE_DARK | RSGL_STYLE_TOGGLE | RSGL_STYLE_ROUNDED);
+
     bool running = true;
 
     while (running) {
@@ -104,11 +110,14 @@ int main() {
             }
 
             RSGL_button_update(&generic, win->event);
+            RSGL_button_update(&toggle, win->event);
             RSGL_textbox_update(tb, win->event);
         }
 
         RSGL_setFont(easy_font);
         RSGL_drawButton(generic);
+
+        RSGL_drawButton(toggle);
 
         RSGL_setFont(comicSans);
         RSGL_textbox_draw(tb);

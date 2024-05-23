@@ -21,6 +21,8 @@ int main() {
     RSGL_textbox_setStyle(tb2, RSGL_STYLE_DARK);
     RSGL_textbox_alignText(tb2, RSGL_ALIGN_LEFT | RSGL_ALIGN_UP);
 
+    RSGL_textbox_setWindow(tb2, win);
+
     bool running = true;
     while (running) {
         while (RSGL_window_checkEvent(win)) {

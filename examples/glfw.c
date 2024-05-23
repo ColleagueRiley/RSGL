@@ -4,6 +4,10 @@
 
 #include <GLFW/glfw3.h>
 
+#define RSGL_MOUSE_ARROW            GLFW_ARROW_CURSOR
+#define RSGL_MOUSE_IBEAM            GLFW_IBEAM_CURSOR
+#define RSGL_MOUSE_POINTING_HAND    GLFW_HAND_CURSOR
+
 #define RSGL_Up GLFW_KEY_UP
 #define RSGL_Down GLFW_KEY_DOWN
 #define RSGL_Left GLFW_KEY_LEFT
@@ -18,6 +22,22 @@ RGFW_Event GLFW_event;
 
 u8 RSGL_isPressedI(void* win, u32 key) {
     return GLFW_keys[key];
+}
+
+GLFWcursor* stdCursor = NULL;
+
+void RSGL_window_setMouseStandard(void* win, u32 cursorIcon) {
+    static u32 lastIcon = 0; 
+    if (cursorIcon == lastIcon)
+        return;
+    
+    if (stdCursor != NULL)
+        glfwDestroyCursor(stdCursor);
+    
+    stdCursor = glfwCreateStandardCursor(cursorIcon);
+
+    glfwSetCursor(win, stdCursor);
+    lastIcon = cursorIcon;
 }
 
 static void errorCallback(int error, const char* description)
@@ -144,6 +164,7 @@ int main(void)
     RSGL_textbox_setRect(tb, RSGL_RECT(20, 20, 200, 30));
     RSGL_textbox_setStyle(tb, RSGL_STYLE_DARK);
     RSGL_textbox_alignText(tb, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
+    RSGL_textbox_setWindow(tb, window);
 
     while (!glfwWindowShouldClose(window)) {
         glfwSwapBuffers(window);
@@ -167,6 +188,9 @@ int main(void)
     glfwDestroyWindow(window);
 
     RSGL_textbox_free(tb);
+
+    if (stdCursor != NULL)
+        glfwDestroyCursor(stdCursor);
 
     RSGL_graphics_free();
 

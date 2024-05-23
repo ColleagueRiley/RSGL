@@ -5,7 +5,7 @@
 
 int main() {
     RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
-    win->fpsCap = 120;
+    win->fpsCap = 60;
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
 
     RSGL_legacy(true);
@@ -30,12 +30,11 @@ int main() {
             if ((win->event.type == RSGL_keyPressed && RSGL_isPressedI(win, RGFW_Space)) || 
                 toggleLegacy.status == RSGL_pressed
             ) {
-                RSGL_legacy(!RSGL_args.legacy);
-                toggleLegacy.toggle = !RSGL_args.legacy;
+                RSGL_legacy(!toggleLegacy.toggle);
             }
         }
-
-        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", win->event.fps, RGLinfo.legacy ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
+    
+        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", win->event.fps, !toggleLegacy.toggle ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
         
         rotate.z++;
         RSGL_rotate(rotate);
