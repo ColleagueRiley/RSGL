@@ -511,6 +511,8 @@ void RSGL_window_setIcon(RSGL_window* win, /*!< source window */
 RSGLDEF void RSGL_window_setMouse(RSGL_window* win, u8* image, RSGL_area a, i32 channels);
 RSGLDEF void RSGL_window_setMouseDefault(RSGL_window* win); /* sets the mouse to1` the default mouse image */
 
+#define RSGL_window_setMouseStandard RGFW_window_setMouseStandard
+
 /* where the mouse is on the screen */
 RSGLDEF RSGL_point RSGL_getGlobalMousePoint(void);
 
@@ -608,6 +610,14 @@ RSGLDEF void RSGL_graphics_free(void);
 /* YOU define this version (if you need it) */
 /*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
 RSGLDEF u8 RSGL_isPressedI(void* win, u32 key); /*!< if key is pressed (key code)*/
+
+#ifndef RSGL_MOUSE_ARROW
+#define RSGL_MOUSE_ARROW    1
+#define RSGL_MOUSE_IBEAM  2
+#define RSGL_MOUSE_POINTING_HAND 3
+#endif
+
+RSGLDEF void RSGL_window_setMouseStandard(void* win, u32 cursorIcon);
 
 #endif /* RSGL_GRAPHICS_CONTEXT / !RSGL_NO_RGFW */
 
@@ -1060,6 +1070,8 @@ RSGLDEF void RSGL_textbox_setOutline(RSGL_textbox* button, u32 size, RSGL_color 
 RSGLDEF void RSGL_textbox_setStyle(RSGL_textbox* button, RSGL_widgetStyle buttonStyle);
 RSGLDEF void RSGL_textbox_setRect(RSGL_textbox* button, RSGL_rect rect);
 RSGLDEF void RSGL_textbox_setRectF(RSGL_textbox* button, RSGL_rectF rect);
+
+RSGLDEF void RSGL_textbox_setWindow(RSGL_textbox* button, void* win);
 #endif /* RSGL_NO_TEXT */
 
 #endif /* RSGL_NO_WIDGETS */
@@ -1404,7 +1416,7 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
         rglRotatef(RSGL_args.rotate.x, 1, 0, 0);
         rglTranslatef(-center.x, -center.y, -center.z);
     }
-
+    
     rglBegin(RGL_TYPE);
         size_t pIndex = 0;
         size_t tIndex = 0;
@@ -1479,6 +1491,10 @@ void RSGL_legacy(i32 legacy) {
 */
 
 #ifndef RSGL_NO_RGFW
+
+#define RSGL_MOUSE_ARROW                RGFW_MOUSE_ARROW
+#define RSGL_MOUSE_IBEAM                RGFW_MOUSE_IBEAM
+#define RSGL_MOUSE_POINTING_HAND        RGFW_MOUSE_POINTING_HAND
 
 RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     #ifdef RGFW_OPENGL
@@ -2682,7 +2698,7 @@ void RSGL_button_setRadioCount(RSGL_button* button, size_t array_count) {
 void RSGL_drawButton(RSGL_button button) {
     assert((button.src.style & RSGL_STYLE_SHAPE) != RSGL_SHAPE_NULL);
     
-    u8 align = 0;
+    u8 align = 0;   
 
     if (button.src.text.str != NULL)
         align = button.src.text.alignment;
@@ -2844,11 +2860,6 @@ void RSGL_drawButton(RSGL_button button) {
 
     /* set args back to the old ones */
     RSGL_args = args;
- 
-    if (button.loaded_states[button.status].tex != 0 && (button.src.style & RSGL_STYLE_CONTAINER)) {
-        button.src = button.loaded_states[button.status];
-        RSGL_drawButton(button);
-    }
 }
 
 void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
@@ -2891,7 +2902,7 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
         b->status = RSGL_none;
     }
 
-    for (i = 0; i < b->src.array_count + 1; i++) {
+    for (i = 0; i < (b->src.array_count == 0) + b->src.array_count; i++) {
         switch (e.type) {
             case RSGL_mouseButtonPressed:
                 if (e.button != RSGL_mouseLeft)
@@ -2923,11 +2934,22 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
             case RSGL_mousePosChanged:
                 if (RSGL_rectCollidePointF(rect, mouse)) {
                     b->status = RSGL_hovered;
+                    if (b->src.window == NULL)
+                        return;
+
+                    if (b->src.style & RSGL_STYLE_TEXTBOX)
+                        RSGL_window_setMouseStandard(b->src.window, RSGL_MOUSE_IBEAM);
+                    else
+                        RSGL_window_setMouseStandard(b->src.window, RSGL_MOUSE_POINTING_HAND);
                     return;
                 }
-                else
+                else {
+                    if (b->src.window && b->status)
+                        RSGL_window_setMouseStandard(b->src.window, RSGL_MOUSE_ARROW);
+
                     b->status = RSGL_none;
-                break;
+                }
+                break;  
             default: break;
         }
 
@@ -2960,14 +2982,21 @@ float RSGL_slider_update(RSGL_button* b, RGFW_Event e) {
     else if (e.type == RSGL_mouseButtonReleased)
         b->toggle = false;
     
-    if (b->toggle && RSGL_between(mouse_pos, rect_pos, rect_pos + length)) {
+    float radius = room * 2;
+
+    if (b->toggle) {
         b->src.slider_pos = mouse_pos;
 
-        if (b->src.slider_pos + room * 2 > (rect_pos + length))
-            b->src.slider_pos -= room * 2;
+        if (b->src.slider_pos + radius > (rect_pos + length)) {
+            b->src.slider_pos = rect_pos + length - radius;
+        }
+        
+        else if (b->src.slider_pos < rect_pos) {
+            b->src.slider_pos = rect_pos;
+        }
     }
 
-    return ((b->src.slider_pos - rect_pos) / (length - (room * 2))) * 100;
+    return ((b->src.slider_pos - rect_pos) / (length - radius)) * 100;
 }
 
 RSGL_button RSGL_nullButton(void) {
@@ -3084,7 +3113,7 @@ void RSGL_drawContainer(RSGL_container* con) {
 
     if (container->title.toggle == false)
         RSGL_drawButton(*src);
-
+    
     if (!(src->src.style & RSGL_STYLE_NO_TAB)) {
         RSGL_drawButton(container->title);
         
@@ -3093,7 +3122,7 @@ void RSGL_drawContainer(RSGL_container* con) {
 
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
     }
-
+    
     size_t i;
     for (i = 0; i < container->buttons_len && container->title.toggle == 0; i++) {
         if (container->buttons[i]->src.tex == 0)
@@ -3213,6 +3242,10 @@ void RSGL_textbox_setRectF(RSGL_textbox* tb, RSGL_rectF rect) {
     RSGL_button_setRectF(tb, rect);
 }
 
+void RSGL_textbox_setWindow(RSGL_textbox* button, void* win) {
+    RSGL_button_setWindow(button, win);
+}
+
 void RSGL_textbox_addChar(RSGL_textbox* tb, char ch) {
     if (ch == 0)
         return;
@@ -3224,8 +3257,14 @@ void RSGL_textbox_addChar(RSGL_textbox* tb, char ch) {
     }
 
     u32 width = RSGL_textLineWidth(tb->src.text.str, tb->src.text.c.d, tb->src.text.text_len, y + 1);
-            
-    if (ch == '\n' && (tb->line_count + tb->src.text.c.d) < tb->rect.h) {
+
+    /* 
+        if not aligned to the bottom, subtract half the text size from the box size to avoid 
+        too many newlines
+    */        
+    size_t offset = ((tb->src.text.c.d / 2) * !(tb->src.style & RSGL_ALIGN_DOWN));
+
+    if (ch == '\n' && (tb->line_count + tb->src.text.c.d + (tb->src.text.c.y - tb->rect.y)) < tb->rect.h - offset) {
         tb->line_count += tb->src.text.c.d;
     }
     else if (ch == '\n' || width > tb->rect.w)
