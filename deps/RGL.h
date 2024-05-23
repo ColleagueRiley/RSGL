@@ -1328,7 +1328,7 @@ void rglRenderBatchWithShader(u32 program, u32 vertexLocation, u32 texCoordLocat
 
         u32 vertexOffset;
         u32 i;
-        for (i = 1, vertexOffset = 0; i < RGLinfo.drawCounter; i++) {
+        for (i = 1, vertexOffset = 0; i < (u32)RGLinfo.drawCounter; i++) {
             GLenum mode = RGLinfo.batches[i].mode;
             
             if (mode > 0x0010) {
@@ -1467,7 +1467,7 @@ void rglGetError(void) {
 #ifndef RGL_OPENGL_LEGACY
 
 int rglCheckRenderBatchLimit(int vCount) {
-    if (RGLinfo.legacy || (RGLinfo.vertexCounter + vCount) < (RGLinfo.elementCount * 4))
+    if (RGLinfo.legacy || (RGLinfo.vertexCounter + vCount) < (i64)(RGLinfo.elementCount * 4))
         return 0;
 
     /* Store current primitive drawing mode and texture id */
@@ -1584,7 +1584,7 @@ void rglVertex3f(float x, float y, float z) {
         tz = RGLinfo.transform.m[2] * x + RGLinfo.transform.m[6] * y + RGLinfo.transform.m[10] * z + RGLinfo.transform.m[14];
     }
 
-    if (RGLinfo.vertexCounter > (RGLinfo.elementCount * 4 - 4)) {
+    if (RGLinfo.vertexCounter > (i64)(RGLinfo.elementCount * 4 - 4)) {
         if ((RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES || RGLinfo.batches[RGLinfo.drawCounter - 1].mode == RGL_LINES_2D) &&
             (RGLinfo.batches[RGLinfo.drawCounter - 1].vertexCount%2 == 0))
                 rglCheckRenderBatchLimit(2 + 1);

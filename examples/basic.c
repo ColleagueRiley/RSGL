@@ -16,7 +16,7 @@ unsigned char running = 1;
 
 RSGL_color gradient[3] = {RSGL_RGB(255, 0, 0), RSGL_RGB(0, 255, 0), RSGL_RGB(0, 0, 255)};
 
-int main() {
+int main(void) {
     RSGL_window* win = RSGL_createWindow("RSGL Example Window", RSGL_RECT(500, 500, 500, 500), RSGL_ALLOW_DND | RSGL_CENTER);
     RSGL_window_makeCurrent(win);
     
@@ -28,7 +28,7 @@ int main() {
     win2 = RSGL_createWindow("subwindow", RSGL_RECT(200, 200, 200, 200), 0);
 
     /*unsigned short js = RSGL_registerJoystick(win, 0);*/
-    unsigned char i, frames = 60;
+    unsigned char i;
 
     RSGL_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
 

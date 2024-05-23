@@ -24,7 +24,7 @@ int main(void) {
 
             switch (win->event.type) {
                 case RSGL_keyPressed:
-                    printf("key pressed %i %s %i\n", win->event.keyCode, win->event.keyName);
+                    printf("key pressed %i %s\n", win->event.keyCode, win->event.keyName);
                     break;
                 case RSGL_keyReleased:
                     printf("key released %i %s\n", win->event.keyCode, win->event.keyName);
@@ -34,20 +34,23 @@ int main(void) {
                     break;
                 case RSGL_mouseButtonReleased:
                     printf("mouse button released %i\n", win->event.button);
+                    break;
                 case RSGL_mousePosChanged:
                     if (RSGL_isPressedI(win, RGFW_ShiftL))
                         printf("mouse moved %i %i\n", win->event.point.x, win->event.point.y);
                     break;
                 case RSGL_jsButtonPressed:
                     printf("joystick pressed %i\n", win->event.joystick);
+                    break;
                 case RSGL_jsButtonReleased:
                     printf("joystick released %i\n", win->event.joystick);
+                    break;
                 case RSGL_jsAxisMove:
                     printf("axis moved %i %i\n", win->event.axis[0].x, win->event.axis[0].y);
                     break;
                 case RSGL_dnd:
-                    printf("dropped file : %i %i %i\n", win->event.point.x, win->event.point.y);
-                    int i;
+                    printf("dropped file : %i %i\n", win->event.point.x, win->event.point.y);
+                    size_t i;
                     for (i = 0; i < win->event.droppedFilesCount; i++)
                         printf("%s\n", win->event.droppedFiles[i]);
                     printf("\n");

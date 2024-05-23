@@ -21,14 +21,12 @@ int main(void) {
 
     bool running = true;
 
-    bool fill = true;
-
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     u32 texture = RSGL_loadImage("logo.png").tex;
     u32 iconTex = RSGL_createTexture(icon, RSGL_AREA(3, 3), 4);
 
-    size_t texTimer = time(0);
+    size_t texTimer = (size_t)time(0);
     size_t texTimer2 = 0;
 
     while (running) {
@@ -49,15 +47,15 @@ int main(void) {
         
         RSGL_setTexture(texture);
         
-        if (texTimer2 && texTimer2 + 5 > time(0))
+        if (texTimer2 && texTimer2 + 5 > (size_t)time(0))
             RSGL_setTexture(0);
-        else if (texTimer2 && texTimer2 + 5 <= time(0)) {
-            texTimer = time(0);
+        else if (texTimer2 && texTimer2 + 5 <= (size_t)time(0)) {
+            texTimer = (size_t)time(0);
             texTimer2 = 0;
         }
 
-        else if (texTimer2 == 0 && texTimer + 5 <= time(0)) {
-            texTimer2 = time(0);
+        else if (texTimer2 == 0 && texTimer + 5 <= (size_t)time(0)) {
+            texTimer2 = (size_t)time(0);
 
             RSGL_setTexture(0);
         }

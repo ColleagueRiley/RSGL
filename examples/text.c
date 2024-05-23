@@ -2,7 +2,7 @@
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 
-int main() {
+int main(void) {
     RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
 
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));

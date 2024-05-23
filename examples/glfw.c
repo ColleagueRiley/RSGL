@@ -4,6 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
+#define GLFW_UNUSED(x) if(x){}
+
 #define RSGL_MOUSE_ARROW            GLFW_ARROW_CURSOR
 #define RSGL_MOUSE_IBEAM            GLFW_IBEAM_CURSOR
 #define RSGL_MOUSE_POINTING_HAND    GLFW_HAND_CURSOR
@@ -21,6 +23,7 @@ u8 GLFW_keys[512];
 RGFW_Event GLFW_event;
 
 u8 RSGL_isPressedI(void* win, u32 key) {
+    GLFW_UNUSED(win)
     return GLFW_keys[key];
 }
 
@@ -42,20 +45,25 @@ void RSGL_window_setMouseStandard(void* win, u32 cursorIcon) {
 
 static void errorCallback(int error, const char* description)
 {
-    fprintf(stderr, "Error: %s\n", description);
+    fprintf(stderr, "Error %i: %s\n", error, description);
 }
 
 void windowSizeCallback(GLFWwindow *window, int width, int height) {
+    GLFW_UNUSED(window)
     RSGL_graphics_updateSize(RSGL_AREA(width, height));
 }
 
 static void charCallback(GLFWwindow *window, unsigned int codepoint) {
+    GLFW_UNUSED(window)
     GLFW_event.keyName[0] = codepoint;
     GLFW_event.keyName[1] = '\0';
 }
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+    GLFW_UNUSED(window)
+    GLFW_UNUSED(mods)
+    GLFW_UNUSED(scancode)
     if (action == GLFW_PRESS) {
         GLFW_keys[key] = 1;
         GLFW_event.type = RSGL_keyPressed;
@@ -74,6 +82,8 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 }
 
 static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
+    GLFW_UNUSED(window)
+    GLFW_UNUSED(mods)
     button++;
 
     if (action == GLFW_PRESS) {
@@ -88,13 +98,17 @@ static void mouseButtonCallback(GLFWwindow *window, int button, int action, int 
 }
 
 static void mouseCursorPosCallback(GLFWwindow *window, double x, double y) {
+    GLFW_UNUSED(window)
+    GLFW_UNUSED(window)
     GLFW_event.type = RSGL_mousePosChanged;
     GLFW_event.point = RSGL_POINT((i32)x, (i32)y);
 }
 
 static void mouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+    GLFW_UNUSED(window)
+
     double scroll = yoffset; 
-    if (abs(xoffset) > abs(yoffset))
+    if (fabsf((float)xoffset) > fabsf((float)yoffset))
         scroll = xoffset;
 
     GLFW_event.type = RSGL_mouseButtonPressed;

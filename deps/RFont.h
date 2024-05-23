@@ -549,7 +549,7 @@ void RFont_font_add_string(RFont_font* font, const char* string, size_t* sizes, 
 void RFont_font_add_string_len(RFont_font* font, const char* string, size_t strLen, size_t* sizes, size_t sizeLen) {
    u32 i;
    char* str;
-   for (str = (char*)string; (!strLen || (str - string) < strLen) && *str; str++)
+   for (str = (char*)string; (!strLen || (size_t)(str - string) < strLen) && *str; str++)
       for (i = 0; i < sizeLen; i++)
          RFont_font_add_char(font, *str, sizes[i]);
 }
@@ -559,7 +559,7 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
    static u32 utf8state = 0, codepoint = 0; 
 
    if (RFont_decode_utf8(&utf8state, &codepoint, (u8)ch) != RFONT_UTF8_ACCEPT)
-      return (RFont_glyph){0, 0};
+      return (RFont_glyph){0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 	u32 i;
    for (i = 0; i < font->glyph_len; i++)
@@ -587,7 +587,7 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
 
    i32 x0, y0, x1, y1, w, h;
    if (stbtt_GetGlyphBox(&font->info, glyph->src, &x0, &y0, &x1, &y1) == 0)
-      return (RFont_glyph){0, 0};
+      return (RFont_glyph){0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
    float scale = ((float)size) / font->fheight;
 

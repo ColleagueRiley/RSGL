@@ -86,7 +86,7 @@ void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF 
     }
 }
 
-int main() {
+int main(void) {
     RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);
 
     u32 easy_font = RSGL_loadFont("Super Easy.ttf");
