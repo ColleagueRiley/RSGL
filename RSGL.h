@@ -535,7 +535,12 @@ RSGLDEF u8 RSGL_window_isMaximized(RSGL_window* win);
 RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win); 
 
 /*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
-RSGLDEF u8 RSGL_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
+RSGLDEF u8 RGFW_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
+
+RSGLDEF u8 RSGL_wasPressedI(RSGL_window* win, u32 key); /*!< if key was pressed (checks prev keymap only) (key code)*/
+
+RSGLDEF u8 RSGL_isHeldI(RSGL_window* win, u32 key); /*!< if key is held (key code)*/
+RSGLDEF u8 RSGL_isReleasedI(RSGL_window* win, u32 key); /*!< if key is released (key code)*/
 
 /*
 	!!Keycodes defined at the bottom of the header file!!
@@ -1680,6 +1685,15 @@ u8 RSGL_window_isMaximized(RSGL_window* win) {
 
 u8 RSGL_isPressedI(RSGL_window* win, u32 key) {
     return RGFW_isPressedI(win, key);
+}
+u8 RSGL_wasPressedI(RSGL_window* win, u32 key) {
+    return RGFW_wasPressedI(win, key);
+}
+u8 RSGL_isHeldI(RSGL_window* win, u32 key) {
+    return RGFW_isHeldI(win, key);
+}
+u8 RSGL_isReleasedI(RSGL_window* win, u32 key) {
+    return RGFW_isReleasedI(win, key);
 }
 
 char* RSGL_keyCodeTokeyStr(u32 key) {
