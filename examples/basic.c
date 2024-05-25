@@ -1,6 +1,5 @@
 #define RGFW_ALLOC_DROPFILES
 #define RSGL_IMPLEMENTATION
-#define RSGL_NO_AUDIO
 #define RSGL_NO_X11_CURSOR
 
 #include "../RSGL.h"

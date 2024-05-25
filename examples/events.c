@@ -1,4 +1,3 @@
-#define RSGL_NO_AUDIO
 #define RSGL_IMPLEMENTATION
 
 #ifdef _WIN32
@@ -6,8 +5,6 @@
 #undef __linux__
 #endif
 
-#define RSGL_NO_AUDIO
-#define RSGLDEF 
 #include "RSGL.h"
 #include <stdio.h>
 

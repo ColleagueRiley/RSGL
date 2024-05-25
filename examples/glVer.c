@@ -1,5 +1,4 @@
 #define RGL_LEGACY
-#define RSGL_NO_AUDIO
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 

@@ -1,4 +1,3 @@
-#define RSGL_NO_AUDIO
 #define RSGL_NO_RGFW
 #define RSGL_IMPLEMENTATION
 

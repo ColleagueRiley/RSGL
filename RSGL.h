@@ -28,8 +28,6 @@
     #define RSGL_NO_RGFW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]
     #define RSGL_NO_TEXT - do not include text rendering functions
     #define RSGL_NO_WIDGETS - do not include widgets
-    #define RSGL_NO_AUDIO - do not include audio functions
-    #define RSGL_NO_MINIAUDIO_IMPLEMENTATION - do not have `#define MINIAUDIO_IMPLEMENTATION` in this header (you'll have to link miniaudio some other way to use audio)
     #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), 
                                     RSGL_drawImage saves the file name + texture so it can load it
                                     when you ask for it later. This disables that 
@@ -1091,43 +1089,6 @@ RSGLDEF void RSGL_textbox_setWindow(RSGL_textbox* button, void* win);
 
 /* 
 *******
-RSGL_audio
-*******
-*/
-
-#ifndef RSGL_NO_AUDIO
-
-struct RSGL_audioData;
-
-typedef struct RSGL_audio {
-    struct RSGL_audioData* data;
-    
-    char* file;
-    bool loop;
-    bool ptr; /* if the audio struct is a pointer (so it can be freed latre on) */
-} RSGL_audio;
-
-void RSGL_audio_loadFile(RSGL_audio* a, const char* file);
-RSGLDEF void RSGL_audio_playFile(RSGL_audio* a, const char* file);
-RSGLDEF void RSGL_audio_play(RSGL_audio a);
-RSGLDEF void RSGL_audio_pause(RSGL_audio a);
-RSGLDEF void RSGL_audio_stop(RSGL_audio a);
-RSGLDEF void RSGL_audio_free(RSGL_audio a);
-
-/* write audio info */
-RSGLDEF void RSGL_audio_setVolume(RSGL_audio a, u32);
-RSGLDEF void RSGL_audio_seek(RSGL_audio a, u32 position);
-
-/* get audio info */
-RSGLDEF u32 RSGL_audio_len(RSGL_audio a);
-RSGLDEF u32 RSGL_audio_volume(RSGL_audio a);
-RSGLDEF u32 RSGL_audio_position(RSGL_audio a);
-RSGLDEF bool RSGL_audio_isPlaying(RSGL_audio a);
-
-#endif /* RSGL_NO_AUDIO */
-
-/* 
-*******
 extra
 *******
 */
@@ -1169,7 +1130,6 @@ macos:
 	by going to the `Silicon` folder and running `make install`. After this you can easily include Silicon via `#include <Silicon/silicon.h>'
 	and link it by doing `-lSilicon`
 
-#define RSGL_NO_AUDIO
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 
@@ -1303,18 +1263,6 @@ u8* stbi_load            (char const *filename, int *x, int *y, int *channels_in
 #endif
 
 #include <time.h>
-
-#ifndef RSGL_NO_AUDIO
-
-#ifndef RSGL_NO_MINIAUDIO_IMPLEMENTATION
-#define MINIAUDIO_IMPLEMENTATION
-#endif /* RSGL_NO_MINIAUDIO_IMPLEMENTATION */
-#ifndef RSGL_NO_DEPS_FOLDER
-#include "deps/miniaudio.h"
-#else
-#include "miniaudio.h"
-#endif
-#endif /* RSGL_NO_AUDIO */
 
 #include <stdbool.h>
 
@@ -3523,114 +3471,6 @@ void RSGL_textbox_draw(RSGL_textbox* tb) {
 #endif /* RSGL_NO_TEXT */
 
 #endif /*  RSGL_NO_WIDGETS */
-
-/*
-******
-RSGL_Audio
-******
-*/
-
-#ifndef RSGL_NO_AUDIO
-
-
-typedef struct RSGL_audioData {
-    ma_decoder decoder;
-    ma_result result;
-    ma_device device;
-} RSGL_audioData;
-
-
-void RSGL_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount);
-
-void RSGL_audio_loadFile(RSGL_audio* a, const char* file) {
-    if (file[1] == '\0')
-        return;
-
-    a->data = (RSGL_audioData*)malloc(sizeof(RSGL_audioData));
-
-    a->file = (char*)file;
-    a->data->result = ma_decoder_init_file(file, NULL, &a->data->decoder);
-    
-    if (a->data->result != MA_SUCCESS)
-        printf("Could not load file: %s\n", file);
-
-    ma_device_config deviceConfig;
-    deviceConfig = ma_device_config_init(ma_device_type_playback);
-    deviceConfig.playback.format   = a->data->decoder.outputFormat;
-    deviceConfig.playback.channels = a->data->decoder.outputChannels;
-    deviceConfig.sampleRate        = a->data->decoder.outputSampleRate;
-    deviceConfig.dataCallback      = RSGL_data_callback;
-    deviceConfig.pUserData         = &a->data->decoder;
-
-    if (ma_device_init(NULL, &deviceConfig, &a->data->device) != MA_SUCCESS) {
-        printf("Failed to open playback device.\n");
-        ma_decoder_uninit(&a->data->decoder);
-    }
-}
-
-void RSGL_audio_playFile(RSGL_audio* a, const char* file) {
-    RSGL_audio_loadFile(a, file);
-    RSGL_audio_play(*a);
-}
-
-void RSGL_audio_play(RSGL_audio a) {
-    ma_device_start(&a.data->device);
-    if (RSGL_audio_position(a) == RSGL_audio_len(a))
-        RSGL_audio_seek(a, 0);
-}
-void RSGL_audio_pause(RSGL_audio a) {
-    ma_device_stop(&a.data->device);
-}
-void RSGL_audio_stop(RSGL_audio a) {
-    ma_device_stop(&a.data->device);
-    ma_device_uninit(&a.data->device);
-    ma_decoder_uninit(&a.data->decoder);
-}
-
-/* write audio info */
-void RSGL_audio_setVolume(RSGL_audio a, u32 vol) {
-    a.data->result = ma_device_set_master_volume(&a.data->device, vol / 100.0f);
-}
-void RSGL_audio_seek(RSGL_audio a, u32 position) {
-    a.data->result = ma_decoder_seek_to_pcm_frame(&a.data->decoder, position * 44100);
-}
-
-/* get audio info */
-u32 RSGL_audio_len(RSGL_audio a) {
-    ma_uint64 len;
-    ma_decoder_get_length_in_pcm_frames(&a.data->decoder, &len);
-    return len / 44100;
-}
-
-u32 RSGL_audio_volume(RSGL_audio a) {
-    float volume;
-    a.data->result = ma_device_get_master_volume(&a.data->device, &volume);
-    return volume * 100;
-}
-u32 RSGL_audio_position(RSGL_audio a) {
-    ma_uint64 pos;
-    ma_decoder_get_cursor_in_pcm_frames(&a.data->decoder, &pos);
-    return pos / 44100;
-}
-bool RSGL_audio_isPlaying(RSGL_audio a) {
-    return ma_device_is_started(&a.data->device);
-}
-
-void RSGL_audio_free(RSGL_audio a) {
-    ma_device_uninit(&a.data->device);
-    ma_decoder_uninit(&a.data->decoder);
-}
-
-void RSGL_data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {    
-    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
-    if (pDecoder == NULL) {
-        return;
-    }
-    
-    ma_decoder_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
-}
-
-#endif /* RSGL_NO_AUDIO */
 
 /* 
 ******

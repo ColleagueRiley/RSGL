@@ -1,4 +1,3 @@
-#define RSGL_NO_AUDIO
 #define RSGL_IMPLEMENTATION
 
 #ifdef _WIN32

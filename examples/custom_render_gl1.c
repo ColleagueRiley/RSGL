@@ -1,4 +1,3 @@
-#define RSGL_NO_AUDIO /* RSGL uses miniaudio.h, and I don't want to compile it if I'm not using it */
 #define RSGL_IMPLEMENTATION
 #define GL_NO_RENDER
 #define RSGL_CUSTOM_DRAW
