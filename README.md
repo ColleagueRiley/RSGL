@@ -4,7 +4,13 @@
 
 RSGL is a modular simple-to-use cross-platform graphics library. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
 
-RSGL currently supports Linux, BSD, Windows and MacOS.
+Although RSGL is packaged with RGFW by default, it can be used with any windowing system. (See `examples/glfw.c`)
+
+Its renderer backend can also easily be replaced to support any rendering API. (see `custom_render_gl1.c` or  `custom_render_template.c`)
+
+RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
+
+RSGL also supports OpenGL 1.0 - 4.4 via RGL. 
 
 # Build statuses
 ![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
@@ -12,16 +18,17 @@ RSGL currently supports Linux, BSD, Windows and MacOS.
 ![MacOS workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/macos.yml/badge.svg)
 
 # Features
-- No external dependencies, all the libraries required are lightweight and bundled in
-- Supports multiple platforms, Windows, MacOS, Linux, etc
-- Supports multiple versions of OpenGL (even allowing you to switch during runtime)
+- No external dependencies, all dependencies are lightweight, bundled in and optional
+- *Can* be used as a single-header file
+- (RGFW.h) Supports multiple platforms, Windows, MacOS, Linux, etc
+- (RGL.h) Supports multiple versions of OpenGL (even allowing you to switch during runtime)
 - Basic shape drawing, collisions and drawing operations
-- OpenGL abstraction layer, RGL, which can also be used independently as a single-header library
-- straightforward window management via RGFW
-- Supports multiple font, image and audio formats via `stb_truetype.h`, `stb_image.h`, and `miniaudio.h`
+- OpenGL abstraction layer, RGL.h, which can also be used independently as a single-header library
+- Straightforward window management via RGFW.h
 - Dynamic GUI Widgets via a convenient styling system 
 - Many examples included
-- Allows you to use other libraries instead of the default RSGL backend.
+- Supports many image file types via stb_image.h
+- Very modular and can easily be changed to suit your needs
 - Free and Open Source
 
 # Contacts
@@ -35,12 +42,9 @@ RSGL currently supports Linux, BSD, Windows and MacOS.
 
 ## Defines
   - `#define RSGL_NO_WIDGETS` - makes it so RSGL doesn't include widget functions
-  - `#define RSGL_NO_AUDIO` - makes it so RSGL doesn't include audio functions
   - `#define RSGL_NO_RGFW` - This is for using a different windowing library other than RGFW. RSGL_graphics is used instead, as seen in `examples/glfw.c`
   - `#define RSGL_NO_TEXT` - makes it so RSGL does not include text rendering functions
   - `#define RGFW_NO_WIDGETS` - makes it so RSGL does not include widgets
-  - `#define RSGL_NO_AUDIO` - makes it so RSGL does not include audio functions
-  - `#define RSGL_NO_MINIAUDIO_IMPLEMENTATION` - makes it so RSGL does not link Miniaudio. You'll have to link Miniaudio yourself to use audio
   `#define RSGL_NO_SAVE_IMAGE` - makes it so RSGL does not save/load images (don't use RSGL_drawImage if you use this). This is here because RSGL_drawImage saves the file name with its loaded texture so it can load the texture when you use the same file. \
 
 # Widgets 
@@ -73,16 +77,15 @@ RSGL_textBox and RSGL_expandableRect are currently WIP.
   You can also compile RSGL by hand.
 
 ### compiling by hand
-1) `cp RSGL.h RSGL.c`. 
-2) Compile the library into an object file by running `gcc -c RSGL.c -fPIC`.
-3) After you compile the library into an object file, you can also turn the object file into a static or shared library.
-4) To compile statically run `ar rcs RSGL.a RSGL.o`
-5) To compile RSGL into a shared library, run `gcc -shared RSGL.o <system libs>`
+1) Compile the library into an object file by running `gcc -x c -c RSGL.h -fPIC`.
+2) After you compile the library into an object file, you can also turn the object file into a static or shared library.
+3) To compile statically run `ar rcs RSGL.a RSGL.o`
+4) To compile RSGL into a shared library, run `gcc -shared RSGL.o <system libs>`
 ```
   windows:
-    gcc -shared RSGL.o  -lshell32 -lgdi32 -o RSGL.dll
+    gcc -shared RSGL.o  -lshell32 -lgdi32 -lwinmm -o RSGL.dll
   linux:
-    gcc -shared RSGL.o -lX11 -lXcursor -o RSGL.so
+    gcc -shared RSGL.o -lX11 -lXcursor -lXrandr -o RSGL.so
   macos:
     gcc -shared RSGL.o -framework Foundation -framework AppKit -framework CoreVideo
 ```
@@ -92,7 +95,6 @@ RSGL_textBox and RSGL_expandableRect are currently WIP.
 ## a basic example
 
 ```c
-#define RSGL_NO_AUDIO /* RSGL uses miniaudio.h, and I don't want to compile it if I'm not using it */
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 
@@ -136,6 +138,8 @@ The Makefile in `examples/`  allows you to compile all the examples using `make`
 compile one specific example using `make <example>` or\
 run `make debug` which compiles and runs each example in debug mode
 
+Ensure you're running the example in the `./examples` folder so the fonts are properly loaded. 
+
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot.PNG?raw=true)
 ![example screenshot 2](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot2.PNG?raw=true)
 ![example screenshot 3](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot3.PNG?raw=true)
@@ -150,7 +154,10 @@ It also shows multiple ways of drawing a triangle
 `example/events.c` is an example that shows off all the events that RSGL has and prints out their event data into the terminal
 
 ## glfw.c
-`examples/glfw.c` is an example that shows off how you can use RSGL with GLFW instead of with RGFW.
+`examples/glfw.c` is an example that shows how you can use RSGL with GLFW instead of with RGFW.
+
+This example requires GLFW to be installed.\
+You can download GLFW [here](https://www.glfw.org/download)
 
 ## glVer.c
 `examples/glVer.c` is an example that shows how RSGL can switch between legacy and modern OpenGL\
@@ -176,11 +183,11 @@ There is also a switch button that allows you to toggle dark mode.
 ## container.c
 `examples/container.c` is an example that shows how to create and manage a widget container
 
-## custom_render_gl1.c
-`examples/custom_render_gl1` is an example that shows how you'd implement a custom rendering system.
+## custom_render_gl1.c 
+`examples/custom_render_gl1.c` is an example that shows how you'd implement a custom rendering system.
 
 ## custom_render_template.c
-`examples/custom_render_gl1` is an example/template for implementing a completely custom rendering system.
+`examples/custom_render_template.c` is an example/template for implementing a completely custom rendering system.
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in.
@@ -209,11 +216,6 @@ There is also a switch button that allows you to toggle dark mode.
 
 ## stb_image 
   [stb_image](https://github.com/nothings/stb/) is a public domain single header image loader library.
-
-## Miniaudio
-  Miniaudio is a public-domain audio playback and capture library. RSGL uses this for playing/loading audio
-
-  Miniaudio's website, https://miniaud.io/
 
 # other credits
 
