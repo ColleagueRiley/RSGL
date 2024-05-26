@@ -1352,6 +1352,48 @@ RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment)
     return aligned;
 }
 
+/* Multiply the current matrix by a translation matrix */
+RGL_MATRIX rsglTranslatef(RGL_MATRIX* matrix, float x, float y, float z) {
+    RGL_MATRIX matTranslation = { 
+        {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            x,    y,    z,    1.0f
+        }
+    };
+
+    /* NOTE: We transpose matrix with multiplication order */
+    return rglMatrixMultiply(matTranslation.m, matrix->m);
+}
+
+/* Multiply the current matrix by a rotation matrix */
+RGL_MATRIX rsglRotatef(RGL_MATRIX* matrix, float angle, float x, float y, float z) {
+	/* Axis vector (x, y, z) normalization */
+	float lengthSquared = x * x + y * y + z * z;
+	if ((lengthSquared != 1.0f) && (lengthSquared != 0.0f)) {
+		float inverseLength = 1.0f / sqrtf(lengthSquared);
+		x *= inverseLength;
+		y *= inverseLength;
+		z *= inverseLength;
+	}
+
+	/* Rotation matrix generation */
+	float sinres = sinf(DEG2RAD * angle);
+	float cosres = cosf(DEG2RAD * angle);
+	float t = 1.0f - cosres;
+
+	float matRotation[16] = 
+				{
+					x * x * t + cosres,   	  	y * x * t + z * sinres,   	z * x * t - y * sinres,   	0.0f,
+					x * y * t - z * sinres,   	y * y * t + cosres,   		z * y * t + x * sinres,   	0.0f,
+					x * z * t + y * sinres,   	y * z * t - x * sinres,  	z * z * t + cosres,   		0.0f,
+					0.0f,   					0.0f,   					0.0f,   					1.0f
+				};
+
+	return rglMatrixMultiply(matRotation, matrix->m);
+}
+
 #ifndef RSGL_CUSTOM_DRAW
 void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF center, RSGL_color c, size_t len) {  
     size_t i;
@@ -1366,18 +1408,24 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
 
     rglColor4ub(c.r, c.g, c.b, c.a);
 
+    RGL_MATRIX matrix = (RGL_MATRIX) { 
+        {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        }
+    };
+        
     if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z) {
-        rglMatrixMode(RGL_MODELVIEW);
-        rglPushMatrix();
-
         if (RSGL_args.center.x != -1 && RSGL_args.center.y != -1 &&  RSGL_args.center.z != -1)
             center = RSGL_args.center;
-
-        rglTranslatef(center.x, center.y, center.z);
-        rglRotatef(RSGL_args.rotate.z,  0, 0, 1);
-        rglRotatef(RSGL_args.rotate.y, 0, 1, 0);
-        rglRotatef(RSGL_args.rotate.x, 1, 0, 0);
-        rglTranslatef(-center.x, -center.y, -center.z);
+        if (center.x){}
+        rsglTranslatef(&matrix, center.x, center.y, center.z);
+        rsglRotatef(&matrix, RSGL_args.rotate.z,  0, 0, 1);
+        rsglRotatef(&matrix, RSGL_args.rotate.y, 0, 1, 0);
+        rsglRotatef(&matrix, RSGL_args.rotate.x, 1, 0, 0);
+        rsglTranslatef(&matrix, -center.x, -center.y, -center.z);
     }
     
     rglBegin(RGL_TYPE);
@@ -1390,16 +1438,21 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
             
             if (texPoints != NULL)
                 rglTexCoord2f(texPoints[tIndex], texPoints[tIndex + 1]);
+
+            float x = points[pIndex + 0], 
+                  y = points[pIndex + 1], 
+                  z = points[pIndex + 2];
             
-            rglVertex3f(points[pIndex + 0], points[pIndex + 1], points[pIndex + 2]);
+            float tx = matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12];
+            float ty = matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13];
+            float tz = matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14];
+            
+            rglVertex3f(tx, ty, tz);
 
             pIndex += 3;
             tIndex += 2;
         }
     rglEnd();
-
-    if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z)
-        rglPopMatrix();
 
     if (RSGL_argsClear) {
         RSGL_setTexture(0);
@@ -2333,7 +2386,7 @@ RSGL_circle RSGL_alignText_len(char* str, size_t str_len, RSGL_circle c, RSGL_re
     RSGL_rectF smaller = RSGL_RECTF(c.x, c.y, area.w, c.d);
     RSGL_rectF r = RSGL_alignRectF(larger, smaller, alignment);
 
-    return RSGL_CIRCLE(r.x, r.y, r.h);
+    return RSGL_CIRCLE(r.x, r.y + (c.d / 4), r.h);
 }
 
 RSGL_area RSGL_textArea(const char* text, u32 fontSize, size_t textEnd) {

@@ -94,7 +94,7 @@ int main(void) {
         RSGL_drawButton(comboBox);
         RSGL_drawButton(slider);
 
-        RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(100, 440, 25), RSGL_RGB(255, 255, 255));
+        RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(80, 445, 25), RSGL_RGB(255, 255, 255));
 
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }
