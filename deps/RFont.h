@@ -888,7 +888,7 @@ u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    
-   u8* data = (u8*)calloc(sizeof(u8), atlasWidth * atlasHeight * 4);
+   u8* data = (u8*)calloc(atlasWidth * atlasHeight * 4, sizeof(u8));
 
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
