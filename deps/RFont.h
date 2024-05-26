@@ -140,6 +140,10 @@ you want to change anything
 #ifndef RFONT_H
 #define RFONT_H
 
+#ifndef RFont_area
+typedef struct { u32 w, h; } RFont_area;
+#endif
+
 typedef struct RFont_font RFont_font;
 
 typedef struct {
@@ -232,35 +236,35 @@ inline void RFont_font_add_string(RFont_font* font, const char* string, size_t* 
 inline void RFont_font_add_string_len(RFont_font* font, const char* string, size_t strLen, size_t* sizes, size_t sizeLen);
 
 /**
- * @brief Get the width of the text based on the size using the font.
+ * @brief Get the area of the text based on the size using the font.
  * @param font The font stucture to use for drawing
  * @param text The string to draw 
  * @param size The size of the text
- * @return The width of the text based on the size
+ * @return The area of the text based on the size
 */
-inline size_t RFont_text_width(RFont_font* font, const char* text, u32 size);
+inline RFont_area RFont_text_area(RFont_font* font, const char* text, u32 size);
 
 /**
- * @brief Get the width of the text based on the size using the font, using a given length.
+ * @brief Get the area of the text based on the size using the font, using a given length.
  * @param font The font stucture to use for drawing
  * @param text The string to draw 
  * @param size The size of the text
  * @param spacing The spacing of the text
- * @return The width of the text based on the size
+ * @return The area of the text based on the size
 */
-inline size_t RFont_text_width_spacing(RFont_font* font, const char* text, float spacing, u32 size);
+inline RFont_area RFont_text_area_spacing(RFont_font* font, const char* text, float spacing, u32 size);
 
 /**
- * @brief Get the width of the text based on the size using the font, using a given length.
+ * @brief Get the area of the text based on the size using the font, using a given length.
  * @param font The font stucture to use for drawing
  * @param text The string to draw 
  * @param len The length of the string
  * @param size The size of the text
  * @param stopNL the number of \n s until it stops (0 = don't stop until the end)
  * @param spacing The spacing of the text
- * @return The width of the text based on the size
+ * @return The area of the text based on the size
 */
-inline size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing);
+inline RFont_area RFont_text_area_len(RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing);
 
 /**
  * @brief Draw a text string using the font.
@@ -269,9 +273,9 @@ inline size_t RFont_text_width_len(RFont_font* font, const char* text, size_t le
  * @param x The x position of the text
  * @param y The y position of the text
  * @param size The size of the text
- * @return The width of the text based on the size
+ * @return The area of the text based on the size
 */
-inline size_t RFont_draw_text(RFont_font* font, const char* text, float x, float y, u32 size);
+inline RFont_area RFont_draw_text(RFont_font* font, const char* text, float x, float y, u32 size);
 
 /**
  * @brief Draw a text string using the font and a given spacing.
@@ -281,9 +285,9 @@ inline size_t RFont_draw_text(RFont_font* font, const char* text, float x, float
  * @param y The y position of the text
  * @param size The size of the text
  * @param spacing The spacing of the text
- * @return The width of the text based on the size
+ * @return The area of the text based on the size
 */
-inline size_t RFont_draw_text_spacing(RFont_font* font, const char* text, float x, float y, u32 size, float spacing);
+inline RFont_area RFont_draw_text_spacing(RFont_font* font, const char* text, float x, float y, u32 size, float spacing);
 
 /**
  * @brief Draw a text string using the font using a given length and a given spacing.
@@ -294,9 +298,9 @@ inline size_t RFont_draw_text_spacing(RFont_font* font, const char* text, float 
  * @param y The y position of the text
  * @param size The size of the text
  * @param spacing The spacing of the text
- * @return The width of the text based on the size
+ * @return The area of the text based on the size
 */
-inline size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing);
+inline RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing);
 
 #define RFont_set_color RFont_render_set_color
 
@@ -415,6 +419,7 @@ struct RFont_font {
    stbtt_fontinfo info; /* source stb font */
    b8 free_font_memory;
    float fheight; /* font height from stb */
+   float descent; /* font descent */
 
    RFont_glyph glyphs[RFONT_MAX_GLYPHS]; /* glyphs */
    size_t glyph_len;
@@ -471,12 +476,7 @@ RFont_font* RFont_font_init_data(u8* font_data, b8 auto_free) {
    stbtt_InitFont(&font->info, font_data, 0);
 
    font->fheight = ttSHORT(font->info.data + font->info.hhea + 4) - ttSHORT(font->info.data + font->info.hhea + 6);
-   
-   /* 
-      int ascent, descent, lineGap;
-      stbtt_GetFontVMetrics(&fontInfo, &ascent, &descent, &lineGap);
-   */
-
+   font->descent = ttSHORT(font->info.data + font->info.hhea + 6);
 
    #ifndef RFONT_NO_GRAPHICS
    font->atlas = RFont_create_atlas(RFONT_ATLAS_WIDTH, RFONT_ATLAS_HEIGHT);
@@ -628,24 +628,28 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
    return *glyph;
 }
 
-size_t RFont_text_width(RFont_font* font, const char* text, u32 size) {
-   return RFont_text_width_len(font, text, 0, size, 0, 0.0f);
+RFont_area RFont_text_area(RFont_font* font, const char* text, u32 size) {
+   return RFont_text_area_len(font, text, 0, size, 0, 0.0f);
 }
 
-size_t RFont_text_width_spacing(RFont_font* font, const char* text, float spacing, u32 size) {
-   return RFont_text_width_len(font, text, 0, size, 0, spacing);
+RFont_area RFont_text_area_spacing(RFont_font* font, const char* text, float spacing, u32 size) {
+   return RFont_text_area_len(font, text, 0, size, 0, spacing);
 }
 
-size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing) {
+RFont_area RFont_text_area_len(RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing) {
    float x = 0;
    size_t y = 1;
 
    char* str;
+
+   float scale = (((float)size) / font->fheight);
+   u16 numOfLongHorMetrics = ttUSHORT(font->info.data + font->info.hhea + 34);
+   float space_adv = scale * ttSHORT(font->info.data + font->info.hmtx + 4 * (numOfLongHorMetrics - 1));
    
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {        
       if (*str == '\n') { 
          if (y == stopNL)
-            return x;
+            return (RFont_area){(u32)x, y * size};
          
          y++;
          x = 0;
@@ -653,7 +657,7 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
       }
       
       if (*str == ' ' || *str == '\t') {
-         x += (size / 4);
+         x += space_adv + spacing;
          continue;
       }
 
@@ -665,28 +669,36 @@ size_t RFont_text_width_len(RFont_font* font, const char* text, size_t len, u32 
       x += (float)glyph.advance + spacing;
    }
 
-   return x;
+   return (RFont_area){(u32)x, y * size};
 }
 
-size_t RFont_draw_text(RFont_font* font, const char* text, float x, float y, u32 size) {
+RFont_area RFont_draw_text(RFont_font* font, const char* text, float x, float y, u32 size) {
    return RFont_draw_text_len(font, text, 0, x, y, size, 0.0f);
 }
 
-size_t RFont_draw_text_spacing(RFont_font* font, const char* text, float x, float y, u32 size, float spacing) {
+RFont_area RFont_draw_text_spacing(RFont_font* font, const char* text, float x, float y, u32 size, float spacing) {
    return RFont_draw_text_len(font, text, 0, x, y, size, spacing);
 }
 
-size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
+RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
    float* verts = RFont_verts;
    float* tcoords = RFont_tcoords;
 
+   float startX = x;
+   float startY = y;
+   
    y += size;
 
-   float startX = x;
    u32 i = 0;
    u32 tIndex = 0;
 
    char* str;
+
+   float scale = (((float)size) / font->fheight);
+   u16 numOfLongHorMetrics = ttUSHORT(font->info.data + font->info.hhea + 34);
+   float space_adv = scale * ttSHORT(font->info.data + font->info.hmtx + 4 * (numOfLongHorMetrics - 1));
+
+   y -= (-font->descent * scale);
 
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {        
       if (*str == '\n') { 
@@ -694,13 +706,14 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
          y += size;
          continue;
       }
-      
+
       if (*str == ' ' || *str == '\t') {
-         x += (size / 4);
+         x += space_adv + spacing;
          continue;
       }
 
       RFont_glyph glyph = RFont_font_add_char(font, *str, size);
+
       if (glyph.codepoint == 0 && glyph.size == 0)
          continue;
 
@@ -775,8 +788,8 @@ size_t RFont_draw_text_len(RFont_font* font, const char* text, size_t len, float
    #ifndef RFONT_NO_GRAPHICS
    RFont_render_text(font->atlas, verts, tcoords, i / 3);
    #endif
-
-   return x;
+   
+   return (RFont_area){(u32)(x - startX), (u32)(y - startY) + (-font->descent * scale)};
 }
 
 #ifndef __APPLE__

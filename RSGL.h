@@ -804,11 +804,11 @@ RSGLDEF RSGL_circle RSGL_alignText_len(char* str, size_t str_len, RSGL_circle c,
     returns the width of a text when rendered with the set font with the size of `fontSize
     stops at `textEnd` or when it reaches '\0'
 */
-RSGLDEF u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd);
-RSGLDEF u32 RSGL_textLineWidth(const char* text, u32 fontSize, size_t textEnd, size_t line);
-#define RSGL_textWidthF(text, fontSize, textEnd) \
+RSGLDEF RSGL_area RSGL_textArea(const char* text, u32 fontSize, size_t textEnd);
+RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textEnd, size_t line);
+#define RSGL_textAreaF(text, fontSize, textEnd) \
     RSGL_setFont(font);\
-    RSGL_textWidthF(text, fontSize, textEnd);
+    RSGL_textAreaF(text, fontSize, textEnd);
 #endif /* RSGL_NO_TEXT */
 
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
@@ -1240,6 +1240,8 @@ int main() {
 #define RFONT_RENDER_LEGACY
 #define RFONT_RENDER_RGL
 #define RFONT_CUSTOM_GL
+
+#define RFont_area RSGL_area
 
 #ifndef RSGL_NO_DEPS_FOLDER
 #include "deps/RFont.h"
@@ -2326,23 +2328,23 @@ RSGL_circle RSGL_alignText(char* str, RSGL_circle c, RSGL_rectF larger, u8 align
 }
 
 RSGL_circle RSGL_alignText_len(char* str, size_t str_len, RSGL_circle c, RSGL_rectF larger, u8 alignment) {
-    size_t width = RSGL_textWidth(str, c.d, str_len);
+    RSGL_area area = RSGL_textArea(str, c.d, str_len);
     
-    RSGL_rectF smaller = RSGL_RECTF(c.x, c.y, width, c.d);
+    RSGL_rectF smaller = RSGL_RECTF(c.x, c.y, area.w, c.d);
     RSGL_rectF r = RSGL_alignRectF(larger, smaller, alignment);
 
     return RSGL_CIRCLE(r.x, r.y, r.h);
 }
 
-u32 RSGL_textWidth(const char* text, u32 fontSize, size_t textEnd) {
+RSGL_area RSGL_textArea(const char* text, u32 fontSize, size_t textEnd) {
     if (RSGL_font.f == NULL)
-        return 0;
+        return RSGL_AREA(0, 0);
     
-    return RFont_text_width_len(RSGL_font.f, text, textEnd, fontSize, 0, 0.0);
+    return RFont_text_area_len(RSGL_font.f, text, textEnd, fontSize, 0, 0.0);
 }
 
-u32 RSGL_textLineWidth(const char* text, u32 fontSize, size_t textEnd, size_t line) {
-    return RFont_text_width_len(RSGL_font.f, text, textEnd, fontSize, line, 0.0);
+RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textEnd, size_t line) {
+    return RFont_text_area_len(RSGL_font.f, text, textEnd, fontSize, line, 0.0);
 }
 
 RSGL_color RFontcolor = RSGL_RGB(0, 0, 0);
@@ -3224,7 +3226,7 @@ void RSGL_textbox_addChar(RSGL_textbox* tb, char ch) {
             y++;
     }
 
-    u32 width = RSGL_textLineWidth(tb->src.text.str, tb->src.text.c.d, tb->src.text.text_len, y + 1);
+    u32 width = RSGL_textLineArea(tb->src.text.str, tb->src.text.c.d, tb->src.text.text_len, y + 1).w;
 
     /* 
         if not aligned to the bottom, subtract half the text size from the box size to avoid 
@@ -3337,7 +3339,7 @@ size_t RSGL_textbox_point_to_index(RSGL_textbox* tb, RSGL_point touch) {
         size_t len = RSGL_strLineLenR(tb->src.text.str);
     
         for (indexX = 0; 
-                RSGL_textLineWidth(tb->src.text.str, tb->src.text.c.d, indexX + 1, indexY) < (u32)touch.x && 
+                RSGL_textLineArea(tb->src.text.str, tb->src.text.c.d, indexX + 1, indexY).w < (u32)touch.x && 
                 indexX < len; 
             indexX++);
     }
@@ -3450,21 +3452,18 @@ char* RSGL_textbox_getString(RSGL_textbox* tb, size_t* len) {
 void RSGL_textbox_draw(RSGL_textbox* tb) {
     RSGL_drawButton(*tb);
     
-    u32 x = 0; 
-    if (tb->src.cursorIndex)
-        x = RSGL_textWidth(tb->src.text.str, tb->src.text.c.d, tb->src.cursorIndex);
+    RSGL_area area = RSGL_AREA(0, 0); 
+    if (tb->src.cursorIndex) {
+        area = RSGL_textArea(tb->src.text.str, tb->src.text.c.d, tb->src.cursorIndex);
 
-    if (tb->src.text.alignment & RSGL_ALIGN_CENTER)
-        x /= 2;
-
-    size_t i, y = 0;
-    for (i = 0; i < tb->src.cursorIndex && tb->src.text.str[i]; i++) {
-        if (tb->src.text.str[i] == '\n')
-            y++;
+        if (tb->src.text.alignment & RSGL_ALIGN_CENTER)
+            area.w /= 2;
+        
+        area.h = ((area.h - 1) / tb->src.text.c.d);
     }
 
-    RSGL_drawRect(RSGL_RECT(tb->src.text.c.x + x - 2, 
-                            2 + tb->src.text.c.y + y * tb->src.text.c.d, 
+    RSGL_drawRect(RSGL_RECT(tb->src.text.c.x + area.w - 2, 
+                            2 + tb->src.text.c.y + area.h * tb->src.text.c.d, 
                             1, tb->src.text.c.d),
                  tb->src.outlineColor);
 }
