@@ -6,15 +6,15 @@
 
 #include "RSGL.h"
 
-void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF center, RSGL_color c, size_t len) {  
+void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_color c, size_t len) {  
     if (GL_TYPE > 0x0010)
         GL_TYPE -= 0x0010;
     
-    i32 i;
+    u32 i;
     
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if (!center.x && !center.y)
+    if (RSGL_args.blend)
         glEnable(GL_BLEND);
     else
         glDisable(GL_BLEND);
@@ -24,20 +24,6 @@ void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF 
     glLineWidth(RSGL_args.lineWidth);
 
     glColor4ub(c.r, c.g, c.b, c.a);
-
-    if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z) {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
-        if (RSGL_args.center.x != -1 && RSGL_args.center.y != -1 &&  RSGL_args.center.z != -1)
-            center = RSGL_args.center;
-
-        glTranslatef(center.x, center.y, center.z);
-        glRotatef(RSGL_args.rotate.z,  0, 0, 1);
-        glRotatef(RSGL_args.rotate.y, 0, 1, 0);
-        glRotatef(RSGL_args.rotate.x, 1, 0, 0);
-        glTranslatef(-center.x, -center.y, -center.z);
-    }
 
     glBegin(GL_TYPE);
         size_t pIndex = 0;
@@ -54,9 +40,6 @@ void RSGL_basicDraw(u32 GL_TYPE, float* points, float* texPoints, RSGL_point3DF 
             tIndex += 2;
         }
     glEnd();
-
-    if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z)
-        glPopMatrix();
 
     if (RSGL_argsClear) {
         RSGL_setTexture(0);

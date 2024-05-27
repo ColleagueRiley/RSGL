@@ -29,9 +29,9 @@ int main(void) {
     /*unsigned short js = RSGL_registerJoystick(win, 0);*/
     unsigned char i;
 
-    RSGL_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
+    RGFW_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
 
-    RSGL_window_swapInterval(win, 60);
+    RGFW_window_swapInterval(win, 60);
 
     RSGL_setClearArgs(true);
 
@@ -59,17 +59,17 @@ int main(void) {
                 break;
             }
             if (RSGL_isPressedI(win, RGFW_Up))
-                printf("Pasted : %s\n", RSGL_readClipboard(NULL));
+                printf("Pasted : %s\n", RGFW_readClipboard(NULL));
             else if (RSGL_isPressedI(win, RGFW_Down))
-                RSGL_writeClipboard("DOWN", 4);
+                RGFW_writeClipboard("DOWN", 4);
             else if (RSGL_isPressedI(win, RGFW_Space))
                 printf("fps : %i\n", win->event.fps);
             else if (RSGL_isPressedI(win, RGFW_w))
-                RSGL_window_setMouseDefault(win);
+                RGFW_window_setMouseDefault(win);
             else if (RSGL_isPressedI(win, RGFW_q))
-                RSGL_window_showMouse(win, 0);
+                RGFW_window_showMouse(win, 0);
             else if (RSGL_isPressedI(win, RGFW_t)) {
-                RSGL_window_setMouse(win, icon, RSGL_AREA(3, 3), 4);
+                RGFW_window_setMouse(win, icon, RSGL_AREA(3, 3), 4);
             }
             if (win->event.type == RSGL_dnd) {
                 for (i = 0; i < win->event.droppedFilesCount; i++)
@@ -105,9 +105,7 @@ int main(void) {
 
             RSGL_setGradient(gradient, 3);
 
-            RSGL_point3DF center = {points[(3 * 2)], (points[(3 * 2) + 1] + points[1]) / 2.0f, 0};
-            RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, center, RSGL_RGB(255, 255, 0), 3);
-
+            RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, RSGL_RGB(255, 255, 0), 3);
 
 
             if (running == false)
