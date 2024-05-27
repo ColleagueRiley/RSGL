@@ -475,62 +475,12 @@ RGFW_Event* RSGL_window_checkEvent(RSGL_window* win); /*!< check events (returns
 
 /*! window managment functions*/
 RSGLDEF void RSGL_window_close(RSGL_window* win); /*!< close the window and free leftover data */
-RSGLDEF RSGL_area RSGL_getScreenSize(void);
 
-RSGLDEF void RSGL_window_move(RSGL_window* win,
-								RSGL_point p/* new pos*/
-						);
+RSGLDEF void RSGL_window_setIconImage(RGFW_window* win, const char* image);
+RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win);
+RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 
-RSGLDEF void RSGL_window_resize(RSGL_window* win,
-								RSGL_area a/* new size*/
-						);
-
-/* set the minimum size a user can shrink a window */
-RSGLDEF void RSGL_window_setMinSize(RSGL_window* win, RSGL_area a);
-/* set the minimum size a user can extend a window */
-RSGLDEF void RSGL_window_setMaxSize(RSGL_window* win, RSGL_area a);
-
-RSGLDEF void RSGL_window_maximize(RSGL_window* win); /* maximize the window size */
-RSGLDEF void RSGL_window_minimize(RSGL_window* win); /* minimize the window (in taskbar (per OS))*/
-RSGLDEF void RSGL_window_restore(RSGL_window* win); /* restore the window from minimized (per OS)*/
-
-RSGLDEF void RSGL_window_setName(RSGL_window* win,
-								char* name
-							);
-
-void RSGL_window_setIcon(RSGL_window* win, /*!< source window */
-				u8* icon /*!< icon bitmap */,
-				RSGL_area a /*!< width and height of the bitmap*/,
-				i32 channels /*!< how many channels the bitmap has (rgb : 3, rgba : 4) */
-		); /*!< image resized by default */
-
-/*!< sets mouse to bitmap (very simular to RSGL_window_setIcon), image NOT resized by default*/
-
-RSGLDEF void RSGL_window_setMouse(RSGL_window* win, u8* image, RSGL_area a, i32 channels);
-RSGLDEF void RSGL_window_setMouseDefault(RSGL_window* win); /* sets the mouse to1` the default mouse image */
-
-#define RSGL_window_setMouseStandard RGFW_window_setMouseStandard
-
-/* where the mouse is on the screen */
-RSGLDEF RSGL_point RSGL_getGlobalMousePoint(void);
-
-/* show the mouse or hide the mouse*/
-RSGLDEF void RSGL_window_showMouse(RSGL_window* win, i8 show);
-/* move the mouse to a set x, y pos*/
-RSGLDEF void RSGL_window_moveMouse(RSGL_window* win, RSGL_point v);
-
-/* if the window should close (RSGL_close was sent or escape was pressed) */
-RSGLDEF u8 RSGL_window_shouldClose(RSGL_window* win); 
-/* if window is fullscreen'd */
-RSGLDEF u8 RSGL_window_isFullscreen(RSGL_window* win);
-/* if window is hidden */
-RSGLDEF u8 RSGL_window_isHidden(RSGL_window* win);
-/* if window is minimized */
-RSGLDEF u8 RSGL_window_isMinimized(RSGL_window* win);
-/* if window is maximized */
-RSGLDEF u8 RSGL_window_isMaximized(RSGL_window* win);
-/*!< make the window the current opengl drawing context */
-RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win); 
+RSGLDEF void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon);
 
 /*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
 RSGLDEF u8 RGFW_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
@@ -539,46 +489,6 @@ RSGLDEF u8 RSGL_wasPressedI(RSGL_window* win, u32 key); /*!< if key was pressed 
 
 RSGLDEF u8 RSGL_isHeldI(RSGL_window* win, u32 key); /*!< if key is held (key code)*/
 RSGLDEF u8 RSGL_isReleasedI(RSGL_window* win, u32 key); /*!< if key is released (key code)*/
-
-/*
-	!!Keycodes defined at the bottom of the header file!!
-*/
- /*!< converts a key code to it's key string */
-RSGLDEF char* RSGL_keyCodeTokeyStr(u32 key);
-/*!< converts a string of a key to it's key code */
-RSGLDEF u32 RSGL_keyStrToKeyCode(char* key);
-/*!< if key is pressed (key string) */
-#define RSGL_isPressedS(win, key) RSGL_isPressedI(win, RSGL_keyStrToKeyCode(key))
-
-/*! clipboard functions*/
-RSGLDEF char* RSGL_readClipboard(size_t* size); /*!< read clipboard data */
-#define RSGL_clipboardFree free /* the string returned from RSGL_readClipboard must be freed */
-
-RSGLDEF void RSGL_writeClipboard(const char* text, u32 textLen); /*!< write text to the clipboard */
-
-/* 
-	convert a keyString to a char version
-*/
-RSGLDEF char RSGL_keystrToChar(const char*);
-/*
-	ex.
-	"parenleft" -> '('
-	"A" -> 'A',
-	"Return" -> "\n"
-*/
-
-/*! native opengl functions */
-
-/* OpenGL init hints */
-RSGLDEF void RSGL_setGLVersion(i32 major, i32 minor);
-RSGLDEF void RSGL_setGLStencil(i32 stencil); /* set stencil buffer bit size (8 by default) */
-RSGLDEF void RSGL_setGLSamples(i32 samples); /* set number of sampiling buffers (4 by default) */
-RSGLDEF void RSGL_setGLStereo(i32 stereo); /* use GL_STEREO (GL_FALSE by default) */
-RSGLDEF void RSGL_setGLAuxBuffers(i32 auxBuffers); /* number of aux buffers (0 by default) */
-
-/* supports openGL, directX, OSMesa, EGL and software rendering */
-RSGLDEF void RSGL_window_swapBuffers(RSGL_window* win); /* swap the rendering buffer */
-RSGLDEF void RSGL_window_swapInterval(RSGL_window* win, i32 swapInterval); 
 #else /* RSGL_NO_RGFW */
 
 /* 
@@ -653,6 +563,7 @@ typedef struct RSGL_drawArgs {
     bool fill;
     RSGL_point3DF center;
     float lineWidth;
+    bool blend;
     bool legacy;
 } RSGL_drawArgs;
 
@@ -694,7 +605,21 @@ RSGLDEF RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 al
 #define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentRect.w - 1.0f)
 #define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentRect.h)
 #define RSGL_GET_WORLD_Z(z) (float)(z)
+
+#define RSGL_GET_MATRIX_X(x, y, z) (matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
+#define RSGL_GET_MATRIX_Y(x, y, z) (matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13])
+#define RSGL_GET_MATRIX_Z(x, y, z) (matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14])
+
+#define RSGL_GET_MATRIX_POINT(x, y, z) RSGL_GET_MATRIX_X(x, y, z), RSGL_GET_MATRIX_Y(x, y, z), RSGL_GET_MATRIX_Z(x, y, z)
 #define RSGL_GET_WORLD_POINT(x, y, z) RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z))
+
+#define RSGL_GET_FINAL_POINT(x, y, z) RSGL_GET_MATRIX_POINT(RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z)))
+
+typedef struct RSGL_MATRIX {
+    float m[16];
+} RSGL_MATRIX;
+
+RSGLDEF RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center);
 
 /* 
 RSGL_basicDraw is a function used internally by RSGL, but you can use it yourself
@@ -704,13 +629,17 @@ RSGLDEF void RSGL_basicDraw(
                 u32 TYPE, /* type of shape, RSGL_QUADS, RSGL_TRIANGLES, RSGL_LINES, RSGL_QUADS_2D */
                 float* points, /* array of 3D points */
                 float* texPoints, /* array of 2D texture points (must be same length as points)*/
-                RSGL_point3DF center, /* the center of the shape */
                 RSGL_color c, /* the color to draw the shape */
                 size_t len /* the length of the points array */
             );
 
 void RSGL_basicDrawRAW(u32 RGL_TYPE, float* points, size_t point_size, float* texPoints,
                                     float* colors, size_t color_size, size_t len);
+
+/* RSGL translation */
+RSGLDEF RSGL_MATRIX RSGL_matrixMultiply(float left[16], float right[16]);
+RSGLDEF RSGL_MATRIX RSGL_rotatef(RSGL_MATRIX* matrix, float angle, float x, float y, float z); 
+RSGLDEF RSGL_MATRIX RSGL_translatef(RSGL_MATRIX* matrix, float x, float y, float z);
 /* 2D shape drawing */
 /* in the function names, F means float */
 
@@ -1285,7 +1214,7 @@ typedef struct RSGL_fontsData {
 RSGL_fontsData RSGL_font = {NULL, NULL, 0, 0};
 #endif
 
-RSGL_drawArgs RSGL_args = {{ }, 1, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0};
+RSGL_drawArgs RSGL_args = {{ }, 1, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0, 0};
 bool RSGL_argsClear = false;
 
 u32 RSGL_windowsOpen = 0;
@@ -1352,63 +1281,8 @@ RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment)
     return aligned;
 }
 
-/* Multiply the current matrix by a translation matrix */
-RGL_MATRIX rsglTranslatef(RGL_MATRIX* matrix, float x, float y, float z) {
-    RGL_MATRIX matTranslation = { 
-        {
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f,
-            x,    y,    z,    1.0f
-        }
-    };
-
-    /* NOTE: We transpose matrix with multiplication order */
-    return rglMatrixMultiply(matTranslation.m, matrix->m);
-}
-
-/* Multiply the current matrix by a rotation matrix */
-RGL_MATRIX rsglRotatef(RGL_MATRIX* matrix, float angle, float x, float y, float z) {
-	/* Axis vector (x, y, z) normalization */
-	float lengthSquared = x * x + y * y + z * z;
-	if ((lengthSquared != 1.0f) && (lengthSquared != 0.0f)) {
-		float inverseLength = 1.0f / sqrtf(lengthSquared);
-		x *= inverseLength;
-		y *= inverseLength;
-		z *= inverseLength;
-	}
-
-	/* Rotation matrix generation */
-	float sinres = sinf(DEG2RAD * angle);
-	float cosres = cosf(DEG2RAD * angle);
-	float t = 1.0f - cosres;
-
-	float matRotation[16] = 
-				{
-					x * x * t + cosres,   	  	y * x * t + z * sinres,   	z * x * t - y * sinres,   	0.0f,
-					x * y * t - z * sinres,   	y * y * t + cosres,   		z * y * t + x * sinres,   	0.0f,
-					x * z * t + y * sinres,   	y * z * t - x * sinres,  	z * z * t + cosres,   		0.0f,
-					0.0f,   					0.0f,   					0.0f,   					1.0f
-				};
-
-	return rglMatrixMultiply(matRotation, matrix->m);
-}
-
-#ifndef RSGL_CUSTOM_DRAW
-void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF center, RSGL_color c, size_t len) {  
-    size_t i;
-    
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-
-    rglLegacy(RSGL_args.legacy);
-
-    rglSetTexture(RSGL_args.texture);
-    rglLineWidth(RSGL_args.lineWidth);
-
-    rglColor4ub(c.r, c.g, c.b, c.a);
-
-    RGL_MATRIX matrix = (RGL_MATRIX) { 
+RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center) {    
+    RSGL_MATRIX matrix = (RSGL_MATRIX) { 
         {
             1.0f, 0.0f, 0.0f, 0.0f,
             0.0f, 1.0f, 0.0f, 0.0f,
@@ -1420,13 +1294,30 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
     if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z) {
         if (RSGL_args.center.x != -1 && RSGL_args.center.y != -1 &&  RSGL_args.center.z != -1)
             center = RSGL_args.center;
-        if (center.x){}
-        rsglTranslatef(&matrix, center.x, center.y, center.z);
-        rsglRotatef(&matrix, RSGL_args.rotate.z,  0, 0, 1);
-        rsglRotatef(&matrix, RSGL_args.rotate.y, 0, 1, 0);
-        rsglRotatef(&matrix, RSGL_args.rotate.x, 1, 0, 0);
-        rsglTranslatef(&matrix, -center.x, -center.y, -center.z);
+        
+        matrix = RSGL_translatef(&matrix, center.x, center.y, center.z);
+        matrix = RSGL_rotatef(&matrix, RSGL_args.rotate.z,  0, 0, 1);
+        matrix = RSGL_rotatef(&matrix, RSGL_args.rotate.y, 0, 1, 0);
+        matrix = RSGL_rotatef(&matrix, RSGL_args.rotate.x, 1, 0, 0);
+        matrix = RSGL_translatef(&matrix, -center.x, -center.y, -center.z);
     }
+
+    return matrix;
+}
+
+#ifndef RSGL_CUSTOM_DRAW
+void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_color c, size_t len) { 
+    size_t i;
+    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+    rglLegacy(RSGL_args.legacy);
+
+    rglSetTexture(RSGL_args.texture);
+    rglLineWidth(RSGL_args.lineWidth);
+
+    rglColor4ub(c.r, c.g, c.b, c.a);
     
     rglBegin(RGL_TYPE);
         size_t pIndex = 0;
@@ -1442,12 +1333,8 @@ void RSGL_basicDraw(u32 RGL_TYPE, float* points, float* texPoints, RSGL_point3DF
             float x = points[pIndex + 0], 
                   y = points[pIndex + 1], 
                   z = points[pIndex + 2];
-            
-            float tx = matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12];
-            float ty = matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13];
-            float tz = matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14];
-            
-            rglVertex3f(tx, ty, tz);
+                
+            rglVertex3f(x, y, z);
 
             pIndex += 3;
             tIndex += 2;
@@ -1558,7 +1445,7 @@ void RSGL_window_setIconImage(RGFW_window* win, const char* image) {
     i32 x, y, c;
     u8* img = stbi_load(image, &x, &y, &c, 0);
 
-    RSGL_window_setIcon(win, img, RSGL_AREA(x, y), c);
+    RGFW_window_setIcon(win, img, RSGL_AREA(x, y), c);
     
     free(img);
 }
@@ -1572,7 +1459,7 @@ void RSGL_window_makeCurrent(RSGL_window* win) {
 
 void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
     RSGL_window_makeCurrent(win);
-    RSGL_window_swapBuffers(win);
+    RGFW_window_swapBuffers(win);
 
     RFont_update_framebuffer(win->r.w, win->r.h);
     RSGL_api_clearColor(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
@@ -1606,84 +1493,8 @@ void RSGL_window_close(RSGL_window* win) {
     RGFW_window_close(win);
 }
 
-RSGL_point RSGL_getGlobalMousePoint(void) {
-    return RGFW_getGlobalMousePoint();
-}
-
-RSGL_area RSGL_getScreenSize() {
-    return RGFW_getScreenSize();
-}
-
-void RSGL_window_move(RSGL_window* win, RSGL_point p) {
-    return RGFW_window_move(win, p);
-}
-
-void RSGL_window_resize(RSGL_window* win, RSGL_area a) {
-    return RGFW_window_resize(win, a);
-}
-
-void RSGL_window_setMinSize(RSGL_window* win, RSGL_area a) {
-    return RGFW_window_setMinSize(win, a);
-}
-
-void RSGL_window_setMaxSize(RSGL_window* win, RSGL_area a) {
-    return RGFW_window_setMaxSize(win, a);
-}
-
-void RSGL_window_maximize(RSGL_window* win) {
-    return RGFW_window_maximize(win);
-}
-
-void RSGL_window_minimize(RSGL_window* win) {
-    RGFW_window_minimize(win);
-}
-
-void RSGL_window_restore(RSGL_window* win) {
-    RGFW_window_restore(win);
-}
-
-void RSGL_window_setName(RSGL_window* win, char* name) {
-    RGFW_window_setName(win, name);
-}
-
-void RSGL_window_setIcon(RSGL_window* win, u8* icon, RSGL_area a, i32 channels) {
-    RGFW_window_setIcon(win, icon, a, channels);
-}
-
-void RSGL_window_setMouse(RSGL_window* win, u8* image, RSGL_area a, i32 channels) {
-    RGFW_window_setMouse(win, image, a, channels);
-}
-
-void RSGL_window_setMouseDefault(RSGL_window* win) {
-    RGFW_window_setMouseDefault(win);
-}
-
-void RSGL_window_showMouse(RSGL_window* win, i8 show) {
-    RGFW_window_showMouse(win, show);
-}
-
-void RSGL_window_moveMouse(RSGL_window* win, RSGL_point v) {
-    RGFW_window_moveMouse(win, v);
-}
-
-u8 RSGL_window_shouldClose(RSGL_window* win) {
-    return RGFW_window_shouldClose(win);
-}
-
-u8 RSGL_window_isFullscreen(RSGL_window* win) {
-    return RGFW_window_isFullscreen(win);
-}
-
-u8 RSGL_window_isHidden(RSGL_window* win) {
-    return RGFW_window_isHidden(win);
-}
-
-u8 RSGL_window_isMinimized(RSGL_window* win) {
-    return RGFW_window_isMinimized(win);
-}
-
-u8 RSGL_window_isMaximized(RSGL_window* win) {
-    return RGFW_window_isMaximized(win);
+void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon) {
+    return RGFW_window_setMouseStandard(win, cursorIcon);
 }
 
 u8 RSGL_isPressedI(RSGL_window* win, u32 key) {
@@ -1697,42 +1508,6 @@ u8 RSGL_isHeldI(RSGL_window* win, u32 key) {
 }
 u8 RSGL_isReleasedI(RSGL_window* win, u32 key) {
     return RGFW_isReleasedI(win, key);
-}
-
-char* RSGL_keyCodeTokeyStr(u32 key) {
-    return RGFW_keyCodeTokeyStr(key);
-}
-
-u32 RSGL_keyStrToKeyCode(char* key) {
-    return RGFW_keyStrToKeyCode(key);
-}
-
-char* RSGL_readClipboard(size_t* size) {
-    return RGFW_readClipboard(size);
-}
-
-void RSGL_writeClipboard(const char* text, u32 textLen) {
-    return RGFW_writeClipboard(text, textLen);
-}
-
-
-#ifdef RGFW_OPENGL
-void RSGL_setGLVersion(i32 major, i32 minor) {
-    return RGFW_setGLVersion(major, minor);
-}
-
-void RSGL_setGLStencil(i32 stencil){ RGFW_setGLStencil(stencil); }
-void RSGL_setGLSamples(i32 samples){ RGFW_setGLSamples(samples); }
-void RSGL_setGLStereo(i32 stereo){ RGFW_setGLStereo(stereo); }
-void RSGL_setGLAuxBuffers(i32 auxBuffers){ RGFW_setGLAuxBuffers(auxBuffers); }
-#endif
-
-void RSGL_window_swapBuffers(RSGL_window* win) {
-    return RGFW_window_swapBuffers(win);
-}
-
-void RSGL_window_swapInterval(RSGL_window* win, i32 swapInterval) {
-    return RGFW_window_swapInterval(win, swapInterval);
 }
 
 #else /* !RSGL_NO_RGFW */
@@ -1830,7 +1605,7 @@ void RSGL_setClearArgs(bool clearArgs) {
     RSGL_argsClear = clearArgs;
 }
 void RSGL_clearArgs() {
-    RSGL_args = (RSGL_drawArgs){{ }, 1, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0};
+    RSGL_args = (RSGL_drawArgs){{ }, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0, 0};
 }
 
 
@@ -1913,17 +1688,19 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
     if (RSGL_args.fill == false)
         return RSGL_drawTriangleFOutline(t, 1, c);
 
-    float points[] = {RSGL_GET_WORLD_POINT((float)t.p1.x, (float)t.p1.y, 0.0f), 
-                      RSGL_GET_WORLD_POINT((float)t.p2.x, (float)t.p2.y, 0.0f), 
-                      RSGL_GET_WORLD_POINT((float)t.p3.x, (float)t.p3.y, 0.0f)};
+    RSGL_point3DF center = {RSGL_GET_WORLD_POINT(t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
+    
+    float points[] = {RSGL_GET_FINAL_POINT((float)t.p1.x, (float)t.p1.y, 0.0f), 
+                      RSGL_GET_FINAL_POINT((float)t.p2.x, (float)t.p2.y, 0.0f), 
+                      RSGL_GET_FINAL_POINT((float)t.p3.x, (float)t.p3.y, 0.0f)};
     float texPoints[] = {   
                 0.0f, 1.0f, 
                 1.0f, 1.0f,
                 ((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f,
     };
     
-    RSGL_point3DF center = {RSGL_GET_WORLD_POINT(t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0)};
-    RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, center, c, 3);
+    RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, c, 3);
 }
 
 #ifndef PI
@@ -1965,19 +1742,20 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
                                 0.0f, 1.0f
                             };
 
-    float points[] = {
-                                RSGL_GET_WORLD_POINT(r.x, r.y, 0.0f), 
-                                RSGL_GET_WORLD_POINT(r.x, r.y + r.h, 0.0f),       
-                                RSGL_GET_WORLD_POINT(r.x + r.w, r.y, 0.0f), 
+    RSGL_point3DF center = (RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
 
-                                RSGL_GET_WORLD_POINT(r.x + r.w, r.y + r.h, 0.0f),        
-                                RSGL_GET_WORLD_POINT(r.x + r.w, r.y, 0.0f),     
-                                RSGL_GET_WORLD_POINT(r.x, r.y + r.h, 0.0f),  
+    float points[] = {
+                                RSGL_GET_FINAL_POINT(r.x, r.y, 0.0f), 
+                                RSGL_GET_FINAL_POINT(r.x, r.y + r.h, 0.0f),       
+                                RSGL_GET_FINAL_POINT(r.x + r.w, r.y, 0.0f), 
+
+                                RSGL_GET_FINAL_POINT(r.x + r.w, r.y + r.h, 0.0f),        
+                                RSGL_GET_FINAL_POINT(r.x + r.w, r.y, 0.0f),     
+                                RSGL_GET_FINAL_POINT(r.x, r.y + r.h, 0.0f),  
                             };
 
-    RSGL_point3DF center = (RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f)};
-
-    RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, center, c, 6);
+    RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, c, 6);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
@@ -2003,8 +1781,10 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
         return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
     
     RSGL_point3DF center =  (RSGL_point3DF){RSGL_GET_WORLD_POINT(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0)};
-    o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
     
+    o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};    
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
+
     float displacement = 360.0f / (float)sides;
     float angle = displacement * arc.x;
     
@@ -2018,9 +1798,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
         texcoords[tIndex] = (-p.x + 1.0f) * 0.5;
         texcoords[tIndex + 1] = (-p.y + 1.0f) * 0.5;
 
-        verts[vIndex] = RSGL_GET_WORLD_X(o.x + o.w + (p.x * o.w));
-        verts[vIndex + 1] = RSGL_GET_WORLD_Y(o.y + o.h + (p.y * o.h)); 
-        verts[vIndex + 2] = 0.0;
+        memcpy(verts + vIndex, (float[3]){RSGL_GET_FINAL_POINT(o.x + o.w + (p.x * o.w), o.y + o.h + (p.y * o.h), 0.0)}, 3 * sizeof(float));
 
         angle += displacement;
         tIndex += 2;
@@ -2030,7 +1808,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     texcoords[tIndex + 1] = 0;
     texcoords[tIndex + 2] = 0;
 
-    RSGL_basicDraw(RSGL_TRIANGLE_FAN_2D, verts, texcoords, center, c, vIndex / 3);
+    RSGL_basicDraw(RSGL_TRIANGLE_FAN_2D, verts, texcoords, c, vIndex / 3);
 }
 
 void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (int)sides}, c); }
@@ -2063,40 +1841,43 @@ outlines
 
 void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c) {
     RSGL_args.lineWidth = thickness;
-    float points[] = {RSGL_GET_WORLD_POINT(p1.x, p1.y, 0.0f), RSGL_GET_WORLD_POINT(p2.x, p2.y, 0.0f)};
+    
+    RSGL_point3DF center = {RSGL_GET_WORLD_POINT((p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, 0.0f)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
+
+    float points[] = {RSGL_GET_FINAL_POINT(p1.x, p1.y, 0.0f), RSGL_GET_FINAL_POINT(p2.x, p2.y, 0.0f)};
     float texPoints[] = {0, 0.0f,          0, 0.0f};
 
-    RSGL_point3DF center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, 0.0f};
-
-    RSGL_basicDraw(RSGL_LINES_2D, (float*)points, (float*)texPoints, center, c, 2);
+    RSGL_basicDraw(RSGL_LINES_2D, (float*)points, (float*)texPoints, c, 2);
 }
 
 void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c) {
     RSGL_args.lineWidth = thickness;
-    float points[] = {RSGL_GET_WORLD_POINT(t.p3.x, t.p3.y, 0.0f), 
-                        RSGL_GET_WORLD_POINT(t.p1.x, t.p1.y, 0.0f),     
-                        RSGL_GET_WORLD_POINT(t.p1.x, t.p1.y, 0.0f), 
-                    RSGL_GET_WORLD_POINT(t.p2.x, t.p2.y, 0.0f),     
-                    RSGL_GET_WORLD_POINT(t.p2.x, t.p2.y, 0.0f),     
-                    RSGL_GET_WORLD_POINT(t.p3.x, t.p3.y, 0.0f)};
+    RSGL_point3DF center = {RSGL_GET_WORLD_POINT(t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
 
-    RSGL_point3DF center = {t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0};
+    float points[] = {RSGL_GET_FINAL_POINT(t.p3.x, t.p3.y, 0.0f), 
+                        RSGL_GET_FINAL_POINT(t.p1.x, t.p1.y, 0.0f),     
+                        RSGL_GET_FINAL_POINT(t.p1.x, t.p1.y, 0.0f), 
+                    RSGL_GET_FINAL_POINT(t.p2.x, t.p2.y, 0.0f),     
+                    RSGL_GET_FINAL_POINT(t.p2.x, t.p2.y, 0.0f),     
+                    RSGL_GET_FINAL_POINT(t.p3.x, t.p3.y, 0.0f)};
 
-    RSGL_basicDraw(RSGL_LINES_2D, (float*)points, NULL, center, c, 6);
+    RSGL_basicDraw(RSGL_LINES_2D, (float*)points, NULL, c, 6);
 }
 void RSGL_drawRectFOutline(RSGL_rectF r, u32 thickness, RSGL_color c) {
     RSGL_point3DF oCenter = RSGL_args.center;
 
-    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
+    RSGL_center((RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f)});
     RSGL_drawLineF((RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x + r.w, r.y}, thickness, c);
 
-    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
+    RSGL_center((RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f)});
     RSGL_drawLineF((RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x, r.y + r.h}, thickness, c);
 
-    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
+    RSGL_center((RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f)});
     RSGL_drawLineF((RSGL_pointF){r.x, r.y + r.h}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness, c);
 
-    RSGL_center(RSGL_POINT3DF(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f));
+    RSGL_center((RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f)});
     RSGL_drawLineF((RSGL_pointF){r.x + r.w, r.y}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness, c);
 
     RSGL_center(oCenter);
@@ -2116,25 +1897,33 @@ void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
     static float verts[360 * 2 * 3];
 
+    RSGL_point3DF center = (RSGL_point3DF) {RSGL_GET_WORLD_POINT(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
+
     o = (RSGL_rectF){o.x + (o.w / 2), o.y + (o.h / 2), o.w / 2, o.h / 2};
- 
+    
     float displacement = 360.0f / (float)sides;
     float centralAngle = displacement * arc.x;
 
     i32 i;
+    u32 j;
+    size_t index = 0;
 
-    for (i = arc.x; i < arc.y * 4; i += 4) {
-        verts[i] = RSGL_GET_WORLD_X(o.x + (sinf(DEG2RAD * centralAngle) * o.w));
-        verts[i + 1] = RSGL_GET_WORLD_Y(o.x + (sinf(DEG2RAD * centralAngle) * o.w));
-        verts[i + 2] = RSGL_GET_WORLD_Z(0.0);
-        
-        centralAngle += displacement;
-        verts[i + 3] = RSGL_GET_WORLD_X(o.x + (sinf(DEG2RAD * centralAngle) * o.w));
-        verts[i + 4] = RSGL_GET_WORLD_Y(o.y + (cosf(DEG2RAD * centralAngle) * o.h));
-        verts[i + 5] = RSGL_GET_WORLD_Z(0);
+    for (i = arc.x; i < arc.y; i++) {
+        for (j = 0; j < 2; j++) {
+            memcpy(verts + index, (float[3]) {
+                        RSGL_GET_FINAL_POINT(
+                            o.x + (sinf(DEG2RAD * centralAngle) * o.w),
+                            o.y + (cosf(DEG2RAD * centralAngle) * o.h),
+                            (0.0))
+                        }, sizeof(float) * 3);
+            
+            if (!j) centralAngle += displacement;
+            index += 3;
+        }
     }
 
-    RSGL_basicDraw(RSGL_LINES_2D, verts, NULL, RSGL_POINT3DF(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0.0f), c, (i - arc.x));
+    RSGL_basicDraw(RSGL_LINES_2D, verts, NULL, c, index / 3);
 }
 
 void RSGL_drawPolygonFOutline(RSGL_rectF o, u32 sides, u32 thickness, RSGL_color c) {
@@ -2365,11 +2154,13 @@ void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color) {
 #endif
 
 void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color) {
-    if (text == NULL || text[0] == '\0' || RSGL_font.f == NULL)
+    if (text == NULL || RSGL_font.f == NULL)
         return;
 
+    RSGL_args.blend = true;
     RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
     RFont_draw_text_len(RSGL_font.f, text, len, c.x, c.y, c.d, 0.0f);
+    RSGL_args.blend = false;
 }
 
 void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
@@ -2409,7 +2200,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
     RSGL_drawArgs save = RSGL_args;
     RSGL_rotate(RSGL_POINT3D(0, 0, 0));
     RSGL_setTexture(atlas);
-    RSGL_basicDraw(RSGL_TRIANGLES_2D, verts, tcoords, RSGL_POINT3DF(0, 0, 0), RFontcolor, nverts);
+    RSGL_basicDraw(RSGL_TRIANGLES_2D, verts, tcoords, RFontcolor, nverts);
     RSGL_args = save;
 }
 
@@ -2480,7 +2271,7 @@ RSGL_button RSGL_initButton(void) {
     button.status = 0;
     button.toggle = 0;
     button.src.rounding = RSGL_POINT(0, 0);
-    button.src.drawArgs = (RSGL_drawArgs){{ }, 1, 0, RSGL_args.currentRect, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0};
+    button.src.drawArgs = (RSGL_drawArgs){{ }, 0, 0, RSGL_args.currentRect, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0, 0};
     button.src.array_count = 0;
     button.radio_select = 0;
 
@@ -2699,7 +2490,7 @@ void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color) {
 }
 void RSGL_button_setCombo(RSGL_button* button, char** combo, size_t combo_count) {
     button->src.combo = combo;
-    button->src.array_count += combo_count + 1;
+    button->src.array_count = combo_count + 1;
 }
 void RSGL_button_setDrawArgs(RSGL_button* button) {
     RSGL_button_setDrawArgsData(button, RSGL_args);
@@ -2722,7 +2513,6 @@ void RSGL_button_setRadioCount(RSGL_button* button, size_t array_count) {
 
 void RSGL_drawButton(RSGL_button button) {
     assert((button.src.style & RSGL_STYLE_SHAPE) != RSGL_SHAPE_NULL);
-    
     u8 align = 0;   
 
     if (button.src.text.str != NULL)
@@ -2772,10 +2562,10 @@ void RSGL_drawButton(RSGL_button button) {
         };
     else 
         rect = button.rect;
-
-    if ((button.src.style & RSGL_STYLE_RADIO) == 0 && (button.src.style & RSGL_STYLE_SLIDER) == 0)
+    
+    if ((button.src.style & RSGL_STYLE_RADIO) == 0 && (button.src.style & RSGL_STYLE_SLIDER) == 0  && (button.src.style & RSGL_STYLE_COMBOBOX) == 0)
         button.src.array_count = 0;
-
+    
     size_t i;
     for (i = 0; i < (button.src.array_count == 0) + button.src.array_count; i++)  {
         switch (button.src.style & RSGL_STYLE_SHAPE) {
@@ -2820,7 +2610,7 @@ void RSGL_drawButton(RSGL_button button) {
                 break;
             default: break;
         }
-        
+
         if (button.src.style & RSGL_STYLE_TEXTBOX)
             break;
 
@@ -2858,7 +2648,7 @@ void RSGL_drawButton(RSGL_button button) {
         if (button.src.style & RSGL_STYLE_COMBOBOX)
             text = button.src.combo[button.radio_select ? button.radio_select - 1 : 0];
 
-        RSGL_drawText(text,  button.src.text.c, button.src.text.color);
+       RSGL_drawText(text,  button.src.text.c, button.src.text.color);
     }
     
     if (button.src.style & RSGL_STYLE_CHECKBOX) {
@@ -2875,9 +2665,9 @@ void RSGL_drawButton(RSGL_button button) {
         size_t y = ((cen.y - button.rect.h) + 15);
 
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
-
-        size_t i; 
-        for (i = 0; i < (button.src.array_count - 1) && button.toggle; i++) {
+        
+        size_t i;     
+        for (i = 0; i < (button.src.array_count - 1) && button.toggle && button.src.array_count; i++) {
             button.src.text.c.y += rectOutline.h + (button.outline); 
             RSGL_drawText(button.src.combo[i],  button.src.text.c, button.src.text.color);
         }
@@ -3607,4 +3397,69 @@ bool RSGL_pointCollide(RSGL_point p, RSGL_point p2){ return (p.x == p2.x && p.y 
 bool RSGL_rectCollidePointF(RSGL_rectF r, RSGL_pointF p){ return (p.x >= r.x &&  p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h); }
 bool RSGL_rectCollideF(RSGL_rectF r, RSGL_rectF r2){ return (r.x + r.w >= r2.x && r.x <= r2.x + r2.w && r.y + r.h >= r2.y && r.y <= r2.y + r2.h); }
 bool RSGL_pointCollideF(RSGL_pointF p, RSGL_pointF p2){ return (p.x == p2.x && p.y == p2.y); }
+
+/* Multiply the current matrix by a translation matrix */
+RSGL_MATRIX RSGL_translatef(RSGL_MATRIX* matrix, float x, float y, float z) {
+    RSGL_MATRIX matTranslation = { 
+        {
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f,
+            x,    y,    z,    1.0f
+        }
+    };
+
+    /* NOTE: We transpose matrix with multiplication order */
+    return RSGL_matrixMultiply(matTranslation.m, matrix->m);
+}
+
+/* Multiply the current matrix by a rotation matrix */
+RSGL_MATRIX RSGL_rotatef(RSGL_MATRIX* matrix, float angle, float x, float y, float z) {
+	/* Axis vector (x, y, z) normalization */
+	float lengthSquared = x * x + y * y + z * z;
+	if ((lengthSquared != 1.0f) && (lengthSquared != 0.0f)) {
+		float inverseLength = 1.0f / sqrtf(lengthSquared);
+		x *= inverseLength;
+		y *= inverseLength;
+		z *= inverseLength;
+	}
+
+	/* Rotation matrix generation */
+	float sinres = sinf(DEG2RAD * angle);
+	float cosres = cosf(DEG2RAD * angle);
+	float t = 1.0f - cosres;
+
+	float matRotation[16] = 
+				{
+					x * x * t + cosres,   	  	y * x * t + z * sinres,   	z * x * t - y * sinres,   	0.0f,
+					x * y * t - z * sinres,   	y * y * t + cosres,   		z * y * t + x * sinres,   	0.0f,
+					x * z * t + y * sinres,   	y * z * t - x * sinres,  	z * z * t + cosres,   		0.0f,
+					0.0f,   					0.0f,   					0.0f,   					1.0f
+				};
+
+	return RSGL_matrixMultiply(matRotation, matrix->m);
+}
+
+RSGL_MATRIX RSGL_matrixMultiply(float left[16], float right[16]) {
+    return (RSGL_MATRIX) {
+        {
+            left[0] * right[0] + left[1] * right[4] + left[2] * right[8] + left[3] * right[12],
+            left[0] * right[1] + left[1] * right[5] + left[2] * right[9] + left[3] * right[13],
+            left[0] * right[2] + left[1] * right[6] + left[2] * right[10] + left[3] * right[14],
+            left[0] * right[3] + left[1] * right[7] + left[2] * right[11] + left[3] * right[15],
+            left[4] * right[0] + left[5] * right[4] + left[6] * right[8] + left[7] * right[12],
+            left[4] * right[1] + left[5] * right[5] + left[6] * right[9] + left[7] * right[13],
+            left[4] * right[2] + left[5] * right[6] + left[6] * right[10] + left[7] * right[14],
+            left[4] * right[3] + left[5] * right[7] + left[6] * right[11] + left[7] * right[15],
+            left[8] * right[0] + left[9] * right[4] + left[10] * right[8] + left[11] * right[12],
+            left[8] * right[1] + left[9] * right[5] + left[10] * right[9] + left[11] * right[13],
+            left[8] * right[2] + left[9] * right[6] + left[10] * right[10] + left[11] * right[14],
+            left[8] * right[3] + left[9] * right[7] + left[10] * right[11] + left[11] * right[15],
+            left[12] * right[0] + left[13] * right[4] + left[14] * right[8] + left[15] * right[12],
+            left[12] * right[1] + left[13] * right[5] + left[14] * right[9] + left[15] * right[13],
+            left[12] * right[2] + left[13] * right[6] + left[14] * right[10] + left[15] * right[14],
+            left[12] * right[3] + left[13] * right[7] + left[14] * right[11] + left[15] * right[15]
+        }
+    };
+}
 #endif /* RSGL_IMPLEMENTATION */
