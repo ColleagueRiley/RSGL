@@ -353,7 +353,7 @@ RGLDEF i32 rglCheckRenderBatchLimit(int vCount);                             /* 
 typedef struct RGL_INFO {
 	RGL_MATRIX transform; /* transformation matrix*/
     #ifdef RGL_ALLOC_MATRIX_STACK 
-    RGL_MATRIX* stack
+    RGL_MATRIX* stack;
     #else
     RGL_MATRIX stack[RGL_MAX_MATRIX_STACK_SIZE]; /* RGL_MATRIX stack for push/pop */
     #endif
@@ -1169,7 +1169,7 @@ void rglInit(void *loader) {
     RGLinfo.batches = (RGL_BATCH *)RGL_MALLOC(RGL_MAX_BATCHES * sizeof(RGL_BATCH));
     
     #ifdef RGL_ALLOC_MATRIX_STACK
-    RGLinfo.statck = (RGL_MATRIX*)RGL_MALLOC(RGL_MAX_MATRIX_STACK_SIZE * sizeof(RGL_MATRIX));
+    RGLinfo.stack = (RGL_MATRIX*)RGL_MALLOC(RGL_MAX_MATRIX_STACK_SIZE * sizeof(RGL_MATRIX));
     #endif
 
     u32 i;
