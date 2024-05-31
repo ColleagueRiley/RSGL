@@ -73,41 +73,38 @@ ifeq ($(detected_OS),Linux)
     GLFW := -lglfw -lgl 
 endif
 
-glfw: glfw.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(GLFW) -lm -I../ -o $@
+glfw: glfw.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) glfw.c $(GLFW) -lm -I../ -o $@
 
-shapes: shapes.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+shapes: shapes.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) shapes.c $(LIBS) $(ARGS) -o $@
 
-events: events.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+events: events.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) events.c $(LIBS) $(ARGS) -o $@
 
-textures: textures.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+textures: textures.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) textures.c $(LIBS) $(ARGS) -o $@
 
-text: text.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+text: text.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) text.c $(LIBS) $(ARGS) -o $@
 
-textbox: textbox.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+textbox: textbox.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) textbox.c $(LIBS) $(ARGS) -o $@
 
-glVer: glVer.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+glVer: glVer.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) glVer.c $(LIBS) $(ARGS) -o $@
 
-basic: basic.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+basic: basic.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basic.c $(LIBS) $(ARGS) -o $@
 
-button: button.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+button: button.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) button.c $(LIBS) $(ARGS) -o $@
 
-styles: styles.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+styles: styles.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) styles.c $(LIBS) $(ARGS) -o $@
 
-container: container.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
-
-custom_render_gl1: custom_render_gl1.c ../RSGL.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) $^ $(LIBS) $(ARGS) -o $@
+container: container.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) container.c $(LIBS) $(ARGS) -o $@
 
 clean:
 	rm -f events glfw shapes textures *.exe

@@ -21,7 +21,7 @@ int main(void) {
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     u32 texture = RSGL_loadImage("logo.png").tex;
-    u32 iconTex = RSGL_createTexture(icon, RSGL_AREA(3, 3), 4);
+    u32 iconTex = RSGL_renderCreateTexture(icon, RSGL_AREA(3, 3), 4);
 
     size_t texTimer = (size_t)time(0);
     size_t texTimer2 = 0;
@@ -63,7 +63,7 @@ int main(void) {
         RSGL_window_clear(win, RSGL_RGB(65, 65, 65));
     }
 
-    RSGL_deleteTexture(iconTex);
+    RSGL_renderDeleteTexture(iconTex);
     RSGL_window_close(win);
     return 0;
 }
