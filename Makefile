@@ -59,7 +59,7 @@ static:
 	$(AR) rcs libRSGL.a *.o
 	
 RSGL.o:
-	$(CC) $(CUSTOM_CFLAGS) -x c -c RSGL.h -fPIC -DRSGL_IMPLEMENTATION -DRGFW_NO_JOYSTICK_CODES
+	$(CC) $(CUSTOM_CFLAGS) -x c -c RSGL.h -fPIC -DRSGL_IMPLEMENTATION
 
 build_examples:
 	cd examples && make CUSTOM_CFLAGS=$(CUSTOM_CFLAGS)
