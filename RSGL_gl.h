@@ -552,6 +552,94 @@ void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 cha
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+#ifndef GL_PERSPECTIVE_CORRECTION_HINT
+#define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
+#endif
+
+#ifndef GL_TEXTURE_SWIZZLE_RGBA
+#define GL_TEXTURE_SWIZZLE_RGBA           0x8E46
+#endif
+
+#ifndef GL_TEXTURE0
+#define GL_TEXTURE0				0x84C0
+#endif
+
+#ifndef GL_CLAMP_TO_EDGE
+#define GL_CLAMP_TO_EDGE			0x812F
+#endif
+
+u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+ #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
+   glEnable(GL_DEBUG_OUTPUT);
+   #endif
+   
+   u32 id = 0;
+   glEnable(GL_TEXTURE_2D);
+   
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glGenTextures(1, &id);
+
+   glBindTexture(GL_TEXTURE_2D, id);
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   
+   u8* data = (u8*)calloc(atlasWidth * atlasHeight * 4, sizeof(u8));
+
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+   free(data);
+
+   glBindTexture(GL_TEXTURE_2D, id);
+	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+   return id;
+}
+
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH 0x0CF2
+#define GL_UNPACK_SKIP_PIXELS 0x0CF4
+#define GL_UNPACK_SKIP_ROWS 0x0CF3
+#endif
+
+
+void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
+void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
+	glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
+	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
+}
+
+void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h) {
+   glEnable(GL_TEXTURE_2D);
+   
+	GLint alignment, rowLength, skipPixels, skipRows;
+   glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
+	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
+   
+   #if !defined(RFONT_RENDER_LEGACY)
+   glActiveTexture(GL_TEXTURE0 + atlas - 1);
+   #endif
+
+	glBindTexture(GL_TEXTURE_2D, atlas);
+
+	RFont_push_pixel_values(1, w, 0, 0);
+
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+
+	RFont_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
+
+   glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 #ifdef RSGL_MODERN_OPENGL
 
 #ifndef RSGL_NO_GL_LOADER

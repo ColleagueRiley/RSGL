@@ -1138,12 +1138,8 @@ int main() {
 #ifndef RSGL_NO_TEXT
 #define RFONT_IMPLEMENTATION
 
-#ifndef RSGL_CUSTOM_RENDER
-#define RFONT_CUSTOM_GL
-#endif
-
 #define RFONT_RENDER_LEGACY
-#define RFONT_CUSTOM_GL
+#define RFONT_NO_OPENGL
 
 #define RFont_area RSGL_area
 
@@ -1368,7 +1364,13 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     if (RSGL_windowsOpen == 0) {
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
-        RSGL_renderInit(RGFW_getProcAddress, &RSGL_renderInfo);
+        void* proc = NULL;
+
+        #ifdef RGFW_OPENGL
+        proc = RGFW_getProcAddress;
+        #endif
+
+        RSGL_renderInit(proc, &RSGL_renderInfo);
 
         #ifndef RSGL_NO_TEXT
         RFont_init(win->r.w, win->r.h);
