@@ -1,7 +1,7 @@
 
 
 /* use buffer rendering instead of opengl */
-#define RGFW_BUFFER
+#define RGFW_NO_API
 
 #define RSGL_CUSTOM_RENDER
 
@@ -51,6 +51,20 @@ u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
 
 void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels) {
     
+}
+
+void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
+
+}
+
+RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName) {
+    RSGL_programInfo program;
+
+    return program;
+}
+
+void RSGL_renderDeleteProgram(RSGL_programInfo program) {
+
 }
 
 u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
