@@ -1,4 +1,9 @@
-- RSGLargs.program, switch shader program
+- EBO support for `RSGL_GL.h`
 - fix round cornors (they look pixely)
 - selecting text from a textbox (with keyboard and mouse)
 - review widget code 
+- look into 3D support
+- `RSGL_VK.h` for vulkan (supporting multiple versions ?) (maybe seperate from the repo, just as an example)
+- `RSGL_DX.h` for DirectX 
+- fix `custom_render_pgl.h`
+- fix container movement, it's choppy
