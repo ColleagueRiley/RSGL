@@ -4,7 +4,7 @@
 
 RSGL is a modular simple-to-use cross-platform graphics library. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
 
-Although RSGL is packaged with RGFW by default, it can be used with any windowing system. (See `examples/glfw.c`)
+Although RSGL is packaged with RGFW by default, it can be used with any windowing system. (See `examples/advanced/glfw.c`)
 
 The RSGL.h header itself does not handle rendering itself, instead rendering must be handled externally.  `RSGL_gl.h` is used by default for rendering, it renders via OpenGL 1.0 - 4.4.
 
@@ -50,7 +50,7 @@ RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
 
 ## Defines
   - `#define RSGL_NO_WIDGETS` - makes it so RSGL doesn't include widget functions
-  - `#define RSGL_NO_RGFW` - This is for using a different windowing library other than RGFW. RSGL_graphics is used instead, as seen in `examples/glfw.c`
+  - `#define RSGL_NO_RGFW` - This is for using a different windowing library other than RGFW. RSGL_graphics is used instead, as seen in `examples/advanced/glfw.c`
   - `#define RSGL_NO_TEXT` - makes it so RSGL does not include text rendering functions
   - `#define RGFW_NO_WIDGETS` - makes it so RSGL does not include widgets
   `#define RSGL_NO_SAVE_IMAGE` - makes it so RSGL does not save/load images (don't use RSGL_drawImage if you use this). This is here because RSGL_drawImage saves the file name with its loaded texture so it can load the texture when you use the same file. \
@@ -154,54 +154,54 @@ Ensure you're running the example in the `./examples` folder so the fonts are pr
 ![example screenshot 4](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot4.PNG?raw=true)
 ![example screenshot 5](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot5.PNG?raw=true)
 
-## basic.c 
-`examples/basic.c` is a basic example that shows many of the window managing features RSGL has\
+## basics/basic.c 
+`examples/basics/basic.c` is a basic example that shows many of the window managing features RSGL has\
 It also shows multiple ways of drawing a triangle
 
-## events.c
-`example/events.c` is an example that shows off all the events that RSGL has and prints out their event data into the terminal
+## basics/events.c
+`example/basics/events.c` is an example that shows off all the events that RSGL has and prints out their event data into the terminal
 
-## glfw.c
-`examples/glfw.c` is an example that shows how you can use RSGL with GLFW instead of with RGFW.
+## advanced/glfw.c
+`examples/advanced/glfw.c` is an example that shows how you can use RSGL with GLFW instead of with RGFW.
 
 This example requires GLFW to be installed.\
 You can download GLFW [here](https://www.glfw.org/download)
 
-## glVer.c
-`examples/glVer.c` is an example that shows how RSGL can switch between legacy and modern OpenGL\
+## advanced/glVer.c
+`examples/advanced/glVer.c` is an example that shows how RSGL can switch between legacy and modern OpenGL\
 in the example, you can toggle between OpenGL 3.0+ and OpenGL 2.0- by pressing the spacebar
 
-## shapes.c
-`examples/shapes.c` is an example that shows off shape rendering using RSGL, the shapes rotate and switch between being filled and unfilled 
+## basics/shapes.c
+`examples/basics/shapes.c` is an example that shows off shape rendering using RSGL, the shapes rotate and switch between being filled and unfilled 
 
-## text.c
-`examples/text.c` is an example of text rendering using RSGL
+## basics/text.c
+`examples/basics/text.c` is an example of text rendering using RSGL
 
-## textures.c
-`examples/textures.c` is an example that shows off rendering textures on a shape, the textures switch between being enabled and disabled as the shapes spin
+## basics/textures.c
+`examples/basics/textures.c` is an example that shows off rendering textures on a shape, the textures switch between being enabled and disabled as the shapes spin
 
-## button.c 
-`examples/button.c` is an example that shows off how to create and manage buttons using RSGL,
+## widgets/button.c 
+`examples/widgets/button.c` is an example that shows off how to create and manage buttons using RSGL,
 these include, a default style button, a checkbox, a toggle button, radio buttons, a combo box, a slider and a custom button
 
-## styles.c
-`examples/button.c` is an example that shows off button styles, there are groups of buttons for each style.
+## widgets/styles.c
+`examples/widgets/styles.c` is an example that shows off button styles, there are groups of buttons for each style.
 There is also a switch button that allows you to toggle dark mode.
 
-## container.c
-`examples/container.c` is an example that shows how to create and manage a widget container
+## widgets/container.c
+`examples/widgets/container.c` is an example that shows how to create and manage a widget container
 
-## shader.c
-`examples/shader.c` is an example of how you'd use shaders with RSGL. It renders a circle, using a grid shader with changing colors, that follows the mouse.
+## advanced/shader.c
+`examples/advanced/shader.c` is an example of how you'd use shaders with RSGL. It renders a circle, using a grid shader with changing colors, that follows the mouse.
 
-## custom_render_gl1.c 
-`examples/custom_render_gl1.c` is an example that shows how you'd implement a custom rendering system.
+## custom_render_samples/custom_render_gl1.c 
+`examples/custom_render_samples/custom_render_gl1.c` is an example that shows how you'd implement a custom rendering system.
 
-## custom_render_template.c
-`examples/custom_render_template.c` and `examples/custom_render_template.h` can be used as an example/template for implementing a completely custom rendering system.
+## custom_render_samples/custom_render_template.c
+`examples/custom_render_samples/custom_render_template.c` and `examples/custom_render_samples/custom_render_template.h` can be used as an example/template for implementing a completely custom rendering system.
 
 # creating a custom rendering module
-`examples/custom_render_template.h` is an example/template for implementing a completely custom rendering system.
+`examples/custom_render_samples/custom_render_template.h` is an example/template for implementing a completely custom rendering system.
 
 When creating a custom renderer you need to implement these functions.
 

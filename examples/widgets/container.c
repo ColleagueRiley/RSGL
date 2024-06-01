@@ -62,6 +62,8 @@ int main(void) {
     RSGL_container* container = RSGL_initContainer(RSGL_RECT(50, 50, 300, 400), buttons, 13);
     RSGL_container_setTitle(container, "title", 6);
     RSGL_container_setStyle(container, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_CONTAINER);
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     bool running = true;
     while (running) {
@@ -78,7 +80,6 @@ int main(void) {
         }
 
         RSGL_drawContainer(container);
-
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }
 
