@@ -52,6 +52,7 @@ debug:
 	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) styles.c $(LIBS) $(ARGS) -o styles
 	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) container.c $(LIBS) $(ARGS) -o container
 	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) textbox.c $(LIBS) $(ARGS) -o textbox
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) shader.c $(LIBS) $(ARGS) -o shader
 
 	./events
 	./shapes
@@ -78,6 +79,9 @@ glfw: glfw.c ../RSGL.h ../RSGL_gl.h
 
 shapes: shapes.c ../RSGL.h ../RSGL_gl.h
 	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) shapes.c $(LIBS) $(ARGS) -o $@
+
+shader: shader.c ../RSGL.h ../RSGL_gl.h
+	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) shader.c $(LIBS) $(ARGS) -o $@
 
 events: events.c ../RSGL.h ../RSGL_gl.h
 	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) events.c $(LIBS) $(ARGS) -o $@

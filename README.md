@@ -191,6 +191,9 @@ There is also a switch button that allows you to toggle dark mode.
 ## container.c
 `examples/container.c` is an example that shows how to create and manage a widget container
 
+## shader.c
+`examples/shader.c` is an example of how you'd use shaders with RSGL. It renders a circle, using a grid shader with changing colors, that follows the mouse.
+
 ## custom_render_gl1.c 
 `examples/custom_render_gl1.c` is an example that shows how you'd implement a custom rendering system.
 
