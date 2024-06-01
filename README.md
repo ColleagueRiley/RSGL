@@ -34,6 +34,16 @@ RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
 - discord : ColleagueRiley
 - discord server : https://discord.gg/pXVNgVVbvh
 
+# Supporting RSGL
+  Things you can do if you want to support the development of RSGL:
+
+  - File issues of bugs, potential bugs, potential performance issues you find or any suggestions you have.
+  - Code reviews, code reviews are always accepted
+  - Feature requests 
+  - Pull requests, fixing issues, bugs, misspellings, etc. 
+
+  If you want to contribute to RSGL but don't know what to contribute, you can check the `TODO` file.
+
 # Modules 
 ## RSGL-Architecture diagram
 ![The RSGL Architecture](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL-Architecture.png?raw=true)

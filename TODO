@@ -1,0 +1,4 @@
+- RSGLargs.program, switch shader program
+- fix round cornors (they look pixely)
+- selecting text from a textbox (with keyboard and mouse)
+- review widget code 
