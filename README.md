@@ -6,11 +6,9 @@ RSGL is a modular simple-to-use cross-platform graphics library. It attempts to 
 
 Although RSGL is packaged with RGFW by default, it can be used with any windowing system. (See `examples/glfw.c`)
 
-Its renderer backend can also easily be replaced to support any rendering API. (see `custom_render_gl1.c` or  `custom_render_template.c`)
+The RSGL.h header itself does not handle rendering itself, instead rendering must be handled externally.  `RSGL_gl.h` is used by default for rendering, it renders via OpenGL 1.0 - 4.4.
 
 RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
-
-RSGL also supports OpenGL 1.0 - 4.4 via RGL. 
 
 # Build statuses
 ![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
@@ -21,9 +19,9 @@ RSGL also supports OpenGL 1.0 - 4.4 via RGL.
 - No external dependencies, all dependencies are lightweight, bundled in and optional
 - *Can* be used as a single-header file
 - (RGFW.h) Supports multiple platforms, Windows, MacOS, Linux, etc
-- (RGL.h) Supports multiple versions of OpenGL (even allowing you to switch during runtime)
+- (RSGL_gl.h) Supports multiple versions of OpenGL (even allowing you to switch during runtime)
+- Easily swappable rendering module 
 - Basic shape drawing, collisions and drawing operations
-- OpenGL abstraction layer, RGL.h, which can also be used independently as a single-header library
 - Straightforward window management via RGFW.h
 - Dynamic GUI Widgets via a convenient styling system 
 - Many examples included
@@ -187,7 +185,21 @@ There is also a switch button that allows you to toggle dark mode.
 `examples/custom_render_gl1.c` is an example that shows how you'd implement a custom rendering system.
 
 ## custom_render_template.c
-`examples/custom_render_template.c` is an example/template for implementing a completely custom rendering system.
+`examples/custom_render_template.c` and `examples/custom_render_template.h` can be used as an example/template for implementing a completely custom rendering system.
+
+# creating a custom rendering module
+`examples/custom_render_template.h` is an example/template for implementing a completely custom rendering system.
+
+When creating a custom renderer you need to implement these functions.
+
+`void RSGL_renderBatch(RSGL_RENDER_INFO* info);` renders the current batches based on the info data\
+`void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info);` do whatever to init render backend\
+`void RSGL_renderFree(void);`  do whatever to free render backend\
+`void RSGL_renderClear(float r, float g, float b, float a);` clears the screen based on a given color\
+`void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h);` sets viewport\
+`u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels);` create a texture based on given bitmap data\
+`void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels);` updates a texture based on its id with new data info\
+`void RSGL_renderDeleteTexture(u32 tex);` - deletes a texture based on its id
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in.
@@ -204,12 +216,6 @@ There is also a switch button that allows you to toggle dark mode.
   [![AltText](https://github.com/ColleagueRiley/ColleagueRiley/blob/main/rgfw.png?raw=true)](https://github.com/ColleagueRiley/RGFW)\
   (this is a button that leads to the RGFW repo)
 
-## RGL
-  [RGL](https://github.com/ColleagueRiley/RGL) is an OpenGL abstraction layer (that I created), it handles OpenGl version managing and rendering. 
-
-  It also allows RSGL to render using a simplified pipeline system.\
-  RGL is heavily based on RLGL but it's designed to be more lightweight, with better performance.
-
 ## RFont
   [RFont](https://github.com/colleagueRiley/RFont) is a super lightweight and modular font library for text rendering that I created. 
 
@@ -225,7 +231,7 @@ There is also a switch button that allows you to toggle dark mode.
   Eima is the original creator of Silicon, without Silicon RSGL/RGFW probably would not support native macOS
 
   ![Eima's C toolkit / STL (sili)](https://github.com/Eimamei/sili)
-  
+
 # License
 RSGL uses the Zlib/libPNG license, this means you can use RSGL freely as long as you do not claim you wrote this software, mark altered versions as such and keep the license included with the header.
 
