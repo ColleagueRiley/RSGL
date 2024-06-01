@@ -7,3 +7,4 @@
 - `RSGL_DX.h` for DirectX 
 - fix `custom_render_pgl.h`
 - fix container movement, it's choppy
+- fix textbox cursor placement  
