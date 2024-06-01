@@ -538,6 +538,8 @@ void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 cha
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+#ifdef RSGL_MODERN_OPENGL
+
 #ifndef GL_DEBUG_TYPE_ERROR
 #define GL_DEBUG_TYPE_ERROR               0x824C
 #define GL_DEBUG_OUTPUT                   0x92E0
@@ -658,6 +660,8 @@ void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
 
     glUseProgram(0);
 }
+
+#endif
 
 #ifndef GL_PERSPECTIVE_CORRECTION_HINT
 #define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50

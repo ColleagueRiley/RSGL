@@ -1391,6 +1391,8 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
 
         #ifdef RGFW_OPENGL
         proc = RGFW_getProcAddress;
+        #elif defined(RGFW_BUFFER)
+        proc = (void*)&win->buffer;
         #endif
 
         RSGL_renderInit(proc, &RSGL_renderInfo);
@@ -1525,7 +1527,7 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
         RSGL_renderInfo.len = 0;
         RSGL_renderInfo.vert_len = 0;
         RSGL_renderInfo.batches = (RSGL_BATCH*)RSGL_MALLOC(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
-        RSGL_renderInfo.verts = (float*)`(sizeof(float) * RSGL_MAX_VERTS * 3);
+        RSGL_renderInfo.verts = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 3);
         RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
         RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
     }
