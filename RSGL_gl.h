@@ -3,7 +3,11 @@
 #include "RSGL.h"
 #endif
 
+#ifndef __APPLE__
 #include <GL/gl.h>
+#else
+#include <OpenGL/gl.h>
+#endif
 
 #if !defined(RSGL_RENDER_LEGACY)
 #define RSGL_MODERN_OPENGL
