@@ -67,6 +67,10 @@ typedef GLint (*glGetUniformLocationPROC)(GLuint program, const GLchar *name);
 typedef void (*glUniformMatrix4fvPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef void (*glTexImage2DPROC)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels);
 typedef void (*glActiveTexturePROC) (GLenum texture);
+typedef void (*glUniform1fPROC) (GLint location, GLfloat v0);
+typedef void (*glUniform2fPROC) (GLint location, GLfloat v0, GLfloat v1);
+typedef void (*glUniform3fPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+typedef void (*glUniform4fPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
 
 glShaderSourcePROC glShaderSourceSRC = NULL;
 glCreateShaderPROC glCreateShaderSRC = NULL;
@@ -94,6 +98,10 @@ glGenBuffersPROC glGenBuffersSRC = NULL;
 glGetUniformLocationPROC glGetUniformLocationSRC = NULL;
 glUniformMatrix4fvPROC glUniformMatrix4fvSRC = NULL;
 glActiveTexturePROC glActiveTextureSRC = NULL;
+glUniform1fPROC glUniform1fSRC = NULL;
+glUniform2fPROC glUniform2fSRC = NULL;
+glUniform3fPROC glUniform3fSRC = NULL;
+glUniform4fPROC glUniform4fSRC = NULL;
 
 #if defined(RSGL_OPENGL_ES2) && !defined(RSGL_OPENGL_ES3)
 typedef void (* PFNGLGENVERTEXARRAYSOESPROC) (GLsizei n, GLuint *arrays);
@@ -109,6 +117,10 @@ glBindVertexArrayPROC glBindVertexArraySRC = NULL;
 glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 #endif
 
+#define glUniform1f glUniform1fSRC
+#define glUniform2f glUniform2fSRC
+#define glUniform3f glUniform3fSRC
+#define glUniform4f glUniform4fSRC
 #define glActiveTexture glActiveTextureSRC
 #define glShaderSource glShaderSourceSRC
 #define glCreateShader glCreateShaderSRC
@@ -144,10 +156,7 @@ extern int RSGL_loadGLModern(RSGLloadfunc proc);
 #define RSGL_MULTILINE_STR(...) #__VA_ARGS__
 
 typedef struct RSGL_INFO {
-    u32 vShader;      /* Default vertex shader id (used by default shader program)*/
-    u32 fShader;      /* Default fragment shader id (used by default shader program)*/
-
-    u32 program;       /* Default shader program id, supports vertex color and diffuse texture*/
+    RSGL_programInfo program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 defaultTex;
 
     u32 vao, vbo, tbo, cbo; /* array object and array buffers */
@@ -242,30 +251,8 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
 	glGenBuffers(1, &RSGL_gl.tbo);
 	glGenBuffers(1, &RSGL_gl.cbo);
 
-	/* compile vertex shader */
-	RSGL_gl.vShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(RSGL_gl.vShader, 1, &defaultVShaderCode, NULL);
-	glCompileShader(RSGL_gl.vShader);
-
-	/* compile fragment shader */
-	RSGL_gl.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(RSGL_gl.fShader, 1, &defaultFShaderCode, NULL);
-	glCompileShader(RSGL_gl.fShader);
-
-	/* create program and link vertex and fragment shaders */
-	RSGL_gl.program = glCreateProgram();
-
-	glAttachShader(RSGL_gl.program, RSGL_gl.vShader);
-	glAttachShader(RSGL_gl.program, RSGL_gl.fShader);
-
-    glBindAttribLocation(RSGL_gl.program, 0, "vertexPosition");
-    glBindAttribLocation(RSGL_gl.program, 1, "vertexTexCoord");
-    glBindAttribLocation(RSGL_gl.program, 2, "vertexColor");
-
-	glLinkProgram(RSGL_gl.program);
-
-    RSGL_gl.program = RSGL_gl.program;
-
+    RSGL_gl.program = RSGL_renderCreateProgram(defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
+    
     /* Init default vertex arrays buffers */
     /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
 
@@ -335,14 +322,7 @@ void RSGL_renderFree(void) {
     glDeleteVertexArrays(1, &RSGL_gl.vao);
     #endif
 
-    glUseProgram(0);
-
-    glDetachShader(RSGL_gl.program, RSGL_gl.vShader);
-    glDetachShader(RSGL_gl.program, RSGL_gl.fShader);
-    glDeleteShader(RSGL_gl.vShader);
-    glDeleteShader(RSGL_gl.fShader);
-
-    glDeleteProgram(RSGL_gl.program);
+    RSGL_renderDeleteProgram(RSGL_gl.program);
 
     glDeleteTextures(1, &RSGL_gl.defaultTex); /* Unload default texture */
     #endif
@@ -375,7 +355,10 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
         #endif
 
         /* Set current shader */
-        glUseProgram(RSGL_gl.program);
+        if (RSGL_args.program)
+            glUseProgram(RSGL_args.program);
+        else
+            glUseProgram(RSGL_gl.program.program);
         
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
         glBindVertexArray(RSGL_gl.vao);
@@ -424,7 +407,10 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
             glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
             glLineWidth(info->batches[i].lineWidth);
             
-            glUseProgram(RSGL_gl.program);
+            if (RSGL_args.program)
+                glUseProgram(RSGL_args.program);
+            else
+                glUseProgram(RSGL_gl.program.program);
             
             glDrawArrays(mode, vertexOffset, info->batches[i].len);
 
@@ -552,6 +538,127 @@ void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 cha
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+#ifndef GL_DEBUG_TYPE_ERROR
+#define GL_DEBUG_TYPE_ERROR               0x824C
+#define GL_DEBUG_OUTPUT                   0x92E0
+#define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
+#define GL_COMPILE_STATUS                 0x8B81
+#define GL_LINK_STATUS                    0x8B82
+#define GL_INFO_LOG_LENGTH                0x8B84 
+#endif
+
+void RSGL_opengl_getError(void) {
+	GLenum err;
+	while ((err = glGetError()) != GL_NO_ERROR) {
+		switch (err) {
+		case GL_INVALID_ENUM:
+			printf("OpenGL error: GL_INVALID_ENUM\n");
+			break;
+		case GL_INVALID_VALUE:
+			printf("OpenGL error: GL_INVALID_VALUE\n");
+			break;
+		case GL_INVALID_OPERATION:
+			printf("OpenGL error: GL_INVALID_OPERATION\n");
+			break;
+		case GL_STACK_OVERFLOW:
+			printf("OpenGL error: GL_STACK_OVERFLOW\n");
+			break;
+		case GL_STACK_UNDERFLOW:
+			printf("OpenGL error: GL_STACK_UNDERFLOW\n");
+			break;
+		default:
+			printf("OpenGL error: Unknown error code 0x%x\n", err);
+			break;
+		}
+	}
+}
+
+void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
+    GLint status;
+	if (action[0] == 'l')
+		glGetProgramiv(src, GL_LINK_STATUS, &status);
+	else
+		glGetShaderiv(src, GL_COMPILE_STATUS, &status);
+
+	if (status == GL_TRUE)
+		printf("%s Shader %s successfully.\n", shader, action);
+	else {
+		printf("%s Shader failed to %s.\n", shader, action);
+
+		if (action[0] == 'c') {
+			GLint infoLogLength;
+			glGetShaderiv(src, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+			if (infoLogLength > 0) {
+				GLchar *infoLog = (GLchar *)RSGL_MALLOC(infoLogLength);
+				glGetShaderInfoLog(src, infoLogLength, NULL, infoLog);
+				printf("%s Shader info log:\n%s\n", shader, infoLog);
+				free(infoLog);
+			}
+		}
+
+		RSGL_opengl_getError();
+	}
+}
+
+RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName) {
+    RSGL_programInfo program;
+
+	/* compile vertex shader */
+	program.vShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(program.vShader, 1, &VShaderCode, NULL);
+	glCompileShader(program.vShader);
+
+    RSGL_debug_shader(program.vShader, "Vertex", "compile");
+
+	/* compile fragment shader */
+	program.fShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(program.fShader, 1, &FShaderCode, NULL);
+	glCompileShader(program.fShader);
+
+    RSGL_debug_shader(program.fShader, "Fragment", "compile");
+
+	/* create program and link vertex and fragment shaders */
+	program.program = glCreateProgram();
+
+	glAttachShader(program.program, program.vShader);
+	glAttachShader(program.program, program.fShader);
+
+    glBindAttribLocation(program.program, 0, posName);
+    glBindAttribLocation(program.program, 1, texName);
+    glBindAttribLocation(program.program, 2, colorName);
+
+	glLinkProgram(program.program);
+
+    return program;
+}
+
+void RSGL_renderDeleteProgram(RSGL_programInfo program) {
+    glUseProgram(0);
+
+    glDetachShader(program.program, program.vShader);
+    glDetachShader(program.program, program.fShader);
+    glDeleteShader(program.vShader);
+    glDeleteShader(program.fShader);
+
+    glDeleteProgram(program.program);
+}
+
+void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
+    glUseProgram(program);
+    int loc = glGetUniformLocation(program, var);
+
+    switch (len) {
+        case 1: glUniform1f(loc, value[0]); break;
+        case 2: glUniform2f(loc, value[0], value[1]); break;
+        case 3: glUniform3f(loc, value[0], value[1], value[2]); break;
+        case 4: glUniform4f(loc, value[0], value[1], value[2], value[3]); break;
+        default: break;
+    }
+
+    glUseProgram(0);
+}
+
 #ifndef GL_PERSPECTIVE_CORRECTION_HINT
 #define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
 #endif
@@ -675,6 +782,10 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glGetUniformLocation);
     RSGL_PROC_DEF(proc, glUniformMatrix4fv);
     RSGL_PROC_DEF(proc, glActiveTexture);
+    RSGL_PROC_DEF(proc, glUniform1f);
+    RSGL_PROC_DEF(proc, glUniform2f);
+    RSGL_PROC_DEF(proc, glUniform3f);
+    RSGL_PROC_DEF(proc, glUniform4f);
 
     #if defined(RSGL_OPENGL_ES2) && !defined(RSGL_OPENGL_ES3)
         glGenVertexArraysSRC = (PFNGLGENVERTEXARRAYSOESPROC)((RSGLloadfunc)loader)("glGenVertexArraysOES");

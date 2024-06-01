@@ -32,13 +32,13 @@
                                     RSGL_drawImage saves the file name + texture so it can load it
                                     when you ask for it later. This disables that 
     #define RSGL_INIT_FONTS [number of fonts] - set hFow much room should be pre-allocated for fonts by fontstash
-                                                this avoids performance issues related to realloc
+                                                this avoids performance issues related to RSGL_REALLOC
                                                 RSGL_INIT_FONTS = 4 by default
     #define RSGL_INIT_IMAGES [number of fonts] - set how much room should be pre-allocated for images by RSGL
-                                                this avoids performance issues related to realloc
+                                                this avoids performance issues related to RSGL_REALLOC
                                                 RSGL_INIT_IMAGES = 20 by default
-    #define RSGL_NEW_IMAGES [number of fonts] - set how much room should be reallocated at a time for images by RSGL
-                                                this avoids performance issues related to realloc
+    #define RSGL_NEW_IMAGES [number of fonts] - set how much room should be RSGL_REALLOCated at a time for images by RSGL
+                                                this avoids performance issues related to RSGL_REALLOC
                                                 RSGL_NEW_IMAGES 10 by default
 
     #define RSGL_MAX_BATCHES [number of batches] - set max number of batches to be allocated
@@ -82,6 +82,12 @@
 #endif
 #ifndef RSGL_MAX_VERTS
 #define RSGL_MAX_VERTS 8192
+#endif
+
+#ifndef RSGL_MALLOC
+#define RSGL_MALLOC malloc
+#define RSGL_REALLOC realloc
+#define RSGL_FREE free
 #endif
 
 #ifndef RSGL_UNUSED
@@ -488,7 +494,7 @@ You need to define these if you want to use `RSGL_textbox_update`
 
 RSGLDEF void RSGL_initGraphics(
                             RSGL_area r, /* graphics context size */
-                            void* loader /* opengl proc address ex. wglProcAddress */
+                            void* loader /* opengl prozc address ex. wglProcAddress */
                             ); 
 RSGLDEF void RSGL_graphics_updateSize(RSGL_area r);
 RSGLDEF void RSGL_graphics_clear(RSGL_color c);
@@ -538,12 +544,13 @@ typedef struct RSGL_drawArgs {
     bool fill;
     RSGL_point3DF center;
     float lineWidth;
-    bool blend;
     i32 legacy;
+    u32 program;
 } RSGL_drawArgs;
 
 RSGLDEF void RSGL_rotate(RSGL_point3D rotate); /* apply rotation to drawing */
 RSGLDEF void RSGL_setTexture(u32 texture); /* apply texture to drawing */
+RSGLDEF void RSGL_setProgram(u32 program); /* use shader program for drawing */
 RSGLDEF void RSGL_setGradient(
                                 float* gradient, /* array of gradients */
                                 size_t len /* length of array */
@@ -641,6 +648,22 @@ RSGLDEF u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels
 RSGLDEF void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels);
 /* delete a texture */
 RSGLDEF void RSGL_renderDeleteTexture(u32 tex);
+
+/* custom shader program */
+typedef struct RSGL_programInfo {
+    u32 vShader, fShader, program;
+} RSGL_programInfo;
+
+RSGLDEF RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName);
+RSGLDEF void RSGL_renderDeleteProgram(RSGL_programInfo program);
+RSGLDEF void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len);
+
+/* these are RFont functions that also must be defined by the renderer
+
+32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight);
+void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h);
+
+*/
 
 /* RSGL translation */
 RSGLDEF RSGL_MATRIX RSGL_matrixMultiply(float left[16], float right[16]);
@@ -1374,16 +1397,16 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
 
         #ifndef RSGL_NO_TEXT
         RFont_init(win->r.w, win->r.h);
-        RSGL_font.fonts = (RSGL_fontData*)malloc(sizeof(RSGL_fontData) * RSGL_INIT_FONTS); 
+        RSGL_font.fonts = (RSGL_fontData*)RSGL_MALLOC(sizeof(RSGL_fontData) * RSGL_INIT_FONTS); 
         #endif
 
         if (RSGL_renderInfo.batches == NULL) {
             RSGL_renderInfo.len = 0;
             RSGL_renderInfo.vert_len = 0;
-            RSGL_renderInfo.batches = (RSGL_BATCH*)malloc(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
-            RSGL_renderInfo.verts = (float*)malloc(sizeof(float) * RSGL_MAX_VERTS * 3);
-            RSGL_renderInfo.colors = (float*)malloc(sizeof(float) * RSGL_MAX_VERTS * 4);
-            RSGL_renderInfo.texCoords = (float*)malloc(sizeof(float) * RSGL_MAX_VERTS * 2);
+            RSGL_renderInfo.batches = (RSGL_BATCH*)RSGL_MALLOC(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
+            RSGL_renderInfo.verts = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 3);
+            RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
+            RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
         }
     }
 
@@ -1409,7 +1432,7 @@ void RSGL_window_setIconImage(RGFW_window* win, const char* image) {
 
     RGFW_window_setIcon(win, img, RSGL_AREA(x, y), c);
     
-    free(img);
+    RSGL_FREE(img);
 }
 #endif
 
@@ -1441,17 +1464,17 @@ void RSGL_window_close(RSGL_window* win) {
         for (i = 0; i < RSGL_font.len; i++)
             RFont_font_free(RSGL_font.fonts[i].f);
 
-        free(RSGL_font.fonts);
+        RSGL_FREE(RSGL_font.fonts);
         #endif
         
         for (i = 0; i < RSGL_images_len; i++)
             RSGL_renderDeleteTexture(RSGL_images[i].tex);
 
         if (RSGL_renderInfo.batches != NULL) {
-            free(RSGL_renderInfo.batches);
-            free(RSGL_renderInfo.verts);
-            free(RSGL_renderInfo.colors);
-            free(RSGL_renderInfo.texCoords);
+            RSGL_FREE(RSGL_renderInfo.batches);
+            RSGL_FREE(RSGL_renderInfo.verts);
+            RSGL_FREE(RSGL_renderInfo.colors);
+            RSGL_FREE(RSGL_renderInfo.texCoords);
             RSGL_renderInfo.batches = NULL;
             RSGL_renderInfo.len = 0;
             RSGL_renderInfo.vert_len = 0;
@@ -1501,10 +1524,10 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     if (RSGL_renderInfo.batches == NULL) {
         RSGL_renderInfo.len = 0;
         RSGL_renderInfo.vert_len = 0;
-        RSGL_renderInfo.batches = (RSGL_BATCH*)malloc(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
-        RSGL_renderInfo.verts = (float*)malloc(sizeof(float) * RSGL_MAX_VERTS * 3);
-        RSGL_renderInfo.colors = (float*)malloc(sizeof(float) * RSGL_MAX_VERTS * 4);
-        RSGL_renderInfo.texCoords = (float*)malloc(sizeof(float) * RSGL_MAX_VERTS * 2);
+        RSGL_renderInfo.batches = (RSGL_BATCH*)RSGL_MALLOC(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
+        RSGL_renderInfo.verts = (float*)`(sizeof(float) * RSGL_MAX_VERTS * 3);
+        RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
+        RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
     }
 }
 
@@ -1526,16 +1549,16 @@ void RSGL_graphics_free() {
     for (i = 0; i < RSGL_font.len; i++)
         RFont_font_free(RSGL_font.fonts[i].f);
 
-    free(RSGL_font.fonts);
+    RSGL_FREE(RSGL_font.fonts);
     #endif
 
     RSGL_renderFree();
 
     if (RSGL_renderInfo.batches != NULL) {
-        free(RSGL_renderInfo.batches);
-        free(RSGL_renderInfo.verts);
-        free(RSGL_renderInfo.colors);
-        free(RSGL_renderInfo.texCoords);
+        RSGL_FREE(RSGL_renderInfo.batches);
+        RSGL_FREE(RSGL_renderInfo.verts);
+        RSGL_FREE(RSGL_renderInfo.colors);
+        RSGL_FREE(RSGL_renderInfo.texCoords);
         RSGL_renderInfo.batches = NULL;
         RSGL_renderInfo.len = 0;
         RSGL_renderInfo.vert_len = 0;
@@ -1555,6 +1578,13 @@ void RSGL_rotate(RSGL_point3D rotate){
 }
 void RSGL_setTexture(u32 texture) { 
     RSGL_args.texture = texture;
+}
+void RSGL_setProgram(u32 program) { 
+    if (RSGL_args.program != program) {
+        /* render using the current program */
+        RSGL_renderBatch(&RSGL_renderInfo);
+        RSGL_args.program = program;
+    }
 }
 
 void RSGL_setGradient(float gradient[], size_t len) {
@@ -1931,7 +1961,7 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
     static size_t images_comp = 0;
 
     if (images_comp == 0) {
-        RSGL_images = (RSGL_image*)malloc(sizeof(RSGL_image) * RSGL_INIT_IMAGES);
+        RSGL_images = (RSGL_image*)RSGL_MALLOC(sizeof(RSGL_image) * RSGL_INIT_IMAGES);
         images_comp = RSGL_INIT_IMAGES;
     }
 
@@ -1952,11 +1982,11 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
         
         img.tex = RSGL_renderCreateTexture(bitmap, (RSGL_area){img.srcSize.w, img.srcSize.h}, c);
 
-        free(bitmap);
+        RSGL_FREE(bitmap);
 
         #ifndef RSGL_NO_SAVE_IMAGE
         if (RSGL_images_len + 1 > images_comp) {
-            RSGL_images = (RSGL_image*)realloc(RSGL_images, sizeof(RSGL_image) * (RSGL_NEW_IMAGES + images_comp));
+            RSGL_images = (RSGL_image*)RSGL_REALLOC(RSGL_images, sizeof(RSGL_image) * (RSGL_NEW_IMAGES + images_comp));
             images_comp += RSGL_NEW_IMAGES;
         }
 
@@ -2002,9 +2032,9 @@ i32 RSGL_loadFont(const char* font) {
     if (RSGL_font.len == RSGL_font.cap) {
         RSGL_font.cap += RSGL_NEW_FONTS;
 
-        RSGL_fontData* nFonts = (RSGL_fontData*)malloc(sizeof(RSGL_fontData) * RSGL_font.cap);
+        RSGL_fontData* nFonts = (RSGL_fontData*)RSGL_MALLOC(sizeof(RSGL_fontData) * RSGL_font.cap);
         memcpy(nFonts, RSGL_font.fonts, sizeof(RSGL_fontData) * RSGL_font.len);
-        free(RSGL_font.fonts);
+        RSGL_FREE(RSGL_font.fonts);
 
         RSGL_font.fonts = nFonts;
     }
@@ -2040,10 +2070,8 @@ void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color c
     if (text == NULL || RSGL_font.f == NULL)
         return;
 
-    RSGL_args.blend = true;
     RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
     RFont_draw_text_len(RSGL_font.f, text, len, c.x, c.y, c.d, 0.0f);
-    RSGL_args.blend = false;
 }
 
 void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color) {
@@ -2726,7 +2754,7 @@ RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize) {
 #define RSGL_CONTAINER_SRC(c) (RSGL_button*)(c + 1)
 
 RSGL_container* RSGL_initContainer(RSGL_rect r, RSGL_button** buttons, size_t len) {
-    RSGL_container_src* new = malloc(sizeof(RSGL_container_src) + sizeof(RSGL_button));
+    RSGL_container_src* new = RSGL_MALLOC(sizeof(RSGL_container_src) + sizeof(RSGL_button));
     RSGL_button* src = RSGL_CONTAINER_SRC(new);
 
     *src = RSGL_initButton();
@@ -2743,7 +2771,7 @@ RSGL_container* RSGL_initContainer(RSGL_rect r, RSGL_button** buttons, size_t le
 }
 
 void RSGL_freeContainer(RSGL_container* con) {
-    free(((RSGL_container_src*)con) - 1);
+    RSGL_FREE(((RSGL_container_src*)con) - 1);
 }
 
 void RSGL_container_setPos(RSGL_container* con, RSGL_point p) {
@@ -2905,12 +2933,12 @@ RSGL_textbox* RSGL_initTextbox(size_t defaultSize) {
     if (defaultSize == 0)
         defaultSize = 2048;
     
-    RSGL_textbox* textBox = (RSGL_textbox*)malloc(sizeof(RSGL_textbox));
+    RSGL_textbox* textBox = (RSGL_textbox*)RSGL_MALLOC(sizeof(RSGL_textbox));
     *textBox = RSGL_initButton();
 
     textBox->src.style |= RSGL_STYLE_TEXTBOX;
     
-    textBox->src.text.str = malloc(sizeof(char) * defaultSize + 1);
+    textBox->src.text.str = RSGL_MALLOC(sizeof(char) * defaultSize + 1);
     textBox->src.text.str[0] = '\0';
 
     textBox->src.cursorIndex = 0;
@@ -2921,8 +2949,8 @@ RSGL_textbox* RSGL_initTextbox(size_t defaultSize) {
 }
 
 void RSGL_textbox_free(RSGL_textbox* tb) {
-    free(tb->src.text.str);
-    free(tb);
+    RSGL_FREE(tb->src.text.str);
+    RSGL_FREE(tb);
 }
 
 void RSGL_textbox_setTextInfo(RSGL_textbox* tb, RSGL_circle c, RSGL_color color) {
