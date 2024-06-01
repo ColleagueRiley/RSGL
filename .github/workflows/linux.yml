@@ -70,6 +70,7 @@ jobs:
     - name: Generate Artifacts
       run: |
         cp -v ./RSGL.h ./build/${{ env.RELEASE_NAME }}/include
+        cp -v ./RSGL_gl.h ./build/${{ env.RELEASE_NAME }}/include
         cp -v -r ./deps ./build/${{ env.RELEASE_NAME }}/include
         cp -v ./libRSGL.a ./build/${{ env.RELEASE_NAME }}/lib
         cp -v ./README.md ./build/${{ env.RELEASE_NAME }}/README.md

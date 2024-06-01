@@ -76,6 +76,7 @@ jobs:
     - name: Generate Artifacts
       run: |
         copy /Y .\RSGL.h .\build\${{ env.RELEASE_NAME }}\include
+        copy /Y .\RSGL_gl.h .\build\${{ env.RELEASE_NAME }}\include
         xcopy .\deps .\build\${{ env.RELEASE_NAME }}\include /E /I /Y
         copy /Y .\libRSGL.a .\build\${{ env.RELEASE_NAME }}\lib
         copy /Y .\README.md .\build\${{ env.RELEASE_NAME }}\README.md
