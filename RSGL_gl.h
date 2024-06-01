@@ -345,6 +345,7 @@ void RSGL_renderFree(void) {
 }
 
 void RSGL_renderBatch(RSGL_RENDER_INFO* info) { 
+    glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     #ifdef RSGL_MODERN_OPENGL
@@ -399,10 +400,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
             GLenum mode = info->batches[i].type;
 
             if (mode > 0x0100) {
-                glEnable(GL_BLEND);
                 mode -= 0x0100;
-            } else {
-                glDisable(GL_BLEND);
             }
 
             if (mode > 0x0010) {
