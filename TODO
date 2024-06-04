@@ -1,5 +1,6 @@
-- EBO support for `RSGL_GL.h`
-- fix round cornors (they look pixely)
+This list is not ordered in any special way
+
+- EBO support for `RSGL_GL.h` (if it's worth it)
 - selecting text from a textbox (with keyboard and mouse)
 - review widget code 
 - look into 3D support
@@ -8,3 +9,4 @@
 - fix `custom_render_pgl.h`
 - fix container movement, it's choppy
 - fix textbox cursor placement  
+- `RSGL_ogl` for libogc (Wii and Gamecube)
