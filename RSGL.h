@@ -1323,7 +1323,7 @@ void RSGL_basicDraw(u32 type, float* points, float* texPoints, RSGL_color c, siz
         RSGL_renderInfo.len += 1;
     
         batch = &RSGL_renderInfo.batches[RSGL_renderInfo.len - 1];
-        batch->start = 0;
+        batch->start = RSGL_renderInfo.vert_len;
         batch->len = 0;
         batch->type = type;
         batch->tex = RSGL_args.texture;
@@ -1387,6 +1387,15 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     if (RSGL_windowsOpen == 0) {
         RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
 
+        if (RSGL_renderInfo.batches == NULL) {
+            RSGL_renderInfo.len = 0;
+            RSGL_renderInfo.vert_len = 0;
+            RSGL_renderInfo.batches = (RSGL_BATCH*)RSGL_MALLOC(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
+            RSGL_renderInfo.verts = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 3);
+            RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
+            RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
+        }
+
         void* proc = NULL;
 
         #ifdef RGFW_OPENGL
@@ -1401,15 +1410,6 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
         RFont_init(win->r.w, win->r.h);
         RSGL_font.fonts = (RSGL_fontData*)RSGL_MALLOC(sizeof(RSGL_fontData) * RSGL_INIT_FONTS); 
         #endif
-
-        if (RSGL_renderInfo.batches == NULL) {
-            RSGL_renderInfo.len = 0;
-            RSGL_renderInfo.vert_len = 0;
-            RSGL_renderInfo.batches = (RSGL_BATCH*)RSGL_MALLOC(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
-            RSGL_renderInfo.verts = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 3);
-            RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
-            RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
-        }
     }
 
     assert(win != NULL);
@@ -1517,8 +1517,6 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
     
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
 
-    RSGL_renderInit(loader, &RSGL_renderInfo);
-
     #ifndef RSGL_NO_TEXT
     RFont_init(r.w, r.h);
     #endif
@@ -1530,6 +1528,8 @@ void RSGL_initGraphics(RSGL_area r, void* loader) {
         RSGL_renderInfo.verts = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 3);
         RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
         RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
+    
+        RSGL_renderInit(loader, &RSGL_renderInfo);
     }
 }
 

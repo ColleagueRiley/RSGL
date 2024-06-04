@@ -272,10 +272,10 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 2 * 4 * sizeof(float), info->texCoords, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
-
+    
     /* Vertex color buffer (shader-location = 3) */
     glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.cbo);
-    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 4 * 4 * sizeof(float), info->colors, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
 
@@ -381,7 +381,6 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 
         glActiveTexture(GL_TEXTURE0);
 
-        u32 vertexOffset = 0;
         u32 i;
         for (i = 0; i < info->len; i++) {
             GLenum mode = info->batches[i].type;
@@ -412,9 +411,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
             else
                 glUseProgram(RSGL_gl.program.program);
             
-            glDrawArrays(mode, vertexOffset, info->batches[i].len);
-
-            vertexOffset += info->batches[i].len;
+            glDrawArrays(mode, info->batches[i].start, info->batches[i].len);
 
             if (info->batches[i].type > 0x0010) {
                 glEnable(GL_DEPTH_TEST);
