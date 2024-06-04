@@ -2,6 +2,7 @@
 #include "RSGL.h"
 
 int main(void) {
+    RGFW_setGLSamples(12);
     RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
 
     RSGL_button button = RSGL_initButton(); 
@@ -95,6 +96,8 @@ int main(void) {
         RSGL_drawButton(slider);
 
         RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(80, 445, 25), RSGL_RGB(255, 255, 255));
+
+       // RSGL_drawRoundRect(RSGL_RECT(50 - 5, 50 - 5, 100 + 5, 50 + 5), RSGL_POINT(25, 25), RSGL_RGB(255, 0, 0));
 
         RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
     }
