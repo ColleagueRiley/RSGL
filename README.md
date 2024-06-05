@@ -34,19 +34,6 @@ RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
 - discord : ColleagueRiley
 - discord server : https://discord.gg/pXVNgVVbvh
 
-# Supporting RSGL
-  Things you can do if you want to support the development of RSGL:
-
-  - File issues of bugs, potential bugs, potential performance issues you find or any suggestions you have.
-  - Code reviews, code reviews are always accepted
-  - Feature requests 
-  - Pull requests, fixing issues, bugs, misspellings, etc. 
-  - Starring RSGL, a small thing but it means a lot to me
-  - Sharing RSGL with others, this is the biggest way for RSGL to build and grow a community
-  - Listing RSGL as a dependency if you use RSGL for a project
-
-  If you want to contribute to RSGL but don't know what to contribute, you can check the `TODO` file.
-
 # Modules 
 ## RSGL-Architecture diagram
 ![The RSGL Architecture](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL-Architecture.png?raw=true)
@@ -216,6 +203,19 @@ When creating a custom renderer you need to implement these functions.
 `u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels);` create a texture based on given bitmap data\
 `void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels);` updates a texture based on its id with new data info\
 `void RSGL_renderDeleteTexture(u32 tex);` - deletes a texture based on its id
+
+# Supporting RSGL
+  Things you can do if you want to support the development of RSGL:
+
+  - File issues of bugs, potential bugs, potential performance issues you find or any suggestions you have.
+  - Code reviews, code reviews are always accepted
+  - Feature requests 
+  - Pull requests, fixing issues, bugs, misspellings, etc. 
+  - Starring RSGL, a small thing but it means a lot to me
+  - Sharing RSGL with others is the best way for RSGL to build and grow a community
+  - Listing RSGL as a dependency if you use RSGL for a project
+
+  If you want to contribute to RSGL but don't know what to contribute, you can check the `TODO` file.
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in.
