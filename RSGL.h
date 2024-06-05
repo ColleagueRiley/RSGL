@@ -986,6 +986,7 @@ typedef struct  {
 
     RSGL_button title;
     bool held;
+    RSGL_point initPoint;
 } RSGL_container_src;
 
 typedef RSGL_button RSGL_container;
@@ -1813,6 +1814,10 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
 void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (int)sides}, c); }
 
 
+#ifndef M_PI
+#define M_PI		3.14159265358979323846	/* pi */
+#endif
+
 void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {  
     u32 verts = (u32)round((float)((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10));
     verts = (verts > 360 ? 360 : verts);
@@ -2026,7 +2031,7 @@ i32 RSGL_loadFont(const char* font) {
         if (RSGL_font.fonts[i].name == font)
             return i;
     
-    if (access(font, F_OK)) {
+    if (access(font, 0)) {
         printf("RSGL_loadFont File %s does not exist.\n", font);
         return -1;
     }
@@ -2890,15 +2895,27 @@ i32 RSGL_container_update(RSGL_container* con, RGFW_Event event) {
             container->held = false;
         }
 
+        
         if (event.type == RSGL_mouseButtonPressed && 
             RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x, container->title.rect.y, container->title.rect.w - 35, container->title.rect.h), event.point)
-        )
+        ) {
             container->held = true;
-        else if (event.type == RSGL_mousePosChanged && container->held) {
-            RSGL_container_setPos(con, RSGL_POINT(event.point.x - container->title.rect.x, event.point.y + 30));
-        } 
-        else
+            container->initPoint.x = -1;
+        }
+        else if (event.type == RSGL_mouseButtonReleased) {
             container->held = false;
+            container->initPoint.x = -1;
+        }
+
+        if (container->held && event.type == RSGL_mousePosChanged) {
+            if (container->initPoint.x == -1) {
+                container->initPoint = event.point;
+            }
+            
+            RSGL_container_setPos(con, RSGL_POINT(container->title.rect.x + (event.point.x - container->initPoint.x),
+                                                container->title.rect.y + container->title.rect.h + (event.point.y - container->initPoint.y)));
+            container->initPoint = event.point;   
+        }
     }    
 
     RSGL_button** containers = container->buttons;
@@ -3229,7 +3246,7 @@ void RSGL_textbox_draw(RSGL_textbox* tb) {
     }
 
     RSGL_drawRect(RSGL_RECT(tb->src.text.c.x + area.w - 2, 
-                            2 + tb->src.text.c.y + area.h * tb->src.text.c.d, 
+                            (tb->src.text.c.y + area.h * tb->src.text.c.d) - 2, 
                             1, tb->src.text.c.d),
                  tb->src.outlineColor);
 }

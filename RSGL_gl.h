@@ -174,6 +174,8 @@ void RSGL_renderClear(float r, float g, float b, float a) {
 }
 
 void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
+    RSGL_UNUSED(info);
+
     #ifdef RSGL_MODERN_OPENGL
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
         RSGL_args.legacy = 2;
@@ -263,13 +265,13 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
     /* Quads - Vertex buffers binding and attributes enable */
     /* Vertex position buffer (shader-location = 0) */
     glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.vbo);
-    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 3 * 4 * sizeof(float), info->verts, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 3 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
 
     /* Vertex texcoord buffer (shader-location = 1) */
     glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.tbo);
-    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 2 * 4 * sizeof(float), info->texCoords, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 2 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
     
@@ -290,7 +292,7 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
     RSGL_gl.defaultTex = RSGL_renderCreateTexture(white, RSGL_AREA(1, 1), 4);
 
     #else
-    RSGL_UNUSED(proc); RSGL_UNUSED(info);
+    RSGL_UNUSED(proc);
     #endif
 }
 
