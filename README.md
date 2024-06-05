@@ -41,6 +41,9 @@ RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
   - Code reviews, code reviews are always accepted
   - Feature requests 
   - Pull requests, fixing issues, bugs, misspellings, etc. 
+  - Starring RSGL, a small thing but it means a lot to me
+  - Sharing RSGL with others, this is the biggest way for RSGL to build and grow a community
+  - Listing RSGL as a dependency if you use RSGL for a project
 
   If you want to contribute to RSGL but don't know what to contribute, you can check the `TODO` file.
 
