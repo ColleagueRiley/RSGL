@@ -1309,7 +1309,6 @@ RSGL_RENDER_INFO RSGL_renderInfo = {NULL, NULL, NULL, NULL, 0, 0};
 void RSGL_basicDraw(u32 type, float* points, float* texPoints, RSGL_color c, size_t len) {
     if (RSGL_renderInfo.len + 1 >= RSGL_MAX_BATCHES || RSGL_renderInfo.vert_len + len >= RSGL_MAX_VERTS) {
         RSGL_renderBatch(&RSGL_renderInfo);
-        printf("%lli\n", len);
     }
 
     RSGL_BATCH* batch = NULL;
