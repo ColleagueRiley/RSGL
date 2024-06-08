@@ -426,6 +426,7 @@ typedef struct { i32 x, y; } RGFW_vector;
 		u32 display;
 		void* displayLink;
 		void* window;
+		u8 dndPassed;
 #endif
 
 #if (defined(RGFW_OPENGL)) && !defined(RGFW_OSMESA)
@@ -1164,21 +1165,17 @@ typedef struct { i32 x, y; } RGFW_vector;
 	}
 
 	NSArray* c_array_to_NSArray(void* array, size_t len) {
-		void* func = sel_registerName("initWithObjects:count:");
+		SEL func = sel_registerName("initWithObjects:count:");
 		void* nsclass = objc_getClass("NSArray");
-
-		return ((id(*)(id, SEL, void*, NSUInteger))objc_msgSend)
-			(NSAlloc(nsclass), func, array, len);
+		return ((id (*)(id, SEL, void*, NSUInteger))objc_msgSend)
+					(NSAlloc(nsclass), func, array, len);
 	}
-
+ 
 	void NSregisterForDraggedTypes(void* view, NSPasteboardType* newTypes, size_t len) {
 		NSString** ntypes = cstrToNSStringArray((char**)newTypes, len);
 
-		
 		NSArray* array = c_array_to_NSArray(ntypes, len);
-
 		objc_msgSend_void_id(view, sel_registerName("registerForDraggedTypes:"), array);
-
 		NSRelease(array);
 	}
 
@@ -1271,13 +1268,17 @@ typedef struct { i32 x, y; } RGFW_vector;
 			(pasteboard, func, array, options);
 
 		NSRelease(array);
-
 		NSUInteger count = NSArray_count(output);
 
 		const char** res = si_array_init_reserve(sizeof(const char*), count);
 
-		for (NSUInteger i = 0; i < count; i++)
-			res[i] = NSString_to_char(NSArray_objectAtIndex(output, i));
+		void* path_func = sel_registerName("path");
+
+		for (NSUInteger i = 0; i < count; i++) {
+			void* url = NSArray_objectAtIndex(output, i);
+			NSString* url_str = ((id(*)(id, SEL))objc_msgSend)(url, path_func);
+			res[i] = NSString_to_char(url_str);
+		}
 
 		return res;
 	}
@@ -2738,8 +2739,6 @@ RGFW_UNUSED(win); /* if buffer rendering is not being used */
 		switch (E.type) {
 		case KeyPress:
 		case KeyRelease:
-			memcpy(RGFW_keyboard_prev, RGFW_keyboard, 32);
-
 			/* check if it's a real key release */
 			if (E.type == KeyRelease && XEventsQueued((Display*) win->src.display, QueuedAfterReading)) { /* get next event if there is one*/
 				XEvent NE;
@@ -2752,6 +2751,11 @@ RGFW_UNUSED(win); /* if buffer rendering is not being used */
 			/* set event key data */
 			win->event.keyCode = XkbKeycodeToKeysym((Display*) win->src.display, E.xkey.keycode, 0, E.xkey.state & ShiftMask ? 1 : 0);
 			win->event.keyName = XKeysymToString(win->event.keyCode); /* convert to string */
+
+			if (RGFW_isPressedI(win, win->event.keyCode)) 
+				RGFW_keyboard_prev[E.xkey.keycode >> 3] |= (1 << (E.xkey.keycode & 7));
+			else
+				RGFW_keyboard_prev[E.xkey.keycode >> 3] |= 0;
 
 			/* get keystate data */
 			win->event.type = (E.type == KeyPress) ? RGFW_keyPressed : RGFW_keyReleased;
@@ -3784,7 +3788,7 @@ RGFW_UNUSED(win); /* if buffer rendering is not being used */
 			d = (Display*) win->src.display;
 		
 		KeyCode kc2 = XKeysymToKeycode(d, key); /* convert the key to a keycode */
-		return !!(RGFW_keyboard[kc2 >> 3] & (1 << (kc2 & 7)));				/* check if the key is pressed */
+		return (RGFW_keyboard[kc2 >> 3] & (1 << (kc2 & 7)));				/* check if the key is pressed */
 	}
 
 	u8 RGFW_wasPressedI(RGFW_window* win, u32 key) {
@@ -4439,11 +4443,14 @@ static HMODULE wglinstance = NULL;
 				break;
 
 			case WM_KEYUP:
-				memcpy(RGFW_keyBoard_prev, RGFW_keyBoard, 256);
-
 				win->event.keyCode = (u32) msg.wParam;
+				if (RGFW_isPressedI(win, win->event.keyCode))
+					RGFW_keyBoard_prev[win->event.keyCode] |= 0x80;
+				else
+					RGFW_keyBoard_prev[win->event.keyCode] = 0;
+
 				strncpy(win->event.keyName, RGFW_keyCodeTokeyStr(msg.lParam), 16);
-				if (GetKeyState(VK_SHIFT) & 0x8000) {
+				if (RGFW_isPressedI(win, VK_SHIFT)) {
 					ToAscii((UINT) msg.wParam, MapVirtualKey((UINT) msg.wParam, MAPVK_VK_TO_CHAR),
 						keyboardState, (LPWORD) win->event.keyName, 0);
 				}
@@ -4453,11 +4460,15 @@ static HMODULE wglinstance = NULL;
 				break;
 
 			case WM_KEYDOWN:
-				memcpy(RGFW_keyBoard_prev, RGFW_keyBoard, 256);
-
 				win->event.keyCode = (u32) msg.wParam;
+
+				if (RGFW_isPressedI(win, win->event.keyCode))
+					RGFW_keyBoard_prev[win->event.keyCode] |= 0x80;
+				else
+					RGFW_keyBoard_prev[win->event.keyCode] = 0;
+
 				strncpy(win->event.keyName, RGFW_keyCodeTokeyStr(msg.lParam), 16);
-				if (GetKeyState(VK_SHIFT) & 0x8000) {
+				if (RGFW_isPressedI(win, VK_SHIFT) & 0x8000) {
 					ToAscii((UINT) msg.wParam, MapVirtualKey((UINT) msg.wParam, MAPVK_VK_TO_CHAR),
 						keyboardState, (LPWORD) win->event.keyName, 0);
 				}
@@ -5150,9 +5161,9 @@ static HMODULE wglinstance = NULL;
 			i = 0;
 
 		Class array[] = { objc_getClass("NSURL"), NULL };
-		char** droppedFiles = (char**) NSPasteboard_readObjectsForClasses(
-			(NSPasteboard*) objc_msgSend_id(sender, sel_registerName("draggingPasteboard")),
-			array, 1, NULL);
+		NSPasteboard* pasteBoard = objc_msgSend_id(sender, sel_registerName("draggingPasteboard"));
+		
+		char** droppedFiles = (char**) NSPasteboard_readObjectsForClasses(pasteBoard, array, 1, NULL);
 
 		RGFW_windows[i]->event.droppedFilesCount = si_array_len(droppedFiles);
 
@@ -5162,11 +5173,12 @@ static HMODULE wglinstance = NULL;
 			strcpy(RGFW_windows[i]->event.droppedFiles[y], droppedFiles[y]);
 
 		RGFW_windows[i]->event.type = RGFW_dnd;
+		RGFW_windows[i]->src.dndPassed = false;
 
-		NSPoint p = *(NSPoint*) objc_msgSend_id(sender, sel_registerName("draggingLocation"));
-		RGFW_windows[i]->event.point.x = p.x;
-		RGFW_windows[i]->event.point.x = p.y;
+		NSPoint p = ((NSPoint(*)(id, SEL)) objc_msgSend)(sender, sel_registerName("draggingLocation"));
 
+		RGFW_windows[i]->event.point.x = (i32)p.x;
+		RGFW_windows[i]->event.point.x = (i32)p.y;
 		return true;
 	}
 
@@ -5359,41 +5371,30 @@ static HMODULE wglinstance = NULL;
 			NSMoveToResourceDir();
 
 		Class delegateClass = objc_allocateClassPair(objc_getClass("NSObject"), "WindowDelegate", 0);
+		
+
 		class_addMethod(delegateClass, sel_registerName("windowWillResize:toSize:"), (IMP) RGFW__osxWindowResize, "{NSSize=ff}@:{NSSize=ff}");
 		class_addMethod(delegateClass, sel_registerName("windowWillMove:"), (IMP) RGFW__osxWindowMove, "");
 		class_addMethod(delegateClass, sel_registerName("windowDidMove:"), (IMP) RGFW__osxWindowMove, "");
-
-
-		if (args & RGFW_ALLOW_DND) {
-			win->src.winArgs |= RGFW_ALLOW_DND;
-
-/*
-		NSPasteboardType types[] = {NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString};
-
-		siArray(NSPasteboardType) array = sic_arrayInit(types, sizeof(id), countof(types));
-		NSWindow_registerForDraggedTypes(win->hwnd, array);
-
-		win->dndHead = win->dndPrev = out;
-*/
-
-			NSPasteboardType array[] = {NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString};
-			NSregisterForDraggedTypes(win->src.window, array, 3);
-
-			/* NOTE(EimaMei): Drag 'n Drop requires too many damn functions for just a Drag 'n Drop event. */
-			class_addMethod(delegateClass, (SEL)"draggingEntered:", (IMP)draggingEntered, "l@:@");
-			class_addMethod(delegateClass, (SEL)"draggingUpdated:", (IMP)draggingUpdated, "l@:@");
-			class_addMethod(delegateClass, (SEL)"draggingExited:", (IMP)RGFW__osxDraggingEnded, "v@:@");
-			class_addMethod(delegateClass, (SEL)"draggingEnded:", (IMP)RGFW__osxDraggingEnded, "v@:@");
-			class_addMethod(delegateClass, (SEL)"prepareForDragOperation:", (IMP)prepareForDragOperation, "B@:@");
-			class_addMethod(delegateClass, (SEL)"performDragOperation:", (IMP)performDragOperation, "B@:@");
-
-		}
+		class_addMethod(delegateClass, sel_registerName("draggingEntered:"), (IMP)draggingEntered, "l@:@");
+		class_addMethod(delegateClass, sel_registerName("draggingUpdated:"), (IMP)draggingUpdated, "l@:@");
+		class_addMethod(delegateClass, sel_registerName("draggingExited:"), (IMP)RGFW__osxDraggingEnded, "v@:@");
+		class_addMethod(delegateClass, sel_registerName("draggingEnded:"), (IMP)RGFW__osxDraggingEnded, "v@:@");
+		class_addMethod(delegateClass, sel_registerName("prepareForDragOperation:"), (IMP)prepareForDragOperation, "B@:@");
+		class_addMethod(delegateClass, sel_registerName("performDragOperation:"), (IMP)performDragOperation, "B@:@");
 
 		id delegate = objc_msgSend_id(NSAlloc(delegateClass), sel_registerName("init"));
 
 		object_setInstanceVariable(delegate, "RGFW_window", win);
 
 		objc_msgSend_void_id(win->src.window, sel_registerName("setDelegate:"), delegate);
+
+		if (args & RGFW_ALLOW_DND) {
+			win->src.winArgs |= RGFW_ALLOW_DND;
+
+			NSPasteboardType types[] = {NSPasteboardTypeURL, NSPasteboardTypeFileURL, NSPasteboardTypeString};
+			NSregisterForDraggedTypes(win->src.window, types, 3);
+		}
 
 		// Show the window
 		((id(*)(id, SEL, SEL))objc_msgSend)(win->src.window, sel_registerName("makeKeyAndOrderFront:"), NULL);
@@ -5404,6 +5405,8 @@ static HMODULE wglinstance = NULL;
 
 			RGFW_loaded = 1;
 		}
+
+		objc_msgSend_void(win->src.window, sel_registerName("makeKeyWindow"));
 
 		NSApplication_finishLaunching(NSApp);
 
@@ -5531,12 +5534,24 @@ static HMODULE wglinstance = NULL;
 
 	};
 
+	typedef enum NSEventModifierFlags {
+		NSEventModifierFlagCapsLock = 1 << 16,
+		NSEventModifierFlagShift = 1 << 17,
+		NSEventModifierFlagControl = 1 << 18,
+		NSEventModifierFlagOption = 1 << 19,
+		NSEventModifierFlagCommand = 1 << 20
+	} NSEventModifierFlags;
 
 	RGFW_Event* RGFW_window_checkEvent(RGFW_window* win) {
 		assert(win != NULL);
 
 		if (win->event.type == RGFW_quit)
 			return &win->event;
+
+		if (win->event.type == RGFW_dnd && win->src.dndPassed == 0) {
+			win->src.dndPassed = 1;
+			return &win->event;
+		}
 
 		static void* eventFunc = NULL;
 		if (eventFunc == NULL)
@@ -5573,89 +5588,156 @@ static HMODULE wglinstance = NULL;
 		win->event.inFocus = (bool) objc_msgSend_bool(win->src.window, sel_registerName("isKeyWindow"));
 
 		switch (objc_msgSend_uint(e, sel_registerName("type"))) {
-		case NSEventTypeKeyDown:
-			RGFW_keyBoard_prev[win->event.keyCode] = RGFW_keyBoard[win->event.keyCode];
+			case NSEventTypeKeyDown:
+				win->event.keyCode = (u16) objc_msgSend_uint(e, sel_registerName("keyCode"));
+				RGFW_keyBoard_prev[win->event.keyCode] = RGFW_keyBoard[win->event.keyCode];
 
-			win->event.type = RGFW_keyPressed;
-			win->event.keyCode = (u16) objc_msgSend_uint(e, sel_registerName("keyCode"));
-			win->event.keyName = (char*)(const char*) NSString_to_char(objc_msgSend_id(e, sel_registerName("characters")));
+				win->event.type = RGFW_keyPressed;
+				win->event.keyName = (char*)(const char*) NSString_to_char(objc_msgSend_id(e, sel_registerName("characters")));
 
-			RGFW_keyBoard[win->event.keyCode] = 1;
-			break;
+				RGFW_keyBoard[win->event.keyCode] = 1;
+				break;
 
-		case NSEventTypeKeyUp:
-			RGFW_keyBoard_prev[win->event.keyCode] = RGFW_keyBoard[win->event.keyCode];
+			case NSEventTypeKeyUp:
+				win->event.keyCode = (u16) objc_msgSend_uint(e, sel_registerName("keyCode"));
 
-			win->event.type = RGFW_keyReleased;
-			win->event.keyCode = (u16) objc_msgSend_uint(e, sel_registerName("keyCode"));
-			win->event.keyName = (char*)(const char*) NSString_to_char(objc_msgSend_id(e, sel_registerName("characters")));
+				RGFW_keyBoard_prev[win->event.keyCode] = RGFW_keyBoard[win->event.keyCode];
 
-			RGFW_keyBoard[win->event.keyCode] = 0;
-			break;
+				win->event.type = RGFW_keyReleased;
+				win->event.keyName = (char*)(const char*) NSString_to_char(objc_msgSend_id(e, sel_registerName("characters")));
 
-		case NSEventTypeLeftMouseDragged:
-		case NSEventTypeOtherMouseDragged:
-		case NSEventTypeRightMouseDragged:
-		case NSEventTypeMouseMoved:
-			win->event.type = RGFW_mousePosChanged;
-			NSPoint p = ((NSPoint(*)(id, SEL)) objc_msgSend)(e, sel_registerName("locationInWindow"));
+				RGFW_keyBoard[win->event.keyCode] = 0;
+				break;
 
-			win->event.point = RGFW_VECTOR((u32) p.x, (u32) (win->r.h - p.y));
+			case NSEventTypeFlagsChanged: {
+				u32 flags = objc_msgSend_uint(e, sel_registerName("modifierFlags"));
+				memcpy(RGFW_keyBoard_prev + 55, RGFW_keyBoard + 55, 5);
 
-			if (win->src.winArgs & RGFW_HOLD_MOUSE) {
-				RGFW_vector mouse = RGFW_getGlobalMousePoint();
-				if ((mouse.x != win->r.x + (win->r.w / 2) || mouse.y != win->r.y + (win->r.h / 2))) {
-					RGFW_window_moveMouse(win, RGFW_VECTOR(win->r.x + (win->r.w / 2), win->r.y + (win->r.h / 2)));
+				if ((flags & NSEventModifierFlagCapsLock) && !RGFW_wasPressedI(win, 57)) {
+					RGFW_keyBoard[57] = 1;
+					win->event.type = RGFW_keyPressed;
+					win->event.keyCode = 57;
+					break;
+				} if (!(flags & NSEventModifierFlagCapsLock) && RGFW_wasPressedI(win, 57)) {
+					RGFW_keyBoard[57] = 0;
+					win->event.type = RGFW_keyReleased;
+					win->event.keyCode = 57;
+					break;
 				}
+
+				if ((flags & NSEventModifierFlagOption) && !RGFW_wasPressedI(win, 58)) {
+					RGFW_keyBoard[58] = 1;
+					win->event.type = RGFW_keyPressed;
+					win->event.keyCode = 58;
+					break;
+				} if (!(flags & NSEventModifierFlagOption) && RGFW_wasPressedI(win, 58)) {
+					RGFW_keyBoard[58] = 0;
+					win->event.type = RGFW_keyReleased;
+					win->event.keyCode = 58;
+					break;
+				} 
+
+				if ((flags & NSEventModifierFlagControl) && !RGFW_wasPressedI(win, 59)) {
+					RGFW_keyBoard[59] = 1;
+					win->event.type = RGFW_keyPressed;
+					win->event.keyCode = 59;
+					break;
+				} if (!(flags & NSEventModifierFlagControl) && RGFW_wasPressedI(win, 59)) {
+					RGFW_keyBoard[59] = 0;
+					win->event.type = RGFW_keyReleased;
+					win->event.keyCode = 59;
+					break;
+				}
+
+				if ((flags & NSEventModifierFlagCommand) && !RGFW_wasPressedI(win, 55)) {
+					RGFW_keyBoard[55] = 1;
+					win->event.type = RGFW_keyPressed;
+					win->event.keyCode = 55;
+					break;
+				} if (!(flags & NSEventModifierFlagCommand) && RGFW_wasPressedI(win, 55)) {
+					RGFW_keyBoard[55] = 0;
+					win->event.type = RGFW_keyReleased;
+					win->event.keyCode = 55;
+					break;
+				} 
+
+				if ((flags & NSEventModifierFlagShift) && !RGFW_wasPressedI(win, 56)) {
+					RGFW_keyBoard[56] = 1;
+					win->event.type = RGFW_keyPressed;
+					win->event.keyCode = 56;
+					break;
+				} if (!(flags & NSEventModifierFlagShift) && RGFW_wasPressedI(win, 56)) {
+					RGFW_keyBoard[56] = 0;
+					win->event.type = RGFW_keyReleased;
+					win->event.keyCode = 56;
+					break;
+				}
+
+				break;
 			}
-			break;
+			case NSEventTypeLeftMouseDragged:
+			case NSEventTypeOtherMouseDragged:
+			case NSEventTypeRightMouseDragged:
+			case NSEventTypeMouseMoved:
+				win->event.type = RGFW_mousePosChanged;
+				NSPoint p = ((NSPoint(*)(id, SEL)) objc_msgSend)(e, sel_registerName("locationInWindow"));
 
-		case NSEventTypeLeftMouseDown:
-			win->event.button = RGFW_mouseLeft;
-			win->event.type = RGFW_mouseButtonPressed;
-			break;
+				win->event.point = RGFW_VECTOR((u32) p.x, (u32) (win->r.h - p.y));
 
-		case NSEventTypeOtherMouseDown:
-			win->event.button = RGFW_mouseMiddle;
-			win->event.type = RGFW_mouseButtonPressed;
-			break;
+				if (win->src.winArgs & RGFW_HOLD_MOUSE) {
+					RGFW_vector mouse = RGFW_getGlobalMousePoint();
+					if ((mouse.x != win->r.x + (win->r.w / 2) || mouse.y != win->r.y + (win->r.h / 2))) {
+						RGFW_window_moveMouse(win, RGFW_VECTOR(win->r.x + (win->r.w / 2), win->r.y + (win->r.h / 2)));
+					}
+				}
+				break;
 
-		case NSEventTypeRightMouseDown:
-			win->event.button = RGFW_mouseRight;
-			win->event.type = RGFW_mouseButtonPressed;
-			break;
+			case NSEventTypeLeftMouseDown:
+				win->event.button = RGFW_mouseLeft;
+				win->event.type = RGFW_mouseButtonPressed;
+				break;
 
-		case NSEventTypeLeftMouseUp:
-			win->event.button = RGFW_mouseLeft;
-			win->event.type = RGFW_mouseButtonReleased;
-			break;
+			case NSEventTypeOtherMouseDown:
+				win->event.button = RGFW_mouseMiddle;
+				win->event.type = RGFW_mouseButtonPressed;
+				break;
 
-		case NSEventTypeOtherMouseUp:
-			win->event.button = RGFW_mouseMiddle;
-			win->event.type = RGFW_mouseButtonReleased;
-			break;
+			case NSEventTypeRightMouseDown:
+				win->event.button = RGFW_mouseRight;
+				win->event.type = RGFW_mouseButtonPressed;
+				break;
 
-		case NSEventTypeScrollWheel: {
-			double deltaY = ((CGFloat(*)(id, SEL))abi_objc_msgSend_fpret)(e, sel_registerName("deltaY"));
+			case NSEventTypeLeftMouseUp:
+				win->event.button = RGFW_mouseLeft;
+				win->event.type = RGFW_mouseButtonReleased;
+				break;
 
-			if (deltaY > 0)
-				win->event.button = RGFW_mouseScrollUp;
+			case NSEventTypeOtherMouseUp:
+				win->event.button = RGFW_mouseMiddle;
+				win->event.type = RGFW_mouseButtonReleased;
+				break;
 
-			else if (deltaY < 0)
-				win->event.button = RGFW_mouseScrollDown;
+			case NSEventTypeScrollWheel: {
+				double deltaY = ((CGFloat(*)(id, SEL))abi_objc_msgSend_fpret)(e, sel_registerName("deltaY"));
 
-			win->event.scroll = deltaY;
+				if (deltaY > 0)
+					win->event.button = RGFW_mouseScrollUp;
 
-			win->event.type = RGFW_mouseButtonReleased;
-			break;
-		}
-		case NSEventTypeRightMouseUp:
-			win->event.button = RGFW_mouseRight;
-			win->event.type = RGFW_mouseButtonReleased;
-			break;
+				else if (deltaY < 0)
+					win->event.button = RGFW_mouseScrollDown;
 
-		default:
-			break;
+				win->event.scroll = deltaY;
+
+				win->event.type = RGFW_mouseButtonReleased;
+				break;
+			}
+			case NSEventTypeRightMouseUp:
+				win->event.button = RGFW_mouseRight;
+				win->event.type = RGFW_mouseButtonReleased;
+				break;
+
+			default:
+				break;
 		}
 
 		objc_msgSend_void_id(NSApp, sel_registerName("sendEvent:"), e);
