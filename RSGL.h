@@ -464,7 +464,7 @@ RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 RSGLDEF void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon);
 
 /*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
-RSGLDEF u8 RGFW_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
+RSGLDEF u8 RSGL_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
 
 RSGLDEF u8 RSGL_wasPressedI(RSGL_window* win, u32 key); /*!< if key was pressed (checks prev keymap only) (key code)*/
 
@@ -1794,8 +1794,8 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     for (i = 0; i < sides; i++) {
         RSGL_pointF p = {sinf(angle * DEG2RAD), cosf(angle * DEG2RAD)};
 
-        texcoords[tIndex] = (-p.x + 1.0f) * 0.5;
-        texcoords[tIndex + 1] = (-p.y + 1.0f) * 0.5;
+        texcoords[tIndex] = (p.x + 1.0f) * 0.5;
+        texcoords[tIndex + 1] = (p.y + 1.0f) * 0.5;
 
         memcpy(verts + vIndex, (float[3]){RSGL_GET_FINAL_POINT(o.x + o.w + (p.x * o.w), o.y + o.h + (p.y * o.h), 0.0)}, 3 * sizeof(float));
 
