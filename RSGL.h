@@ -227,16 +227,27 @@ keys will not be reincluded into RSGL
 #define RGFWDEF RSGLDEF
 
 #if !defined(u8)
-    #include <stdint.h>
+	#if defined(_MSC_VER) || defined(__SYMBIAN32__)
+		typedef unsigned char 	u8;
+		typedef signed char		i8;
+		typedef unsigned short  u16;
+		typedef signed short 	i16;
+		typedef unsigned int 	u32;
+		typedef signed int		i32;
+		typedef unsigned long	u64;
+		typedef signed long		i64;
+	#else
+		#include <stdint.h>
 
-    typedef uint8_t     u8;
-	typedef int8_t      i8;
-	typedef uint16_t   u16;
-	typedef int16_t    i16;
-	typedef uint32_t   u32;
-	typedef int32_t    i32;
-	typedef uint64_t   u64;
-	typedef int64_t    i64;
+		typedef uint8_t     u8;
+		typedef int8_t      i8;
+		typedef uint16_t   u16;
+		typedef int16_t    i16;
+		typedef uint32_t   u32;
+		typedef int32_t    i32;
+		typedef uint64_t   u64;
+		typedef int64_t    i64;
+	#endif
 #endif
 
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
@@ -1421,7 +1432,7 @@ RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
 RGFW_Event* RSGL_window_checkEvent(RSGL_window* win) {
     RGFW_Event* e = RGFW_window_checkEvent(win);
 
-    if (win->event.type == RGFW_windowAttribsChange)
+    if (win->event.type == RGFW_windowResized)
         RSGL_renderViewport(0, 0, win->r.w, win->r.h);
 
     return e;
@@ -2956,7 +2967,7 @@ RSGL_textbox* RSGL_initTextbox(size_t defaultSize) {
 
     textBox->src.style |= RSGL_STYLE_TEXTBOX;
     
-    textBox->src.text.str = RSGL_MALLOC(sizeof(char) * defaultSize + 1);
+    textBox->src.text.str = (char*)RSGL_MALLOC(sizeof(char) * defaultSize + 1);
     textBox->src.text.str[0] = '\0';
 
     textBox->src.cursorIndex = 0;
