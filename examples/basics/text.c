@@ -9,7 +9,7 @@ int main(void) {
     for (;;) {
         RSGL_window_checkEvent(win);
 
-        if (win->event.type == RSGL_quit)
+        if (win->event.type == RGFW_quit)
             break;
 
         RSGL_drawText("Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20), RSGL_RGB(255, 0, 0));

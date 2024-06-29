@@ -51,10 +51,13 @@ int main(void) {
             running = 0;
 
         while (RSGL_window_checkEvent(win))  {
-            if (win->event.type == RSGL_windowAttribsChange) {
-                printf("attribs changed\n");
+            if (win->event.type == RGFW_windowResized) {
+                printf("window resized");
             }
-            if (win->event.type == RSGL_quit) {
+            else if (win->event.type == RGFW_windowMoved) {
+                printf("window moved");
+            }
+            else if (win->event.type == RGFW_quit) {
                 running = 0;  
                 break;
             }
@@ -71,15 +74,15 @@ int main(void) {
             else if (RSGL_isPressedI(win, RGFW_t)) {
                 RGFW_window_setMouse(win, icon, RSGL_AREA(3, 3), 4);
             }
-            if (win->event.type == RSGL_dnd) {
+            if (win->event.type == RGFW_dnd) {
                 for (i = 0; i < win->event.droppedFilesCount; i++)
                     printf("dropped : %s\n", win->event.droppedFiles[i]);
             }
 
-            else if (win->event.type == RSGL_jsButtonPressed)
+            else if (win->event.type == RGFW_jsButtonPressed)
                 printf("pressed %i\n", win->event.button);
 
-            else if (win->event.type == RSGL_jsAxisMove && !win->event.button)
+            else if (win->event.type == RGFW_jsAxisMove && !win->event.button)
                 printf("{%i, %i}\n", win->event.axis[0].x, win->event.axis[0].y);
         }
 

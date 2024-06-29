@@ -68,7 +68,7 @@ int main(void) {
     bool running = true;
     while (running) {
         while (RSGL_window_checkEvent(win)) {
-            if (win->event.type == RSGL_quit) {
+            if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
             }

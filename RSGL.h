@@ -103,83 +103,6 @@
 #define RSGL_FULLSCREEN (1L<<8) /* the window is fullscreen by default or not */
 #define RSGL_CENTER (1L<<10) /*! center the window on the screen */
 #define RSGL_OPENGL_SOFTWARE (1L<<11) /*! use OpenGL software rendering */
-
-/*! event codes */
-#define RSGL_keyPressed 2 /* a key has been pressed */
-#define RSGL_keyReleased 3 /*!< a key has been released*/
-/*! key event note
-	the code of the key pressed is stored in
-	RGFW_Event.keyCode
-	!!Keycodes defined at the bottom of the header file!!
-	
-	while a string version is stored in
-	RGFW_Event.KeyString
-
-	RGFW_Event.lockState holds the current lockState
-	this means if CapsLock, NumLock are active or not
-*/
-#define RSGL_mouseButtonPressed 4 /*!< a mouse button has been pressed (left,middle,right)*/
-#define RSGL_mouseButtonReleased 5 /*!< a mouse button has been released (left,middle,right)*/
-#define RSGL_mousePosChanged 6 /*!< the position of the mouse has been changed*/
-/*! mouse event note
-	The x and y coords of the mouse are stored as RSGL_point in RGFW_Event.point
-	
-	RGFW_Event.button holds which mouse button was pressed
-*/
-#define RSGL_jsButtonPressed 7 /*!< a joystick button was pressed */
-#define RSGL_jsButtonReleased 8 /*!< a joystick button was released */
-#define RSGL_jsAxisMove 9 /*!< an axis of a joystick was moved*/
-/*! joystick event note
-	RGFW_Event.joystick holds which joystick was altered, if any
-	RGFW_Event.button holds which joystick button was pressed
-
-	RGFW_Event.axis holds the data of all the axis
-	RGFW_Event.axisCount says how many axis there are
-*/
-#define RSGL_windowAttribsChange 10 /*!< the window was moved or resized (by the user) */
-/* attribs change event note
-	The event data is sent straight to the window structure
-	with win->r.x, win->r.y, win->r.w and win->r.h
-*/
-#define RSGL_quit 33 /*!< the user clicked the quit button*/ 
-#define RSGL_dnd 34 /*!< a file has been dropped into the window*/
-#define RSGL_dnd_init 35 /*!< the start of a dnd event, when the place where the file drop is known */
-/* dnd data note
-	The x and y coords of the drop are stored as RSGL_point in RGFW_Event.point
-
-	RGFW_Event.droppedFilesCount holds how many files were dropped
-	
-	This is also the size of the array which stores all the dropped file string,
-	RGFW_Event.droppedFiles
-*/
-
-/*! mouse button codes (RGFW_Event.button) */
-#define RSGL_mouseLeft  1 /*!< left mouse button is pressed*/
-#define RSGL_mouseMiddle  2 /*!< mouse-wheel-button is pressed*/
-#define RSGL_mouseRight  3 /*!< right mouse button is pressed*/
-#define RSGL_mouseScrollUp  4 /*!< mouse wheel is scrolling up*/
-#define RSGL_mouseScrollDown  5 /*!< mouse wheel is scrolling down*/
-
-/* for RGFW_Event.lockstate */
-#define RSGL_CAPSLOCK (1L << 1)
-#define RSGL_NUMLOCK (1L << 2)
-
-#define RSGL_JS_A RGFW_JS_A /* or PS X button */
-#define RSGL_JS_B RGFW_JS_B /* or PS circle button */
-#define RSGL_JS_Y RGFW_JS_Y /* or PS triangle button */
-#define RSGL_JS_X RGFW_JS_X /* or PS square button */
-#define RSGL_JS_START RGFW_JS_START /* start button */
-#define RSGL_JS_SELECT RGFW_JS_SELECT /* select button */
-#define RSGL_JS_HOME RGFW_JS_HOME /* home button */
-#define RSGL_JS_UP RGFW_JS_UP /* dpad up */
-#define RSGL_JS_DOWN RGFW_JS_DOWN /* dpad down*/
-#define RSGL_JS_LEFT RGFW_JS_LEFT /* dpad left */
-#define RSGL_JS_RIGHT RGFW_JS_RIGHT /* dpad right */
-#define RSGL_JS_L1 RGFW_JS_L1 /* left bump */
-#define RSGL_JS_L2 RGFW_JS_L2 /* left trigger*/
-#define RSGL_JS_R1 RGFW_JS_R1 /* right bumper */
-#define RSGL_JS_R2 RGFW_JS_R2 /* right trigger */
-
 /* 
 RSGL basicDraw types
 */
@@ -376,6 +299,31 @@ RSGLDEF void RSGL_legacy(i32 legacy);
 RSGL_window
 *******
 */
+
+
+/*! event codes */
+#define RSGL_keyPressed 2 /* a key has been pressed */
+#define RSGL_keyReleased 3 /*!< a key has been released*/
+/*! key event note
+	the code of the key pressed is stored in
+	RGFW_Event.keyCode
+	!!Keycodes defined at the bottom of the RGFW_HEADER part of this file!!
+
+	while a string version is stored in
+	RGFW_Event.KeyString
+
+	RGFW_Event.lockState holds the current lockState
+	this means if CapsLock, NumLock are active or not
+*/
+#define RSGL_mouseButtonPressed 4 /*!< a mouse button has been pressed (left,middle,right)*/
+#define RSGL_mouseButtonReleased 5 /*!< a mouse button has been released (left,middle,right)*/
+#define RSGL_mousePosChanged 6 /*!< the position of the mouse has been changed*/
+
+#define RSGL_mouseLeft  1 /*!< left mouse button is pressed*/
+#define RSGL_mouseMiddle  2 /*!< mouse-wheel-button is pressed*/
+#define RSGL_mouseRight  3 /*!< right mouse button is pressed*/
+#define RSGL_mouseScrollUp  4 /*!< mouse wheel is scrolling up*/
+#define RSGL_mouseScrollDown  5 /*!< mouse wheel is scrolling down*/
 
 #ifndef RSGL_NO_RGFW
 

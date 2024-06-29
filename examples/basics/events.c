@@ -14,7 +14,7 @@ int main(void) {
     bool running = true;
     while (running) {
         while (RSGL_window_checkEvent(win)) {
-            if (win->event.type == RSGL_quit) {
+            if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
             }
@@ -36,24 +36,27 @@ int main(void) {
                     if (RSGL_isPressedI(win, RGFW_ShiftL))
                         printf("mouse moved %i %i\n", win->event.point.x, win->event.point.y);
                     break;
-                case RSGL_jsButtonPressed:
+                case RGFW_jsButtonPressed:
                     printf("joystick pressed %i\n", win->event.joystick);
                     break;
-                case RSGL_jsButtonReleased:
+                case RGFW_jsButtonReleased:
                     printf("joystick released %i\n", win->event.joystick);
                     break;
-                case RSGL_jsAxisMove:
+                case RGFW_jsAxisMove:
                     printf("axis moved %i %i\n", win->event.axis[0].x, win->event.axis[0].y);
                     break;
-                case RSGL_dnd:
+                case RGFW_dnd:
                     printf("dropped file : %i %i\n", win->event.point.x, win->event.point.y);
                     size_t i;
                     for (i = 0; i < win->event.droppedFilesCount; i++)
                         printf("%s\n", win->event.droppedFiles[i]);
                     printf("\n");
                     break;
-                case RSGL_windowAttribsChange:
-                    printf("window moved or resized\n");
+                case RGFW_windowMoved:
+                    printf("window moved\n");
+                    break;
+                case RGFW_windowResized:
+                    printf("window resized\n");
                     break;
                 default: break;
             }

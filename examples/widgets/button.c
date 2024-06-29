@@ -34,7 +34,7 @@ int main(void) {
     
     RSGL_button_setStyle(&generic, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED);
 
-    RSGL_button_setKeybind(&generic, (u32[]){RGFW_F, RGFW_ControlL}, 2);
+    RSGL_button_setKeybind(&generic, (u32[]){RGFW_f, RGFW_ControlL}, 2);
     RSGL_button_setWindow(&generic, win);
 
     RSGL_button comboBox = RSGL_initButton();
@@ -73,7 +73,7 @@ int main(void) {
     bool running = true;
     while (running) {
         while (RSGL_window_checkEvent(win)) {
-            if (win->event.type == RSGL_quit) {
+            if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
             }
