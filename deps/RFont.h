@@ -478,7 +478,7 @@ RFont_font* RFont_font_init(const char* font_name) {
    char* ttf_buffer = (char*)malloc(sizeof(char) * size); 
    fseek(ttf_file, 0U, SEEK_SET);
 
-   void* out = fread(ttf_buffer, 1, size, ttf_file);
+   size_t out = fread(ttf_buffer, 1, size, ttf_file);
    RFONT_UNUSED(out)
 
 
