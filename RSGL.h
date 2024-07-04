@@ -413,7 +413,7 @@ RSGLDEF u8 RSGL_isPressed(void* win, u32 key); /*!< if key is pressed (key code)
 #ifndef RSGL_MOUSE_ARROW
 #define RSGL_MOUSE_ARROW    1
 #define RSGL_MOUSE_IBEAM  2
-#define RSGL_MOUSE_POINTING_HAND 3
+#define RSGL_MOUSE_POINTING_HAND 4
 #endif
 
 RSGLDEF void RSGL_window_setMouseStandard(void* win, u32 cursorIcon);
@@ -940,10 +940,6 @@ extra
 *******
 */
 
-/* wait functions */
-RSGLDEF bool RSGL_wait(u32 miliseconds);
-RSGLDEF bool RSGL_wait_frames(u32 frames);
-
 /* ** collision functions ** */
 RSGLDEF bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
 RSGLDEF bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r);
@@ -1242,19 +1238,19 @@ void RSGL_basicDraw(u32 type, float* points, float* texPoints, RSGL_color c, siz
 
     batch->len += len;
 
-    memcpy(RSGL_renderInfo.verts + (RSGL_renderInfo.vert_len * 3), points, len * sizeof(float) * 3);
-    memcpy(RSGL_renderInfo.texCoords + (RSGL_renderInfo.vert_len * 2), texPoints, len * sizeof(float) * 2);
+    memcpy(&RSGL_renderInfo.verts[RSGL_renderInfo.vert_len * 3], points, len * sizeof(float) * 3);
+    memcpy(&RSGL_renderInfo.texCoords[RSGL_renderInfo.vert_len * 2], texPoints, len * sizeof(float) * 2);
 
     float color[4] = {c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f};
 
     if (RSGL_args.gradient_len && RSGL_args.gradient && (i64)(len - 1) > 0) {
-        memcpy(RSGL_renderInfo.colors + (RSGL_renderInfo.vert_len * 4), color, sizeof(float) * 4);
-        memcpy(RSGL_renderInfo.colors + (RSGL_renderInfo.vert_len * 4) + 4, RSGL_args.gradient, (len - 1) * sizeof(float) * 4);
+        memcpy(&RSGL_renderInfo.colors[RSGL_renderInfo.vert_len * 4], color, sizeof(float) * 4);
+        memcpy(&RSGL_renderInfo.colors[RSGL_renderInfo.vert_len * 4 + 4], RSGL_args.gradient, (len - 1) * sizeof(float) * 4);
     }
     else {
         size_t i;
         for (i = 0; i < len * 4; i += 4)
-            memcpy(RSGL_renderInfo.colors + (RSGL_renderInfo.vert_len * 4) + i, color, sizeof(float) * 4);
+            memcpy(&RSGL_renderInfo.colors[(RSGL_renderInfo.vert_len * 4) + i], color, sizeof(float) * 4);
     }
 
     RSGL_renderInfo.vert_len += len;
@@ -2933,8 +2929,8 @@ void RSGL_textbox_addChar(RSGL_textbox* tb, char ch) {
         return;
     }
 
-    memcpy(tb->src.text.str + tb->src.cursorIndex + 1, 
-            tb->src.text.str + tb->src.cursorIndex, 
+    memcpy(&tb->src.text.str[tb->src.cursorIndex + 1], 
+            &tb->src.text.str[tb->src.cursorIndex], 
             tb->src.text.text_len - tb->src.cursorIndex
         );
     
@@ -2961,6 +2957,7 @@ size_t RSGL_strLineLenR(const char* str) {
 char RSGL_keystrToChar(const char* str) {
     if (str[1] == 0)
         return str[0];
+
 
     static const char* map[] = {
         "asciitilde", "`",
@@ -3165,38 +3162,6 @@ void RSGL_textbox_draw(RSGL_textbox* tb) {
 RSGL_Other
 ******
 */
-
-/* timers */
-bool RSGL_wait(u32 miliseconds) {
-    static i32 start_time = -1, miliLimit = 0;
-
-    if (start_time == -1)
-        start_time = time(0);
-
-    if (miliseconds > (u32)miliLimit)
-        miliLimit = miliseconds;
-
-    i32 passed = time(0) - start_time;
-
-    if (passed > miliLimit)
-        start_time = time(0);
-
-    return !(passed % miliseconds) && passed;
-}
-
-bool RSGL_wait_frames(u32 frames) {
-    static i32 i = 0, frameLimit = 0;
-    
-    if (frames > (u32)frameLimit)
-        frameLimit = frames;
-
-    if (i > frameLimit)
-        i = 0;
-
-    i++;
-
-    return !(i % frames);
-}
 
 /* collision detection */
 bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p) { return RSGL_circleCollideRect(c, (RSGL_rect) {p.x, p.y, 1, 1}); }
