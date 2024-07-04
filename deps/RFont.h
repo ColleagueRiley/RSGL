@@ -107,14 +107,11 @@ int main () {
 		typedef uint64_t   u64;
 		typedef int64_t    i64;
 	#endif
-   
-   typedef u8 b8;
 #endif
 
-#ifndef RFONT_UNUSED
-#define RFONT_UNUSED(x) if (x){}
+#if !defined(b8)
+	typedef u8 b8;
 #endif
-
 /* 
 You can define these yourself if 
 you want to change anything
@@ -146,6 +143,10 @@ you want to change anything
 
 #ifndef RFONT_VSNPRINTF
 #define RFONT_VSNPRINTF vsnprintf
+#endif
+
+#ifndef RFONT_UNUSED
+#define RFONT_UNUSED(x) (void) (x);
 #endif
 
 /* make sure RFont declares aren't declared twice */
@@ -432,6 +433,8 @@ struct RFont_font {
    b8 free_font_memory;
    float fheight; /* font height from stb */
    float descent; /* font descent */
+   float numOfLongHorMetrics;
+   float space_adv;
 
    RFont_glyph glyphs[RFONT_MAX_GLYPHS]; /* glyphs */
    size_t glyph_len;
@@ -475,7 +478,7 @@ RFont_font* RFont_font_init(const char* font_name) {
    char* ttf_buffer = (char*)malloc(sizeof(char) * size); 
    fseek(ttf_file, 0U, SEEK_SET);
 
-   RFONT_UNUSED( fread(ttf_buffer, 1, size, ttf_file) )
+   RFONT_UNUSED(fread(ttf_buffer, 1, size, ttf_file))
 
 
    return RFont_font_init_data((u8*)ttf_buffer, 1);
@@ -489,6 +492,10 @@ RFont_font* RFont_font_init_data(u8* font_data, b8 auto_free) {
 
    font->fheight = ttSHORT(font->info.data + font->info.hhea + 4) - ttSHORT(font->info.data + font->info.hhea + 6);
    font->descent = ttSHORT(font->info.data + font->info.hhea + 6);
+
+   font->numOfLongHorMetrics = ttUSHORT(font->info.data + font->info.hhea + 34);
+   font->space_adv = ttSHORT(font->info.data + font->info.hmtx + 4 * (u32)(font->numOfLongHorMetrics - 1));
+ 
 
    #ifndef RFONT_NO_GRAPHICS
    font->atlas = RFont_create_atlas(RFONT_ATLAS_WIDTH, RFONT_ATLAS_HEIGHT);
@@ -628,12 +635,11 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
    free(bitmap);
 
    i32 advanceX;
-   u16 numOfLongHorMetrics = ttUSHORT(font->info.data + font->info.hhea + 34);
-
-   if (glyph->src < numOfLongHorMetrics)
+   
+   if (glyph->src < font->numOfLongHorMetrics)
       advanceX = ttSHORT(font->info.data + font->info.hmtx + 4 * glyph->src);
    else
-      advanceX = ttSHORT(font->info.data + font->info.hmtx + 4 * (numOfLongHorMetrics - 1));
+      advanceX = ttSHORT(font->info.data + font->info.hmtx + 4 * (u32)(font->numOfLongHorMetrics - 1));
 
    glyph->advance = advanceX * scale;
 
@@ -655,8 +661,8 @@ RFont_area RFont_text_area_len(RFont_font* font, const char* text, size_t len, u
    char* str;
 
    float scale = (((float)size) / font->fheight);
-   u16 numOfLongHorMetrics = ttUSHORT(font->info.data + font->info.hhea + 34);
-   float space_adv = scale * ttSHORT(font->info.data + font->info.hmtx + 4 * (numOfLongHorMetrics - 1));
+
+   float space_adv = (scale * font->space_adv) / 2;
    
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {        
       if (*str == '\n') { 
@@ -707,8 +713,7 @@ RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, f
    char* str;
 
    float scale = (((float)size) / font->fheight);
-   u16 numOfLongHorMetrics = ttUSHORT(font->info.data + font->info.hhea + 34);
-   float space_adv = scale * ttSHORT(font->info.data + font->info.hmtx + 4 * (numOfLongHorMetrics - 1));
+   float space_adv = (scale * font->space_adv) / 2;
 
    y -= (-font->descent * scale);
 
@@ -732,15 +737,6 @@ RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, f
       float realX = x + glyph.x1;
       float realY = y + glyph.y1;
 
-      switch (*str) {
-         case '(':
-         case ')':
-         case ';':
-               realY -= (size / 16);
-               break;
-         default: break;
-      }
-      
       verts[i] = RFONT_GET_WORLD_X((i32)realX, RFont_width); 
       verts[i + 1] = RFONT_GET_WORLD_Y(realY, RFont_height);
       verts[i + 2] = 0;

@@ -26,7 +26,7 @@ int main(void) {
             }
 
             RSGL_button_update(&toggleLegacy, win->event);
-            if ((win->event.type == RSGL_keyPressed && RSGL_isPressedI(win, RGFW_Space)) || 
+            if ((win->event.type == RSGL_keyPressed && RSGL_isPressed(win, RGFW_Space)) || 
                 toggleLegacy.status == RSGL_pressed
             ) {
                 RSGL_legacy(!toggleLegacy.toggle);

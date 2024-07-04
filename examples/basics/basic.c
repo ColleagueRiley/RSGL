@@ -35,7 +35,7 @@ int main(void) {
 
     RSGL_setClearArgs(true);
 
-    while (running && !RSGL_isPressedI(win, RGFW_Escape)) {
+    while (RGFW_window_shouldClose(win) == false) {
 
         /* 
             check all of the avaliable events all at once
@@ -61,17 +61,17 @@ int main(void) {
                 running = 0;  
                 break;
             }
-            if (RSGL_isPressedI(win, RGFW_Up))
+            if (RSGL_isPressed(win, RGFW_Up))
                 printf("Pasted : %s\n", RGFW_readClipboard(NULL));
-            else if (RSGL_isPressedI(win, RGFW_Down))
+            else if (RSGL_isPressed(win, RGFW_Down))
                 RGFW_writeClipboard("DOWN", 4);
-            else if (RSGL_isPressedI(win, RGFW_Space))
+            else if (RSGL_isPressed(win, RGFW_Space))
                 printf("fps : %i\n", win->event.fps);
-            else if (RSGL_isPressedI(win, RGFW_w))
+            else if (RSGL_isPressed(win, RGFW_w))
                 RGFW_window_setMouseDefault(win);
-            else if (RSGL_isPressedI(win, RGFW_q))
+            else if (RSGL_isPressed(win, RGFW_q))
                 RGFW_window_showMouse(win, 0);
-            else if (RSGL_isPressedI(win, RGFW_t)) {
+            else if (RSGL_isPressed(win, RGFW_t)) {
                 RGFW_window_setMouse(win, icon, RSGL_AREA(3, 3), 4);
             }
             if (win->event.type == RGFW_dnd) {

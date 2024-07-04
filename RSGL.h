@@ -423,12 +423,12 @@ RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
 RSGLDEF void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon);
 
 /*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
-RSGLDEF u8 RSGL_isPressedI(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
+RSGLDEF u8 RSGL_isPressed(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
 
-RSGLDEF u8 RSGL_wasPressedI(RSGL_window* win, u32 key); /*!< if key was pressed (checks prev keymap only) (key code)*/
+RSGLDEF u8 RSGL_wasPressed(RSGL_window* win, u32 key); /*!< if key was pressed (checks prev keymap only) (key code)*/
 
-RSGLDEF u8 RSGL_isHeldI(RSGL_window* win, u32 key); /*!< if key is held (key code)*/
-RSGLDEF u8 RSGL_isReleasedI(RSGL_window* win, u32 key); /*!< if key is released (key code)*/
+RSGLDEF u8 RSGL_isHeld(RSGL_window* win, u32 key); /*!< if key is held (key code)*/
+RSGLDEF u8 RSGL_isReleased(RSGL_window* win, u32 key); /*!< if key is released (key code)*/
 #else /* RSGL_NO_RGFW */
 
 /* 
@@ -462,7 +462,7 @@ RSGLDEF void RSGL_graphics_free(void);
 
 /* YOU define this version (if you need it) */
 /*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
-RSGLDEF u8 RSGL_isPressedI(void* win, u32 key); /*!< if key is pressed (key code)*/
+RSGLDEF u8 RSGL_isPressed(void* win, u32 key); /*!< if key is pressed (key code)*/
 
 #ifndef RSGL_MOUSE_ARROW
 #define RSGL_MOUSE_ARROW    1
@@ -1449,17 +1449,17 @@ void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon) {
     return RGFW_window_setMouseStandard(win, cursorIcon);
 }
 
-u8 RSGL_isPressedI(RSGL_window* win, u32 key) {
-    return RGFW_isPressedI(win, key);
+u8 RSGL_isPressed(RSGL_window* win, u32 key) {
+    return RGFW_isPressed(win, key);
 }
-u8 RSGL_wasPressedI(RSGL_window* win, u32 key) {
-    return RGFW_wasPressedI(win, key);
+u8 RSGL_wasPressed(RSGL_window* win, u32 key) {
+    return RGFW_wasPressed(win, key);
 }
-u8 RSGL_isHeldI(RSGL_window* win, u32 key) {
-    return RGFW_isHeldI(win, key);
+u8 RSGL_isHeld(RSGL_window* win, u32 key) {
+    return RGFW_isHeld(win, key);
 }
-u8 RSGL_isReleasedI(RSGL_window* win, u32 key) {
-    return RGFW_isReleasedI(win, key);
+u8 RSGL_isReleased(RSGL_window* win, u32 key) {
+    return RGFW_isReleased(win, key);
 }
 
 #else /* !RSGL_NO_RGFW */
@@ -2579,7 +2579,7 @@ void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
     size_t i;
     if (e.type == RSGL_keyPressed) {
         for (i = 0; e.type == RSGL_keyPressed && i < b->src.keys_len; i++) {
-            if (RSGL_isPressedI(b->src.window, b->src.keys[i]) == false) 
+            if (RSGL_isPressed(b->src.window, b->src.keys[i]) == false) 
                 break;
 
             if (i != b->src.keys_len - 1)
@@ -3108,7 +3108,7 @@ RSGL_select RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
             select.selected = true;
         }
     }
-
+    
     if (event.type == RSGL_mouseButtonPressed && tb->status != RSGL_pressed)
         tb->toggle = false;
     else if (event.type == RSGL_mouseButtonPressed) {

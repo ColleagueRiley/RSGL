@@ -33,7 +33,7 @@ int main(void) {
                     printf("mouse button released %i\n", win->event.button);
                     break;
                 case RSGL_mousePosChanged:
-                    if (RSGL_isPressedI(win, RGFW_ShiftL))
+                    if (RSGL_isPressed(win, RGFW_ShiftL))
                         printf("mouse moved %i %i\n", win->event.point.x, win->event.point.y);
                     break;
                 case RGFW_jsButtonPressed:
