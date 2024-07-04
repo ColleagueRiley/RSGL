@@ -91,7 +91,7 @@
 #endif
 
 #ifndef RSGL_UNUSED
-#define RSGL_UNUSED(x) if (x){}
+#define RSGL_UNUSED(x) (void) (x);
 #endif
 
 /*! Optional arguments for making a windows */
@@ -334,61 +334,7 @@ RSGL_window
 #define RSGL_Tab RGFW_Tab
 #define RSGL_BackSpace RGFW_BackSpace
 
-/* relevent RGFW defines. For documentation, this isn't meant to be used. */
-#if defined(RELEVENT_RGFW_STRUCTS) && !defined(RELEVENT_RGFW_STRUCTS)
-/* NOTE: some parts of the data can represent different things based on the event (read comments in RGFW_Event struct) */
-typedef struct RGFW_Event {
-	#ifdef RGFW_WINDOWS
-	char keyName[16]; /* key name of event*/
-	#else
-	char* keyName; /*!< key name of event */
-	#endif
-	
-	/*! drag and drop data */
-	/* 260 max paths with a max length of 260 */
-	#ifdef RGFW_ALLOC_DROPFILES
-    char** droppedFiles;
-	#else
-	char droppedFiles[RGFW_MAX_DROPS][RGFW_MAX_PATH]; /*!< dropped files*/
-	#endif
-	u32 droppedFilesCount; /*!< house many files were dropped */
-
-	u32 type; /*!< which event has been sent?*/
-	RGFW_vector point; /*!< mouse x, y of event (or drop point) */
-    u32 keyCode; /*!< keycode of event 	!!Keycodes defined at the bottom of the header file!! */
-
-	u32 inFocus;  /*if the window is in focus or not*/
-	
-	u32 fps; /*the current fps of the window [the fps is checked when events are checked]*/
-	u32 current_ticks, frames;
-	
-	u8 lockState;
-
-	u16 joystick; /* which joystick this event applies to (if applicable to any) */
-
-    u8 button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed*/
-  	
-	u8 axisesCount; /* number of axises */
-	RGFW_vector axis[2]; /* x, y of axises (-100 to 100) */
-} RGFW_Event; /*!< Event structure for checking/getting events */
-
-typedef struct RGFW_window {
-	RGFW_window_src src;
-
-	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER) 
-	u8* buffer; /* buffer for non-GPU systems (OSMesa, basic software rendering) */
-				/* when rendering using RGFW_BUFFER, the buffer is in the BGRA format */
-	#endif
-
-	RGFW_Event event; /*!< current event */
-
-	RGFW_rect r; /* the x, y, w and h of the struct */
-
-	u8 fpsCap; /*!< the fps cap of the window should run at (change this var to change the fps cap, 0 = no limit)*/
-		/*[the fps is capped when events are checked]*/
-} RGFW_window; /*!< Window structure for managing the window */
-#endif
-
+/* check deps/RGFW.h for more info */
 typedef RGFW_window RSGL_window;
 /* 
     create RSGL window, an RGFW window and init stuff for RSGL 
@@ -1981,6 +1927,8 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
 #include <io.h>
 #define F_OK 0
 #define access _access
+#else
+#include <unistd.h>
 #endif
 
 i32 RSGL_loadFont(const char* font) {

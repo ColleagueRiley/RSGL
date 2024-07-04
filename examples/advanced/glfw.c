@@ -21,7 +21,7 @@
 u8 GLFW_keys[512];
 RGFW_Event GLFW_event;
 
-u8 RSGL_isPressedI(void* win, u32 key) {
+u8 RSGL_isPressed(void* win, u32 key) {
     GLFW_UNUSED(win)
     return GLFW_keys[key];
 }
