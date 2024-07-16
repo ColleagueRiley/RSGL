@@ -1503,7 +1503,7 @@ void RSGL_center(RSGL_point3DF center) {
 void RSGL_setClearArgs(bool clearArgs) {
     RSGL_argsClear = clearArgs;
 }
-void RSGL_clearArgs() {
+void RSGL_clearArgs(void) {
     RSGL_args = (RSGL_drawArgs){NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0, 0};
 }
 
@@ -2024,7 +2024,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
     RSGL_args = save;
 }
 
-void RFont_render_init() { }
+void RFont_render_init(void) { }
 
 void RFont_render_free(u32 atlas) {
    RSGL_renderDeleteTexture(atlas);

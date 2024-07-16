@@ -7,7 +7,10 @@
 
 void drawLoop(RSGL_window* w); /* I seperate the draw loop only because it's run twice */
 
+#ifndef __EMSCRIPTEN__
 static RSGL_window* win2;
+#endif
+
 void* loop2(void *);
 
 unsigned char icon[4 * 3 * 3] = {0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF};
@@ -24,7 +27,9 @@ int main(void) {
     
     win->fpsCap = 60;
 
+    #ifndef __EMSCRIPTEN__
     win2 = RSGL_createWindow("subwindow", RSGL_RECT(200, 200, 200, 200), 0);
+    #endif
 
     /*unsigned short js = RSGL_registerJoystick(win, 0);*/
     unsigned char i;
@@ -45,10 +50,12 @@ int main(void) {
 
             but not using this method could cause input lag
         */
-
+       
+        #ifndef __EMSCRIPTEN__
         RSGL_window_checkEvent(win2);
         if (win2->event.type == RGFW_quit)
             running = 0;
+        #endif
 
         while (RSGL_window_checkEvent(win))  {
             if (win->event.type == RGFW_windowResized) {
@@ -114,10 +121,15 @@ int main(void) {
             if (running == false)
                 break;
             
+            #ifndef __EMSCRIPTEN__
             RSGL_window_clear(win2, RSGL_RGB(255, 255, 255));
+            #endif
         }
     }
 
+    #ifndef __EMSCRIPTEN__
     RSGL_window_close(win2);
+    #endif
+
     RSGL_window_close(win);
 }

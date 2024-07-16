@@ -9,9 +9,15 @@
 #include <OpenGL/gl.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#define RSGL_OPENGL_ES2
+#define RSGL_NO_GL_LOADER
+#include <GLES3/gl3.h>
+#endif
+
 #if !defined(RSGL_RENDER_LEGACY)
 #define RSGL_MODERN_OPENGL
-#if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_33) && !defined(RSGL_OPENGL_43)
+#if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_33) && !defined(RSGL_OPENGL_43) && !defined(RSGL_OPENGL_ES2)
 #define RSGL_OPENGL_33
 #endif
 #endif
@@ -152,6 +158,7 @@ glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 #define glUniformMatrix4fv glUniformMatrix4fvSRC
 
 extern int RSGL_loadGLModern(RSGLloadfunc proc);
+#endif
 
 #define RSGL_MULTILINE_STR(...) #__VA_ARGS__
 
@@ -163,7 +170,6 @@ typedef struct RSGL_INFO {
 } RSGL_INFO;
 
 RSGL_INFO RSGL_gl;
-#endif
 
 void RSGL_renderDeleteTexture(u32 tex) { glDeleteTextures(1, &tex); }
 void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
@@ -177,6 +183,7 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
     RSGL_UNUSED(info);
 
     #ifdef RSGL_MODERN_OPENGL
+    #ifndef __EMSCRIPTEN__
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
         RSGL_args.legacy = 2;
         #ifdef RSGL_DEBUG
@@ -184,6 +191,9 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
         #endif
         return;
     }
+    #else
+    RGFW_UNUSED(proc)
+    #endif
     
     static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
     #if defined(RSGL_OPENGL_21)
@@ -436,6 +446,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 
     else if (RSGL_args.legacy)
     #endif
+    #ifndef RSGL_GL_NO_LEGACY
     {
         size_t i, j;
         size_t tIndex = 0, cIndex = 0, vIndex = 0;
@@ -480,6 +491,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
                 glEnable(GL_DEPTH_TEST);
         }
     }
+    #endif
 
     info->len = 0;
     info->vert_len = 0;
