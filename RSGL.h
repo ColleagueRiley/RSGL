@@ -202,6 +202,8 @@ typedef struct RSGL_area {
 
 /*  include RGFW here  */
 
+#define u8 u8
+
 #ifndef RSGL_NO_RGFW
 /* so we're only using one kind of shape data */
 #define RGFW_rect RSGL_rect
