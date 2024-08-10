@@ -13,9 +13,9 @@ LIBS := -static -lgdi32 -lm -lopengl32 -lwinmm -ggdb
 EXT = .exe
 LIB_EXT = .dll
 
-WARNINGS =  -Wall -Werror -Wstrict-prototypes -Wextra -Wstrict-prototypes -Wold-style-definition -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-missing-braces -Wno-missing-variable-declarations -Wno-redundant-decls -Wno-unused-function -Wno-unused-label -Wno-unused-result -Wno-incompatible-pointer-types -Wno-format -Wno-format-extra-args -Wno-implicit-function-declaration -Wno-implicit-int -Wno-pointer-sign -Wno-switch -Wno-switch-default -Wno-switch-enum -Wno-unused-value -Wno-type-limits
 OS_DIR = \\
 
+WARNINGS = -Wall -Werror
 detected_OS = windows
 
 # not using a cross compiler
@@ -92,6 +92,7 @@ debug: all
 		.$(OS_DIR)$$exe$(EXT); \
 	done
 	
+	make advanced/glfw
 	.$(OS_DIR)advanced$(OS_DIR)glfw
 	make clean
 
