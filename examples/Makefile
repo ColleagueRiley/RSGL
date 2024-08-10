@@ -1,127 +1,137 @@
-# This is free and unencumbered software released into the public domain.
-# Anyone is free to copy, modify, publish, use, compile, sell, or distribute this software, either in source code form or as a compiled binary, for any purpose, commercial or non-commercial, and by any means. 
+# CUSTOM ARGS :
+# RGFW_WAYLAND=1 -> use wayland 
 
 CC = gcc
+AR = ar
 
-FLAGS = -Wall -Werror -Wstrict-prototypes -Wextra
+# used for compiling RGFW.o
+CUSTOM_CFLAGS =
+# used for the examples
+CFLAGS = 
 
-LIBS := -I.. -lopengl32 -lgdi32 -lWinmm
-ifneq (,$(filter $(CC) $(FLAGS) $(CUSTOM_CFLAGS),winegcc x86_64-w64-mingw32-gcc))
-    detected_OS := Windows
+LIBS := -static -lgdi32 -lm -lopengl32 -lwinmm -ggdb
+EXT = .exe
+LIB_EXT = .dll
+
+WARNINGS =  -Wall -Werror -Wstrict-prototypes -Wextra -Wstrict-prototypes -Wold-style-definition -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-missing-braces -Wno-missing-variable-declarations -Wno-redundant-decls -Wno-unused-function -Wno-unused-label -Wno-unused-result -Wno-incompatible-pointer-types -Wno-format -Wno-format-extra-args -Wno-implicit-function-declaration -Wno-implicit-int -Wno-pointer-sign -Wno-switch -Wno-switch-default -Wno-switch-enum -Wno-unused-value -Wno-type-limits
+OS_DIR = \\
+
+detected_OS = windows
+
+# not using a cross compiler
+ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-mingw32-g++ /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
+	detected_OS := $(shell uname 2>/dev/null || echo Unknown)
+
+	ifeq ($(detected_OS),Darwin)        # Mac OS X
+		LIBS := -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+		EXT =
+		OS_DIR = /
+		LIB_EXT = .dylib
+	endif
+	ifeq ($(detected_OS),Linux)
+    	LIBS := -lXrandr -lX11 -lm -lGL -ldl -lpthread
+		EXT =
+		OS_DIR = /
+		NO_GLES = 0
+		LIB_EXT = .so
+	endif
 else
-ifeq '$(findstring ;,$(PATH))' ';'
-    detected_OS := Windows
-else
-    detected_OS := $(shell uname 2>/dev/null || echo Unknown)
-    detected_OS := $(patsubst CYGWIN%,Cygwin,$(detected_OS))
-    detected_OS := $(patsubst MSYS%,MSYS,$(detected_OS))
-    detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
-endif
+	OS_DIR = /
 endif
 
-ifeq ($(detected_OS),Windows)
-	LIBS := -I.. -lopengl32 -lgdi32 -lWinmm
-endif
-ifeq ($(detected_OS),Darwin)        # Mac OS X
-	LIBS := -I.. -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
-endif
-ifeq ($(detected_OS),Linux)
-    LIBS := -I.. -I./include -lX11 -lGL -lm -lXrandr
+ifeq ($(RGFW_WAYLAND),1)
+	LIBS = -D RGFW_WAYLAND relative-pointer-unstable-v1-client-protocol.c xdg-decoration-unstable-v1.c xdg-shell.c -lwayland-cursor -lwayland-client -lEGL -lxkbcommon -lGL -lwayland-egl -lm
 endif
 
-ifeq ($(detected_OS),Linux)
-    LIBS := -I.. -I./include -lX11 -lGL -lm -lXrandr
-endif
+LINK_GL1 =
+LINK_GL3 =
+LINK_GL2 =
 
-ifneq (,$(filter $(CC),emcc))
-	LIBS = -I.. -s WASM=1 -s ASYNCIFY -s USE_WEBGL2 -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 -s FULL_ES3 -D RSGL_GL_NO_LEGACY
+ifneq (,$(filter $(CC),cl /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
+	WARNINGS =
+	LIBS = /static
+else ifeq ($(CC),emcc)
+	LINK_GL1 = -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
+	LINK_GL3 = -s FULL_ES3
+	LINK_GL2 = -s FULL_ES2
+	EXPORTED_JS = -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']"
+	LIBS = -s WASM=1 -s ASYNCIFY -s USE_WEBGL2 -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 $(EXPORTED_JS)
 	EXT = .js
+	NO_GLES = 0
+	detected_OS = web
+else
+	LIBS += -std=c99 
 endif
 
-all:
-	make shapes
-	make events
-	make textures
-	make text
-	make button
-	make styles
-	make container
-	make textbox
-	@echo The GLFW example needs GLFW to be installed to compile
-	make glfw
+EXAMPLE_OUTPUTS = \
+	basics/basic \
+	basics/text \
+	widgets/container \
+	advanced/glVer \
+	basics/events  \
+	basics/textures  \
+	widgets/styles \
+	advanced/shader \
+	basics/shapes  \
+	widgets/button \
+	widgets/textbox
 
-debug:
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/basic.c $(LIBS) $(ARGS) -o basic$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/shapes.c $(LIBS) $(ARGS) -o shapes$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/events.c $(LIBS) $(ARGS) -o events$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/textures.c $(LIBS) $(ARGS) -o textures$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/text.c $(LIBS) $(ARGS) -o text$(EXT)
-ifeq (,$(filter $(CC),emcc))
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) advanced/glVer.c $(LIBS) $(ARGS) -o glVer$(EXT)
+EXAMPLE_OUTPUTS_CUSTOM = \
+		advanced/glfw
+
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM) ../libRSGL$(LIB_EXT) ../libRSGL.a
+
+examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
+
+advanced/glfw: advanced/glfw.c ../RSGL.h 
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ $< $(LIBS) -lglfw -o $@$(EXT)
+
+$(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
+	$(CC) $(CFLAGS) $(WARNINGS) -I../ $< $(LIBS) $(LINK_GL3)  -o $@$(EXT)
+
+debug: all
+	@for exe in $(EXAMPLE_OUTPUTS); do \
+		echo "Running $$exe..."; \
+		.$(OS_DIR)$$exe$(EXT); \
+	done
+	
+	.$(OS_DIR)advanced$(OS_DIR)glfw
+	make clean
+
+
+../RSGL.o: ../RSGL.h
+	make initwayland
+	#$(CC) -x c $(CUSTOM_CFLAGS) -c ../RSGL.h -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT -D RGFW_EXPORT
+	cp ../RSGL.h RSGL.c
+	$(CC) -o ../RSGL.o $(CUSTOM_CFLAGS) -I../ -c RSGL.c -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT 
+	rm RSGL.c
+
+../libRSGL$(LIB_EXT): ../RSGL.h ../RSGL.o
+	make ../RSGL.o
+	$(CC) $(CUSTOM_CFLAGS) -shared ../RSGL.o $(LIBS) -o ../libRSGL$(LIB_EXT)
+
+../libRSGL.a: ../RSGL.h ../RSGL.o
+	make ../RSGL.o
+	$(AR) rcs ../libRSGL.a ../RSGL.o
+
+xdg-shell.c:
+	make initwayland
+
+initwayland:
+ifeq ($(RGFW_WAYLAND),1)
+	wayland-scanner client-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell.h
+	wayland-scanner public-code /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml xdg-shell.c
+	wayland-scanner client-header /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml xdg-decoration-unstable-v1.h
+	wayland-scanner public-code /usr/share/wayland-protocols/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml xdg-decoration-unstable-v1.c	
+	wayland-scanner client-header /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml relative-pointer-unstable-v1-client-protocol.h 
+	wayland-scanner client-header /usr/share/wayland-protocols/unstable/relative-pointer/relative-pointer-unstable-v1.xml relative-pointer-unstable-v1-client-protocol.c
+else
+		
 endif
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/button.c $(LIBS) $(ARGS) -o button$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/styles.c $(LIBS) $(ARGS) -o styles$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/container.c $(LIBS) $(ARGS) -o container$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/textbox.c $(LIBS) $(ARGS) -o textbox$(EXT)
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) advanced/shader.c $(LIBS) $(ARGS) -o shader$(EXT)
-
-ifeq (,$(filter $(CC),emcc))
-	./events
-	./shapes
-	./textures
-	./text
-	./glVer
-	./basic
-	./button
-	./styles
-	./container
-	./textbox
-endif
-
-GLFW := -lglfw3 -lopengl32 -lgdi32 -lWinmm
-
-ifeq ($(detected_OS),Darwin)        # Mac OS X
-	GLFW := -lglfw -framework OpenGL
-endif
-ifeq ($(detected_OS),Linux)
-    GLFW := -lglfw -lGL 
-endif
-
-glfw: advanced/glfw.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) advanced/glfw.c $(GLFW) -lm -I../ -o $@
-
-shapes: basics/shapes.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/shapes.c $(LIBS) $(ARGS) -o $@
-
-shader: advanced/shader.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) advanced/shader.c $(LIBS) $(ARGS) -o $@
-
-events: basics/events.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/events.c $(LIBS) $(ARGS) -o $@
-
-textures: basics/textures.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/textures.c $(LIBS) $(ARGS) -o $@
-
-text: basics/text.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/text.c $(LIBS) $(ARGS) -o $@
-
-textbox: widgets/textbox.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/textbox.c $(LIBS) $(ARGS) -o $@
-
-glVer: advanced/glVer.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) advanced/glVer.c $(LIBS) $(ARGS) -o $@
-
-basic: basics/basic.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) basics/basic.c $(LIBS) $(ARGS) -o $@
-
-button: widgets/button.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/button.c $(LIBS) $(ARGS) -o $@
-
-styles: widgets/styles.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/styles.c $(LIBS) $(ARGS) -o $@
-
-container: widgets/container.c ../RSGL.h ../RSGL_gl.h
-	$(CC) $(FLAGS) $(CUSTOM_CFLAGS) widgets/container.c $(LIBS) $(ARGS) -o $@
 
 clean:
-	rm -f events glfw shapes textures *.exe *.wasm *.js *.exe
+	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)  .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm 
+	
+
+.PHONY: all examples clean
+
