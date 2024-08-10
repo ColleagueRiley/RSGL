@@ -25,7 +25,6 @@ int main(void) {
     if (win == NULL)
         return 1;
     
-    win->fpsCap = 60;
 
     #ifndef __EMSCRIPTEN__
     win2 = RSGL_createWindow("subwindow", RSGL_RECT(200, 200, 200, 200), 0);
@@ -36,9 +35,9 @@ int main(void) {
 
     RGFW_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
 
-    RGFW_window_swapInterval(win, 60);
-
     RSGL_setClearArgs(true);
+
+	u32 fps = 0;
 
     while (RGFW_window_shouldClose(win) == false) {
 
@@ -73,7 +72,7 @@ int main(void) {
             else if (RSGL_isPressed(win, RGFW_Down))
                 RGFW_writeClipboard("DOWN", 4);
             else if (RSGL_isPressed(win, RGFW_Space))
-                printf("fps : %i\n", win->event.fps);
+                printf("fps : %i\n", fps);
             else if (RSGL_isPressed(win, RGFW_w))
                 RGFW_window_setMouseDefault(win);
             else if (RSGL_isPressed(win, RGFW_q))
@@ -124,6 +123,7 @@ int main(void) {
             #ifndef __EMSCRIPTEN__
             RSGL_window_clear(win2, RSGL_RGB(255, 255, 255));
             #endif
+			fps = RGFW_window_checkFPS(win, 60);
         }
     }
 

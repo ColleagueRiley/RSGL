@@ -3,8 +3,8 @@
 #include "RSGL.h"
 
 int main(void) {
-    RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
-    win->fpsCap = 60;
+	RGFW_setGLVersion(RGFW_GL_COMPATIBILITY, 3, 3);
+	RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
 
     RSGL_legacy(true);
@@ -16,6 +16,8 @@ int main(void) {
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     bool running = true;
+
+	u32 fps = 0;
 
     while (running) {
         while (RSGL_window_checkEvent(win)) {
@@ -33,7 +35,7 @@ int main(void) {
             }
         }
     
-        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", win->event.fps, !toggleLegacy.toggle ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
+        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", fps, !toggleLegacy.toggle ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
         
         rotate.z++;
         RSGL_rotate(rotate);
@@ -41,7 +43,8 @@ int main(void) {
 
         RSGL_drawButton(toggleLegacy);
         RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
-    }
+		fps = RGFW_window_checkFPS(win, 60);
+	}
 
     RSGL_window_close(win);
 }

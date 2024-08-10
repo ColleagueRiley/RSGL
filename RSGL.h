@@ -205,7 +205,7 @@ typedef struct RSGL_area {
 #ifndef RSGL_NO_RGFW
 /* so we're only using one kind of shape data */
 #define RGFW_rect RSGL_rect
-#define RGFW_vector RSGL_point
+#define RGFW_point RSGL_point
 #define RGFW_area RSGL_area
 #define GL_SILENCE_DEPRECATION
 #ifndef RSGL_NO_DEPS_FOLDER
@@ -300,24 +300,63 @@ RSGL_window
 *******
 */
 
+typedef RSGL_ENUM(u8, RSGL_event_types) {
+	/*! event codes */
+ 	RSGL_keyPressed = 1, /* a key has been pressed */
+	RSGL_keyReleased, /*!< a key has been released*/
+	/*! key event note
+		the code of the key pressed is stored in
+		RGFW_Event.keyCode
+		!!Keycodes defined at the bottom of the RGFW_HEADER part of this file!!
 
-/*! event codes */
-#define RSGL_keyPressed 2 /* a key has been pressed */
-#define RSGL_keyReleased 3 /*!< a key has been released*/
-/*! key event note
-	the code of the key pressed is stored in
-	RGFW_Event.keyCode
-	!!Keycodes defined at the bottom of the RGFW_HEADER part of this file!!
+		while a string version is stored in
+		RGFW_Event.KeyString
 
-	while a string version is stored in
-	RGFW_Event.KeyString
+		RGFW_Event.lockState holds the current lockState
+		this means if CapsLock, NumLock are active or not
+	*/
+	RSGL_mouseButtonPressed, /*!< a mouse button has been pressed (left,middle,right)*/
+	RSGL_mouseButtonReleased, /*!< a mouse button has been released (left,middle,right)*/
+	RSGL_mousePosChanged, /*!< the position of the mouse has been changed*/
+	/*! mouse event note
+		the x and y of the mouse can be found in the vector, RGFW_Event.point
 
-	RGFW_Event.lockState holds the current lockState
-	this means if CapsLock, NumLock are active or not
-*/
-#define RSGL_mouseButtonPressed 4 /*!< a mouse button has been pressed (left,middle,right)*/
-#define RSGL_mouseButtonReleased 5 /*!< a mouse button has been released (left,middle,right)*/
-#define RSGL_mousePosChanged 6 /*!< the position of the mouse has been changed*/
+		RGFW_Event.button holds which mouse button was pressed
+	*/
+	RSGL_jsButtonPressed, /*!< a joystick button was pressed */
+	RSGL_jsButtonReleased, /*!< a joystick button was released */
+	RSGL_jsAxisMove, /*!< an axis of a joystick was moved*/
+	/*! joystick event note
+		RGFW_Event.joystick holds which joystick was altered, if any
+		RGFW_Event.button holds which joystick button was pressed
+
+		RGFW_Event.axis holds the data of all the axis
+		RGFW_Event.axisCount says how many axis there are
+	*/
+	RSGL_windowMoved, /*!< the window was moved (by the user) */
+	RSGL_windowResized, /*!< the window was resized (by the user), [on webASM this means the browser was resized] */
+	RSGL_focusIn, /*!< window is in focus now */
+	RSGL_focusOut, /*!< window is out of focus now */
+	RSGL_mouseEnter, /* mouse entered the window */
+	RSGL_mouseLeave, /* mouse left the window */
+	RSGL_windowRefresh, /* The window content needs to be refreshed */
+
+	/* attribs change event note
+		The event data is sent straight to the window structure
+		with win->r.x, win->r.y, win->r.w and win->r.h
+	*/
+	RSGL_quit, /*!< the user clicked the quit button*/ 
+	RSGL_dnd, /*!< a file has been dropped into the window*/
+	RSGL_dnd_init /*!< the start of a dnd event, when the place where the file drop is known */
+	/* dnd data note
+		The x and y coords of the drop are stored in the vector RGFW_Event.point
+
+		RGFW_Event.droppedFilesCount holds how many files were dropped
+
+		This is also the size of the array which stores all the dropped file string,
+		RSGL_Event.droppedFiles
+	*/
+};
 
 #define RSGL_mouseLeft  1 /*!< left mouse button is pressed*/
 #define RSGL_mouseMiddle  2 /*!< mouse-wheel-button is pressed*/
@@ -646,11 +685,6 @@ RSGLDEF void RSGL_setFont(i32 font);
 typedef struct RFont_font RFont_font;
 /* sets source RFont font as the current font, given when it was loaded */
 RSGLDEF void RSGL_setRFont(RFont_font* font);
-
-/* draws the current fps on the screen */
-#ifndef RSGL_NO_RGFW
-RSGLDEF void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color);
-#endif
 
 RSGLDEF void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
@@ -1279,7 +1313,7 @@ void RSGL_legacy(i32 legacy) {
 RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
     #ifdef RGFW_OPENGL
     if (RGFW_majorVersion == 0)
-        RGFW_setGLVersion(3, 3);
+        RGFW_setGLVersion(RGFW_GL_CORE, 3, 3);
     #endif
     
     RGFW_window* win = RGFW_createWindow(name, r, args);
@@ -1968,12 +2002,6 @@ void RSGL_setFont(i32 font) {
 void RSGL_setRFont(RFont_font* font) {
     RSGL_font.f = font;
 }
-
-#ifndef RSGL_NO_RGFW
-void RSGL_drawFPS(RGFW_window* win, RSGL_circle c, RSGL_color color) {
-    RSGL_drawText(RSGL_strFmt("FPS : %i", win->event.fps), c, color);
-}
-#endif
 
 void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color) {
     if (text == NULL || RSGL_font.f == NULL)

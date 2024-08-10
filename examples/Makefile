@@ -84,7 +84,7 @@ ifeq ($(detected_OS),Darwin)        # Mac OS X
 	GLFW := -lglfw -framework OpenGL
 endif
 ifeq ($(detected_OS),Linux)
-    GLFW := -lglfw -lgl 
+    GLFW := -lglfw -lGL 
 endif
 
 glfw: advanced/glfw.c ../RSGL.h ../RSGL_gl.h

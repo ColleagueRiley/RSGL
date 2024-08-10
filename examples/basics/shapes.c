@@ -10,7 +10,6 @@
 
 int main(void) {
     RSGL_window* win = RSGL_createWindow("RSGL shapes example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
-    win->fpsCap = 60;
 
     bool running = true;
 
@@ -42,7 +41,8 @@ int main(void) {
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)), RSGL_RGB(0, 0, 255));
 
         RSGL_window_clear(win, RSGL_RGB(65, 65, 65));
-    }
+		RGFW_window_checkFPS(win, 60);
+	}
 
     RGFW_window_close(win);
     return 0;

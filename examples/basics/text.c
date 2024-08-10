@@ -6,6 +6,8 @@ int main(void) {
 
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
     
+	u32 fps;
+
     for (;;) {
         RSGL_window_checkEvent(win);
 
@@ -13,9 +15,9 @@ int main(void) {
             break;
 
         RSGL_drawText("Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20), RSGL_RGB(255, 0, 0));
-        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", win->event.fps, RSGL_args.legacy ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
+        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", fps, RSGL_args.legacy ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
         RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
-    }
-
+		fps = RGFW_window_checkFPS(win, 0);
+	}
     RSGL_window_close(win);
 }
