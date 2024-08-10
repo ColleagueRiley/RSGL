@@ -173,6 +173,12 @@ keys will not be reincluded into RSGL
 	#endif
 #endif
 
+#if !defined(b8)
+	#define b8 b8
+	typedef u8 b8;
+	typedef u32 b32;
+#endif
+
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
 #define RSGL_ENUM(type, name) type name; enum
 
@@ -684,9 +690,9 @@ RSGLDEF i32 RSGL_loadFont(const char* font);
 /* sets font as the current font in use based on index in RSGL_font, given when it was loaded */
 RSGLDEF void RSGL_setFont(i32 font);
 
-typedef struct RFont_font RFont_font;
 /* sets source RFont font as the current font, given when it was loaded */
-RSGLDEF void RSGL_setRFont(RFont_font* font);
+struct RFont_font;
+RSGLDEF void RSGL_setRFont(struct RFont_font* font);
 
 RSGLDEF void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color color);
 RSGLDEF void RSGL_drawText(const char* text, RSGL_circle c, RSGL_color color);
