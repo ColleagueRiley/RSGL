@@ -76,12 +76,9 @@ EXAMPLE_OUTPUTS = \
 	widgets/button \
 	widgets/textbox
 
-EXAMPLE_OUTPUTS_CUSTOM = \
-		advanced/glfw
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) ../libRSGL$(LIB_EXT) ../libRSGL.a
 
-all: xdg-shell.c $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM) ../libRSGL$(LIB_EXT) ../libRSGL.a
-
-examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
+examples: $(EXAMPLE_OUTPUTS)
 
 advanced/glfw: advanced/glfw.c ../RSGL.h 
 	$(CC) $(CFLAGS) $(WARNIGNS) -I../ $< $(LIBS) -lglfw -o $@$(EXT)
