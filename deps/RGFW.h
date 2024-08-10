@@ -190,9 +190,10 @@
 #if !defined(b8) /* RGFW bool type */
 	typedef u8 b8;
 	typedef u32 b32;
-	#define RGFW_TRUE 1
-	#define RGFW_FALSE 0
 #endif
+
+#define RGFW_TRUE 1
+#define RGFW_FALSE 0
 
 /* thse OS macros looks better & are standardized */
 /* plus it helps with cross-compiling */
@@ -6586,7 +6587,7 @@ RGFW_UNUSED(win); /*!< if buffer rendering is not being used */
 	}
 	
     static inline LARGE_INTEGER RGFW_win32_initTimer(void) {
-		static LARGE_INTEGER frequency = {0, 0};
+		static LARGE_INTEGER frequency = {{0, 0}};
 		if (frequency.QuadPart == 0) {
 			timeBeginPeriod(1);
 			QueryPerformanceFrequency(&frequency);
