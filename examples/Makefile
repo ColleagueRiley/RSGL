@@ -27,6 +27,7 @@ ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-min
 		EXT =
 		OS_DIR = /
 		LIB_EXT = .dylib
+		WARNINGS = -Wall 
 	endif
 	ifeq ($(detected_OS),Linux)
     	LIBS := -lXrandr -lX11 -lm -lGL -ldl -lpthread
