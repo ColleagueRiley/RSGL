@@ -25,7 +25,6 @@
     (MAKE SURE RSGL_IMPLEMENTATION is in exactly one header or you use -DRSGL_IMPLEMENTATION)
 	#define RSGL_IMPLEMENTATION - makes it so source code is included with header
     
-    #define RSGL_NO_RGFW - no RSGL_window, RSGL_graphics is used instead [this is for using a differnt window manager other than RGFW ]
     #define RSGL_NO_TEXT - do not include text rendering functions
     #define RSGL_NO_WIDGETS - do not include widgets
     #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), 
@@ -49,21 +48,6 @@
     #define RSGL_NO_STB_IMAGE - do not include stb_image.h (& don't define image loading funcs)
     #define RSGL_NO_STB_IMAGE_IMP - declare stb funcs but don't define
     #define RSGL_NO_DEPS_FOLDER - Do not use '/deps' for the deps includes, use "./"
-
-    RGFW (more RGFW documentation in RGFW.h):
-    
-	#define RGFW_PRINT_ERRORS - (optional) makes it so RGFW prints errors when they're found
-	#define RGFW_OSMESA - (optional) use OSmesa as backend (instead of system's opengl api + regular opengl)
-	#define RGFW_BUFFER - (optional) just draw directly to (RGFW) window pixel buffer that is drawn to screen (the buffer is in the BGRA format)
-	#define RGFW_EGL - (optional) use EGL for loading an OpenGL context (instead of the system's opengl api)
-	#define RGFW_OPENGL_ES - (optional) use EGL to load and use Opengl ES for backend rendering (instead of the system's opengl api)
-	#define VULKAN - (optional) use vulkan for the rendering backend (rather than opengl)
-
-	#define RGFW_LINK_EGL (optional) (windows only) if EGL is being used, if EGL functions should be defined dymanically (using GetProcAddress)
-	#define RGFW_LINK_OSMESA (optional) (windows only) if EGL is being used, if OS Mesa functions should be defined dymanically  (using GetProcAddress)
-
-	#define RGFW_X11 (optional) (unix only) if X11 should be used. This option is turned on by default by unix systems except for MacOS
-	#define RGFW_WGL_LOAD (optional) (windows only) if WGL should be loaded dynamically during runtime
 */ 
 #ifndef RSGL_INIT_FONTS
 #define RSGL_INIT_FONTS 4
@@ -94,15 +78,6 @@
 #define RSGL_UNUSED(x) (void) (x);
 #endif
 
-/*! Optional arguments for making a windows */
-#define RSGL_TRANSPARENT_WINDOW		(1L<<9) /*!< the window is transparent */
-#define RSGL_NO_BORDER		(1L<<3) /*!< the window doesn't have border */
-#define RSGL_NO_RESIZE		(1L<<4) /*!< the window cannot be resized  by the user */
-#define RSGL_ALLOW_DND     (1L<<5) /*!< the window supports drag and drop*/
-#define RSGL_HIDE_MOUSE (1L<<6) /*! the window should hide the mouse or not (can be toggled later on) using `RGFW_window_mouseShow*/
-#define RSGL_FULLSCREEN (1L<<8) /* the window is fullscreen by default or not */
-#define RSGL_CENTER (1L<<10) /*! center the window on the screen */
-#define RSGL_OPENGL_SOFTWARE (1L<<11) /*! use OpenGL software rendering */
 /* 
 RSGL basicDraw types
 */
@@ -147,9 +122,8 @@ keys will not be reincluded into RSGL
 #endif
 #endif
 
-#define RGFWDEF RSGLDEF
-
 #if !defined(u8)
+	#define u8 u8
 	#if defined(_MSC_VER) || defined(__SYMBIAN32__)
 		typedef unsigned char 	u8;
 		typedef signed char		i8;
@@ -205,32 +179,6 @@ typedef struct RSGL_area {
     u32 w, h;
 } RSGL_area;
 #define RSGL_AREA(w, h) (RSGL_area){w, h}
-
-/*  include RGFW here  */
-
-#define u8 u8
-
-#ifndef RSGL_NO_RGFW
-/* so we're only using one kind of shape data */
-#define RGFW_rect RSGL_rect
-#define RGFW_point RSGL_point
-#define RGFW_area RSGL_area
-#define GL_SILENCE_DEPRECATION
-#ifndef RSGL_NO_DEPS_FOLDER
-#include "deps/RGFW.h"
-#else
-#include "RGFW.h"
-#endif
-#else
-typedef struct {
-    u32 type;  /* event type */
-    RSGL_point point; /* cursor point */
-    u8 button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed*/
-    double scroll; /* the raw mouse scroll value */
-    u32 keyCode; /* code of key pressed */
-    char keyName[16]; /* string of key */
-} RGFW_Event;
-#endif
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -303,169 +251,96 @@ typedef struct RSGL_color {
 RSGLDEF void RSGL_legacy(i32 legacy);
 
 /* 
-*******
-RSGL_window
-*******
+******************
+	RSGL_BACKEND 
+	this stuff is used by RSGL for abstracting backends
+	or used by backend modules
+******************
 */
 
 typedef RSGL_ENUM(u8, RSGL_event_types) {
 	/*! event codes */
  	RSGL_keyPressed = 1, /* a key has been pressed */
 	RSGL_keyReleased, /*!< a key has been released*/
-	/*! key event note
-		the code of the key pressed is stored in
-		RGFW_Event.keyCode
-		!!Keycodes defined at the bottom of the RGFW_HEADER part of this file!!
-
-		while a string version is stored in
-		RGFW_Event.KeyString
-
-		RGFW_Event.lockState holds the current lockState
-		this means if CapsLock, NumLock are active or not
-	*/
 	RSGL_mouseButtonPressed, /*!< a mouse button has been pressed (left,middle,right)*/
 	RSGL_mouseButtonReleased, /*!< a mouse button has been released (left,middle,right)*/
 	RSGL_mousePosChanged, /*!< the position of the mouse has been changed*/
-	/*! mouse event note
-		the x and y of the mouse can be found in the vector, RGFW_Event.point
-
-		RGFW_Event.button holds which mouse button was pressed
-	*/
-	RSGL_jsButtonPressed, /*!< a joystick button was pressed */
-	RSGL_jsButtonReleased, /*!< a joystick button was released */
-	RSGL_jsAxisMove, /*!< an axis of a joystick was moved*/
-	/*! joystick event note
-		RGFW_Event.joystick holds which joystick was altered, if any
-		RGFW_Event.button holds which joystick button was pressed
-
-		RGFW_Event.axis holds the data of all the axis
-		RGFW_Event.axisCount says how many axis there are
-	*/
-	RSGL_windowMoved, /*!< the window was moved (by the user) */
-	RSGL_windowResized, /*!< the window was resized (by the user), [on webASM this means the browser was resized] */
-	RSGL_focusIn, /*!< window is in focus now */
-	RSGL_focusOut, /*!< window is out of focus now */
-	RSGL_mouseEnter, /* mouse entered the window */
-	RSGL_mouseLeave, /* mouse left the window */
-	RSGL_windowRefresh, /* The window content needs to be refreshed */
-
-	/* attribs change event note
-		The event data is sent straight to the window structure
-		with win->r.x, win->r.y, win->r.w and win->r.h
-	*/
-	RSGL_quit, /*!< the user clicked the quit button*/ 
-	RSGL_dnd, /*!< a file has been dropped into the window*/
-	RSGL_dnd_init /*!< the start of a dnd event, when the place where the file drop is known */
-	/* dnd data note
-		The x and y coords of the drop are stored in the vector RGFW_Event.point
-
-		RGFW_Event.droppedFilesCount holds how many files were dropped
-
-		This is also the size of the array which stores all the dropped file string,
-		RSGL_Event.droppedFiles
-	*/
 };
 
-#define RSGL_mouseLeft  1 /*!< left mouse button is pressed*/
-#define RSGL_mouseMiddle  2 /*!< mouse-wheel-button is pressed*/
-#define RSGL_mouseRight  3 /*!< right mouse button is pressed*/
-#define RSGL_mouseScrollUp  4 /*!< mouse wheel is scrolling up*/
-#define RSGL_mouseScrollDown  5 /*!< mouse wheel is scrolling down*/
+typedef RSGL_ENUM(u8, RSGL_mouseCodes) {
+	RSGL_mouseLeft  =  1, /*!< left mouse button is pressed*/
+	RSGL_mouseMiddle =  2, /*!< mouse-wheel-button is pressed*/
+	RGL_mouseRight  = 3, /*!< right mouse button is pressed*/
+	RSGL_mouseScrollUp =  4, /*!< mouse wheel is scrolling up*/
+	RSGL_mouseScrollDown =  5 /*!< mouse wheel is scrolling down*/
+};
 
-#ifndef RSGL_NO_RGFW
+typedef RSGL_ENUM(u8, RSGL_mouseIcons) {
+	RSGL_MOUSE_ARROW = 1,
+	RSGL_MOUSE_IBEAM  = 2,
+	RSGL_MOUSE_POINTING_HAND = 4,
+};
 
-#define RSGL_Up RGFW_Up
-#define RSGL_Down RGFW_Down
-#define RSGL_Left RGFW_Left
-#define RSGL_Right RGFW_Right
-#define RSGL_Tab RGFW_Tab
-#define RSGL_BackSpace RGFW_BackSpace
+typedef RSGL_ENUM(u8, RSGL_keys) { 
+	RSGL_key_none = 0,
+	RSGL_Up,
+	RSGL_Down,
+	RSGL_Left,
+	RSGL_Right,
+	RSGL_Tab,
+	RSGL_BackSpace,
+	RSGL_last_key
+};
 
-/* check deps/RGFW.h for more info */
-typedef RGFW_window RSGL_window;
-/* 
-    create RSGL window, an RGFW window and init stuff for RSGL 
-    u64 args -> custom args (can be found earlier in this file)
-*/
-RSGLDEF RSGL_window* RSGL_createWindow(const char* name, RSGL_rect rect, u64 args);
+typedef struct {
+    u32 type;  /*!< event type */
+    RSGL_point point; /*!< cursor point */
+    u8 button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed*/
+    double scroll; /*!< the raw mouse scroll value */
+    u32 keyCode; /*!< code of key pressed */
+	char ch; /*!< key char */
+} RSGL_Event;
 
-/*
-******
-RGFW_FUNCTION_DEFINES
-******
-*/
+/*!< it checks if the key is pressed globally */
+RSGLDEF b8 RSGL_isPressed(u32 key); /*!< if key is pressed (key code)*/
+RSGLDEF b8 RSGL_isReleased(u32 key); /*!< if key is released (key code)*/
 
-/* 
-	this function checks an *individual* event (and updates window structure attributes)
-	this means, using this function without a while loop may cause event lag
 
-	ex. 
-	
-	while (RSGL_window_checkEvent(win) != NULL) [this keeps checking events until it reaches the last one]
-*/
+/*!, if mouse button is pressed globally */
+RSGLDEF b8 RSGL_isMousePressed(u32 key);
+RSGLDEF b8 RSGL_isMouseReleased(u32 key);
 
-RGFW_Event* RSGL_window_checkEvent(RSGL_window* win); /*!< check events (returns a pointer to win->event or NULL if there is no event)*/
+/*!< get current mouse point */
+RSGLDEF RSGL_point RSGL_getMousePoint(void);
 
-/*! window managment functions*/
-RSGLDEF void RSGL_window_close(RSGL_window* win); /*!< close the window and free leftover data */
+/*!< send event to RSGL (should be used by the platform in RSGL_checkEvent ) */ 
+RSGLDEF void RSGL_sendEvent(void* userPtr, RSGL_Event event);
 
-RSGLDEF void RSGL_window_setIconImage(RGFW_window* win, const char* image);
-RSGLDEF void RSGL_window_makeCurrent(RSGL_window* win);
-RSGLDEF void RSGL_window_clear(RSGL_window* win, RSGL_color color);
+/*! these functions are to be defined by the backend */
 
-RSGLDEF void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon);
+ /*!< sets the mouse to an standard mouse */
+RSGLDEF void RSGL_setMouseStandard(void* userPtr, u32 mouse);
 
-/*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
-RSGLDEF u8 RSGL_isPressed(RSGL_window* win, u32 key); /*!< if key is pressed (key code)*/
+/*! mark released keys as not released after its frame is done (should be used by the platform in RSGL_checkEvent */ 
+RSGLDEF void RSGL_clearReleased(void);
 
-RSGLDEF u8 RSGL_wasPressed(RSGL_window* win, u32 key); /*!< if key was pressed (checks prev keymap only) (key code)*/
-
-RSGLDEF u8 RSGL_isHeld(RSGL_window* win, u32 key); /*!< if key is held (key code)*/
-RSGLDEF u8 RSGL_isReleased(RSGL_window* win, u32 key); /*!< if key is released (key code)*/
-#else /* RSGL_NO_RGFW */
+/*!< check events and update internal data for event *
+* returns true if there was an event */
+RSGLDEF b8 RSGL_checkEvent(void* userPtr);
 
 /* 
 *********************
 RSGL_GRAPHICS_CONTEXT
 *********************
-
-this is for standalone RSGL graphics, no windowing / RGFW
-AN example of this can be found in examples/glfw.c
 */
 
-/* 
-You need to define these if you want to use `RSGL_textbox_update`
-
-#define RSGL_Up 
-#define RSGL_Down 
-#define RSGL_Left 
-#define RSGL_Right 
-#define RSGL_Tab 
-#define RSGL_BackSpace 
-*/
-
-RSGLDEF void RSGL_initGraphics(
+RSGLDEF void RSGL_graphics_init(
                             RSGL_area r, /* graphics context size */
                             void* loader /* opengl prozc address ex. wglProcAddress */
                             ); 
 RSGLDEF void RSGL_graphics_updateSize(RSGL_area r);
 RSGLDEF void RSGL_graphics_clear(RSGL_color c);
 RSGLDEF void RSGL_graphics_free(void);
-
-
-/* YOU define this version (if you need it) */
-/*!< if window == NULL, it checks if the key is pressed globally. Otherwise, it checks only if the key is pressed while the window in focus.*/
-RSGLDEF u8 RSGL_isPressed(void* win, u32 key); /*!< if key is pressed (key code)*/
-
-#ifndef RSGL_MOUSE_ARROW
-#define RSGL_MOUSE_ARROW    1
-#define RSGL_MOUSE_IBEAM  2
-#define RSGL_MOUSE_POINTING_HAND 4
-#endif
-
-RSGLDEF void RSGL_window_setMouseStandard(void* win, u32 cursorIcon);
-
-#endif /* RSGL_GRAPHICS_CONTEXT / !RSGL_NO_RGFW */
 
 /* 
 *******
@@ -490,7 +365,7 @@ typedef struct RSGL_drawArgs {
     u32 texture;
     u32 gradient_len;
 
-    RSGL_rect currentRect; /* size of current window */
+    RSGL_rect currentRect; /* size of current surface */
     RSGL_point3D rotate; 
 
     bool fill;
@@ -741,239 +616,62 @@ RSGL_widgets
 */
 
 #ifndef RSGL_NO_WIDGETS
+typedef RSGL_ENUM(u8, RSGL_widgetState) {
+	RSGL_STATE_NONE = 0,
+	RSGL_HOVERED = 1,
+	RSGL_PRESSED = 2,
+	RSGL_RELEASED = 3,
+};
 
-/* style of a widget */
 typedef RSGL_ENUM(u32, RSGL_widgetStyle) {
-    RSGL_STYLE_NONE = (1L << 0),
+	RSGL_STYLE_NONE = 0,
+	RSGL_OFFSET_X = (1 << 1), // the next widget will be offset by this widget's width
+	RSGL_OFFSET_Y = (1 << 2), // the next widget will be offset by this widget's height
+	RSGL_OFFSET_MODE = RSGL_OFFSET_X | RSGL_OFFSET_Y,
 
-    RSGL_STYLE_DARK = (1L << 1), /* dark mode*/
-    RSGL_STYLE_LIGHT = (1L << 2), /* light mode*/
+	RSGL_STYLE_ROUND = (1 << 3), // draw button as a rounded rectangle
+	RSGL_SHAPE_POLYGON = (1 << 4), // draw a polygon instead of a rect
+	RSGL_NO_SHAPE = (1 << 5), // do not render the widget
+	
+	RSGL_SHAPE_INFO = RSGL_STYLE_ROUND | RSGL_SHAPE_POLYGON | RSGL_NO_SHAPE,
+	/* 
+		if either of these flags are enabled 
+		RSGL's default style system is used
+	*/
+	RSGL_STYLE_DARK = (1L << 6), /* dark mode*/
+    RSGL_STYLE_LIGHT = (1L << 7), /* light mode*/
     RSGL_STYLE_MODE  = RSGL_STYLE_LIGHT | RSGL_STYLE_DARK,
+	
+	RSGL_NO_TITLE = (1L << 8), /* do not draw cantainer handle */
+	RSGL_NO_CONTAINER = (1L << 9), /* do not draw container */ 
 
-    RSGL_STYLE_ROUNDED = (1L << 3), /* use rounded rect */
-    
-    RSGL_STYLE_SLIDER_HORIZONTAL = (1L << 4),
-    RSGL_STYLE_SLIDER_VERTICAL = (1L << 5),
-    /* rectangle by default */
-    RSGL_STYLE_SLIDER_CIRCLE = (1L << 6), 
-    RSGL_STYLE_SLIDER = RSGL_STYLE_SLIDER_VERTICAL | RSGL_STYLE_SLIDER_HORIZONTAL, 
-    
-    RSGL_STYLE_TOGGLE = (1L << 7),
-    RSGL_STYLE_RADIO = (1L << 8),
-    RSGL_STYLE_CHECKBOX = (1 << 9),
-    RSGL_STYLE_COMBOBOX = (1 << 10),
-    RSGL_STYLE_CONTAINER = (1 << 11),
-    RSGL_STYLE_TEXTBOX = (1 << 12),
-    RSGL_STYLE_NO_TAB = (1 << 13),
-    RSGL_STYLE_TYPE = RSGL_STYLE_SLIDER | RSGL_STYLE_TOGGLE | RSGL_STYLE_RADIO | RSGL_STYLE_CHECKBOX | RSGL_STYLE_COMBOBOX,
-
-    RSGL_SHAPE_NULL = (1L << 0),
-    RSGL_SHAPE_RECT = (1L << 14),
-    RSGL_SHAPE_POLYGON = (1L << 15),
-
-    RSGL_SHAPE_POLYGONF = (1L << 16),
-    RSGL_SHAPE_RECTF = (1L << 17),
-
-    RSGL_STYLE_RED = (1 << 18),
+	RSGL_STYLE_RED = (1 << 18),
     RSGL_STYLE_BLUE = (1 << 19),
     RSGL_STYLE_GREEN = (1 << 20),
     RSGL_STYLE_YELLOW = (1 << 21),
     RSGL_STYLE_TEAL = (1 << 22),
     RSGL_STYLE_PURPLE = (1 << 23),
-    RSGL_STYLE_COLOR = RSGL_STYLE_RED | RSGL_STYLE_BLUE | RSGL_STYLE_GREEN | RSGL_STYLE_YELLOW | RSGL_STYLE_TEAL | RSGL_STYLE_PURPLE,
-
-    RSGL_STYLE_SHAPE = RSGL_SHAPE_RECT | RSGL_SHAPE_POLYGON | RSGL_SHAPE_POLYGONF | RSGL_SHAPE_RECTF,
+    RSGL_STYLE_COLOR = RSGL_STYLE_RED | RSGL_STYLE_BLUE | RSGL_STYLE_GREEN | RSGL_STYLE_YELLOW | RSGL_STYLE_TEAL | RSGL_STYLE_PURPLE
 };
 
+RSGLDEF void RSGL_openContainer(char* name, RSGL_rect* r, RSGL_color background, u32 args, b8* grabbed, b8* toggle);
 
-/* expandable rect, returns true if a change has been made */
-bool RSGL_expandableRect_update(RSGL_rect* rect, RGFW_Event e);
-bool RSGL_expandableRectF_update(RSGL_rectF* rect, RGFW_Event e);
+RSGLDEF void RSGL_widgetOutline(u32 outline, RSGL_color idle, RSGL_color hover, RSGL_color press, RSGL_color release);
+RSGLDEF void RSGL_widgetColor(RSGL_color idle, RSGL_color hover, RSGL_color press, RSGL_color release);
+RSGLDEF void RSGL_widgetPolygonPoints(u32 points); 
+RSGLDEF void RSGL_widgetRounding(RSGL_point point);
 
-typedef RSGL_ENUM(u8, RSGL_buttonStatus) {
-    RSGL_none = 0,
-    RSGL_hovered,
-    RSGL_pressed,
-};
+RSGLDEF void RSGL_evalTheme(RSGL_widgetStyle buttonStyle);
+RSGLDEF void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args);
 
-typedef struct RSGL_button_src {
-    /* source data */
-    struct {
-        char* str;
-        size_t text_len;
-        size_t text_cap;
-        RSGL_circle c;
-        RSGL_color color;
-        u8 alignment;
-    } text;
+RSGLDEF void RSGL_label(char* str, RSGL_circleF circle);
 
-    char** combo;
-
-    u32 tex;
-    RSGL_color color, outlineColor;
-    RSGL_point rounding;
-    RSGL_drawArgs drawArgs; 
-    
-    union {    
-        size_t array_count; /* used for the combobox and radio buttons array size */
-        size_t slider_pos; /* the pos of a slider for x or y */
-        u32 cursorIndex; /* current cursor index (for textbox) */
-    };
-
-    u32* keys;
-    size_t keys_len;
-
-    void* window;
-
-    RSGL_widgetStyle style;   
-} RSGL_button_src; /* src data for a button*/
-
-typedef struct RSGL_button {
-    RSGL_button_src loaded_states[3]; /* based on RSGL_buttonStatus*/
-    RSGL_buttonStatus status;
-    
-    union {
-        size_t radio_select; /* which ratio button the status applies to (the rest are idle)*/
-        size_t line_count; /* number of lines (for a textbox) */
-    };
-
-    bool toggle; /* for toggle buttons */
-
-    RSGL_rectF rect;
-    u32 points; /* for a polygon */
-    u32 outline;
-
-    RSGL_button_src src;
-} RSGL_button;
-
-
-typedef struct RSGL_select {
-    u32 selectStart;
-    u32 selectEnd;
-    bool selected;
-} RSGL_select;
-
-/* button managing functions */
-/* 
-    inits the button 
-    zeros out the data by default
-*/
-RSGLDEF RSGL_button RSGL_initButton(void); 
-
-/* creates a new button from another button, does not copy over states */
-RSGLDEF RSGL_button RSGL_copyButton(RSGL_button button); 
-
-/* 
-    load a default style into the button 
-    the rect and any text you want should 
-    be loaded before this function is used
-*/
-RSGLDEF void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle);
-
-RSGLDEF void RSGL_button_setRect(RSGL_button* button, RSGL_rect rect);
-RSGLDEF void RSGL_button_setRectF(RSGL_button* button, RSGL_rectF rect);
-
-/* set rounding (for rectangles) */
-RSGLDEF void RSGL_button_setRounding(RSGL_button* button, RSGL_point rounding);
-
-RSGLDEF void RSGL_button_setPolygon(RSGL_button* button, RSGL_rect rect, u32 points);
-RSGLDEF void RSGL_button_setPolygonF(RSGL_button* button, RSGL_rectF rect, u32 points);
-
-/* add text to the button */
-RSGLDEF void RSGL_button_setText(RSGL_button* button, char* text, size_t text_len, RSGL_circle c, RSGL_color color);
-/* align the set text to the button */
-RSGLDEF void RSGL_button_alignText(RSGL_button* button, u8 alignment);
-
-RSGLDEF void RSGL_button_setTexture(RSGL_button* button, u32 tex);
-
-RSGLDEF void RSGL_button_setColor(RSGL_button* button, RSGL_color color);
-RSGLDEF void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color);
-
-/* set the window for the button (this is used for RGFW_isPressed and changing the cursor icon), NULL by default */
-RSGLDEF void RSGL_button_setWindow(RSGL_button* button, void* window);
-
-/* set keybinding for the button, if these keys are pressed the button is marked as pressed */
-RSGLDEF void RSGL_button_setKeybind(RSGL_button* button, u32* keys, size_t keys_len);
-
-/* set button combos for a combo box */
-RSGLDEF void RSGL_button_setCombo(RSGL_button* button, char** combo, size_t combo_count);
-
-/* 
-    by default drawArgs is reset before drawing the button 
-    it is then backed up later on
-*/
-
-/* draws the button using the current draw data */
-RSGLDEF void RSGL_button_setDrawArgs(RSGL_button* button);
-/* uses given draw arg data to draw the button */
-RSGLDEF void RSGL_button_setDrawArgsData(RSGL_button* button, RSGL_drawArgs args);
-
-/* button states (change button based on current state) */
-RSGLDEF void RSGL_button_setOnIdle(RSGL_button* button, RSGL_button_src idle);
-RSGLDEF void RSGL_button_setOnHover(RSGL_button* button, RSGL_button_src hover);
-RSGLDEF void RSGL_button_setOnPress(RSGL_button* button, RSGL_button_src press);
-
-/* draw the button */
-RSGLDEF void RSGL_drawButton(RSGL_button button);
-
-/* these functions should be run in an event loop */
-RSGLDEF void RSGL_button_update(
-    RSGL_button* b, /* button pointer */
-    RGFW_Event e /* current event */
-);
-
-RSGLDEF float RSGL_slider_update(
-    RSGL_button* b, /* button pointer */
-    RGFW_Event e /* the current event, used for checking for a mouse event */
-);
-
-typedef struct  {
-    RSGL_button** buttons;
-    size_t buttons_len;
-
-    RSGL_button title;
-    bool held;
-    RSGL_point initPoint;
-} RSGL_container_src;
-
-typedef RSGL_button RSGL_container;
-
-RSGLDEF RSGL_button RSGL_nullButton(void);
-RSGLDEF RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize);
-
-RSGLDEF RSGL_container* RSGL_initContainer(RSGL_rect r, RSGL_button** buttons, size_t len);
-RSGLDEF void RSGL_freeContainer(RSGL_container* container);
-
-RSGLDEF void RSGL_drawContainer(RSGL_container* container);
-RSGLDEF void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle);
-
-RSGLDEF void RSGL_container_setPos(RSGL_container* container, RSGL_point p);
-
-RSGLDEF i32 RSGL_container_update(RSGL_container* container, RGFW_Event event);
-#ifndef RSGL_NO_TEXT
-
-typedef RSGL_button RSGL_textbox;
-
-RSGLDEF RSGL_textbox* RSGL_initTextbox(size_t defaultSize);
-RSGLDEF void RSGL_textbox_free(RSGL_textbox* tb); 
-
-RSGLDEF void RSGL_textbox_draw(RSGL_textbox* tb);
-RSGLDEF char* RSGL_textbox_getString(RSGL_textbox* tb, size_t* len);
-RSGLDEF RSGL_select RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event);
-RSGLDEF void RSGL_textbox_setTextInfo(RSGL_textbox* tb, RSGL_circle c, RSGL_color color);
-
-/* these wrap around the same RSGL_button functions */
-RSGLDEF void RSGL_textbox_alignText(RSGL_textbox* tb, u8 alignment);
-RSGLDEF void RSGL_textbox_setColor(RSGL_textbox* button, RSGL_color color);
-RSGLDEF void RSGL_textbox_setOutline(RSGL_textbox* button, u32 size, RSGL_color color);
-
-RSGLDEF void RSGL_textbox_setStyle(RSGL_textbox* button, RSGL_widgetStyle buttonStyle);
-RSGLDEF void RSGL_textbox_setRect(RSGL_textbox* button, RSGL_rect rect);
-RSGLDEF void RSGL_textbox_setRectF(RSGL_textbox* button, RSGL_rectF rect);
-
-RSGLDEF void RSGL_textbox_setWindow(RSGL_textbox* button, void* win);
-#endif /* RSGL_NO_TEXT */
-
+RSGLDEF RSGL_widgetState RSGL_button(RSGL_rectF rect, RSGL_widgetStyle args);
+RSGLDEF b8 RSGL_toggleButton(RSGL_rectF rect, RSGL_widgetStyle args, b8* toggle);
+RSGLDEF b8 RSGL_checkbox(RSGL_rectF rect, RSGL_widgetStyle args, b8* checked);
+RSGLDEF void RSGL_grab(RSGL_rectF rect, RSGL_widgetStyle args, b8* grabbed);
+RSGLDEF void RSGL_slider(RSGL_rectF rect, RSGL_widgetStyle args, float* value, b8* grabbed);
+RSGLDEF RSGL_widgetState RSGL_radioButtons(RSGL_rectF rect, u32 count, RSGL_widgetStyle args, u8* selected, u8* index);
 #endif /* RSGL_NO_WIDGETS */
 
 /* 
@@ -1015,25 +713,7 @@ macos:
 	by going to the `Silicon` folder and running `make install`. After this you can easily include Silicon via `#include <Silicon/silicon.h>'
 	and link it by doing `-lSilicon`
 
-#define RSGL_IMPLEMENTATION
-#include "RSGL.h"
-
-int main() {
-    RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
-
-
-    for (;;) {
-        RSGL_window_checkEvent(win); // NOTE: checking events outside of a while loop may cause input lag 
-
-        if (win->event.type == RSGL_quit)
-            break;
-
-        RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
-        RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
-    }
-
-    RSGL_window_close(win);
-}
+	(TODO: make new example)
 
 	compiling :
 
@@ -1084,23 +764,17 @@ int main() {
 
 #ifdef RSGL_IMPLEMENTATION
 
+#ifndef RSGL_BACKEND
+#include "RSGL_rgfw.h"
+#endif
+
 #ifdef RSGL_RENDER_LEGACY
 #define RFONT_RENDER_LEGACY
 #endif
 
-#define RGFW_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <assert.h>
-
-#ifndef RSGL_NO_RGFW
-#define GL_SILENCE_DEPRECATION
-#ifndef RSGL_NO_DEPS_FOLDER
-#include "deps/RGFW.h"
-#else
-#include "RGFW.h"
-#endif
-#endif
 
 #ifndef RSGL_NO_TEXT
 #define RFONT_IMPLEMENTATION
@@ -1155,7 +829,6 @@ RSGL_fontsData RSGL_font = {NULL, NULL, 0, 0};
 RSGL_drawArgs RSGL_args = {NULL, 1, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0, 0};
 bool RSGL_argsClear = false;
 
-u32 RSGL_windowsOpen = 0;
 RSGL_image* RSGL_images = NULL;
 size_t RSGL_images_len = 0;
 
@@ -1308,154 +981,82 @@ void RSGL_legacy(i32 legacy) {
         RSGL_args.legacy = legacy;
 }
 
-/* 
-    RSGL_window
+
+/*
+********************
+RSGL_BACKEND
+*********************
 */
 
-#ifndef RSGL_NO_RGFW
+typedef struct RSGL_key {
+	u8 pressed : 1;
+	u8 released : 1;
+} RSGL_key;
 
-#define RSGL_MOUSE_ARROW                RGFW_MOUSE_ARROW
-#define RSGL_MOUSE_IBEAM                RGFW_MOUSE_IBEAM
-#define RSGL_MOUSE_POINTING_HAND        RGFW_MOUSE_POINTING_HAND
+RSGL_key RSGL_keyMap[RSGL_last_key] = {{0}};
+RSGL_key RSGL_mouseMap[5] = {{0}};
 
-RSGL_window* RSGL_createWindow(const char* name, RSGL_rect r, u64 args) {
-    #ifdef RGFW_OPENGL
-    if (RGFW_majorVersion == 0)
-        RGFW_setGLVersion(RGFW_GL_CORE, 3, 3);
-    #endif
-    
-    RGFW_window* win = RGFW_createWindow(name, r, args);
-    RSGL_window_makeCurrent(win);
+RSGL_point RSGL_mousePoint = {0, 0};
+/* where the mouse was when it was pressed, this is used checking if a button was released */
+RSGL_point RSGL_mousePressPoint = {0, 0};
+b8 RSGL_wasMousePosChanged = 0;
 
-    if (RSGL_windowsOpen == 0) {
-        RSGL_args.rotate = (RSGL_point3D){0, 0, 0}; 
+char RSGL_charQueue[20] = {0};
+size_t RSGL_charQueue_size = 0; 
 
-        if (RSGL_renderInfo.batches == NULL) {
-            RSGL_renderInfo.len = 0;
-            RSGL_renderInfo.vert_len = 0;
-            RSGL_renderInfo.batches = (RSGL_BATCH*)RSGL_MALLOC(sizeof(RSGL_BATCH) * RSGL_MAX_BATCHES);
-            RSGL_renderInfo.verts = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 3);
-            RSGL_renderInfo.colors = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 4);
-            RSGL_renderInfo.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
-        }
+u8 RSGL_isPressed(u32 key) { return RSGL_keyMap[key].pressed; }
 
-        void* proc = NULL;
+b8 RSGL_isReleased(u32 key) { return RSGL_keyMap[key].released; } 
+b8 RSGL_isMousePressed(u32 button) { return RSGL_mouseMap[button].pressed; }
+b8 RSGL_isMouseReleased(u32 button) { return RSGL_mouseMap[button].released; }
+RSGL_point RSGL_getMousePoint(void) { return RSGL_mousePoint; }
 
-        #ifdef RGFW_OPENGL
-        proc = RGFW_getProcAddress;
-        #elif defined(RGFW_BUFFER)
-        proc = (void*)&win->buffer;
-        #endif
-
-        RSGL_renderInit(proc, &RSGL_renderInfo);
-
-        #ifndef RSGL_NO_TEXT
-        RFont_init(win->r.w, win->r.h);
-        RSGL_font.fonts = (RSGL_fontData*)RSGL_MALLOC(sizeof(RSGL_fontData) * RSGL_INIT_FONTS); 
-        #endif
-    }
-
-    assert(win != NULL);
-    RSGL_windowsOpen++;
-
-    return win;
+void RSGL_sendEvent(void* userPtr, RSGL_Event event) {	
+	switch (event.type) {
+		case RSGL_keyPressed:
+			RSGL_keyMap[event.keyCode].released = 0;	
+			RSGL_keyMap[event.keyCode].pressed = 1;
+			
+			RSGL_charQueue[RSGL_charQueue_size] = event.ch;
+			RSGL_charQueue_size += 1;
+			break;
+		case RSGL_keyReleased:
+			RSGL_keyMap[event.keyCode].pressed = 0;	
+			RSGL_keyMap[event.keyCode].released = 1;	
+			break;
+		case RSGL_mouseButtonPressed:
+			RSGL_mouseMap[event.button].released = 0;
+			RSGL_mouseMap[event.button].pressed = 1;
+			RSGL_mousePressPoint = RSGL_mousePoint;
+			break;
+		case RSGL_mouseButtonReleased:
+			RSGL_mouseMap[event.button].pressed = 0;
+			RSGL_mouseMap[event.button].released = 1;
+			break;
+		case RSGL_mousePosChanged:
+			RSGL_mousePoint = event.point;
+			RSGL_wasMousePosChanged = 1;
+			break;
+	}
 }
 
-RGFW_Event* RSGL_window_checkEvent(RSGL_window* win) {
-    RGFW_Event* e = RGFW_window_checkEvent(win);
+void RSGL_clearReleased(void) {
+	size_t i;
+	for (i = 0; i < RSGL_last_key; i++)
+		RSGL_keyMap[i].released = 0;	
+	for (i = 0; i < 5; i++)
+		RSGL_mouseMap[i].released = 0;
 
-    if (win->event.type == RGFW_windowResized)
-        RSGL_renderViewport(0, 0, win->r.w, win->r.h);
-
-    return e;
+	RSGL_wasMousePosChanged = 0;
 }
 
-#ifndef RSGL_NO_STB_IMAGE
-void RSGL_window_setIconImage(RGFW_window* win, const char* image) {
-    i32 x, y, c;
-    u8* img = stbi_load(image, &x, &y, &c, 0);
-
-    RGFW_window_setIcon(win, img, RSGL_AREA(x, y), c);
-    
-    RSGL_FREE(img);
-}
-#endif
-
-void RSGL_window_makeCurrent(RSGL_window* win) {
-    RGFW_window_makeCurrent(win);
-
-    RSGL_args.currentRect = win->r;
-}
-
-void RSGL_window_clear(RSGL_window* win, RSGL_color color) {
-    RSGL_window_makeCurrent(win);
-
-    RFont_update_framebuffer(win->r.w, win->r.h);
-    
-    RSGL_renderBatch(&RSGL_renderInfo);
-    RGFW_window_swapBuffers(win);
-    
-    RSGL_renderClear(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
-}
-
-void RSGL_window_close(RSGL_window* win) {
-    RSGL_windowsOpen--;
-
-    if (RSGL_windowsOpen == 0) {
-        RSGL_renderFree();
-
-        u32 i;
-        #ifndef RSGL_NO_TEXT
-        for (i = 0; i < RSGL_font.len; i++)
-            RFont_font_free(RSGL_font.fonts[i].f);
-
-        RSGL_FREE(RSGL_font.fonts);
-        #endif
-        
-        for (i = 0; i < RSGL_images_len; i++)
-            RSGL_renderDeleteTexture(RSGL_images[i].tex);
-
-        if (RSGL_renderInfo.batches != NULL) {
-            RSGL_FREE(RSGL_renderInfo.batches);
-            RSGL_FREE(RSGL_renderInfo.verts);
-            RSGL_FREE(RSGL_renderInfo.colors);
-            RSGL_FREE(RSGL_renderInfo.texCoords);
-            RSGL_renderInfo.batches = NULL;
-            RSGL_renderInfo.len = 0;
-            RSGL_renderInfo.vert_len = 0;
-        }
-    }
-
-    RGFW_window_close(win);
-}
-
-void RSGL_window_setMouseStandard(RSGL_window* win, u32 cursorIcon) {
-    return RGFW_window_setMouseStandard(win, cursorIcon);
-}
-
-u8 RSGL_isPressed(RSGL_window* win, u32 key) {
-    return RGFW_isPressed(win, key);
-}
-u8 RSGL_wasPressed(RSGL_window* win, u32 key) {
-    return RGFW_wasPressed(win, key);
-}
-u8 RSGL_isHeld(RSGL_window* win, u32 key) {
-    return RGFW_isHeld(win, key);
-}
-u8 RSGL_isReleased(RSGL_window* win, u32 key) {
-    return RGFW_isReleased(win, key);
-}
-
-#else /* !RSGL_NO_RGFW */
-
-/* 
+/*
 *********************
 RSGL_GRAPHICS_CONTEXT
 *********************
 */
 
-
-void RSGL_initGraphics(RSGL_area r, void* loader) {
+void RSGL_graphics_init(RSGL_area r, void* loader) {
     RSGL_renderViewport(0, 0, r.w, r.h);
     
     RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
@@ -1509,7 +1110,6 @@ void RSGL_graphics_free() {
         RSGL_renderInfo.vert_len = 0;
     }
 }
-#endif /* RSGL_GRAPHICS_CONTEXT / !RSGL_NO_RGFW */
 
 /* 
 ****
@@ -2077,119 +1677,130 @@ RSGL_widgets
 */
 
 #if !defined(RSGL_NO_WIDGETS)
-bool RSGL_expandableRect_update(RSGL_rect* rect, RGFW_Event e) {
-    RSGL_rectF fRect = RSGL_RECTF(rect->x, rect->y, rect->w, rect->h);
+struct RSGL_widgetInfo {
+	RSGL_rect r;
+	RSGL_pointF last;
+	RSGL_color color[4]; // 1 color per stat 
+	u32 points; 
+	RSGL_point rounding;
 
-    bool output = RSGL_expandableRectF_update(&fRect, e);
-    *rect = RSGL_RECT(fRect.x, fRect.y, fRect.w, fRect.h);    
-    
-    return output;
+	u32 outline;
+	RSGL_color outlineColor[4];
+
+	b8 canDraw : 1;
+	RSGL_point grab;
+} RSGL_widgetInfo;
+
+RSGLDEF RSGL_widgetState RSGL_doToggleButton(RSGL_rectF rect, RSGL_widgetStyle args, b8* toggle);
+RSGLDEF void RSGL_drawButton(RSGL_rectF rect, RSGL_color color[4], RSGL_color outlineColor[4], u32 args, u32 state);
+	
+
+void RSGL_openContainerX(RSGL_rect r) {
+	RSGL_openContainer(NULL, &r, RSGL_RGB(0, 0, 0), RSGL_NO_CONTAINER, NULL, NULL);
 }
 
-bool RSGL_expandableRectF_update(RSGL_rectF* rect, RGFW_Event e) {
-    RSGL_button up;
-    up.rect = RSGL_RECTF(rect->x, rect->y, rect->w, 10);
-    RSGL_button down;
-    down.rect = RSGL_RECTF(rect->x, rect->y + (rect->h - 3), rect->w, 3);
-    RSGL_button left;
-    left.rect = RSGL_RECTF(rect->x, rect->y, 3, rect->h);
-    RSGL_button right;
-    right.rect = RSGL_RECTF(rect->x + (rect->w), rect->y, 3, rect->h - 3);
+void RSGL_openContainer(char* name, RSGL_rect* r, RSGL_color background, u32 args, b8* grabbed, b8* toggle) {
+	RSGL_widgetInfo.r = *r;
+	RSGL_widgetInfo.last = RSGL_POINTF(0, 0);
+	RSGL_widgetInfo.outline = 0;
+	RSGL_widgetInfo.rounding = RSGL_POINT(20, 20);
+	
+	RSGL_widgetInfo.canDraw = 1;
+	
+	if (args & RSGL_NO_CONTAINER)
+		return;
 
-    /*if (
-            RSGL_rectCollidePointF(*rect, RSGL_POINTF(e.point.x, e.point.y)) == false// ||
-            //RSGL_rectCollidePointF(RSGL_RECTF(rect->x + 4, rect->y + 4, rect->w - 4, rect->h - 4), 
-            //                        RSGL_POINTF(e.point.x, e.point.y)) == true
-        )
-        return false;*/
+	if (args & RSGL_NO_TITLE) {
+		RSGL_drawRect(*r, background);
+		return;
+	}
 
-    RSGL_button_update(&up, e);
-    RSGL_button_update(&down, e);
-    RSGL_button_update(&left, e);
-    RSGL_button_update(&right, e);
-    
-    if (up.status == RSGL_pressed) {
-        printf("h\n");
-        rect->y += 3;
-        return true;
-    }
+	RSGL_rectF rect = RSGL_RECTF(r->x, r->y - 30, r->w - (rect.w * 0.10), 30);
 
-    return false;
+	b8 oldGrab = *grabbed;
+	RSGL_grab(rect, args | RSGL_NO_SHAPE, grabbed);		
+	rect.w = r->w;
+	
+	if (!oldGrab && *grabbed) {
+		RSGL_widgetInfo.grab = RSGL_mousePoint;
+		
+		RSGL_widgetInfo.grab.x = rect.x - RSGL_widgetInfo.grab.x;
+		RSGL_widgetInfo.grab.y = rect.y - RSGL_widgetInfo.grab.y;
+	}
+
+	if (*grabbed && RSGL_wasMousePosChanged) {
+		rect.x = RSGL_mousePoint.x + RSGL_widgetInfo.grab.x;
+		if (rect.x < 0) rect.x = 0;
+
+		r->x = rect.x;
+			
+		i32 y = RSGL_mousePoint.y + RSGL_widgetInfo.grab.y + 30;
+		if (y - 30 < 0) y = 30;
+
+		r->y = y;
+		rect.y = r->y - 30;
+
+		RSGL_widgetInfo.r = *r;
+	}			
+
+	RSGL_doToggleButton(RSGL_RECTF(rect.x + (rect.w - (rect.w * 0.10)), rect.y, rect.w * 0.10, rect.h), args, toggle);
+	
+	if (*toggle)
+		RSGL_drawRect(*r, background);
+	
+	RSGL_drawButton(rect, RSGL_widgetInfo.color, RSGL_widgetInfo.outlineColor, args, 0); 
+	
+	if (name != NULL)
+		RSGL_label(name, RSGL_CIRCLEF(rect.x - RSGL_widgetInfo.outline, rect.y + (rect.h * 0.50) + RSGL_widgetInfo.outline, (rect.h * 0.50) + RSGL_widgetInfo.outline));	
+	
+	RSGL_widgetInfo.canDraw = *toggle;
+
+	if (*toggle == false) {
+		RSGL_widgetInfo.canDraw = 0;
+		RSGL_drawTriangleF((RSGL_triangleF){	
+										RSGL_POINTF(rect.x + (rect.w * 0.90) , rect.y + ( rect.h * 0.15)),
+										RSGL_POINTF(rect.x + (rect.w * 0.90), rect.y + (rect.h * 0.90)),
+										RSGL_POINTF(rect.x + (rect.w * 0.99), rect.y + (rect.h * 0.50)),
+									 },
+									RSGL_widgetInfo.outlineColor[1]);
+
+		return;
+	}
+
+	RSGL_drawTriangleF((RSGL_triangleF){	
+										RSGL_POINTF(rect.x + (rect.w * 0.90) , rect.y + ( rect.h * 0.15)),
+										RSGL_POINTF(rect.x + (rect.w * 0.98), rect.y + (rect.h * 0.15)),
+										RSGL_POINTF(rect.x + (rect.w * 0.94), rect.y + (rect.h * 0.90)),
+									 },
+									RSGL_widgetInfo.outlineColor[1]);
 }
 
-RSGL_button RSGL_initButton(void) {
-    RSGL_button button;
-    button.src.tex = 1;
-    button.outline = 0;
-    button.points = 0;
-    button.src.style = 0;
-    button.status = 0;
-    button.toggle = 0;
-    button.src.rounding = RSGL_POINT(0, 0);
-    button.src.drawArgs = (RSGL_drawArgs){NULL, 0, 0, RSGL_args.currentRect, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0, 0};
-    button.src.array_count = 0;
-    button.radio_select = 0;
-
-    button.src.text.str = NULL;
-    button.src.text.text_len = 0;
-    RSGL_renderInfo.vert_len = 0;
-    button.src.text.c = RSGL_CIRCLE(0, 0, 0);
-
-    button.loaded_states[0].tex = 0;
-    button.loaded_states[1].tex = 0;
-    button.loaded_states[2].tex = 0;
-
-    button.src.keys_len = 0;
-    button.src.window = NULL;
-
-    return button;
+void RSGL_widgetOutline(u32 outline, RSGL_color idle, RSGL_color hover, RSGL_color press, RSGL_color release) {
+	RSGL_widgetInfo.outline = outline;
+	RSGL_widgetInfo.outlineColor[0] = idle;
+	RSGL_widgetInfo.outlineColor[1] = hover;
+	RSGL_widgetInfo.outlineColor[2] = press;
+	RSGL_widgetInfo.outlineColor[3] = release;
 }
 
-RSGL_button RSGL_copyButton(RSGL_button button) {
-    RSGL_button newButton;
-    newButton.src.color = button.src.color;
-
-    newButton.status = button.status;
-    newButton.toggle = button.toggle; 
-
-    newButton.src.text.str = button.src.text.str;
-    newButton.src.text.text_len = button.src.text.text_len;
-    newButton.src.text.c = button.src.text.c;
-    newButton.src.text.color = button.src.text.color;
-
-    newButton.src.tex = button.src.tex;
-    newButton.rect = button.rect;
-    newButton.points = button.points;
-    newButton.outline = button.outline;
-    newButton.src.color = button.src.color;
-    newButton.src.outlineColor = button.src.outlineColor;
-    newButton.src.rounding = button.src.rounding;
-    newButton.src.drawArgs = button.src.drawArgs;
-    newButton.src.array_count = button.src.array_count;
-    newButton.radio_select = button.radio_select;
-    
-    newButton.src.combo = button.src.combo;
-
-    newButton.src.style = button.src.style;
-
-    return newButton;
+void RSGL_widgetColor(RSGL_color idle, RSGL_color hover, RSGL_color press, RSGL_color release) {
+	RSGL_widgetInfo.color[0] = idle;
+	RSGL_widgetInfo.color[1] = hover;
+	RSGL_widgetInfo.color[2] = press;
+	RSGL_widgetInfo.color[3] = release;
 }
 
-void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle) {
-    if (buttonStyle == 0)
-        return;
+void RSGL_widgetPolygonPoints(u32 points) {
+	RSGL_widgetInfo.points = points;	
+}
 
-    button->src.style |= buttonStyle;
+void RSGL_widgetRounding(RSGL_point point) {
+	RSGL_widgetInfo.rounding = point;	
+}
 
-    if (buttonStyle & RSGL_STYLE_SLIDER)
-        button->src.slider_pos = button->rect.x;
-
-    if (buttonStyle & RSGL_STYLE_ROUNDED) {
-        if (buttonStyle & RSGL_STYLE_TOGGLE)
-            RSGL_button_setRounding(button, RSGL_POINT(button->rect.w / 2, button->rect.w / 2));
-        else
-            RSGL_button_setRounding(button, RSGL_POINT(10, 10));
-    }
+void RSGL_evalTheme(RSGL_widgetStyle buttonStyle) {
+	if ((buttonStyle & RSGL_STYLE_MODE) == 0)
+		return;
 
     switch (buttonStyle & RSGL_STYLE_MODE) {
         case RSGL_STYLE_DARK: {
@@ -2219,26 +1830,13 @@ void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle) {
                     break;
                 default: break;
             }
-
-            RSGL_button_setOutline(button, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 : 0), RSGL_RGB(c.r + 40, c.g + 40, c.b + 40));
+			
+			RSGL_color outlineColor = RSGL_RGB(c.r + 40, c.g + 40, c.b + 40);
+            RSGL_widgetOutline(1, outlineColor, outlineColor, outlineColor, outlineColor);
             
-            if  (buttonStyle & RSGL_STYLE_RADIO) {
-                RSGL_button_setColor(button, c);
-                break;
-            }
-
-            if (!(buttonStyle & RSGL_STYLE_CHECKBOX)) {   
-                RSGL_button_setColor(button, c);
-                RSGL_button press = RSGL_copyButton(*button);
-                RSGL_button_setColor(&press, RSGL_RGB(c.r + 10, c.g + 10, c.b + 10));
-                RSGL_button_setOnPress(button, press.src);
-            } else {
-                RSGL_button_setColor(button, button->src.outlineColor);
-            }
-            
-            RSGL_button hover = RSGL_copyButton(*button);
-            RSGL_button_setOutline(&hover, 1, RSGL_RGB(c.r + 60, c.g + 60, c.b + 60));
-            RSGL_button_setOnHover(button, hover.src);
+			RSGL_color select = RSGL_RGB(c.r + 60, c.g + 60, c.b + 60);
+			RSGL_widgetOutline(RSGL_widgetInfo.outline, RSGL_widgetInfo.outlineColor[0],  select, RSGL_widgetInfo.outlineColor[1], RSGL_widgetInfo.outlineColor[3]);
+			RSGL_widgetColor(c, c, RSGL_RGB(c.r + 10, c.g + 10, c.b + 10), c);
             break;
         }
         case RSGL_STYLE_LIGHT: {
@@ -2269,927 +1867,358 @@ void RSGL_button_setStyle(RSGL_button* button, RSGL_widgetStyle buttonStyle) {
                 default: break;
             }
 
-            RSGL_button_setOutline(button, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 : 0), RSGL_RGB(c.r - 140, c.g - 140, c.b - 140));
+            RSGL_widgetOutline(1, RSGL_RGB(c.r - 140, c.g - 140, c.b - 140), RSGL_RGB(c.r - 140, c.g - 140, c.b - 140), RSGL_RGB(c.r - 140, c.g - 140, c.b - 140), RSGL_RGB(c.r - 140, c.g - 140, c.b - 140));
             
-            if (buttonStyle & RSGL_STYLE_RADIO) {
-                RSGL_button_setColor(button, c);
-                break;
-            }
+            RSGL_widgetColor(c, c, RSGL_RGB(c.r - 20, c.g - 20, c.b - 20), c);
 
-            if (!(buttonStyle & RSGL_STYLE_CHECKBOX)) {   
-                RSGL_button_setColor(button, c);
-                RSGL_button press = RSGL_copyButton(*button);
-                RSGL_button_setColor(&press, RSGL_RGB(c.r - 10, c.g - 10, c.b - 10));
-                RSGL_button_setOnPress(button, press.src);
-            } else {
-               RSGL_button_setColor(button, button->src.outlineColor);
-            }
-            
-            RSGL_button_setColor(button, c);
-            
-            RSGL_button press = RSGL_copyButton(*button);
-            RSGL_button_setColor(&press, RSGL_RGB(c.r - 20, c.g - 20, c.b - 20));
-            RSGL_button_setOnPress(button, press.src);
-            
-            RSGL_button hover = RSGL_copyButton(*button);
-            RSGL_button_setOutline(&hover, 1 + ((buttonStyle & RSGL_STYLE_RADIO) ? 5 :0), RSGL_RGB(0, 0, 0));
-            RSGL_button_setOnHover(button, hover.src);
+			RSGL_widgetOutline(1, RSGL_widgetInfo.outlineColor[0], RSGL_RGB(0, 0, 0), RSGL_widgetInfo.outlineColor[2], RSGL_widgetInfo.outlineColor[3]);
             break;
         }
         default: break;
     }
+	
 }
 
-void RSGL_button_setRect(RSGL_button* button, RSGL_rect rect) {
-    RSGL_button_setRectF(button, RSGL_RECTF(rect.x, rect.y, rect.w, rect.h));
-}
-void RSGL_button_setRectF(RSGL_button* button, RSGL_rectF rect) {
-    button->src.style |= RSGL_SHAPE_RECTF;
-    button->rect = rect;
-}
+void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args) {
+	if (rect == NULL) return; // This shouldn't happen, but just in case 
+	
+	if (rect->w < 1)
+		rect->w *= RSGL_widgetInfo.r.w; 
+	if (rect->h < 1)
+		rect->h *= RSGL_widgetInfo.r.h;
 
-void RSGL_button_setRounding(RSGL_button* button, RSGL_point rounding) { button->src.rounding = rounding; }
+	if (rect->x < 1) {
+		rect->x = ((RSGL_widgetInfo.r.w * rect->x) - (rect->w * rect->x)) + RSGL_widgetInfo.r.x;
+	}
+	if (rect->y < 1) {
+		rect->y = ((RSGL_widgetInfo.r.h * rect->y) - (rect->h * rect->y)) + RSGL_widgetInfo.r.y;
+	}
+	
+	if (RSGL_widgetInfo.last.y < rect->y)
+		RSGL_widgetInfo.last.x = 0; 
 
-void RSGL_button_setPolygon(RSGL_button* button, RSGL_rect rect, u32 points) {
-    RSGL_button_setPolygonF(button, RSGL_RECTF(rect.x, rect.y, rect.w, rect.h), points);
-}
-void RSGL_button_setPolygonF(RSGL_button* button, RSGL_rectF rect, u32 points) {
-    button->src.style |= RSGL_SHAPE_POLYGONF;
-    button->rect = rect;
-    button->points = points;
+	switch (args & RSGL_OFFSET_MODE) {
+		case RSGL_OFFSET_X:
+			RSGL_widgetInfo.last.x += rect->w;
+			break;
+		case RSGL_OFFSET_Y:
+			RSGL_widgetInfo.last.y += rect->h;
+			break;
+		default:  break;
+	}	
 
-    if (points > 20) {
-        points = ((2 * M_PI * ((rect.w + rect.h) / 2.0f)) / 10);
-        points = (points > 360 ? 360 : points);
-    }
-}
-
-void RSGL_button_setText(RSGL_button* button, char* text, size_t text_len, RSGL_circle c, RSGL_color color) { 
-    button->src.text.str = NULL;
-    button->src.text.text_len = 0;
-    button->src.text.c = RSGL_CIRCLE(0, 0, 0);
-
-    button->src.text.str = text; 
-    button->src.text.text_len = text_len;
-    button->src.text.c = c;
-    button->src.text.color = color;
-}
-void RSGL_button_alignText(RSGL_button* button, u8 alignment) {
-    RSGL_circle cir = RSGL_alignText_len(button->src.text.str, button->src.text.text_len, button->src.text.c, button->rect, alignment);
-
-    button->src.text.c = cir;
-    button->src.text.alignment = alignment;
-}
-void RSGL_button_setTexture(RSGL_button* button, u32 tex) { button->src.tex = tex; }
-void RSGL_button_setColor(RSGL_button* button, RSGL_color color) { button->src.color = color; }
-void RSGL_button_setWindow(RSGL_button* button, void* window) {
-    button->src.window = window;
-}
-void RSGL_button_setKeybind(RSGL_button* button, u32* keys, size_t keys_len) {
-    button->src.keys = keys;
-    button->src.keys_len = keys_len;
-}
-void RSGL_button_setOutline(RSGL_button* button, u32 size, RSGL_color color) {
-    button->src.outlineColor = color;
-    button->outline = size;
-}
-void RSGL_button_setCombo(RSGL_button* button, char** combo, size_t combo_count) {
-    button->src.combo = combo;
-    button->src.array_count = combo_count + 1;
-}
-void RSGL_button_setDrawArgs(RSGL_button* button) {
-    RSGL_button_setDrawArgsData(button, RSGL_args);
-}
-void RSGL_button_setDrawArgsData(RSGL_button* button, RSGL_drawArgs args) {
-    button->src.drawArgs = args;
-}
-void RSGL_button_setOnIdle(RSGL_button* button, RSGL_button_src idle) {
-    button->loaded_states[RSGL_none] = idle;
-}
-void RSGL_button_setOnHover(RSGL_button* button, RSGL_button_src hover) {
-    button->loaded_states[RSGL_hovered] = hover;
-}
-void RSGL_button_setOnPress(RSGL_button* button, RSGL_button_src press) {
-    button->loaded_states[RSGL_pressed] = press;
-}
-void RSGL_button_setRadioCount(RSGL_button* button, size_t array_count) {
-    button->src.array_count = array_count;
+	rect->x += RSGL_widgetInfo.last.x;
+	rect->y += RSGL_widgetInfo.last.y;
 }
 
-void RSGL_drawButton(RSGL_button button) {
-    assert((button.src.style & RSGL_STYLE_SHAPE) != RSGL_SHAPE_NULL);
-    u8 align = 0;   
-
-    if (button.src.text.str != NULL)
-        align = button.src.text.alignment;
-    
-    if (button.loaded_states[button.status].tex != 0 && !(button.src.style & RSGL_STYLE_CONTAINER)) {
-        button.loaded_states[button.status].array_count = button.src.array_count;
-        button.src = button.loaded_states[button.status];
-    }
-
-    if (align) 
-        RSGL_button_alignText(&button, align);
-    
-    /* reset args, but save the old ones */
-    RSGL_drawArgs args = RSGL_args;
-    RSGL_rotate(button.src.drawArgs.rotate);
-    RSGL_setGradient(button.src.drawArgs.gradient, button.src.drawArgs.gradient_len);
-    RSGL_setTexture(button.src.drawArgs.texture);
-    RSGL_fill(button.src.drawArgs.fill);
-    RSGL_center(button.src.drawArgs.center);
-
-    if (button.src.style & RSGL_STYLE_CHECKBOX && button.toggle == 0) {
-        if (button.src.rounding.x || button.src.rounding.y)
-            RSGL_drawRoundRectFOutline(button.rect, button.src.rounding, button.outline, button.src.outlineColor);
-        else        
-            RSGL_drawRectFOutline(button.rect, button.outline, button.src.outlineColor);
-        
-        RSGL_args = args;
-        return;
-    }
-
-
-    RSGL_rectF rectOutline = RSGL_RECTF(
-                                            button.rect.x - button.outline, 
-                                            button.rect.y - button.outline, 
-                                            button.rect.w + (button.outline * 2.0), 
-                                            button.rect.h + (button.outline * 2.0)
-                                        );
-
-    RSGL_rectF rect;
-    if (button.src.style & RSGL_STYLE_TOGGLE)
-        rect = (RSGL_rectF){
-            (button.rect.x + (button.rect.w / 12.0)) + ((button.rect.w / 2.0) * button.toggle),
-            button.rect.y + (button.rect.h / 4.0) - (button.rect.h / 12.0),
-            button.rect.w / 3.0,
-            button.rect.h / 1.5,
-        };
-    else 
-        rect = button.rect;
-    
-    if ((button.src.style & RSGL_STYLE_RADIO) == 0 && (button.src.style & RSGL_STYLE_SLIDER) == 0  && (button.src.style & RSGL_STYLE_COMBOBOX) == 0)
-        button.src.array_count = 0;
-    
-    size_t i;
-    for (i = 0; i < (button.src.array_count == 0) + button.src.array_count; i++)  {
-        switch (button.src.style & RSGL_STYLE_SHAPE) {
-            case RSGL_SHAPE_POLYGONF:
-                if (button.src.style &  RSGL_STYLE_TOGGLE) {
-                    if (button.src.rounding.x || button.src.rounding.y)
-                        RSGL_drawRoundRectF(rectOutline, button.src.rounding, button.src.outlineColor);
-                    else
-                        RSGL_drawRectF(rectOutline, button.src.outlineColor);
-                }
-
-                else if (button.outline != 0) 
-                    RSGL_drawPolygonF(rectOutline, button.points, button.src.outlineColor);
-
-                if (button.src.style & RSGL_STYLE_RADIO && i != button.radio_select)
-                    break;
-                
-                RSGL_setTexture(button.src.tex);
-                RSGL_drawPolygonF(rect, button.points, button.src.color);
-                break;
-            case RSGL_SHAPE_RECTF:
-                if (button.outline != 0) {
-                    if (button.src.rounding.x || button.src.rounding.y)
-                        RSGL_drawRoundRectF(rectOutline, button.src.rounding, button.src.outlineColor);
-                    else
-                        RSGL_drawRectF(rectOutline, button.src.outlineColor);
-                
-                    rectOutline.y += rectOutline.h;
-                }
-
-                RSGL_setTexture(button.src.tex);
-
-                if (button.src.style & RSGL_STYLE_RADIO && i != button.radio_select)
-                    break;
-
-                if (button.src.rounding.x || button.src.rounding.y) {
-                    RSGL_drawRoundRectF(rect, button.src.rounding, button.src.color);
-                    break;
-                }
-
-                RSGL_drawRectF(rect, button.src.color);
-                break;
-            default: break;
-        }
-
-        if (button.src.style & RSGL_STYLE_TEXTBOX)
-            break;
-
-        if (button.src.style & RSGL_STYLE_SLIDER) {
-            RSGL_circle c;
-            
-            if (button.src.style & RSGL_STYLE_SLIDER_VERTICAL)
-                c = RSGL_CIRCLE(button.rect.x - (button.rect.w / 2), button.src.slider_pos, button.rect.w * 2);
-            else
-                c = RSGL_CIRCLE(button.src.slider_pos, button.rect.y - (button.rect.h / 2), button.rect.h * 2);
-
-            if (button.src.style & RSGL_STYLE_SLIDER_CIRCLE)
-                RSGL_drawCircle(c, RSGL_RGB(200, 200, 200));
-            else if (button.src.style & RSGL_STYLE_ROUNDED)
-                RSGL_drawRoundRect(RSGL_RECT(c.x, c.y, c.d, c.d), button.src.rounding, RSGL_RGB(200, 200, 200));
-            else
-                RSGL_drawRect(RSGL_RECT(c.x, c.y, c.d, c.d), RSGL_RGB(200, 200, 200));
-            break;
-        }
-
-        if ((button.src.style & RSGL_STYLE_COMBOBOX)) {
-            if (button.toggle == false)
-                break;
-            
-            rect.y = rectOutline.y + (button.outline); 
-            continue;
-        }
-
-        rectOutline.y += rectOutline.h + 5;
-        rect.y = rectOutline.y + (button.outline); 
-    }
-
-    if (button.src.text.str != NULL) {
-        char* text = button.src.text.str;
-        if (button.src.style & RSGL_STYLE_COMBOBOX)
-            text = button.src.combo[button.radio_select ? button.radio_select - 1 : 0];
-
-       RSGL_drawText(text,  button.src.text.c, button.src.text.color);
-    }
-    
-    if (button.src.style & RSGL_STYLE_CHECKBOX) {
-        RSGL_pointF p1 = RSGL_POINTF(button.rect.x + button.rect.w / 4, button.rect.y + button.rect.h / 2);
-        RSGL_pointF p2 = RSGL_POINTF(button.rect.x + button.rect.w / 2, button.rect.y + button.rect.h * 3 / 4);
-        RSGL_pointF p3 = RSGL_POINTF(button.rect.x + button.rect.w * 3 / 4, button.rect.y + button.rect.h / 4);
-
-        RSGL_drawLineF(p1, p2, 2, RSGL_RGB(0, 255, 0));
-        RSGL_drawLineF(p2, p3, 2, RSGL_RGB(0, 255, 0));
-    }
-    
-    if (button.src.style & RSGL_STYLE_COMBOBOX) {
-        RSGL_point cen =  RSGL_POINT(button.rect.x + button.rect.w - 20, button.rect.y + button.rect.h - 5);
-        size_t y = ((cen.y - button.rect.h) + 15);
-
-        RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
-        
-        size_t i;     
-        for (i = 0; i < (button.src.array_count - 1) && button.toggle && button.src.array_count; i++) {
-            button.src.text.c.y += rectOutline.h + (button.outline); 
-            RSGL_drawText(button.src.combo[i],  button.src.text.c, button.src.text.color);
-        }
-    }
-
-    /* set args back to the old ones */
-    RSGL_args = args;
+void RSGL_label(char* str, RSGL_circleF circle) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return;
+	
+	RSGL_rectF rect = RSGL_RECTF(circle.x, circle.y, circle.d, circle.d);
+	RSGL_scaleRect(&rect, 0);
+	RSGL_drawText(str, RSGL_CIRCLE(rect.x, rect.y, rect.h), RSGL_widgetInfo.outlineColor[1]);
 }
 
-void RSGL_button_update(RSGL_button* b, RGFW_Event e) {
-    RSGL_pointF mouse = RSGL_POINTF(e.point.x, e.point.y);
-
-    RSGL_rectF rect = b->rect;
-    
-    if (b->outline > 0) {
-        rect = RSGL_RECTF(
-                                                b->rect.x - b->outline, 
-                                                b->rect.y - b->outline, 
-                                                b->rect.w + (b->outline * 2.0), 
-                                                b->rect.h + (b->outline * 2.0)
-                                            );
-    }
-
-    size_t i;
-    if (e.type == RSGL_keyPressed) {
-        for (i = 0; e.type == RSGL_keyPressed && i < b->src.keys_len; i++) {
-            if (RSGL_isPressed(b->src.window, b->src.keys[i]) == false) 
-                break;
-
-            if (i != b->src.keys_len - 1)
-                continue;
-            
-            if (b->status != RSGL_pressed && !(b->src.style & RSGL_STYLE_SLIDER))
-                b->toggle = !b->toggle;
-            
-            b->status = RSGL_pressed;
-            return;
-        }
-
-        if (b->status == RSGL_pressed)
-            b->status = RSGL_none;
-        
-        return;
-    }
-
-    if (e.type == RSGL_keyReleased && b->status == RSGL_pressed) {
-        b->status = RSGL_none;
-    }
-
-    for (i = 0; i < (b->src.array_count == 0) + b->src.array_count; i++) {
-        switch (e.type) {
-            case RSGL_mouseButtonPressed:
-                if (e.button != RSGL_mouseLeft)
-                    break;
-                
-                if (RSGL_rectCollidePointF(rect, mouse)) {
-                    if (b->status != RSGL_pressed && !(b->src.style & RSGL_STYLE_SLIDER))
-                        b->toggle = !b->toggle;
-                                    
-                    if (i == 0 && b->src.style & RSGL_STYLE_COMBOBOX)
-                        break;
-                    
-                    b->status = RSGL_pressed;
-                    b->radio_select = i;
-                    return;
-                }
-                break;
-            case RSGL_mouseButtonReleased:
-                if (e.button != RSGL_mouseLeft)
-                    break;
-                
-                if (b->status == RSGL_pressed && RSGL_rectCollidePointF(rect, mouse)) {
-                    b->status = RSGL_hovered;
-                    return;
-                }
-                else
-                    b->status = RSGL_none;
-                break;
-            case RSGL_mousePosChanged:
-                if (RSGL_rectCollidePointF(rect, mouse)) {
-                    b->status = RSGL_hovered;
-                    if (b->src.window == NULL)
-                        return;
-
-                    if (b->src.style & RSGL_STYLE_TEXTBOX)
-                        RSGL_window_setMouseStandard(b->src.window, RSGL_MOUSE_IBEAM);
-                    else
-                        RSGL_window_setMouseStandard(b->src.window, RSGL_MOUSE_POINTING_HAND);
-                    return;
-                }
-                else {
-                    if (b->src.window && b->status)
-                        RSGL_window_setMouseStandard(b->src.window, RSGL_MOUSE_ARROW);
-
-                    b->status = RSGL_none;
-                }
-                break;  
-            default: break;
-        }
-
-        if (b->src.style & RSGL_STYLE_COMBOBOX && b->toggle == false)
-            break;
-        
-        rect.y += rect.h + 5;
-    }
+void RSGL_separator(RSGL_rectF rect) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return;
+	
+	RSGL_scaleRect(&rect, RSGL_OFFSET_X | RSGL_OFFSET_Y);
 }
 
-float RSGL_slider_update(RSGL_button* b, RGFW_Event e) {
-    RSGL_button_update(b, e);
+RSGLDEF RSGL_widgetState RSGL_button(RSGL_rectF rect, RSGL_widgetStyle args);
 
-    float room, length, rect_pos, mouse_pos;
-    
-    if (b->src.style & RSGL_STYLE_SLIDER_VERTICAL) {
-        room = b->rect.w;
-        length = b->rect.h;
-        rect_pos = b->rect.y;
-        mouse_pos = e.point.y;
-    } else {
-        room = b->rect.h;
-        length = b->rect.w;
-        rect_pos = b->rect.x;
-        mouse_pos = e.point.x;
-    }
+void RSGL_drawButton(RSGL_rectF rect, RSGL_color color[4], RSGL_color outlineColor[4], u32 args, u32 state) {
+	if (RSGL_widgetInfo.outline) {
+		RSGL_color color = outlineColor[state];
+		u32 outline = RSGL_widgetInfo.outline;
 
-    if (b->status == RSGL_pressed) 
-        b->toggle = true;
-    else if (e.type == RSGL_mouseButtonReleased)
-        b->toggle = false;
-    
-    float radius = room * 2;
+		RSGL_rectF rectOutline = RSGL_RECTF(rect.x - outline, rect.y - outline, rect.w + (outline * 2), rect.h + (outline * 2));
 
-    if (b->toggle) {
-        b->src.slider_pos = mouse_pos;
-
-        if (b->src.slider_pos + radius > (rect_pos + length)) {
-            b->src.slider_pos = rect_pos + length - radius;
-        }
-        
-        else if (b->src.slider_pos < rect_pos) {
-            b->src.slider_pos = rect_pos;
-        }
-    }
-
-    return ((b->src.slider_pos - rect_pos) / (length - radius)) * 100;
+		switch (args & RSGL_SHAPE_INFO) {
+			case RSGL_STYLE_ROUND:
+				RSGL_drawRoundRectF(rectOutline, RSGL_widgetInfo.rounding, color);
+				break;	
+			case RSGL_SHAPE_POLYGON:
+				RSGL_drawPolygonF(rectOutline, RSGL_widgetInfo.points, color);
+				break;
+			default:
+				RSGL_drawRectF(rectOutline, color);
+				break;
+		}
+	}
+	
+	switch (args & RSGL_SHAPE_INFO) {
+		case RSGL_STYLE_ROUND:
+			RSGL_drawRoundRectF(rect, RSGL_widgetInfo.rounding, color[state]);
+			break;
+		case RSGL_SHAPE_POLYGON:
+			RSGL_drawPolygonF(rect, RSGL_widgetInfo.points, color[state]);
+			break;
+		default:
+			RSGL_drawRectF(rect, color[state]);
+			break;
+	}
 }
 
-RSGL_button RSGL_nullButton(void) {
-    RSGL_button nullButton;
-    nullButton.src.tex = 0;
-
-    return nullButton;
+RSGL_widgetState RSGL_doToggleButton(RSGL_rectF rect, RSGL_widgetStyle args, b8* toggle) {
+	if (toggle == NULL) return 0;
+	
+	RSGL_widgetState state = RSGL_button(rect, args | RSGL_NO_SHAPE); 
+	if (state == RSGL_RELEASED) {
+		*toggle = !(*toggle);
+	}
+		
+	return state;
 }
 
-RSGL_button RSGL_label(char* text, size_t text_len, size_t textSize) {
-    RSGL_button label = RSGL_initButton();
-    RSGL_button_setRect(&label, RSGL_RECT(50, 50, 100, 50));
-    RSGL_button_setColor(&label, RSGL_RGBA(0, 0, 0, 0));
-    RSGL_button_setText(&label, text, text_len, RSGL_CIRCLE(0, 0, textSize), RSGL_RGB(100, 100, 100));   
-    label.src.text.alignment = RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE;
+b8 RSGL_toggleButton(RSGL_rectF rect, RSGL_widgetStyle args, b8* toggle) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return 0;
 
-    return label;
+	b8 state = RSGL_doToggleButton(rect, args, toggle);	
+	
+	RSGL_scaleRect(&rect, args);
+
+	u32 points = RSGL_widgetInfo.points;
+	RSGL_point rounding = RSGL_widgetInfo.rounding;
+
+	if (RSGL_widgetInfo.rounding.x == 20 && RSGL_widgetInfo.rounding.x == 20 && args & RSGL_STYLE_MODE)
+		RSGL_widgetRounding(RSGL_POINT(rect.w / 2, rect.h));
+
+	RSGL_drawButton(rect, RSGL_widgetInfo.color, RSGL_widgetInfo.color, args, state);
+
+	if (args & RSGL_STYLE_MODE) {
+		if (args & RSGL_STYLE_ROUND)
+			args ^= RSGL_STYLE_ROUND;
+
+		RSGL_widgetPolygonPoints(35);
+		args |= RSGL_SHAPE_POLYGON;
+	}
+
+	RSGL_drawButton(RSGL_RECTF(rect.x + (rect.w * 0.10) + (*toggle * (rect.w * 0.45)), rect.y + (rect.h * 0.15), (rect.h * 0.75), (rect.h * 0.75)), 
+								RSGL_widgetInfo.outlineColor, RSGL_widgetInfo.outlineColor, args, state != 0);
+
+	RSGL_widgetInfo.points = points;
+	RSGL_widgetInfo.rounding = rounding;
+	return (state == RSGL_PRESSED);
 }
 
-#define RSGL_CONTAINER_SRC(c) (RSGL_button*)(c + 1)
+b8 RSGL_checkbox(RSGL_rectF rect, RSGL_widgetStyle args, b8* checked) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return 0;
 
-RSGL_container* RSGL_initContainer(RSGL_rect r, RSGL_button** buttons, size_t len) {
-    RSGL_container_src* new = RSGL_MALLOC(sizeof(RSGL_container_src) + sizeof(RSGL_button));
-    RSGL_button* src = RSGL_CONTAINER_SRC(new);
+	b8 state = RSGL_doToggleButton(rect, args, checked);	
 
-    *src = RSGL_initButton();
-    new->title = RSGL_initButton();
-    new->held = false;
-    new->buttons = buttons;
-    new->buttons_len = len;
+	RSGL_scaleRect(&rect, args);
+	if (*checked) {
+		RSGL_drawButton(rect, RSGL_widgetInfo.outlineColor, RSGL_widgetInfo.color, args, state);
+		RSGL_drawLineF(RSGL_POINTF(rect.x + (rect.w * 0.22), rect.y + (rect.h * 0.55)), RSGL_POINTF(rect.x + (rect.w * 0.40), rect.y + (rect.h * 0.75)), 4, RSGL_widgetInfo.color[state]);
+		RSGL_drawLineF(RSGL_POINTF(rect.x + (rect.w * 0.40), rect.y + (rect.h * 0.75)), RSGL_POINTF(rect.x + (rect.w * 0.80), rect.y + (rect.h * 0.30)), 4, RSGL_widgetInfo.color[state]);
 
-    RSGL_button_setRect(&new->title, RSGL_RECT(r.x, r.y - 30, r.w, 30));
-
-    RSGL_button_setRect(src, r);
-    RSGL_container_setPos(src, RSGL_POINT(r.x, r. y));
-    return (RSGL_container*)(new + 1);
+	}
+	else	
+		RSGL_drawButton(rect, RSGL_widgetInfo.color, RSGL_widgetInfo.outlineColor, args, state);
+	
+	return state;
 }
 
-void RSGL_freeContainer(RSGL_container* con) {
-    RSGL_FREE(((RSGL_container_src*)con) - 1);
+void RSGL_openSubContainer(RSGL_rectF rect, u32 args, b8* open) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return;
+	
+	b8 state = RSGL_doToggleButton(rect, args, open);
+	
+	RSGL_button(rect, args);
+	
+	RSGL_scaleRect(&rect, args);
+
+	if (*open == false) {
+		RSGL_widgetInfo.canDraw = 0;
+		RSGL_drawTriangleF((RSGL_triangleF){	
+										RSGL_POINTF(rect.x + (rect.w * 0.70) , rect.y + ( rect.h * 0.15)),
+										RSGL_POINTF(rect.x + (rect.w * 0.70), rect.y + (rect.h * 0.90)),
+										RSGL_POINTF(rect.x + (rect.w * 0.93), rect.y + (rect.h * 0.50)),
+									 },
+									RSGL_widgetInfo.outlineColor[1]);
+
+		return;
+	}
+
+	RSGL_drawTriangleF((RSGL_triangleF){	
+										RSGL_POINTF(rect.x + (rect.w * 0.70) , rect.y + ( rect.h * 0.15)),
+										RSGL_POINTF(rect.x + (rect.w * 0.90), rect.y + (rect.h * 0.15)),
+										RSGL_POINTF(rect.x + (rect.w * 0.80), rect.y + (rect.h * 0.90)),
+									 },
+									RSGL_widgetInfo.outlineColor[1]);
 }
 
-void RSGL_container_setPos(RSGL_container* con, RSGL_point p) {
-    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
-    RSGL_button* src = RSGL_CONTAINER_SRC(container);
-
-    RSGL_rectF rect = RSGL_RECTF((float)p.x, (float)p.y, src->rect.w, src->rect.h);
-    RSGL_button_setRectF(src, rect);   
-    RSGL_button_setRectF(&container->title, RSGL_RECTF(rect.x, rect.y - 30, rect.w, 30));    
-
-    if (container->title.src.text.str != NULL)
-        RSGL_button_alignText(&container->title, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
-    
-    
-    size_t i, x;
-    float spacing = 0;
-
-    RSGL_button** containers = container->buttons;
-
-    for (i = 0; i < container->buttons_len; i += 3) {
-        float newHeight = 0;
-        for (x = 0; x < 3; x++) {
-
-            if (containers[i + x]->src.tex == 0)
-                continue;
-            
-            containers[i + x]->rect = RSGL_alignRectF(rect, containers[i + x]->rect, (1 << (1 + x)));
-
-            containers[i + x]->rect.x += ((5 + containers[i + x]->outline) * !x); 
-            containers[i + x]->rect.y = rect.y + spacing;
-
-            if (containers[i + x]->src.text.str != NULL)
-                RSGL_button_alignText(containers[i + x], containers[i + x]->src.text.alignment);
-            
-            RSGL_button_setStyle(containers[i + x], containers[i + x]->src.style);
-
-            float height = containers[i + x]->rect.h + (containers[i + x]->outline * 2);
-            if (containers[i + x]->src.style & RSGL_STYLE_RADIO) {
-                height *= containers[i + x]->src.array_count;
-                height += 5 * containers[i + x]->src.array_count;
-            }
-
-            if (height > newHeight)
-                newHeight = height;
-        }
-        
-        spacing += newHeight + 5;
-    }   
+void RSGL_closeSubContainer(void) {
+	RSGL_widgetInfo.canDraw = 1;
 }
 
-void RSGL_container_setTitle(RSGL_container* con, char* name, size_t name_len) {
-    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
+b8 RSGL_combobox(RSGL_rectF rect, u32 args, char* strings[], size_t len, b8* open, size_t* index) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return 0;
+	
+	b8 offsetY = 0;
+	if (args & RSGL_OFFSET_Y) {
+		offsetY = 1;
+		args ^= RSGL_OFFSET_Y;
+	}
 
-    RSGL_button_setText(&container->title, name, name_len, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
-    RSGL_button_alignText(&container->title, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
+	RSGL_openSubContainer(rect, args, open);
+	
+	RSGL_scaleRect(&rect, args);
+	
+	b8 draw = RSGL_widgetInfo.canDraw;
+	RSGL_widgetInfo.canDraw = 1;
+	
+	RSGL_label(strings[*index], RSGL_CIRCLEF(rect.x - RSGL_widgetInfo.outline, rect.y + (rect.h * 0.50) + RSGL_widgetInfo.outline, rect.h * 0.50 + RSGL_widgetInfo.outline));	
+	RSGL_widgetInfo.canDraw = draw;
+	
+	size_t i;
+	for (i = 0; i < len; i++) {
+		rect.y += rect.h;
+		RSGL_widgetState state = RSGL_button(rect, args);	
+
+		RSGL_label(strings[i], RSGL_CIRCLEF(rect.x - RSGL_widgetInfo.outline, rect.y + (rect.h * 0.50) + RSGL_widgetInfo.outline, rect.h * 0.50 + RSGL_widgetInfo.outline));	
+			
+		if (state == RSGL_RELEASED) {
+			*open = 0;
+			*index = i;
+			return 1;
+		}
+	}
+	
+	if (offsetY) {
+		RSGL_separator(rect);
+	}
+
+	RSGL_closeSubContainer();
+
+	return 0;
 }
 
-void RSGL_container_setStyle(RSGL_container* button, u16 buttonStyle) {
-    RSGL_container_src* container = ((RSGL_container_src*)button) - 1;
-    RSGL_button* src = RSGL_CONTAINER_SRC(container);
-    
-    RSGL_button_setStyle(src, buttonStyle); 
+void RSGL_grab(RSGL_rectF rect, RSGL_widgetStyle args, b8* grabbed) {
+	if (RSGL_isMouseReleased(RGFW_mouseLeft) || RSGL_isMousePressed(RGFW_mouseLeft) == 0)
+		*grabbed = false;
 
-    if (buttonStyle & RSGL_STYLE_ROUNDED)
-        buttonStyle ^= RSGL_STYLE_ROUNDED;
-    
-    RSGL_button_setStyle(&container->title, buttonStyle);  
+	if (RSGL_button(rect, args) == RSGL_PRESSED)
+		*grabbed = true; 
 }
 
-void RSGL_drawContainer(RSGL_container* con) {   
-    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
-    RSGL_button* src = RSGL_CONTAINER_SRC(container);
+void RSGL_slider(RSGL_rectF rect, RSGL_widgetStyle args, float* value, b8* grabbed) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return;
 
-    if (container->title.toggle == false)
-        RSGL_drawButton(*src);
-    
-    if (!(src->src.style & RSGL_STYLE_NO_TAB)) {
-        RSGL_drawButton(container->title);
-        
-        RSGL_point cen =  RSGL_POINT(container->title.rect.x + container->title.rect.w - 20, container->title.rect.y + container->title.rect.h - 5);
-        size_t y = ((cen.y - container->title.rect.h) + 15);
+	RSGL_scaleRect(&rect, 0);
+	RSGL_grab(rect, args, grabbed); 
+	if (*grabbed) {
+		if (rect.w > rect.h) {	
+			if (RSGL_mousePoint.x - rect.x < 0)
+				*value = 0.0f;
+			else if (RSGL_mousePoint.x > rect.x + rect.w)
+				*value = 1.0f;
+			else
+				*value = (RSGL_mousePoint.x - rect.x) / rect.w;
+		} else {
+			if (RSGL_mousePoint.y - rect.y < 0)
+				*value = 0.0f;
+			else if (RSGL_mousePoint.y > rect.y + rect.h)
+				*value = 1.0f;
+			else
+				*value = (RSGL_mousePoint.y - rect.y) / rect.h;
+		}
+	}		
+	
+	RSGL_widgetState state;
 
-        RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(cen.x - 15, y), cen, RSGL_POINT(cen.x + 15, y)), RSGL_RGB(200, 200, 200));
-    }
-    
-    size_t i;
-    for (i = 0; i < container->buttons_len && container->title.toggle == 0; i++) {
-        if (container->buttons[i]->src.tex == 0)
-            continue;
-        
-        switch (container->buttons[i]->src.style & RSGL_STYLE_TYPE) {
-            case RSGL_STYLE_TEXTBOX:
-                RSGL_textbox_draw(container->buttons[i]);
-                break;
-            case RSGL_STYLE_CONTAINER:
-                RSGL_drawContainer(container->buttons[i]);
-                break;
-            default:
-                RSGL_drawButton(*container->buttons[i]);
-                break;
-        }
-    }
+	if (rect.w > rect.h) {
+		state = RSGL_button(RSGL_RECTF((rect.x - 10) + ((rect.w - rect.h) * (*value)), rect.y - 10, rect.h + 20, rect.h + 20), args | RSGL_NO_SHAPE); 
+		RSGL_drawButton(RSGL_RECTF((rect.x - 10) + ((rect.w - rect.h) * (*value)), rect.y - 10, rect.h + 20, rect.h + 20),
+						RSGL_widgetInfo.outlineColor, RSGL_widgetInfo.color, args, state); 
+	}
+	else {
+		state = RSGL_button(RSGL_RECTF((rect.x - 10), rect.y - 10 + ((rect.h - rect.w) * (*value)), rect.w + 20, rect.w + 20), args | RSGL_NO_SHAPE); 
+		RSGL_drawButton(RSGL_RECTF((rect.x - 10), rect.y - 10 + ((rect.h - rect.w) * (*value)), rect.w + 20, rect.w + 20),
+							RSGL_widgetInfo.outlineColor, RSGL_widgetInfo.color, args, state); 
+	}
+
+	if (state == RSGL_PRESSED)
+		*grabbed = 1;
+}
+	
+RSGL_widgetState RSGL_radioButtons(RSGL_rectF rect, u32 count, RSGL_widgetStyle args, u8* selected, u8* index) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return 0;
+
+	RSGL_scaleRect(&rect, 0);
+
+	RSGL_pointF offset = RSGL_POINTF(0, 0);
+	switch (args & RSGL_OFFSET_MODE) {
+		case RSGL_OFFSET_X: offset.x = 10; break;
+		case RSGL_OFFSET_Y: offset.y = 10; break;
+		default: offset.y = rect.h + 10; break;
+	}
+	
+	RSGL_widgetState final_state = 0;
+
+	size_t i;
+	for (i = 0; i < count; i++) { 
+		RSGL_widgetState state =  RSGL_button(rect, args | RSGL_NO_SHAPE);
+
+		if (state) {
+			final_state = state;
+			*index = i;
+		
+			if (state == RSGL_RELEASED)
+				*selected = i;
+		}
+
+		RSGL_rectF trueRect = rect;
+		RSGL_scaleRect(&trueRect, args);
+		
+		RSGL_drawButton(trueRect, RSGL_widgetInfo.color, RSGL_widgetInfo.color, args, state);
+		
+		if (state == RSGL_HOVERED || (*selected == i))
+			RSGL_drawButton(RSGL_RECTF(trueRect.x + (trueRect.w * 0.25), trueRect.y + (trueRect.h * 0.25), trueRect.w * 0.5, trueRect.h * 0.5), 
+										RSGL_widgetInfo.outlineColor, RSGL_widgetInfo.outlineColor, args, !state);
+
+		rect.x += offset.x;
+		rect.y += offset.y;	
+	}
+
+	return final_state;
 }
 
-i32 RSGL_container_update(RSGL_container* con, RGFW_Event event) {
-    RSGL_container_src* container = ((RSGL_container_src*)con) - 1;
-    RSGL_button* src = RSGL_CONTAINER_SRC(container);
+RSGL_widgetState RSGL_button(RSGL_rectF rect, RSGL_widgetStyle args) {
+	if (RSGL_widgetInfo.canDraw == 0)
+		return 0;
 
-    if (!(src->src.style & RSGL_STYLE_NO_TAB)) {
-        if (event.type == RSGL_mouseButtonReleased &&
-            RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x + (container->title.rect.w - 35), container->title.rect.y, 35, container->title.rect.h), event.point)
-        ) {
-            container->title.toggle = !container->title.toggle;
-            container->held = false;
-        }
+	RSGL_scaleRect(&rect, args);
+	
+	RSGL_evalTheme(args);
 
-        
-        if (event.type == RSGL_mouseButtonPressed && 
-            RSGL_rectCollidePoint(RSGL_RECT(container->title.rect.x, container->title.rect.y, container->title.rect.w - 35, container->title.rect.h), event.point)
-        ) {
-            container->held = true;
-            container->initPoint.x = -1;
-        }
-        else if (event.type == RSGL_mouseButtonReleased) {
-            container->held = false;
-            container->initPoint.x = -1;
-        }
+	u32 state = 0;
+	if (RSGL_rectCollidePointF(rect, RSGL_POINTF(RSGL_mousePoint.x, RSGL_mousePoint.y))) {
+		state = RSGL_HOVERED;
+		if (RSGL_isMousePressed(RSGL_mouseLeft) && RSGL_rectCollidePointF(rect, RSGL_POINTF(RSGL_mousePressPoint.x, RSGL_mousePressPoint.y)))
+			state = RSGL_PRESSED;
+		else if (RSGL_isMouseReleased(RSGL_mouseLeft) && RSGL_rectCollidePointF(rect, RSGL_POINTF(RSGL_mousePressPoint.x, RSGL_mousePressPoint.y))) {
+				state = RSGL_RELEASED;
+		}
+	}
 
-        if (container->held && event.type == RSGL_mousePosChanged) {
-            if (container->initPoint.x == -1) {
-                container->initPoint = event.point;
-            }
-            
-            RSGL_container_setPos(con, RSGL_POINT(container->title.rect.x + (event.point.x - container->initPoint.x),
-                                                container->title.rect.y + container->title.rect.h + (event.point.y - container->initPoint.y)));
-            container->initPoint = event.point;   
-        }
-    }    
-
-    RSGL_button** containers = container->buttons;
-
-    size_t i;
-    for (i = 0; i < container->buttons_len; i++) {
-        if (containers[i]->src.tex == 0)
-            continue;
-        
-        switch (container->buttons[i]->src.style & RSGL_STYLE_TYPE) {
-            case RSGL_STYLE_TEXTBOX:
-                RSGL_textbox_update(containers[i], event);
-                break;
-            case RSGL_STYLE_CONTAINER:
-                RSGL_container_update(containers[i], event);
-                break;
-            case RSGL_STYLE_SLIDER:
-                RSGL_slider_update(containers[i], event);
-                break;
-            default:
-                RSGL_button_update(containers[i], event);
-                break;
-        }
-
-        if (containers[i]->status)
-            return i;
-    }
-
-    return -1;
+	
+	if (args & RSGL_NO_SHAPE)
+		return state;
+	
+	RSGL_drawButton(rect, RSGL_widgetInfo.color, RSGL_widgetInfo.outlineColor, args, state);
+	return state;
 }
 
-#if !defined(RSGL_NO_TEXT)
-RSGL_textbox* RSGL_initTextbox(size_t defaultSize) {
-    if (defaultSize == 0)
-        defaultSize = 2048;
-    
-    RSGL_textbox* textBox = (RSGL_textbox*)RSGL_MALLOC(sizeof(RSGL_textbox));
-    *textBox = RSGL_initButton();
-
-    textBox->src.style |= RSGL_STYLE_TEXTBOX;
-    
-    textBox->src.text.str = (char*)RSGL_MALLOC(sizeof(char) * defaultSize + 1);
-    textBox->src.text.str[0] = '\0';
-
-    textBox->src.cursorIndex = 0;
-    textBox->line_count = 0;
-    textBox->src.text.text_cap = defaultSize;
-
-    return textBox;
-}
-
-void RSGL_textbox_free(RSGL_textbox* tb) {
-    RSGL_FREE(tb->src.text.str);
-    RSGL_FREE(tb);
-}
-
-void RSGL_textbox_setTextInfo(RSGL_textbox* tb, RSGL_circle c, RSGL_color color) {
-    RSGL_button_setText(tb, tb->src.text.str, tb->src.text.text_len, c, color);
-}
-
-void RSGL_textbox_alignText(RSGL_textbox* tb, u8 alignment) {
-    RSGL_button_alignText(tb, alignment);
-}
-void RSGL_textbox_setColor(RSGL_textbox* tb, RSGL_color color) {
-    RSGL_button_setColor(tb, color);
-}
-void RSGL_textbox_setOutline(RSGL_textbox* tb, u32 size, RSGL_color color) {
-    RSGL_button_setOutline(tb, size, color);
-}
-void RSGL_textbox_setStyle(RSGL_textbox* tb, RSGL_widgetStyle buttonStyle) {
-    RSGL_button_setStyle(tb, buttonStyle);
-}
-void RSGL_textbox_setRect(RSGL_textbox* tb, RSGL_rect rect) {
-    RSGL_button_setRect(tb, rect);
-}
-void RSGL_textbox_setRectF(RSGL_textbox* tb, RSGL_rectF rect) {
-    RSGL_button_setRectF(tb, rect);
-}
-
-void RSGL_textbox_setWindow(RSGL_textbox* button, void* win) {
-    RSGL_button_setWindow(button, win);
-}
-
-void RSGL_textbox_addChar(RSGL_textbox* tb, char ch) {
-    if (ch == 0)
-        return;
-    
-    size_t i, y = 0;
-    for (i = 0; i < tb->src.cursorIndex && tb->src.text.str[i]; i++) {
-        if (tb->src.text.str[i] == '\n')
-            y++;
-    }
-
-    u32 width = RSGL_textLineArea(tb->src.text.str, tb->src.text.c.d, tb->src.text.text_len, y + 1).w;
-
-    /* 
-        if not aligned to the bottom, subtract half the text size from the box size to avoid 
-        too many newlines
-    */        
-    size_t offset = ((tb->src.text.c.d / 2) * !(tb->src.style & RSGL_ALIGN_DOWN));
-
-    if (ch == '\n' && (tb->line_count + tb->src.text.c.d + (tb->src.text.c.y - tb->rect.y)) < tb->rect.h - offset) {
-        tb->line_count += tb->src.text.c.d;
-    }
-    else if (ch == '\n' || width > tb->rect.w)
-        return;
-
-    if (tb->src.cursorIndex > tb->src.text.text_cap) {
-        return;
-    }
-
-    memcpy(&tb->src.text.str[tb->src.cursorIndex + 1], 
-            &tb->src.text.str[tb->src.cursorIndex], 
-            tb->src.text.text_len - tb->src.cursorIndex
-        );
-    
-    tb->src.text.str[tb->src.cursorIndex] = ch;
-    tb->src.text.text_len++; 
-    tb->src.cursorIndex++;
-    tb->src.text.str[tb->src.text.text_len] = '\0';  
-}
-
-i32 RSGL_strLineLenL(const char* str) {
-    char* s = ((char*)str) - 1;
-    for (; *s && *(s + 1) != '\n'; s--);
-    
-    return (str - s) + 1;
-}
-
-size_t RSGL_strLineLenR(const char* str) {
-    char* s = (char*)str;
-    for (; *s && *(s - 1) != '\n'; s++) { if (s){} }
-
-    return (s - str);
-}
-
-char RSGL_keystrToChar(const char* str) {
-    if (str[1] == 0)
-        return str[0];
-
-
-    static const char* map[] = {
-        "asciitilde", "`",
-        "grave", "~",
-        "exclam", "!",
-        "at", "@",
-        "numbersign", "#",
-        "dollar", "$",
-        "percent", "%%",
-        "asciicircum", "^",
-        "ampersand", "&",
-        "asterisk", "*",
-        "parenleft", "(",
-        "parenright", ")",
-        "underscore", "_",
-        "minus", "-",
-        "plus", "+",
-        "equal", "=",
-        "braceleft", "{",
-        "bracketleft", "[",
-        "bracketright", "]",
-        "braceright", "}",
-        "colon", ":",
-        "semicolon", ";",
-        "quotedbl", "\"",
-        "apostrophe", "'",
-        "bar", "|",
-        "backslash", "\'",
-        "less", "<",
-        "comma", ",",
-        "greater", ">",
-        "period", ".",
-        "question", "?",
-        "slash", "/",
-        "space", " ",
-        "Return", "\n",
-        "Enter", "\n",
-        "enter", "\n",
-    };
-
-    u8 i = 0;
-    for (i = 0; i < (sizeof(map) / sizeof(char*)); i += 2)
-        if (strcmp(map[i], str) == 0)
-            return *map[i + 1];
-
-    return '\0';
-}
-
-RSGLDEF size_t RSGL_textbox_point_to_index(RSGL_textbox* tb, RSGL_point touch);
-
-size_t RSGL_textbox_point_to_index(RSGL_textbox* tb, RSGL_point touch) {
-    touch.x -= tb->rect.x; 
-    touch.y -= tb->rect.y;
-
-    touch.y = touch.y / tb->src.text.c.d;
-    size_t index = 0, indexY = 0;
-    for (; tb->src.text.str[index] && indexY < (size_t)touch.y; index++) {
-        if (tb->src.text.str[index] == '\n')
-            indexY++;
-    }
-    
-    size_t indexX = 0;
-
-    if (index < tb->src.text.text_len) {
-        size_t len = RSGL_strLineLenR(tb->src.text.str);
-    
-        for (indexX = 0; 
-                RSGL_textLineArea(tb->src.text.str, tb->src.text.c.d, indexX + 1, indexY).w < (u32)touch.x && 
-                indexX < len; 
-            indexX++);
-    }
-
-    if (index + indexX < tb->src.text.text_len)
-        return index + indexX;
-    
-    return 0;
-}
-
-RSGL_select RSGL_textbox_update(RSGL_textbox* tb, RGFW_Event event) {
-    RSGL_select select; 
-    select.selected = false;
-
-    RSGL_button_update(tb, event);   
-
-    if (event.type == RSGL_mouseButtonReleased && 
-        RSGL_rectCollidePointF(tb->rect, RSGL_POINTF(event.point.x, event.point.y)) &&  tb->toggle) 
-    {
-        size_t cursorIndex = RSGL_textbox_point_to_index(tb, event.point);
-
-        if (cursorIndex != tb->src.cursorIndex) {
-            select.selectStart = tb->src.cursorIndex;
-            select.selectEnd = cursorIndex;
-            select.selected = true;
-        }
-    }
-    
-    if (event.type == RSGL_mouseButtonPressed && tb->status != RSGL_pressed)
-        tb->toggle = false;
-    else if (event.type == RSGL_mouseButtonPressed) {
-        tb->toggle = true;
-        
-        tb->src.cursorIndex = RSGL_textbox_point_to_index(tb, event.point);
-    }
-    
-    if (event.type != RSGL_keyPressed || tb->toggle == false)
-        return select;
-
-    if (tb->src.cursorIndex > tb->src.text.text_cap)
-        return select;
-    
-    switch (event.keyCode) {
-        case RSGL_BackSpace:
-            if (tb->src.cursorIndex == 0)
-                return select;
-
-            if (tb->src.text.str[tb->src.cursorIndex - 1] == '\n') {
-                tb->line_count -= tb->src.text.c.d; 
-            }
-            
-            strcpy(tb->src.text.str + tb->src.cursorIndex - 1, 
-                tb->src.text.str + tb->src.cursorIndex);
-            
-            tb->src.cursorIndex--;
-            return select;
-        case RSGL_Tab: {
-            u8 i = 0;
-            for (i = 0; i < 4; i++)
-                RSGL_textbox_addChar(tb, ' ');
-            return select;
-        }
-        case RSGL_Left:
-            if (tb->src.cursorIndex == 0)
-                return select;
-            
-            tb->src.cursorIndex--;
-            return select;
-        case RSGL_Right:
-            if (tb->src.cursorIndex >= tb->src.text.text_len)
-                return select;
-            
-            tb->src.cursorIndex++;
-            return select;
-        case RSGL_Up: {
-            i32 val = RSGL_strLineLenL(tb->src.text.str + tb->src.cursorIndex);
-            if ((i64)tb->src.cursorIndex - val < 0)
-                break;
-            
-            for (size_t i = 0; i < 2; i++)
-                if ((u32)(tb->src.cursorIndex - val) < tb->src.cursorIndex)
-                    tb->src.cursorIndex -= val;
-            
-            return select;
-        }
-        case RSGL_Down: {
-            size_t val = RSGL_strLineLenR(tb->src.text.str + tb->src.cursorIndex);
-            
-            for (size_t i = 0; i < 2; i++)
-                if (tb->src.cursorIndex + val < tb->src.text.text_len)
-                    tb->src.cursorIndex += val;
-            
-            return select;
-        } 
-        default:
-            RSGL_textbox_addChar(tb, RSGL_keystrToChar(event.keyName));
-            return select;
-    }
-
-    return select;
-}
-
-char* RSGL_textbox_getString(RSGL_textbox* tb, size_t* len) {
-    if (len != NULL)
-        *len = tb->src.text.text_len;
-    
-    return tb->src.text.str;
-}
-
-void RSGL_textbox_draw(RSGL_textbox* tb) {
-    RSGL_drawButton(*tb);
-    
-    RSGL_area area = RSGL_AREA(0, 0); 
-    if (tb->src.cursorIndex) {
-        area = RSGL_textArea(tb->src.text.str, tb->src.text.c.d, tb->src.cursorIndex);
-
-        if (tb->src.text.alignment & RSGL_ALIGN_CENTER)
-            area.w /= 2;
-        
-        area.h = ((area.h - 1) / tb->src.text.c.d);
-    }
-
-    RSGL_drawRect(RSGL_RECT(tb->src.text.c.x + area.w - 2, 
-                            (tb->src.text.c.y + area.h * tb->src.text.c.d) - 2, 
-                            1, tb->src.text.c.d),
-                 tb->src.outlineColor);
-}
-#endif /* RSGL_NO_TEXT */
 
 #endif /*  RSGL_NO_WIDGETS */
 
