@@ -31,17 +31,15 @@ int main(void) {
 
         /* check all the buttons*/
         u32 drawMode = (!darkToggle) ? RSGL_STYLE_DARK : RSGL_STYLE_LIGHT;
-		RSGL_toggleButton(RSGL_RECTF(20, 20, 50, 25), drawMode |  RSGL_STYLE_ROUND, &darkToggle);	
+		RSGL_toggleButton(RSGL_RECTF(20, 20, 50, 25), drawMode |  RSGL_STYLE_ROUND, &darkToggle);
 
-        size_t startColor = log2(RSGL_STYLE_RED) - 1;
-		
 		u32 i;
         for (i = 0; i < 7; i++) {
 			/* 
                     this sets the style to RSGL_STYLE_RED (the first color) + the current row
                     making it so it loops through each color
             */
-            u32 styleColor = (1 << startColor + i) |  drawMode;     
+            u32 styleColor = (1 << (startColor + i)) |  drawMode;     
 
 			RSGL_openBlankContainer(RSGL_RECT(0, 0, win->r.w, win->r.h));
 			

@@ -9,9 +9,7 @@ int main(void) {
 
 	RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
 	
-    float slider_value = 0.0;	
-	b8 slider_grabbed = 0,
-	   checkbox = 0,
+	b8 checkbox = 0,
 	   toggle = 0,
 	   combo_open = 0;
 

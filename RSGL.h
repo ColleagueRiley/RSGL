@@ -1727,7 +1727,7 @@ void RSGL_openContainer(const char* name, RSGL_rect* r, RSGL_color background, u
 		return;
 	}
 
-	RSGL_rectF rect = RSGL_RECTF(r->x, r->y - 30, r->w - (rect.w * 0.10), 30);
+	RSGL_rectF rect = RSGL_RECTF(r->x, r->y - 30, r->w - (r->w * 0.10), 30);
 
 	b8 oldGrab = *grabbed;
 	RSGL_grab(rect, args | RSGL_NO_SHAPE, grabbed);		
@@ -2055,9 +2055,7 @@ b8 RSGL_checkbox(RSGL_rectF rect, RSGL_widgetStyle args, b8* checked) {
 void RSGL_openSubContainer(RSGL_rectF rect, u32 args, b8* open) {
 	if (RSGL_widgetInfo.canDraw == 0)
 		return;
-	
-	b8 state = RSGL_doToggleButton(rect, args, open);
-	
+		
 	RSGL_button(rect, args);
 	
 	RSGL_scaleRect(&rect, args);
