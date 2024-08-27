@@ -9,31 +9,33 @@
 #include <stdio.h>
 
 int main(void) {
-    RSGL_window* win = RSGL_createWindow("RSGL event example", (RSGL_rect){0, 200, 800, 500}, RSGL_ALLOW_DND | RSGL_CENTER);
+    RGFW_window* win = RGFW_createWindow("RSGL event example", (RSGL_rect){0, 200, 800, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
+
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
     bool running = true;
     while (running) {
-        while (RSGL_window_checkEvent(win)) {
+        while (RGFW_window_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
             }
 
             switch (win->event.type) {
-                case RSGL_keyPressed:
+                case RGFW_keyPressed:
                     printf("key pressed %i %s\n", win->event.keyCode, win->event.keyName);
                     break;
-                case RSGL_keyReleased:
+                case RGFW_keyReleased:
                     printf("key released %i %s\n", win->event.keyCode, win->event.keyName);
                     break;
-                case RSGL_mouseButtonPressed:
+                case RGFW_mouseButtonPressed:
                     printf("mouse button pressed %i\n", win->event.button);
                     break;
-                case RSGL_mouseButtonReleased:
+                case RGFW_mouseButtonReleased:
                     printf("mouse button released %i\n", win->event.button);
                     break;
-                case RSGL_mousePosChanged:
-                    if (RSGL_isPressed(win, RGFW_ShiftL))
+                case RGFW_mousePosChanged:
+                    if (RGFW_isPressed(win, RGFW_ShiftL))
                         printf("mouse moved %i %i\n", win->event.point.x, win->event.point.y);
                     break;
                 case RGFW_jsButtonPressed:
@@ -62,9 +64,11 @@ int main(void) {
             }
         }
         
-        RSGL_window_clear(win, RSGL_RGB(125, 125, 125));
+        RSGL_clear(RSGL_RGB(125, 125, 125));
+		RGFW_window_swapBuffers(win);
     }
-
-    RSGL_window_close(win);
+	
+	RSGL_free();
+    RGFW_window_close(win);
     return 0;
 }

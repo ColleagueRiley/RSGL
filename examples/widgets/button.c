@@ -3,104 +3,73 @@
 
 int main(void) {
     RGFW_setGLSamples(12);
-    RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RGFW_CENTER);
 
-    RSGL_button button = RSGL_initButton(); 
-    RSGL_button_setPolygon(&button, RSGL_RECT(200, 200, 200, 200), 8);
-    RSGL_button_setColor(&button, RSGL_RGB(200, 0, 0));
-    RSGL_button_setOutline(&button, 10, RSGL_RGB(100, 0, 0));
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
-    RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
-    RSGL_button_setText(&button, "text", 5, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(0, 0, 0));
-    RSGL_button_alignText(&button, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
+	RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
+	
+    float slider_value = 0.0;	
+	b8 slider_grabbed = 0,
+	   checkbox = 0,
+	   toggle = 0,
+	   combo_open = 0;
 
-    RSGL_button press = RSGL_copyButton(button);
+	size_t combo_index = 0;
+	u8 selected = 0, index;
 
-    RSGL_button_setColor(&press, RSGL_RGB(255, 0, 0));
-    RSGL_button_setText(&press, "other text", 11, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(0, 0, 0));
-    RSGL_button_alignText(&press, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
-
-    RSGL_button_setOnIdle(&button, button.src);
-    RSGL_button_setOnHover(&button, button.src);
-    RSGL_button_setOnPress(&button, press.src);
-
-    /* generic button */
-    RSGL_button generic = RSGL_initButton();
-    /* this can be a rect or polygon */
-    RSGL_button_setRect(&generic, RSGL_RECT(50, 50, 100, 50));
-    
-    RSGL_button_setText(&generic, "generic", 8, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
-    RSGL_button_alignText(&generic, RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
-    
-    RSGL_button_setStyle(&generic, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED);
-
-    RSGL_button_setKeybind(&generic, (u32[]){RGFW_f, RGFW_ControlL}, 2);
-    RSGL_button_setWindow(&generic, win);
-
-    RSGL_button comboBox = RSGL_initButton();
-    char* combos[3] = {"comboBox 0", "comboBox 1", "comboBox 2"};
-    RSGL_button_setCombo(&comboBox, combos, 3);
-
-    /* this can be a rect or polygon */
-    RSGL_button_setRect(&comboBox, RSGL_RECT(200, 50, 200, 50));
-    RSGL_button_setText(&comboBox, "", 11, RSGL_CIRCLE(0, 0, 25), RSGL_RGB(100, 100, 100));
-    RSGL_button_alignText(&comboBox, RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
-    RSGL_button_setStyle(&comboBox, RSGL_STYLE_DARK | RSGL_STYLE_COMBOBOX);
-
-    /* generic toggle button */
-    RSGL_button genericToggle = RSGL_initButton();
-    RSGL_button_setPolygon(&genericToggle, RSGL_RECT(50, 125, 100, 50), 36);
-
-    RSGL_button_setStyle(&genericToggle, RSGL_STYLE_DARK | RSGL_STYLE_TOGGLE | RSGL_STYLE_ROUNDED);
-
-    /* generic checkbox button */
-    RSGL_button checkbox = RSGL_initButton();
-    RSGL_button_setRect(&checkbox, RSGL_RECT(50, 250, 50, 50));
-    RSGL_button_setStyle(&checkbox, RSGL_STYLE_DARK | RSGL_STYLE_CHECKBOX);
-
-    /* generic radio buttons */
-    RSGL_button radioButtons = RSGL_initButton();
-    RSGL_button_setPolygon(&radioButtons, RSGL_RECT(50, 320, 15, 15), 36);
-    RSGL_button_setRadioCount(&radioButtons, 3);
-    RSGL_button_setStyle(&radioButtons, RSGL_STYLE_DARK | RSGL_STYLE_RADIO);
-
-    RSGL_button slider = RSGL_initButton();
-    RSGL_button_setRect(&slider, RSGL_RECT(200, 450, 200, 15));    
-    RSGL_button_setStyle(&slider, RSGL_STYLE_DARK | RSGL_STYLE_ROUNDED | RSGL_STYLE_SLIDER_HORIZONTAL | RSGL_STYLE_SLIDER_CIRCLE);
-
-    float slider_value;
 
     bool running = true;
     while (running) {
-        while (RSGL_window_checkEvent(win)) {
+        while (RSGL_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
             }
-
-            RSGL_button_update(&button, win->event);
-            RSGL_button_update(&generic, win->event);
-            RSGL_button_update(&genericToggle, win->event);
-            RSGL_button_update(&checkbox, win->event);
-            RSGL_button_update(&radioButtons, win->event);
-            RSGL_button_update(&comboBox, win->event);
-            slider_value = RSGL_slider_update(&slider, win->event);
         }
+		
+		RSGL_openBlankContainer(RSGL_RECT(0, 0, win->r.w, win->r.h));
+		
+		RSGL_widgetAlign(RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
+		RSGL_labeledButton("generic", RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND);
 
-        RSGL_drawButton(button);
-        RSGL_drawButton(generic);
-        RSGL_drawButton(genericToggle);
-        RSGL_drawButton(checkbox);
-        RSGL_drawButton(radioButtons);
-        RSGL_drawButton(comboBox);
-        RSGL_drawButton(slider);
+		RSGL_widgetPolygonPoints(8);
+		
+		RSGL_widgetColor(RSGL_RGB(200, 0, 0), RSGL_RGB(200, 0, 0), RSGL_RGB(255, 0, 0), RSGL_RGB(200, 0, 0));
+		RSGL_widgetOutline(10, RSGL_RGB(100, 0, 0), RSGL_RGB(100, 0, 0), RSGL_RGB(100, 0, 0), RSGL_RGB(100, 0, 0));
 
-        RSGL_drawText(RSGL_strFmt("slider : %i", (i32)slider_value), RSGL_CIRCLE(80, 445, 25), RSGL_RGB(255, 255, 255));
+		if (RSGL_button(RSGL_RECTF(200, 200, 200, 200), RSGL_SHAPE_POLYGON) == RSGL_PRESSED) {
+			RSGL_label("other text", RSGL_RECTF(200, 200, 200, 200));
+		}
+		else {
+			RSGL_label("text", RSGL_RECTF(200, 200, 200, 200));
+		}
+				
+		RSGL_widgetAlign(RSGL_ALIGN_LEFT | RSGL_ALIGN_MIDDLE);
+		
+		char* combos[3] = {"comboBox 0", "comboBox 1", "comboBox 2"};
+		RSGL_combobox(RSGL_RECTF(200, 50, 200, 50), RSGL_STYLE_DARK, combos, 3, &combo_open, &combo_index); 
 
-       // RSGL_drawRoundRect(RSGL_RECT(50 - 5, 50 - 5, 100 + 5, 50 + 5), RSGL_POINT(25, 25), RSGL_RGB(255, 0, 0));
+		RSGL_checkbox(RSGL_RECTF(50, 250, 50, 50), RSGL_STYLE_DARK, &checkbox);	 		
+		
+		RSGL_widgetRounding(RSGL_POINT(20, 20));
+		RSGL_toggleButton(RSGL_RECTF(50, 125, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND, &toggle);
+		
+		RSGL_widgetPolygonPoints(36);
+		RSGL_radioButtons(RSGL_RECTF(50, 320, 30, 30), 3, RSGL_STYLE_DARK | RSGL_SHAPE_POLYGON, &selected, &index); 
+		
+		RSGL_widgetRounding(RSGL_POINT(10, 10));
+		RSGL_slider(RSGL_RECTF(160, 450, 260, 15), RSGL_STYLE_DARK | RSGL_STYLE_ROUND | RSGL_SLIDER_CIRCLE, &slider_value, &slider_grabbed);
+		
+		RSGL_widgetOutline(0, RSGL_RGB(255, 255, 255),  RSGL_RGB(255, 255, 255),  RSGL_RGB(255, 255, 255),  RSGL_RGB(255, 255, 255));
+		RSGL_widgetAlign(RSGL_ALIGN_LEFT | RSGL_ALIGN_DOWN);
 
-        RSGL_window_clear(win, RSGL_RGB(20, 20, 60));
+		RSGL_label(RSGL_strFmt("slider : %i", (i32)(slider_value * 100)), RSGL_RECTF(50, 450, 370, 15));
+		
+        RSGL_clear(RSGL_RGB(20, 20, 60));
+		RGFW_window_swapBuffers(win);
     }
 
-    RSGL_window_close(win);
+	RSGL_free();
+    RGFW_window_close(win);
 }

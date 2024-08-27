@@ -4,47 +4,48 @@
 
 int main(void) {
 	RGFW_setGLVersion(RGFW_GL_COMPATIBILITY, 3, 3);
-	RSGL_window* win = RSGL_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RSGL_CENTER);
+	RGFW_window* win = RGFW_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RGFW_CENTER);
+
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
+
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
-
-    RSGL_legacy(true);
-
-    RSGL_button toggleLegacy = RSGL_initButton();
-    RSGL_button_setPolygon(&toggleLegacy, RSGL_RECT(50, 125, 100, 50), 36);
-    RSGL_button_setStyle(&toggleLegacy, RSGL_STYLE_LIGHT | RSGL_STYLE_TOGGLE | RSGL_STYLE_ROUNDED);
-
-    RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
+	
+	b8 legacy = false;
+    
+	RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     bool running = true;
 
 	u32 fps = 0;
 
     while (running) {
-        while (RSGL_window_checkEvent(win)) {
-
+		RSGL_legacy(!legacy);
+		
+		while (RSGL_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
             }
-
-            RSGL_button_update(&toggleLegacy, win->event);
-            if ((win->event.type == RSGL_keyPressed && RSGL_isPressed(win, RGFW_Space)) || 
-                toggleLegacy.status == RSGL_pressed
-            ) {
-                RSGL_legacy(!toggleLegacy.toggle);
-            }
         }
-    
-        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", fps, !toggleLegacy.toggle ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
-        
-        rotate.z++;
-        RSGL_rotate(rotate);
-        RSGL_drawRect(RSGL_RECT(200, 200, 200, 200), RSGL_RGB(255, 0, 0));
+		
+		RSGL_openBlankContainer(RSGL_RECT(0, 0, win->r.w, win->r.h));
+	
+        RSGL_rotate(RSGL_POINT3D(0, 0, 0));
 
-        RSGL_drawButton(toggleLegacy);
-        RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
+        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", fps, !legacy ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
+		RSGL_toggleButton(RSGL_RECTF(50, 125, 100, 50), RSGL_STYLE_LIGHT | RSGL_STYLE_ROUND, &legacy);
+        
+		rotate.z++;
+        RSGL_rotate(rotate);
+		RSGL_drawRect(RSGL_RECT(200, 200, 200, 200), RSGL_RGB(255, 0, 0));
+		
+	
+		RSGL_clear(RSGL_RGB(255, 255, 255));
+		RGFW_window_swapBuffers(win);
+
 		fps = RGFW_window_checkFPS(win, 60);
 	}
-
-    RSGL_window_close(win);
+	
+	RSGL_free();
+    RGFW_window_close(win);
 }

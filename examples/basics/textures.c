@@ -11,8 +11,10 @@
 unsigned char icon[4 * 3 * 3] = {0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF};
 
 int main(void) {
-    RSGL_window* win = RSGL_createWindow("RSGL event example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
-	
+    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
+		
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
+
     RGFW_window_setIcon(win, icon, RSGL_AREA(3, 3), 4);
 
     bool running = true;
@@ -26,7 +28,7 @@ int main(void) {
     size_t texTimer2 = 0;
 
     while (running) {
-        while (RSGL_window_checkEvent(win))
+        while (RSGL_checkEvent(win))
             if (win->event.type == RGFW_quit) {
                 running = false;
                 break;
@@ -59,11 +61,15 @@ int main(void) {
         RSGL_rotate(rotate);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)), RSGL_RGB(255, 255, 255));
 
-        RSGL_window_clear(win, RSGL_RGB(65, 65, 65));
+        RSGL_clear(RSGL_RGB(65, 65, 65));
+		RGFW_window_swapBuffers(win);
+
 		RGFW_window_checkFPS(win, 60);
 	}
-
+	
     RSGL_renderDeleteTexture(iconTex);
-    RSGL_window_close(win);
+	RSGL_free();
+
+	RGFW_window_close(win);
     return 0;
 }

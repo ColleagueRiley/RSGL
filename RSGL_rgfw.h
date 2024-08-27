@@ -73,7 +73,7 @@ b8 RSGL_checkEvent(void* userPtr) {
 			ev.type = RSGL_mousePosChanged;
 			ev.point = win->event.point;
 			break;
-		default: return 0;
+		default: return win->event.type;
 	}
 	
 	RSGL_sendEvent(userPtr, ev);

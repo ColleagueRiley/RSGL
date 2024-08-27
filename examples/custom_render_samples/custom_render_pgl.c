@@ -3,7 +3,9 @@
 #include "custom_render_pgl.h"
 
 int main() {
-    RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", RSGL_RECT(0, 0, 500, 500), RGFW_CENTER);
+
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RSGL_getProcAddress);
 
 	RGFW_area area = RGFW_getScreenSize();
     
@@ -32,7 +34,7 @@ int main() {
     bool running = true;
 
     while (running) {
-        while (RSGL_window_checkEvent(win)) {
+        while (RSGL_checkEvent(win)) {
             if (win->event.type == RSGL_quit) {
                 running = false;
                 break;
@@ -47,7 +49,8 @@ int main() {
         RSGL_textbox_draw(tb);
         RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
         
-        RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
+        RSGL_clear(RSGL_RGB(255, 255, 255));
+		RGFW_window_swapBuffers(win);
     }
 
     RSGL_textbox_free(tb);

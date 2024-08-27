@@ -53,12 +53,14 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
 );
 
 int main(void) {
-    RSGL_window* window = RSGL_createWindow("RSGL Shader example", RSGL_RECT(0, 0, 750, 500), RSGL_CENTER);
+    RGFW_window* window = RGFW_createWindow("RSGL Shader example", RSGL_RECT(0, 0, 750, 500), RGFW_CENTER);
     
+	RSGL_init(RSGL_AREA(window->r.w, window->r.h), RGFW_getProcAddress);
+
     RSGL_programInfo program = RSGL_renderCreateProgram(MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 
     while (RGFW_window_shouldClose(window) == false) {
-        while (RSGL_window_checkEvent(window));
+        while (RSGL_checkEvent(window));
 
         RSGL_setProgram(0);
         RSGL_drawRect(RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 0, 0));
@@ -72,9 +74,11 @@ int main(void) {
         RSGL_renderSetShaderValue(program.program, "pos", (float[2]){(float)window->event.point.x, (float)window->event.point.y}, 2);
 
 
-        RSGL_window_clear(window, RSGL_RGB(20, 20, 20));
-    }
+        RSGL_clear(RSGL_RGB(20, 20, 20));
+		RGFW_window_swapBuffers(window);
+	}
 
     RSGL_renderDeleteProgram(program);
-    RSGL_window_close(window);
+    RSGL_free();
+	RGFW_window_close(window);
 }
