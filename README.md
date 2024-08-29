@@ -4,11 +4,11 @@
 
 RSGL is a modular simple-to-use cross-platform graphics library. It attempts to combine the freedoms of low libraries with modern C techniques. Thus offering simplicity and convenience.
 
-Although RSGL is packaged with RGFW by default, it can be used with any windowing system. (See `examples/advanced/glfw.c`)
+The RSGL.h header itself does not handle rendering nor input devices itself, both must be handled externally.  
 
-The RSGL.h header itself does not handle rendering itself, instead rendering must be handled externally.  `RSGL_gl.h` is used by default for rendering, it renders via OpenGL 1.0 - 4.4.
+`RSGL_gl.h` is used by default for rendering, it renders via OpenGL 1.0 - 4.4.
 
-RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
+`RSGL_rgfw.h` is used by default for handling input devices. There is also a example GLFW backend, `examples/advanced/RSGL_glfw.h`
 
 # Build statuses
 ![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
@@ -18,11 +18,11 @@ RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
 # Features
 - No external dependencies, all dependencies are lightweight, bundled in and optional
 - *Can* be used as a single-header file
-- (RGFW.h) Supports multiple platforms, Windows, MacOS, Linux, etc
+- (RSG_rgfw.h) Supports multiple platforms, Windows, MacOS, Linux, etc
 - (RSGL_gl.h) Supports multiple versions of OpenGL (even allowing you to switch during runtime)
 - Easily swappable rendering module 
+- Easily swappable the backend module
 - Basic shape drawing, collisions and drawing operations
-- Straightforward window management via RGFW.h
 - Dynamic GUI Widgets via a convenient styling system 
 - Many examples included
 - Supports many image file types via stb_image.h
@@ -40,9 +40,8 @@ RSGL currently supports Linux, BSD, Windows and MacOS via RGFW.
 
 ## Defines
   - `#define RSGL_NO_WIDGETS` - makes it so RSGL doesn't include widget functions
-  - `#define RSGL_NO_RGFW` - This is for using a different windowing library other than RGFW. RSGL_graphics is used instead, as seen in `examples/advanced/glfw.c`
   - `#define RSGL_NO_TEXT` - makes it so RSGL does not include text rendering functions
-  - `#define RGFW_NO_WIDGETS` - makes it so RSGL does not include widgets
+  - `#define RSGL_NO_WIDGETS` - makes it so RSGL does not include widgets
   `#define RSGL_NO_SAVE_IMAGE` - makes it so RSGL does not save/load images (don't use RSGL_drawImage if you use this). This is here because RSGL_drawImage saves the file name with its loaded texture so it can load the texture when you use the same file. \
 
 # Widgets 
@@ -219,18 +218,7 @@ When creating a custom renderer you need to implement these functions.
 
 # Dependencies
   All of RSGL's (non-native) dependencies are built-in.
-
-  All of RSGL's dependencies can also be cut out and/or replaced.\
-  In theory, you could use RSGL as a single-header file without the other headers.
-
-## RGFW
-  RGFW, Riley's Graphics FrameWork.\
-  RSGL is built off of RGFW, it handles window management for RSGL.
-
-  RGFW is a flexible, lightweight, single-header-file alternative to GLFW. \ 
-
-  [![AltText](https://github.com/ColleagueRiley/ColleagueRiley/blob/main/rgfw.png?raw=true)](https://github.com/ColleagueRiley/RGFW)\
-  (this is a button that leads to the RGFW repo)
+  They can also be avoided or replaced.\
 
 ## RFont
   [RFont](https://github.com/colleagueRiley/RFont) is a super lightweight and modular font library for text rendering that I created. 
@@ -243,8 +231,6 @@ When creating a custom renderer you need to implement these functions.
 
 ## Eima
   Since I started RSGL, ![Eima](https://github.com/EimaMei) has helped boost the morale of the project and has helped me come up with new ideas and improvements for the project. He also contributed some code to the project. 
-
-  Eima is the original creator of Silicon, without Silicon RSGL/RGFW probably would not support native macOS
 
   ![Eima's C toolkit / STL (sili)](https://github.com/Eimamei/sili)
 
