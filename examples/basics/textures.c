@@ -17,8 +17,6 @@ int main(void) {
 
     RGFW_window_setIcon(win, icon, RSGL_AREA(3, 3), 4);
 
-    bool running = true;
-
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     u32 texture = RSGL_loadImage("logo.png").tex;
@@ -27,10 +25,9 @@ int main(void) {
     size_t texTimer = (size_t)time(0);
     size_t texTimer2 = 0;
 
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
         while (RSGL_checkEvent(win))
             if (win->event.type == RGFW_quit) {
-                running = false;
                 break;
             }
         

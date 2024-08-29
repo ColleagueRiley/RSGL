@@ -10,7 +10,7 @@ int main(void) {
     
 	u32 fps;
 
-    for (;;) {
+    for (; RGFW_window_shouldClose(win) == false;) {
         RSGL_checkEvent(win);
 
         if (win->event.type == RGFW_quit)

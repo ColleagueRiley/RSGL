@@ -1,5 +1,4 @@
 #define RSGL_IMPLEMENTATION
-
 #ifdef _WIN32
 #undef __unix__
 #undef __linux__
@@ -13,16 +12,13 @@ int main(void) {
 
 	RSGL_init(RGFW_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
-    bool running = true;
-
     bool fill = true;
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 	
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
         while (RSGL_checkEvent(win)) {
 			if (win->event.type == RGFW_quit) {
-				running = false;
                 break;
             }
 		}

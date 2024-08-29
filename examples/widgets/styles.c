@@ -17,14 +17,12 @@ int main(void) {
 	float slider_value[7] = {0};
 	b8 grabbed[7] = {0}; 
 
-    bool running = true;
 	
 	size_t startColor = log2(RSGL_STYLE_RED) - 1;
 
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
         while (RSGL_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
-                running = false;
                 break;
             }
 		}

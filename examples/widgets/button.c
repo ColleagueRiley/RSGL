@@ -19,11 +19,9 @@ int main(void) {
 	u8 selected = 0, index;
 
 
-    bool running = true;
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
         while (RSGL_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
-                running = false;
                 break;
             }
         }
@@ -31,8 +29,11 @@ int main(void) {
 		RSGL_openBlankContainer(RSGL_RECT(0, 0, win->r.w, win->r.h));
 		
 		RSGL_widgetAlign(RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
-		RSGL_labeledButton("generic", RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND);
-
+		RSGL_labeledButton("generic", RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND | RSGL_OFFSET_Y);
+		
+		RSGL_widgetRounding(RSGL_POINT(20, 20));
+		RSGL_toggleButton(RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND, &toggle);
+	
 		RSGL_widgetPolygonPoints(8);
 		
 		RSGL_widgetColor(RSGL_RGB(200, 0, 0), RSGL_RGB(200, 0, 0), RSGL_RGB(255, 0, 0), RSGL_RGB(200, 0, 0));
@@ -51,10 +52,7 @@ int main(void) {
 		RSGL_combobox(RSGL_RECTF(200, 50, 200, 50), RSGL_STYLE_DARK, combos, 3, &combo_open, &combo_index); 
 
 		RSGL_checkbox(RSGL_RECTF(50, 250, 50, 50), RSGL_STYLE_DARK, &checkbox);	 		
-		
-		RSGL_widgetRounding(RSGL_POINT(20, 20));
-		RSGL_toggleButton(RSGL_RECTF(50, 125, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND, &toggle);
-		
+	
 		RSGL_widgetPolygonPoints(36);
 		RSGL_radioButtons(RSGL_RECTF(50, 320, 30, 30), 3, RSGL_STYLE_DARK | RSGL_SHAPE_POLYGON, &selected, &index); 
 		

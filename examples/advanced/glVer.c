@@ -14,16 +14,13 @@ int main(void) {
     
 	RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
-    bool running = true;
-
 	u32 fps = 0;
 
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
 		RSGL_legacy(!legacy);
 		
 		while (RSGL_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
-                running = false;
                 break;
             }
         }

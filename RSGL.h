@@ -105,13 +105,6 @@ RSGL basicDraw types
 #define RSGL_TRIANGLES_2D_BLEND     0x0114
 #endif
 
-/* 
-keys = 
-RGFW_{key} 
-
-keys will not be reincluded into RSGL
-*/
-
 #ifndef RSGL_H
 #define RSGL_H
 
@@ -743,27 +736,10 @@ macos:
 		macos:
 			<Silicon/include> can be replaced to where you have the Silicon headers stored
 			<libSilicon.a> can be replaced to wherever you have libSilicon.a
-			gcc -shared RSGL.o -framework Foundation <libSilicon.a> -framework AppKit -framework CoreVideo -I<Silicon/include>
-
-	installing/building silicon (macos)
-
-	Silicon does not need to be installde per se.
-	I personally recommended that you use the Silicon included using RGFW
-
-	to build this version of Silicon simplly run
-
-	cd Silicon && make
-
-	you can then use Silicon/include and libSilicon.a for building RGFW projects
-
-    Alternatively, you also can find pre-built binaries for Silicon at
-    https://github.com/ColleagueRiley/Silicon/tree/binaries
+			gcc -shared RSGL.o -framework Foundation -framework AppKit -framework CoreVideo 
 
 	ex.
-	gcc main.c -framework Foundation -lSilicon -framework AppKit -framework CoreVideo -ISilicon/include
-
-	I also suggest you compile Silicon (and RGFW if applicable)
-	per each time you compile your application so you know that everything is compiled for the same architecture.
+	gcc main.c -framework Foundation -framework AppKit -framework CoreVideo
 */
 
 #ifdef RSGL_IMPLEMENTATION
@@ -1683,7 +1659,6 @@ RSGL_widgets
 #if !defined(RSGL_NO_WIDGETS)
 struct RSGL_widgetInfo {
 	RSGL_rect r;
-	RSGL_pointF last;
 	RSGL_color color[4]; // 1 color per stat 
 	u32 points; 
 	RSGL_point rounding;
@@ -1694,6 +1669,9 @@ struct RSGL_widgetInfo {
 	RSGL_point padding;
 	u32 textSize;
 	u8 align;
+	
+	RSGL_point curPoint;
+	RSGL_point offset;
 
 	b8 canDraw : 1;
 	RSGL_point grab;
@@ -1709,7 +1687,8 @@ void RSGL_openBlankContainer(RSGL_rect r) {
 
 void RSGL_openContainer(const char* name, RSGL_rect* r, RSGL_color background, u32 args, b8* grabbed, b8* toggle) {
 	RSGL_widgetInfo.r = *r;
-	RSGL_widgetInfo.last = RSGL_POINTF(0, 0);
+	RSGL_widgetInfo.offset = RSGL_POINT(0, 0);
+	RSGL_widgetInfo.curPoint = RSGL_POINT(0, 0);
 	RSGL_widgetInfo.outline = 0;
 	RSGL_widgetInfo.rounding = RSGL_POINT(20, 20);
 	
@@ -1911,21 +1890,28 @@ void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args) {
 		rect->y = ((RSGL_widgetInfo.r.h * rect->y) - (rect->h * rect->y)) + RSGL_widgetInfo.r.y;
 	}
 	
-	if (RSGL_widgetInfo.last.y < rect->y)
-		RSGL_widgetInfo.last.x = 0; 
+	if (RSGL_widgetInfo.curPoint.x == rect->x) 
+		rect->x += RSGL_widgetInfo.offset.x;
+	else
+		RSGL_widgetInfo.offset.x = 0;
+
+	if (RSGL_widgetInfo.curPoint.y == rect->y) 
+		rect->y += RSGL_widgetInfo.offset.y;
+	else
+		RSGL_widgetInfo.offset.y = 0;
+
 
 	switch (args & RSGL_OFFSET_MODE) {
 		case RSGL_OFFSET_X:
-			RSGL_widgetInfo.last.x += rect->w;
+			RSGL_widgetInfo.offset.x = rect->x + rect->w;
+			RSGL_widgetInfo.curPoint.x = rect->x;
 			break;
 		case RSGL_OFFSET_Y:
-			RSGL_widgetInfo.last.y += rect->h;
+			RSGL_widgetInfo.offset.y = rect->y + rect->h;
+			RSGL_widgetInfo.curPoint.y = rect->y;
 			break;
 		default:  break;
 	}	
-
-	rect->x += RSGL_widgetInfo.last.x;
-	rect->y += RSGL_widgetInfo.last.y;
 }
 
 void RSGL_label(const char* str, RSGL_rectF rect) {
@@ -1946,9 +1932,9 @@ void RSGL_separator(RSGL_rectF rect) {
 }
 
 RSGL_widgetState RSGL_labeledButton(const char* str, RSGL_rectF rect, RSGL_widgetStyle args) {
-	RSGL_widgetState state = RSGL_button(rect, args);
-
 	RSGL_scaleRect(&rect, args);
+
+	RSGL_widgetState state = RSGL_button(rect, args);
 	RSGL_label(str, rect);
 
 	return state;
@@ -2128,7 +2114,7 @@ b8 RSGL_combobox(RSGL_rectF rect, u32 args, char* strings[], size_t len, b8* ope
 }
 
 void RSGL_grab(RSGL_rectF rect, RSGL_widgetStyle args, b8* grabbed) {
-	if (RSGL_isMouseReleased(RGFW_mouseLeft) || RSGL_isMousePressed(RGFW_mouseLeft) == 0)
+	if (RSGL_isMouseReleased(RSGL_mouseLeft) || RSGL_isMousePressed(RSGL_mouseLeft) == 0)
 		*grabbed = false;
 
 	if (RSGL_button(rect, args) == RSGL_PRESSED)

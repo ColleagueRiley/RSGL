@@ -13,11 +13,9 @@ int main(void) {
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
-    bool running = true;
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
         while (RGFW_window_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
-                running = false;
                 break;
             }
 

@@ -19,11 +19,9 @@ int main(void) {
 	RSGL_rect rect = RSGL_RECT(50, 50, 400, 400);
 	b8 grabbed = 0, c_toggle = 1;
 
-    bool running = true;
-    while (running) {
+    while (RGFW_window_shouldClose(win) == false) {
         while (RSGL_checkEvent(win)) {
             if (win->event.type == RGFW_quit) {
-                running = false;
                 break;
             }
         }

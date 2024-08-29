@@ -60,7 +60,9 @@ int main(void) {
     RSGL_programInfo program = RSGL_renderCreateProgram(MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 
     while (RGFW_window_shouldClose(window) == false) {
-        while (RSGL_checkEvent(window));
+        while (RSGL_checkEvent(window)) {
+			if (window->event.type == RGFW_quit) break;
+		}
 
         RSGL_setProgram(0);
         RSGL_drawRect(RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 0, 0));
