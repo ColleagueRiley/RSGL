@@ -8,7 +8,7 @@
 *
 * Permission is granted to anyone to use this software for any purpose,
 * including commercial applications, and to alter it and redistribute it
-* freely, subject to the following r estrictions:
+* freely, subject to the following restrictions:
 *
 * 1. The origin of this software must not be misrepresented; you must not
 * claim that you wrote the original software. If you use this software
@@ -107,7 +107,6 @@ RSGL basicDraw types
 
 #ifndef RSGL_H
 #define RSGL_H
-
 #ifndef RSGLDEF
 #ifdef __APPLE__
 #define RSGLDEF extern inline
@@ -147,6 +146,9 @@ RSGL basicDraw types
 	typedef u32 b32;
 #endif
 
+#include <stdbool.h>
+#include <stddef.h>
+
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
 #define RSGL_ENUM(type, name) type name; enum
 
@@ -173,9 +175,6 @@ typedef struct RSGL_area {
     u32 w, h;
 } RSGL_area;
 #define RSGL_AREA(w, h) (RSGL_area){w, h}
-
-#include <stdbool.h>
-#include <stddef.h>
 
 /* 
 ******* 
@@ -650,12 +649,15 @@ typedef RSGL_ENUM(u32, RSGL_widgetStyle) {
     RSGL_STYLE_COLOR = RSGL_STYLE_RED | RSGL_STYLE_BLUE | RSGL_STYLE_GREEN | RSGL_STYLE_YELLOW | RSGL_STYLE_TEAL | RSGL_STYLE_PURPLE
 };
 
+
+RSGLDEF void RSGL_openBlankContainer(RSGL_rect r);
 RSGLDEF void RSGL_openContainer(const char* name, RSGL_rect* r, RSGL_color background, u32 args, b8* grabbed, b8* toggle);
 
 RSGLDEF void RSGL_widgetOutline(u32 outline, RSGL_color idle, RSGL_color hover, RSGL_color press, RSGL_color release);
 RSGLDEF void RSGL_widgetColor(RSGL_color idle, RSGL_color hover, RSGL_color press, RSGL_color release);
 RSGLDEF void RSGL_widgetPolygonPoints(u32 points); 
 RSGLDEF void RSGL_widgetRounding(RSGL_point point);
+RSGLDEF void RSGL_widgetAlign(u8 align);
 
 RSGLDEF void RSGL_evalTheme(RSGL_widgetStyle buttonStyle);
 RSGLDEF void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args);
@@ -663,12 +665,18 @@ RSGLDEF void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args);
 RSGLDEF void RSGL_label(const char* str, RSGL_rectF);
 RSGLDEF RSGL_widgetState RSGL_labeledButton(const char* str, RSGL_rectF rect, RSGL_widgetStyle args);
 
+RSGLDEF void RSGL_separator(RSGL_rectF rect); 
+
+RSGLDEF void RSGL_openSubContainer(RSGL_rectF rect, u32 args, b8* open);
+RSGLDEF void RSGL_closeSubContainer(void);
+
 RSGLDEF RSGL_widgetState RSGL_button(RSGL_rectF rect, RSGL_widgetStyle args);
 RSGLDEF b8 RSGL_toggleButton(RSGL_rectF rect, RSGL_widgetStyle args, b8* toggle);
 RSGLDEF b8 RSGL_checkbox(RSGL_rectF rect, RSGL_widgetStyle args, b8* checked);
 RSGLDEF void RSGL_grab(RSGL_rectF rect, RSGL_widgetStyle args, b8* grabbed);
 RSGLDEF void RSGL_slider(RSGL_rectF rect, RSGL_widgetStyle args, float* value, b8* grabbed);
 RSGLDEF RSGL_widgetState RSGL_radioButtons(RSGL_rectF rect, u32 count, RSGL_widgetStyle args, u8* selected, u8* index);
+RSGLDEF b8 RSGL_combobox(RSGL_rectF rect, u32 args, char* strings[], size_t len, b8* open, size_t* index); 
 #endif /* RSGL_NO_WIDGETS */
 
 /* 
@@ -1889,8 +1897,8 @@ void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args) {
 	if (rect->y < 1) {
 		rect->y = ((RSGL_widgetInfo.r.h * rect->y) - (rect->h * rect->y)) + RSGL_widgetInfo.r.y;
 	}
-	
-	if (RSGL_widgetInfo.curPoint.x == rect->x) 
+
+	if (RSGL_widgetInfo.curPoint.x == rect->x)
 		rect->x += RSGL_widgetInfo.offset.x;
 	else
 		RSGL_widgetInfo.offset.x = 0;
@@ -1899,7 +1907,6 @@ void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args) {
 		rect->y += RSGL_widgetInfo.offset.y;
 	else
 		RSGL_widgetInfo.offset.y = 0;
-
 
 	switch (args & RSGL_OFFSET_MODE) {
 		case RSGL_OFFSET_X:
@@ -1911,7 +1918,7 @@ void RSGL_scaleRect(RSGL_rectF* rect, RSGL_widgetStyle args) {
 			RSGL_widgetInfo.curPoint.y = rect->y;
 			break;
 		default:  break;
-	}	
+	}
 }
 
 void RSGL_label(const char* str, RSGL_rectF rect) {
@@ -2042,8 +2049,9 @@ void RSGL_openSubContainer(RSGL_rectF rect, u32 args, b8* open) {
 	if (RSGL_widgetInfo.canDraw == 0)
 		return;
 		
+	RSGL_doToggleButton(rect, args, open);
 	RSGL_button(rect, args);
-	
+
 	RSGL_scaleRect(&rect, args);
 
 	if (*open == false) {
@@ -2069,6 +2077,7 @@ void RSGL_openSubContainer(RSGL_rectF rect, u32 args, b8* open) {
 void RSGL_closeSubContainer(void) {
 	RSGL_widgetInfo.canDraw = 1;
 }
+
 
 b8 RSGL_combobox(RSGL_rectF rect, u32 args, char* strings[], size_t len, b8* open, size_t* index) {
 	if (RSGL_widgetInfo.canDraw == 0)
@@ -2165,6 +2174,10 @@ void RSGL_slider(RSGL_rectF rect, RSGL_widgetStyle args, float* value, b8* grabb
 		args |= RSGL_SHAPE_POLYGON;
 		RSGL_widgetInfo.points = 36;
 	}
+
+	
+	if (RSGL_button(clip_rect, args | RSGL_NO_SHAPE) == RSGL_PRESSED)
+		state = RSGL_PRESSED;
 
 	RSGL_drawButton(clip_rect, RSGL_widgetInfo.outlineColor, RSGL_widgetInfo.color, args, state);
 

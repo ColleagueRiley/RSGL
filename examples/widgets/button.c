@@ -13,7 +13,7 @@ int main(void) {
 	b8 slider_grabbed = 0,
 	   checkbox = 0,
 	   toggle = 0,
-	   combo_open = 0;
+	   combo_open = 1;
 
 	size_t combo_index = 0;
 	u8 selected = 0, index;
@@ -29,10 +29,10 @@ int main(void) {
 		RSGL_openBlankContainer(RSGL_RECT(0, 0, win->r.w, win->r.h));
 		
 		RSGL_widgetAlign(RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
-		RSGL_labeledButton("generic", RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND | RSGL_OFFSET_Y);
+		RSGL_labeledButton("generic", RSGL_RECTF(50, 50, 100, 50), RSGL_OFFSET_Y | RSGL_STYLE_DARK | RSGL_STYLE_ROUND);
 		
 		RSGL_widgetRounding(RSGL_POINT(20, 20));
-		RSGL_toggleButton(RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND, &toggle);
+		RSGL_toggleButton(RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND | RSGL_OFFSET_Y, &toggle);
 	
 		RSGL_widgetPolygonPoints(8);
 		
@@ -53,8 +53,8 @@ int main(void) {
 
 		RSGL_checkbox(RSGL_RECTF(50, 250, 50, 50), RSGL_STYLE_DARK, &checkbox);	 		
 	
-		RSGL_widgetPolygonPoints(36);
-		RSGL_radioButtons(RSGL_RECTF(50, 320, 30, 30), 3, RSGL_STYLE_DARK | RSGL_SHAPE_POLYGON, &selected, &index); 
+		RSGL_widgetPolygonPoints(100);
+		RSGL_radioButtons(RSGL_RECTF(50, 320, 32, 32), 3, RSGL_STYLE_DARK | RSGL_SHAPE_POLYGON, &selected, &index); 
 		
 		RSGL_widgetRounding(RSGL_POINT(10, 10));
 		RSGL_slider(RSGL_RECTF(160, 450, 260, 15), RSGL_STYLE_DARK | RSGL_STYLE_ROUND | RSGL_SLIDER_CIRCLE, &slider_value, &slider_grabbed);
