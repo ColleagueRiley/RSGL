@@ -129,7 +129,7 @@ int main(void) {
                 break;
             
             #ifndef __EMSCRIPTEN__
-            RSGL_clear(RSGL_RGB(255, 255, 255));
+			RSGL_clear(RSGL_RGB(255, 255, 255));
 			RGFW_window_swapBuffers(win2);
 			#endif
 			fps = RGFW_window_checkFPS(win, 60);

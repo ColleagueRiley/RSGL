@@ -404,9 +404,11 @@ typedef RSGL_ENUM(u8, RSGL_alignment) {
 RSGLDEF RSGL_rect RSGL_alignRect(RSGL_rect larger, RSGL_rect smaller, u16 alignment);
 RSGLDEF RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment);
 
+#ifndef RSGL_GET_WORLD_X
 #define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentRect.w - 1.0f)
 #define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentRect.h)
 #define RSGL_GET_WORLD_Z(z) (float)(z)
+#endif
 
 #define RSGL_GET_MATRIX_X(x, y, z) (matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
 #define RSGL_GET_MATRIX_Y(x, y, z) (matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13])
