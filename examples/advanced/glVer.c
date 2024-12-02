@@ -2,6 +2,8 @@
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 
+#include "RSGL_gui.h"
+
 int main(void) {
 	RGFW_setGLVersion(RGFW_GL_COMPATIBILITY, 3, 3);
 	RGFW_window* win = RGFW_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RGFW_CENTER);
