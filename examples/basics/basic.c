@@ -30,7 +30,7 @@ int main(void) {
     win2 = RGFW_createWindow("subwindow", RSGL_RECT(200, 200, 200, 200), 0);
     #endif
 
-    /*unsigned short js = RSGL_registerJoystick(win, 0);*/
+    /*unsigned short gp = RSGL_registerGamepad(win, 0);*/
     unsigned char i;
 
     RGFW_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
@@ -88,10 +88,10 @@ int main(void) {
                     printf("dropped : %s\n", win->event.droppedFiles[i]);
             }
 
-            else if (win->event.type == RGFW_jsButtonPressed)
+            else if (win->event.type == RGFW_gpButtonPressed)
                 printf("pressed %i\n", win->event.button);
 
-            else if (win->event.type == RGFW_jsAxisMove && !win->event.button)
+            else if (win->event.type == RGFW_gpAxisMove && !win->event.button)
                 printf("{%i, %i}\n", win->event.axis[0].x, win->event.axis[0].y);
         }
 	
