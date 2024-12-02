@@ -36,13 +36,13 @@ int main(void) {
                     if (RGFW_isPressed(win, RGFW_ShiftL))
                         printf("mouse moved %i %i\n", win->event.point.x, win->event.point.y);
                     break;
-                case RGFW_jsButtonPressed:
-                    printf("joystick pressed %i\n", win->event.joystick);
+                case RGFW_gpButtonPressed:
+                    printf("gamepad pressed %i\n", win->event.gamepad);
                     break;
-                case RGFW_jsButtonReleased:
-                    printf("joystick released %i\n", win->event.joystick);
+                case RGFW_gpButtonReleased:
+                    printf("gamepad released %i\n", win->event.gamepad);
                     break;
-                case RGFW_jsAxisMove:
+                case RGFW_gpAxisMove:
                     printf("axis moved %i %i\n", win->event.axis[0].x, win->event.axis[0].y);
                     break;
                 case RGFW_dnd:
