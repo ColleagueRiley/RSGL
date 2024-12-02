@@ -23,11 +23,11 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
 - Easily swappable rendering module 
 - Easily swappable the backend module
 - Basic shape drawing, collisions and drawing operations
-- Dynamic GUI Widgets via a convenient styling system 
 - Many examples included
 - Supports many image file types via stb_image.h
 - Very modular and can easily be changed to suit your needs
 - Free and Open Source
+- Small RSGL_gui.h widget library with dynamic GUI via a convenient styling system (RSGL_gui.h)
 
 # Contacts
 - email : ColleagueRiley@gmail.com 
@@ -39,13 +39,11 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
 ![The RSGL Architecture](https://github.com/ColleagueRiley/RSGL/blob/main/RSGL-Architecture.png?raw=true)
 
 ## Defines
-  - `#define RSGL_NO_WIDGETS` - makes it so RSGL doesn't include widget functions
   - `#define RSGL_NO_TEXT` - makes it so RSGL does not include text rendering functions
-  - `#define RSGL_NO_WIDGETS` - makes it so RSGL does not include widgets
   `#define RSGL_NO_SAVE_IMAGE` - makes it so RSGL does not save/load images (don't use RSGL_drawImage if you use this). This is here because RSGL_drawImage saves the file name with its loaded texture so it can load the texture when you use the same file. \
 
-# Widgets 
-Widgets are WIP, the supported widgets include\
+# RSGL_gui 
+RSGL_gui widgets are WIP, the supported widgets include\
 RSGL_alignRect, RSGL_button (checkboxes, toggle buttons, combo boxes, sliders and radio buttons) and widget containers \
 
 RSGL_textBox and RSGL_expandableRect are currently WIP.
@@ -138,6 +136,8 @@ run `make debug` which compiles and runs each example in debug mode
 Ensure you're running the example in the `./examples` folder so the fonts are properly loaded. 
 
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot.PNG?raw=true)
+
+### RSGL_gui.h
 ![example screenshot 2](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot2.PNG?raw=true)
 ![example screenshot 3](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot3.PNG?raw=true)
 ![example screenshot 4](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot4.PNG?raw=true)
@@ -169,16 +169,16 @@ in the example, you can toggle between OpenGL 3.0+ and OpenGL 2.0- by pressing t
 ## basics/textures.c
 `examples/basics/textures.c` is an example that shows off rendering textures on a shape, the textures switch between being enabled and disabled as the shapes spin
 
-## widgets/button.c 
-`examples/widgets/button.c` is an example that shows off how to create and manage buttons using RSGL,
+## gui/button.c 
+`examples/gui/button.c` is an example that shows off how to create and manage buttons using RSGL,
 these include, a default style button, a checkbox, a toggle button, radio buttons, a combo box, a slider and a custom button
 
-## widgets/styles.c
-`examples/widgets/styles.c` is an example that shows off button styles, there are groups of buttons for each style.
+## gui/styles.c
+`examples/gui/styles.c` is an example that shows off button styles, there are groups of buttons for each style.
 There is also a switch button that allows you to toggle dark mode.
 
-## widgets/container.c
-`examples/widgets/container.c` is an example that shows how to create and manage a widget container
+## gui/container.c
+`examples/gui/container.c` is an example that shows how to create and manage a widget container
 
 ## advanced/shader.c
 `examples/advanced/shader.c` is an example of how you'd use shaders with RSGL. It renders a circle, using a grid shader with changing colors, that follows the mouse.
