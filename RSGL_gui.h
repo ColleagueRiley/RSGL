@@ -587,7 +587,7 @@ void RSGL_slider(RSGL_rectF rect, RSGL_widgetStyle args, float* value, b8* grabb
 	}
 	
 	if (args & RSGL_SLIDER_CIRCLE) {
-		if (args | RSGL_STYLE_ROUND)
+		if (args & RSGL_STYLE_ROUND)
 			args ^= RSGL_STYLE_ROUND;
 
 		args |= RSGL_SHAPE_POLYGON;

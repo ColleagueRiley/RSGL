@@ -738,7 +738,7 @@ typedef struct RSGL_fontsData {
 RSGL_fontsData RSGL_font = {NULL, NULL, 0, 0};
 #endif
 
-RSGL_drawArgs RSGL_args = {NULL, 1, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0, 0};
+RSGL_drawArgs RSGL_args = {NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0, 0};
 bool RSGL_argsClear = false;
 
 RSGL_image* RSGL_images = NULL;
