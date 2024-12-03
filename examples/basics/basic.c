@@ -39,6 +39,8 @@ int main(void) {
 
 	u32 fps = 0;
 
+    RSGL_init(RGFW_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
+    
     while (RGFW_window_shouldClose(win) == false) {
 
         /* 
@@ -55,9 +57,7 @@ int main(void) {
         if (win2->event.type == RGFW_quit)
             running = 0;
         #endif
-
-		RSGL_init(RGFW_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
-
+        
         while (RSGL_checkEvent(win))  {
 			RSGL_updateSize(RGFW_AREA(win->r.w, win->r.h));
 			if (win->event.type == RGFW_windowResized) {
@@ -97,13 +97,13 @@ int main(void) {
 	
         RGFW_window_makeCurrent(win);
 	
-        RSGL_updateSize(RGFW_AREA(win->r.w, win->r.h));
+        /*RSGL_updateSize(RGFW_AREA(win->r.w, win->r.h));
         
 		RSGL_setGradient(gradient, 3);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(20, win->r.h - 20), RSGL_POINT(win->r.w - 20,win->r.h - 20), RSGL_POINT((win->r.w - 40) / 2, 20)), RSGL_RGB(255, 255, 0));
 		
         RSGL_clear(RSGL_RGB(255, 255, 255));    
-		RGFW_window_swapBuffers(win);
+		RGFW_window_swapBuffers(win);*/
         
         #ifndef __EMSCRIPTEN__
         {
