@@ -104,7 +104,8 @@ int main(void) {
 		
         RSGL_clear(RSGL_RGB(255, 255, 255));    
 		RGFW_window_swapBuffers(win);
-
+        
+        #ifndef __EMSCRIPTEN__
         {
 			RGFW_window_makeCurrent(win2);
 			RSGL_updateSize(RSGL_AREA(win2->r.w, win2->r.h));
@@ -128,12 +129,11 @@ int main(void) {
             if (running == false)
                 break;
             
-            #ifndef __EMSCRIPTEN__
 			RSGL_clear(RSGL_RGB(255, 255, 255));
 			RGFW_window_swapBuffers(win2);
-			#endif
 			fps = RGFW_window_checkFPS(win, 60);
         }
+        #endif
     }
 
 	RSGL_free();
