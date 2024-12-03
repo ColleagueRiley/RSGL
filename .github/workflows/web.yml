@@ -1,0 +1,45 @@
+name: Build WebAssembly
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 3.1.52
+      
+    - name: Build doxygen docs
+      uses: mattnotmitt/doxygen-action@v1.9.5
+      with:
+          working-directory: './'
+          doxyfile-path: './Doxyfile'
+            
+    - name: Compile to WebAssembly
+      run: |
+        make CC=emcc
+        mv html docs
+
+    - name: get nuklear webasm
+      run: |
+        cd webasm 
+        wget https://github.com/ColleagueRiley/nuklear_rgfw/raw/main/rgfw_opengl2/rgfw-nuklear.wasm
+        wget https://raw.githubusercontent.com/ColleagueRiley/nuklear_rgfw/main/rgfw_opengl2/rgfw-nuklear.js
+        
+    - name: Deploy Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
