@@ -467,6 +467,7 @@ void RSoft_drawRect(u8* buffer, RSoft_rect r, u8 color[4]) {
 	
 void RSoft_drawRectF(u8* buffer, RSoft_rectF r, u8 color[4]) {
 	RSoft_renderInfoStruct info = RSoft_renderInfo;
+	RSOFT_UNUSED(info);
 	
 	for(float x = r.x; x < (r.x + r.w); x++) {
 		for(float y = r.y; y < (r.y + r.h); y++) {
@@ -482,6 +483,7 @@ void RSoft_drawPolygon(u8* buffer, RSoft_rect r, size_t angles, u8 color[4]) {
 
 void RSoft_drawPolygonF(u8* buffer, RSoft_rectF r, size_t angles, u8 color[4]) {
 	RSoft_renderInfoStruct info = RSoft_renderInfo;
+	RSOFT_UNUSED(info);
 
 	float slopeX = r.w;  
 	float slopeY = r.h;
@@ -503,7 +505,7 @@ void RSoft_drawPolygonF(u8* buffer, RSoft_rectF r, size_t angles, u8 color[4]) {
 		
 			RSoft_vector p1 = RSOFT_VECTOR2D(r.x - (RSoft_cos(delta) * r.w), r.y + (RSoft_sin(delta) * r.h));
 			RSoft_vector p2 = RSOFT_VECTOR2D(r.x - (RSoft_cos(delta2) * r.w), r.y + (RSoft_sin(delta2) * r.h));
-			RSoft_point texPoint = RSOFT_POINT(abs((p1.x - (r.x - rect.w))), abs((p2.y - (r.y - rect.h))));
+			//RSoft_point texPoint = RSOFT_POINT(abs((p1.x - (r.x - rect.w))), abs((p2.y - (r.y - rect.h))));
 
 
 			u32 texColor = RSoft_textureGetColor(RSOFT_POINT(abs((p1.x - (r.x - (rect.w / 2)))), 
@@ -524,7 +526,8 @@ void RSoft_drawPolygonOutline(u8* buffer, RSoft_rect r, size_t angles, u8 color[
 
 void RSoft_drawPolygonFOutline(u8* buffer, RSoft_rectF r, size_t angles, u8 color[4]) {
 	RSoft_renderInfoStruct info = RSoft_renderInfo;
-	
+	RSOFT_UNUSED(info);
+
 	for (size_t i = 0; i < angles; i ++) {
 		float delta = (i * (360 / angles));
 		float delta2 = ((i + 1) * (360 / angles)) ;
@@ -619,7 +622,8 @@ void RSoft_drawTriangle(u8* buffer, const RSoft_point points[3], u8 color[4]) {
 
 void RSoft_drawTriangleF(u8* buffer, const RSoft_vector points[3], u8 color[4]) {	
 	RSoft_renderInfoStruct info = RSoft_renderInfo;
-	
+	RSOFT_UNUSED(info);
+
 	RSoft_vector lowest = RSOFT_VECTOR2D(-1, -1);
 	RSoft_vector highest = RSOFT_VECTOR2D(-1, -1);
 	

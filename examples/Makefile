@@ -71,6 +71,7 @@ EXAMPLE_OUTPUTS = \
 	basics/text \
 	gui/container \
 	advanced/glVer \
+	advanced/rsoft \
 	basics/events  \
 	basics/textures  \
 	gui/styles \
