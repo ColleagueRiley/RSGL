@@ -45,7 +45,9 @@ void RSGL_renderFree(void) {
 void RSGL_renderBatch(RSGL_RENDER_INFO* info) { 
         size_t i, j;
         size_t tIndex = 0, cIndex = 0, vIndex = 0;
-        for (i = 0; i < info->len; i++) {
+       
+		RSGL_UNUSED(tIndex);
+		for (i = 0; i < info->len; i++) {
             u32 mode = info->batches[i].type;
             if (mode > 0x0100)
                 mode -= 0x0100;
