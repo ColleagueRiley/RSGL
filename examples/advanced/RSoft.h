@@ -220,12 +220,12 @@ RSOFTDEF void RSoft_drawLineF(u8* buffer, RSoft_vector start, RSoft_vector end, 
 #endif /* RSOFT_HEADER */
 
 #ifdef __x86_64__
-#ifdef RSOFT_IMPLEMENTATION
 #define RSOFT_X86
 #include <xmmintrin.h> 
 #include <x86intrin.h>
 #endif
 
+#ifdef RSOFT_IMPLEMENTATION
 typedef struct RSoft_renderInfoStruct {
 	RSoft_area bufferSize;
 	RSoft_area canvasSize;
@@ -508,8 +508,8 @@ void RSoft_drawPolygonF(u8* buffer, RSoft_rectF r, size_t angles, u8 color[4]) {
 			//RSoft_point texPoint = RSOFT_POINT(abs((p1.x - (r.x - rect.w))), abs((p2.y - (r.y - rect.h))));
 
 
-			u32 texColor = RSoft_textureGetColor(RSOFT_POINT(abs((p1.x - (r.x - (rect.w / 2)))), 
-															 abs((p1.y - (r.y - (rect.h / 4))))), color);
+			u32 texColor = RSoft_textureGetColor(RSOFT_POINT(fabs((p1.x - (r.x - (rect.w / 2)))), 
+															 fabs((p1.y - (r.y - (rect.h / 4))))), color);
 
 			//u32 texColor = RSoft_textureGetColor(texPoint, info.texRect, info.texture, info.textureArea, color);
 			RSoft_drawLineF(buffer, p1, p2, (u8*)&texColor);
@@ -665,15 +665,15 @@ void RSoft_drawTriangleF(u8* buffer, const RSoft_vector points[3], u8 color[4]) 
 
 	for (float i = 0; i < steps; i++) {
 		//RSoft_drawTriangleOutlineF(buffer, nPoints, color);
-		u32 texColor = RSoft_textureGetColor(RSOFT_POINT(abs(nPoints[1].x - nPoints[0].x),  abs(nPoints[1].y - nPoints[0].y)), color);
+		u32 texColor = RSoft_textureGetColor(RSOFT_POINT(fabs(nPoints[1].x - nPoints[0].x),  fabs(nPoints[1].y - nPoints[0].y)), color);
 		RSoft_drawLineF(buffer, nPoints[0], nPoints[1], (u8*)&texColor);
 
-		texColor = RSoft_textureGetColor(RSOFT_POINT(abs(nPoints[1].x - nPoints[2].x) + slopeX[0],  
-													 abs(nPoints[2].y - nPoints[1].y) + slopeY[0]), color);
+		texColor = RSoft_textureGetColor(RSOFT_POINT(fabs(nPoints[1].x - nPoints[2].x) + slopeX[0],  
+													 fabs(nPoints[2].y - nPoints[1].y) + slopeY[0]), color);
 		RSoft_drawLineF(buffer, nPoints[1], nPoints[2], (u8*)&texColor);
 
-		texColor = RSoft_textureGetColor(RSOFT_POINT(abs(nPoints[2].x - nPoints[0].x) + slopeX[1], 
-													 abs(nPoints[2].y - nPoints[0].y) + slopeY[1]), color);
+		texColor = RSoft_textureGetColor(RSOFT_POINT(fabs(nPoints[2].x - nPoints[0].x) + slopeX[1], 
+													 fabs(nPoints[2].y - nPoints[0].y) + slopeY[1]), color);
 		RSoft_drawLineF(buffer, nPoints[2], nPoints[0], (u8*)&texColor);		
 		for (size_t j = 0; j < 3; j++) {
 			nPoints[j].x -= slopeX[j];
