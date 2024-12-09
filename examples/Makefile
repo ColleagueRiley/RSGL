@@ -61,7 +61,6 @@ else ifeq ($(CC),emcc)
 	NO_GLES = 0
 	detected_OS = web
 	
-	LIBS += -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
 	LIBS += -DRSGL_GL_NO_LEGACY 
 else
 	LIBS += -std=c99 
