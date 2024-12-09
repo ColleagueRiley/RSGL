@@ -80,7 +80,7 @@ EXAMPLE_OUTPUTS = \
 	gui/button \
 	gui/textbox
 
-all: xdg-shell.c $(EXAMPLE_OUTPUTS) ../libRSGL$(LIB_EXT) ../libRSGL.a
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft ../libRSGL$(LIB_EXT) ../libRSGL.a
 
 examples: $(EXAMPLE_OUTPUTS)
 
