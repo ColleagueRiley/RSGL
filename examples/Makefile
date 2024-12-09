@@ -5,9 +5,9 @@ CC = gcc
 AR = ar
 
 # used for compiling RGFW.o
-CUSTOM_CFLAGS =
+CUSTOM_CFLAGS ?=
 # used for the examples
-CFLAGS = 
+CFLAGS =  
 
 LIBS := -static -lgdi32 -lm -lopengl32 -lwinmm -ggdb
 EXT = .exe
@@ -60,7 +60,7 @@ else ifeq ($(CC),emcc)
 	EXT = .js
 	NO_GLES = 0
 	detected_OS = web
-
+	
 	LIBS += -DRSGL_GL_NO_LEGACY 
 else
 	LIBS += -std=c99 
@@ -79,15 +79,23 @@ EXAMPLE_OUTPUTS = \
 	gui/button \
 	gui/textbox
 
-all: xdg-shell.c $(EXAMPLE_OUTPUTS) ../libRSGL$(LIB_EXT) ../libRSGL.a
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft ../libRSGL$(LIB_EXT) ../libRSGL.a
 
 examples: $(EXAMPLE_OUTPUTS)
+
+
+advanced/rsoft: advanced/rsoft.c ../RSGL.h
+ifeq ($(CC),emcc)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
+else
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ $< $(LIBS) -o $@$(EXT)
+endif
 
 advanced/glfw: advanced/glfw.c ../RSGL.h 
 	$(CC) $(CFLAGS) $(WARNIGNS) -I../ $< $(LIBS) -lglfw -o $@$(EXT)
 
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
-	$(CC) $(CFLAGS) $(WARNINGS) -I../ $< $(LIBS) $(LINK_GL3)  -o $@$(EXT)
+	$(CC) $(WARNINGS) -I../ $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
@@ -95,6 +103,9 @@ debug: all
 		.$(OS_DIR)$$exe$(EXT); \
 	done
 	
+	make advanced/rsoft
+	.$(OS_DIR)advanced$(OS_DIR)rsoft
+
 	make advanced/glfw
 	.$(OS_DIR)advanced$(OS_DIR)glfw
 	make clean
