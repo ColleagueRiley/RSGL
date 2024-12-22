@@ -21,10 +21,10 @@ int main(void) {
 
             switch (win->event.type) {
                 case RGFW_keyPressed:
-                    printf("key pressed %i %s\n", win->event.keyCode, win->event.keyName);
+                    printf("key pressed %i %c %s\n", win->event.key, win->event.keyChar, win->event.keyName);
                     break;
                 case RGFW_keyReleased:
-                    printf("key released %i %s\n", win->event.keyCode, win->event.keyName);
+                    printf("key released %i %c %s\n", win->event.key, win->event.keyChar, win->event.keyName);
                     break;
                 case RGFW_mouseButtonPressed:
                     printf("mouse button pressed %i\n", win->event.button);
