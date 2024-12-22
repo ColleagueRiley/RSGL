@@ -35,22 +35,13 @@ int main(void)
 
 	RSGL_glfw_init(window);
 
-    u32 easy_font = RSGL_loadFont("Super Easy.ttf");
-    RSGL_setFont(easy_font);
-
     u32 comicSans = RSGL_loadFont("COMICSANS.ttf");
 
     while (!glfwWindowShouldClose(window)) {
 		RSGL_checkEvent(window);
 
-        RSGL_setFont(easy_font);
-
-		RSGL_openBlankContainer(RSGL_RECT(0, 0, 640, 480));
-			
-		RSGL_widgetAlign(RSGL_ALIGN_CENTER | RSGL_ALIGN_MIDDLE);
-		RSGL_labeledButton("generic", RSGL_RECTF(50, 50, 100, 50), RSGL_STYLE_DARK | RSGL_STYLE_ROUND);		
-
         RSGL_setFont(comicSans);
+        RSGL_drawText("Hello, GLFW!", RSGL_CIRCLE(100, 100, 20), RSGL_RGB(255, 255, 255));
 
         RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
         RSGL_clear(RSGL_RGB(20, 20, 60));
