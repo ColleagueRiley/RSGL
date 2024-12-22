@@ -30,7 +30,7 @@
     #define RSGL_NO_SAVE_IMAGE - do not save/load images (don't use RSGL_drawImage if you use this), 
                                     RSGL_drawImage saves the file name + texture so it can load it
                                     when you ask for it later. This disables that 
-    #define RSGL_INIT_FONTS [number of fonts] - set hFow much room should be pre-allocated for fonts by fontstash
+    #define RSGL_INIT_FONTS [number of fonts] - set how much room should be pre-allocated for fonts by fontstash
                                                 this avoids performance issues related to RSGL_REALLOC
                                                 RSGL_INIT_FONTS = 4 by default
     #define RSGL_INIT_IMAGES [number of fonts] - set how much room should be pre-allocated for images by RSGL

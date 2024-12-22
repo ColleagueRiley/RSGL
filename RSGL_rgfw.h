@@ -51,13 +51,13 @@ b8 RSGL_checkEvent(void* userPtr) {
 	switch (win->event.type) {
 		case RGFW_keyPressed:
 			ev.type = RSGL_keyPressed;
-			ev.keyCode = RSGL_convertKey(win->event.keyCode);
-			ev.ch = RGFW_keyCodeToCharAuto(win->event.keyCode, win->event.lockState);
+			ev.keyCode = RSGL_convertKey(win->event.key);
+			ev.ch = win->event.keyChar;
 			break;
 		case RGFW_keyReleased:
 			ev.type = RSGL_keyReleased;
-			ev.keyCode = RSGL_convertKey(win->event.keyCode);
-			ev.ch = RGFW_keyCodeToCharAuto(win->event.keyCode, win->event.lockState);
+			ev.keyCode = RSGL_convertKey(win->event.key);
+			ev.ch = win->event.keyChar;
 			break;
 		case RGFW_mouseButtonPressed:
 			ev.type = RSGL_mouseButtonPressed;
