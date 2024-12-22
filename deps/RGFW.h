@@ -5857,7 +5857,7 @@ RGFW_UNUSED(win); /*!< if buffer rendering is not being used */
 		if (!IsWindow(win->src.window)) {
 			win->event.type = RGFW_quit;
 			RGFW_windowQuitCallback(win);
-			return &win->event.type;
+			return &win->event;
 		}
 
 		if (PeekMessageA(&msg, win->src.window, 0u, 0u, PM_REMOVE) == 0)
