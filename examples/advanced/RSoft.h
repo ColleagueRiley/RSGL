@@ -504,11 +504,11 @@ void RSoft_drawPolygonF(u8* buffer, RSoft_rectF r, size_t angles, u8 color[4]) {
 		
 			RSoft_vector p1 = RSOFT_VECTOR2D(r.x - (RSoft_cos(delta) * r.w), r.y + (RSoft_sin(delta) * r.h));
 			RSoft_vector p2 = RSOFT_VECTOR2D(r.x - (RSoft_cos(delta2) * r.w), r.y + (RSoft_sin(delta2) * r.h));
-			RSoft_point texPoint = RSOFT_POINT(abs((p1.x - (r.x - rect.w))), abs((p2.y - (r.y - rect.h))));
+			RSoft_point texPoint = RSOFT_POINT(fabsf((p1.x - (r.x - rect.w))), fabsf((p2.y - (r.y - rect.h))));
 
 
-			u32 texColor = RSoft_textureGetColor(RSOFT_POINT(abs((p1.x - (r.x - (rect.w / 2)))), 
-															 abs((p1.y - (r.y - (rect.h / 4))))), color);
+			u32 texColor = RSoft_textureGetColor(RSOFT_POINT(fabs((p1.x - (r.x - (rect.w / 2)))), 
+															 fabs((p1.y - (r.y - (rect.h / 4))))), color);
 
 			//u32 texColor = RSoft_textureGetColor(texPoint, info.texRect, info.texture, info.textureArea, color);
 			RSoft_drawLineF(buffer, p1, p2, (u8*)&texColor);
