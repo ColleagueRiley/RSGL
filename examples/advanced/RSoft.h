@@ -679,15 +679,15 @@ void RSoft_drawTriangleF(u8* buffer, const RSoft_vector points[3], u8 color[4]) 
 		}
     }
 
-    for(i32 y = points[1].y; y < points[2].y; y++) {
+    for(float y = points[1].y; y < points[2].y; y++) {
         if(y < 0 || y > info.bufferSize.h)
 			continue;
 		
-		i32 s1 = delta_vector_cb.y != 0 ?
+		float s1 = delta_vector_cb.y != 0 ?
 			(y - points[2].y) * delta_vector_cb.x / delta_vector_cb.y + points[2].x :
 			points[2].x;
 
-		i32 s2 = delta_vector_ca.y != 0 ?
+		float s2 = delta_vector_ca.y != 0 ?
 			(y - points[2].y) * delta_vector_ca.x / delta_vector_ca.y + points[2].x :
 			points[2].x;
 
@@ -697,7 +697,7 @@ void RSoft_drawTriangleF(u8* buffer, const RSoft_vector points[3], u8 color[4]) 
 			s2 = b;
 		}
 
-		for(i32 x = s1; x <= s2; x++) {
+		for(float x = s1; x <= s2; x++) {
 			u32 texColor = RSoft_textureGetColor(RSOFT_POINT(x - s1, y - points[1].y), color);
 			RSoft_drawVector(buffer, RSOFT_VECTOR2D(x, y), (u8*)(&texColor));
 		}
