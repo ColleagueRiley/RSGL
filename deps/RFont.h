@@ -343,11 +343,15 @@ inline void RFont_render_legacy(u8 legacy);
 #include "stb_truetype.h"
 #endif
 
+#ifndef RFONT_GET_TEXPOSX
 #define RFONT_GET_TEXPOSX(x) (float)((float)(x) / (float)(RFONT_ATLAS_WIDTH))
 #define RFONT_GET_TEXPOSY(y) (float)((float)(y) / (float)(RFONT_ATLAS_HEIGHT))
+#endif
 
+#ifndef RFONT_GET_WORLD_X
 #define RFONT_GET_WORLD_X(x, w) (float)((x) / (((w) / 2.0f)) - 1.0f)
 #define RFONT_GET_WORLD_Y(y, h) (float)(1.0f - ((y) / ((h) / 2.0f)))
+#endif
 
 /* 
 stb defines required by RFont
