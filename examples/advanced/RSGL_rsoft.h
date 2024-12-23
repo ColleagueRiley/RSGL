@@ -91,7 +91,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 						cIndex += 8;
 					}
 					break;
-				case RSGL_TRIANGLE_FAN:
+				case RSGL_TRIANGLE_FAN: {
 					size_t start = vIndex + 3;
 					for (j = info->batches[i].start; j < info->batches[i].len; j += 3) {
 						// info->texCoords[tIndex], info->texCoords[tIndex + 1]
@@ -116,6 +116,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 						cIndex += 12;
 					}
 					break;
+				}
 				default: break;
 			}
 		}
