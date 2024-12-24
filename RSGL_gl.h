@@ -171,7 +171,7 @@ typedef struct RSGL_INFO {
 
 RSGL_INFO RSGL_gl;
 
-void RSGL_renderDeleteTexture(u32 tex) { glDeleteTextures(1, &tex); }
+void RSGL_renderDeleteTexture(RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
 void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
 
 void RSGL_renderClear(float r, float g, float b, float a) {
@@ -336,7 +336,7 @@ void RSGL_renderFree(void) {
 
     RSGL_renderDeleteProgram(RSGL_gl.program);
 
-    glDeleteTextures(1, &RSGL_gl.defaultTex); /* Unload default texture */
+    glDeleteTextures(1, (u32*)&RSGL_gl.defaultTex); /* Unload default texture */
     #endif
 }
 
@@ -502,7 +502,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 #endif
 
 /* textures / images */
-u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
+RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
     unsigned int id = 0;
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -532,7 +532,7 @@ u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
     return id;
 }
 
-void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
     glBindTexture(GL_TEXTURE_2D, texture);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
 
@@ -690,7 +690,7 @@ void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
 #define GL_CLAMP_TO_EDGE			0x812F
 #endif
 
-u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
    #endif
@@ -738,7 +738,7 @@ void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels,
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
 }
 
-void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h) {
+void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
    glEnable(GL_TEXTURE_2D);
    
 	GLint alignment, rowLength, skipPixels, skipRows;

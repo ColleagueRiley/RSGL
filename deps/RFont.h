@@ -75,7 +75,6 @@ int main () {
 }
 */
 
-
 #ifndef RFONT_NO_STDIO
 #include <stdio.h>
 #endif
@@ -112,10 +111,15 @@ int main () {
 #if !defined(b8)
 	typedef u8 b8;
 #endif
+
 /* 
 You can define these yourself if 
 you want to change anything
 */
+
+#ifndef RFont_texture
+typedef u32 RFont_texture;
+#endif
 
 #ifndef RFONT_MAX_GLYPHS
 #define RFONT_MAX_GLYPHS 652
@@ -325,10 +329,10 @@ inline RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t
 */
 inline void RFont_render_set_color(float r, float g, float b, float a); /* set the current rendering color */
 inline void RFont_render_init(void); /* any initalizations the renderer needs to do */
-inline u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight); /* create a bitmap texture based on the given size */
-inline void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h); /* add the given bitmap to the texture based on the given coords and size data */
-inline void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts); /* render the text, using the vertices, atlas texture, and texture coords given. */
-inline void RFont_render_free(u32 atlas); /* free any memory the renderer might need to free */
+inline RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight); /* create a bitmap texture based on the given size */
+inline void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h); /* add the given bitmap to the texture based on the given coords and size data */
+inline void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t nverts); /* render the text, using the vertices, atlas texture, and texture coords given. */
+inline void RFont_render_free(RFont_texture atlas); /* free any memory the renderer might need to free */
 
 /* (if modern opengl is being used) switch to rendering using opengl legacy or not */
 inline void RFont_render_legacy(u8 legacy);
@@ -343,11 +347,15 @@ inline void RFont_render_legacy(u8 legacy);
 #include "stb_truetype.h"
 #endif
 
+#ifndef RFONT_GET_TEXPOSX
 #define RFONT_GET_TEXPOSX(x) (float)((float)(x) / (float)(RFONT_ATLAS_WIDTH))
 #define RFONT_GET_TEXPOSY(y) (float)((float)(y) / (float)(RFONT_ATLAS_HEIGHT))
+#endif
 
+#ifndef RFONT_GET_WORLD_X
 #define RFONT_GET_WORLD_X(x, w) (float)((x) / (((w) / 2.0f)) - 1.0f)
 #define RFONT_GET_WORLD_Y(y, h) (float)(1.0f - ((y) / ((h) / 2.0f)))
+#endif
 
 /* 
 stb defines required by RFont
@@ -439,7 +447,7 @@ struct RFont_font {
    RFont_glyph glyphs[RFONT_MAX_GLYPHS]; /* glyphs */
    size_t glyph_len;
 
-   u32 atlas; /* atlas texture */
+   RFont_texture atlas; /* atlas texture */
    float atlasX; /* the current x position inside the atlas */
 };
 
@@ -878,7 +886,7 @@ void RFont_opengl_getError(void) {
 
 #endif
 
-u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
    #endif
@@ -926,7 +934,7 @@ void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels,
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
 }
 
-void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h) {
+void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
    glEnable(GL_TEXTURE_2D);
    
 	GLint alignment, rowLength, skipPixels, skipRows;
@@ -956,7 +964,7 @@ void RFont_render_set_color(float r, float g, float b, float a) {
    rglColor4f(r, g, b, a);
 }
 
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
+void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
    glShadeModel(GL_SMOOTH);
@@ -995,7 +1003,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_DEPTH_TEST);
 }
 
-void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
+void RFont_render_free(RFont_texture atlas) { glDeleteTextures(1, &atlas); }
 void RFont_render_legacy(u8 legacy) { rglLegacy(legacy); }
 void RFont_render_init() {}
 #endif /* RFONT_RENDER_RGL */
@@ -1006,7 +1014,7 @@ void RFont_render_set_color(float r, float g, float b, float a) {
    glColor4f(r, g, b, a);
 }
 
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
+void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
    glShadeModel(GL_SMOOTH);
@@ -1045,7 +1053,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_DEPTH_TEST);
 }
 
-void RFont_render_free(u32 atlas) { glDeleteTextures(1, &atlas); }
+void RFont_render_free(RFont_texture atlas) { glDeleteTextures(1, &atlas); }
 void RFont_render_legacy(u8 legacy) { RFONT_UNUSED(legacy) }
 void RFont_render_init() {}
 #endif /* defined(RFONT_RENDER_LEGACY) && !defined(RFONT_RENDER_RGL)  */
@@ -1182,7 +1190,7 @@ void RFont_render_init() {
    #endif
 }
      
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
+void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_TEXTURE_2D);
    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -1277,7 +1285,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
    glEnable(GL_DEPTH_TEST);
 }
 
-void RFont_render_free(u32 atlas) {
+void RFont_render_free(RFont_texture atlas) {
    glDeleteTextures(1, &atlas);
 
    if (RFont_gl.vao == 0 || RFont_gl.legacy)
