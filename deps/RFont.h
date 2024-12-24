@@ -118,7 +118,7 @@ you want to change anything
 */
 
 #ifndef RFont_texture
-typedef RFont_texture u32;
+typedef u32 RFont_texture;
 #endif
 
 #ifndef RFONT_MAX_GLYPHS
@@ -886,7 +886,7 @@ void RFont_opengl_getError(void) {
 
 #endif
 
-RFont_create_atlas RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
    #endif
