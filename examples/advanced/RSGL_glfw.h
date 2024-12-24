@@ -11,7 +11,7 @@
 #include "RSGL.h"
 #endif
 
-#define GLFW_UNUSED(x) if(x){}
+#define GLFW_UNUSED(x) (void)(x)
 
 
 RSGLDEF void RSGL_glfw_init(GLFWwindow* window);

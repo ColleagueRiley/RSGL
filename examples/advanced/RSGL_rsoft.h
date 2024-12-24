@@ -20,8 +20,26 @@ typedef struct RSGL_INFO {
 
 RSGL_INFO RSGL_rsoft;
 
-void RSGL_renderDeleteTexture(u32 tex) { 
+typedef struct RSGL_rsoft_texture {
+	u8* bitmap;
+	RSGL_area memsize;
+	u8 channels;
 
+	struct RSGL_rsoft_texture* next;
+	struct RSGL_rsoft_texture* prev;
+} RSGL_rsoft_texture;
+
+RSGL_rsoft_texture* RSGL_rsoft_textures = NULL;
+
+void RSGL_renderDeleteTexture(RSGL_texture tex) { 
+	RSGL_rsoft_texture* texture = (RSGL_rsoft_texture*)tex;
+	if (texture->prev != NULL)
+		texture->prev->next = texture->next;
+	else
+		RSGL_rsoft_textures = NULL;
+	
+	free(texture->bitmap);
+	free(texture);
 }
 void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h) { 
 	RSoft_setCanvasSize(RSOFT_AREA(w, h));
@@ -39,14 +57,21 @@ void RSGL_renderInit(void* buffer, RSGL_RENDER_INFO* info) {
 }
 
 void RSGL_renderFree(void) {   
-
+	if (RSGL_rsoft_textures != NULL) {
+		RSGL_rsoft_texture* texture = RSGL_rsoft_textures;
+		while (texture != NULL) {
+			RSGL_rsoft_texture* next = texture->next;
+			free(texture->bitmap);
+			free(texture);
+			texture = next;
+		}
+	}
 }
 
 void RSGL_renderBatch(RSGL_RENDER_INFO* info) { 
         size_t i, j;
         size_t tIndex = 0, cIndex = 0, vIndex = 0;
        
-		RSGL_UNUSED(tIndex);
 		for (i = 0; i < info->len; i++) {
             u32 mode = info->batches[i].type;
             if (mode > 0x0100)
@@ -55,6 +80,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
                 mode -= 0x0010;
            
             // glDrawArrays(mode, info->batches[i].start, info->batches[i].len);
+			RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)info->batches[i].tex;
 
 			switch (mode) {
 				case RSGL_TRIANGLES:
@@ -67,7 +93,10 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 												 };
 						u8 color[4] = {info->colors[cIndex] * 255, info->colors[cIndex + 1] * 255, 
 										info->colors[cIndex + 2] * 255, info->colors[cIndex + 3] * 255};
-						
+
+						RSoft_rect texRect = {info->texCoords[tIndex] * tex->memsize.w, info->texCoords[tIndex + 1] * tex->memsize.h, 
+											tex->memsize.w, tex->memsize.h};	
+						RSoft_setTexture(tex->bitmap, texRect, tex->memsize);
 						RSoft_drawTriangleF(RSGL_rsoft.buffer, npoints, color);
 						
 						tIndex += 6;
@@ -126,23 +155,44 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 }
 
 /* textures / images */
-u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
-    unsigned int id = 0;
+RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
+	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)RSGL_MALLOC(sizeof(RSGL_rsoft_texture));
+	*tex = (RSGL_rsoft_texture){(u8*)RSGL_MALLOC(memsize.w * memsize.h * channels), memsize, channels, NULL, NULL};
+	
+	if (bitmap != NULL)
+		memcpy(tex->bitmap, bitmap, memsize.w * memsize.h * channels);
 
-    return id;
+	if (RSGL_rsoft_textures == NULL)
+		RSGL_rsoft_textures = tex;
+	else {
+		RSGL_rsoft_textures->prev = RSGL_rsoft_textures;
+		RSGL_rsoft_textures->next = tex;
+	}
+
+    return (u64)tex;
 }
 
-void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)texture;
+	tex->memsize = memsize;
+	tex->channels = channels;
+	tex->bitmap = RSGL_REALLOC(tex->bitmap, memsize.w * memsize.h * channels);
+	memcpy(tex->bitmap, bitmap, memsize.w * memsize.h * channels);
 
+	free(tex->bitmap);
 }
 
-u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
-	u32 id = 0;
-	return id;
+RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+	return (u64)RSGL_renderCreateTexture(NULL, RSGL_AREA(atlasWidth, atlasHeight), 4);
 }
 
-void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h) {
-
+void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
+	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)atlas;
+	
+	for (float i = 0; i < h; i++) {
+		memcpy(tex->bitmap + (u32)(((i + y) * tex->memsize.w * 4) + x), bitmap + (u32)(i * w * 4),
+				tex->memsize.w * tex->channels);
+	}
 }
 
 void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) { RSGL_UNUSED(program); RSGL_UNUSED(value); RSGL_UNUSED(len);}

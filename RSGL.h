@@ -145,6 +145,10 @@ RSGL basicDraw types
 	typedef u32 b32;
 #endif
 
+#ifndef RSGL_texture
+#define RSGL_texture size_t
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -354,7 +358,7 @@ RSGL_draw
 typedef struct RSGL_drawArgs {
     float* gradient; /* does not allocate any memory */
     
-    u32 texture;
+    RSGL_texture texture;
     u32 gradient_len;
 
     RSGL_rect currentRect; /* size of current surface */
@@ -368,7 +372,7 @@ typedef struct RSGL_drawArgs {
 } RSGL_drawArgs;
 
 RSGLDEF void RSGL_rotate(RSGL_point3D rotate); /* apply rotation to drawing */
-RSGLDEF void RSGL_setTexture(u32 texture); /* apply texture to drawing */
+RSGLDEF void RSGL_setTexture(RSGL_texture texture); /* apply texture to drawing */
 RSGLDEF void RSGL_setProgram(u32 program); /* use shader program for drawing */
 RSGLDEF void RSGL_setGradient(
                                 float* gradient, /* array of gradients */
@@ -438,7 +442,8 @@ RSGLDEF void RSGL_basicDraw(
 
 typedef struct RSGL_BATCH {
     size_t start, len; /* when batch starts and it's length */
-    u32 type, tex;
+    u32 type;
+    RSGL_texture tex;
     float lineWidth;
 } RSGL_BATCH; /* batch data type for rendering */
 
@@ -464,11 +469,11 @@ RSGLDEF void RSGL_renderFree(void); /* free render backend */
 RSGLDEF void RSGL_renderClear(float r, float g, float b, float a);
 RSGLDEF void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
-RSGLDEF u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
+RSGLDEF RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
 /* updates an existing texture wiht a new bitmap */
-RSGLDEF void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels);
+RSGLDEF void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
 /* delete a texture */
-RSGLDEF void RSGL_renderDeleteTexture(u32 tex);
+RSGLDEF void RSGL_renderDeleteTexture(RSGL_texture tex);
 
 /* custom shader program */
 typedef struct RSGL_programInfo {
@@ -482,7 +487,7 @@ RSGLDEF void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8
 /* these are RFont functions that also must be defined by the renderer
 
 32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight);
-void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h);
+void RFont_bitmap_to_atlas(RSGL_rsoft_texture atlas, u8* bitmap, float x, float y, float w, float h);
 
 */
 
@@ -593,7 +598,7 @@ RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textE
     but you can still free it early
 */
 
-typedef struct RSGL_image { u32 tex; RSGL_area srcSize; char file[255]; } RSGL_image;
+typedef struct RSGL_image { RSGL_texture tex; RSGL_area srcSize; char file[255]; } RSGL_image;
 RSGLDEF RSGL_image RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) ((RSGL_image) RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0}))
@@ -696,6 +701,7 @@ macos:
 
 #define RFont_area RSGL_area
 
+#define RFont_texture RSGL_texture
 #ifndef RSGL_NO_DEPS_FOLDER
 #include "deps/RFont.h"
 #else
@@ -1033,7 +1039,7 @@ RSGL_draw
 void RSGL_rotate(RSGL_point3D rotate){
     RSGL_args.rotate = rotate;
 }
-void RSGL_setTexture(u32 texture) { 
+void RSGL_setTexture(RSGL_texture texture) { 
     RSGL_args.texture = texture;
 }
 void RSGL_setProgram(u32 program) { 
@@ -1188,10 +1194,10 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
         return RSGL_drawRectFOutline(r, 1, c);
         
     float texPoints[] = {
-                                0.0f, 0.0f, 
-                                0.0f, 1.0f, 
-                                1.0f, 0.0f, 
-                                1.0f, 1.0f, 
+                                0.0f, 0.0f,
+                                0.0f, 1.0f,
+                                1.0f, 0.0f,
+                                1.0f, 1.0f,
                                 1.0f, 0.0f, 
                                 0.0f, 1.0f
                             };
@@ -1459,7 +1465,7 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
     }
 
     if (r.w || r.h) {
-        u32 tex = RSGL_args.texture;
+        RSGL_texture tex = RSGL_args.texture;
         RSGL_setTexture(img.tex);
 
         RSGL_drawRect(r, RSGL_RGB(255, 255, 255));
@@ -1564,7 +1570,7 @@ void RFont_render_set_color(float r, float g, float b, float a) {
     RFontcolor = RSGL_RGBA(r * 255, g * 255, b * 255, a * 255);
 }
 
-void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
+void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t nverts) {
     RSGL_drawArgs save = RSGL_args;
     RSGL_rotate(RSGL_POINT3D(0, 0, 0));
     RSGL_setTexture(atlas);
@@ -1574,7 +1580,7 @@ void RFont_render_text(u32 atlas, float* verts, float* tcoords, size_t nverts) {
 
 void RFont_render_init(void) { }
 
-void RFont_render_free(u32 atlas) {
+void RFont_render_free(RFont_texture atlas) {
    RSGL_renderDeleteTexture(atlas);
 }
 
