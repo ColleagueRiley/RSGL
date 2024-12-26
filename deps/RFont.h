@@ -79,7 +79,12 @@ int main () {
 #include <stdio.h>
 #endif
 
+#ifndef RFONT_MALLOC
 #include <stdlib.h>
+#define RFONT_MALLOC malloc
+#define RFONT_FREE free
+#endif
+
 #include <math.h>
 #include <assert.h>
 #include <string.h>
@@ -138,7 +143,7 @@ typedef u32 RFont_texture;
 #endif
 
 #ifndef RFONT_INIT_VERTS
-#define RFONT_INIT_VERTS 1024
+#define RFONT_INIT_VERTS 1024 * 600
 #endif
 
 #ifndef RFONT_TEXTFORMAT_MAX_SIZE
@@ -472,8 +477,8 @@ void RFont_init(size_t width, size_t height) {
     RFont_render_init();
     #endif
 
-   RFont_verts = malloc(sizeof(float) * RFONT_INIT_VERTS * 600);
-   RFont_tcoords = malloc(sizeof(float) * RFONT_INIT_VERTS * 600);
+   RFont_verts = RFONT_MALLOC(sizeof(float) * RFONT_INIT_VERTS);
+   RFont_tcoords = RFONT_MALLOC(sizeof(float) * RFONT_INIT_VERTS);
 }
 
 #ifndef RFONT_NO_STDIO
@@ -483,7 +488,7 @@ RFont_font* RFont_font_init(const char* font_name) {
    fseek(ttf_file, 0U, SEEK_END);
    size_t size = ftell(ttf_file);
 
-   char* ttf_buffer = (char*)malloc(sizeof(char) * size); 
+   char* ttf_buffer = (char*)RFONT_MALLOC(sizeof(char) * size); 
    fseek(ttf_file, 0U, SEEK_SET);
 
    size_t out = fread(ttf_buffer, 1, size, ttf_file);
@@ -495,7 +500,7 @@ RFont_font* RFont_font_init(const char* font_name) {
 #endif
 
 RFont_font* RFont_font_init_data(u8* font_data, b8 auto_free) {
-   RFont_font* font = (RFont_font*)malloc(sizeof(RFont_font));
+   RFont_font* font = (RFont_font*)RFONT_MALLOC(sizeof(RFont_font));
 
    stbtt_InitFont(&font->info, font_data, 0);
 
@@ -523,14 +528,14 @@ void RFont_font_free(RFont_font* font) {
    #endif
 
    if (font->free_font_memory)
-      free(font->info.data);
+      RFONT_FREE(font->info.data);
    
-   free(font);
+   RFONT_FREE  (font);
 }
 
 void RFont_close(void) {
-   free(RFont_verts);
-   free(RFont_tcoords);
+   RFONT_FREE(RFont_verts);
+   RFONT_FREE(RFont_tcoords);
 }
 
 
@@ -641,7 +646,7 @@ RFont_glyph RFont_font_add_char(RFont_font* font, char ch, size_t size) {
 
    font->atlasX += glyph->w;
 
-   free(bitmap);
+   RFONT_FREE(bitmap);
 
    i32 advanceX;
    
@@ -909,7 +914,7 @@ RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
 
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-   free(data);
+   RFONT_FREE(data);
 
    glBindTexture(GL_TEXTURE_2D, id);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
@@ -1089,10 +1094,10 @@ void RFont_debug_shader(u32 src, const char* shader, const char* action) {
             glGetShaderiv(src, GL_INFO_LOG_LENGTH, &infoLogLength);
 
             if (infoLogLength > 0) {
-                GLchar* infoLog = (GLchar*)malloc(infoLogLength);
+                GLchar* infoLog = (GLchar*)RFONT_MALLOC(infoLogLength);
                 glGetShaderInfoLog(src, infoLogLength, NULL, infoLog);
                 printf("%s Shader info log:\n%s\n", shader, infoLog);
-                free(infoLog);
+                RFONT_FREE(infoLog);
             }
         }
         
@@ -1236,7 +1241,7 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
       glBufferData(GL_ARRAY_BUFFER, nverts * 2 * sizeof(float), tcoords, GL_DYNAMIC_DRAW);
       glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
-      float* colors = malloc(sizeof(float) * nverts * 4);
+      float* colors = RFONT_MALLOC(sizeof(float) * nverts * 4);
 
       u32 i = 0;
       for (i = 0; i < (nverts * 4); i += 4) {
@@ -1251,9 +1256,9 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
       glBufferData(GL_ARRAY_BUFFER, nverts * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
       glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, NULL);
 
-      free(colors);
+      RFONT_FREE(colors);
 
-      GLushort* indices = malloc(sizeof(GLushort) * 6 * nverts);
+      GLushort* indices = RFONT_MALLOC(sizeof(GLushort) * 6 * nverts);
       int k = 0;
 
       u32 j;
@@ -1271,7 +1276,7 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RFont_gl.ebo);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * 6 * nverts, indices, GL_STATIC_DRAW);
 
-      free(indices);
+      RFONT_FREE(indices);
 
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, atlas);
@@ -1320,10 +1325,10 @@ you probably don't care about this part if you're reading just the RFont code
    typedef char stbtt__check_size32[sizeof(i32)==4 ? 1 : -1];
    typedef char stbtt__check_size16[sizeof(i16)==2 ? 1 : -1];
 
-   // #define your own functions "STBTT_malloc" / "STBTT_free" to avoid malloc.h
+   // #define your own functions "STBTT_malloc" / "STBTT_free" to avoid RFONT_MALLOC
    #ifndef STBTT_malloc
-   #define STBTT_malloc(x,u)  ((void)(u),malloc(x))
-   #define STBTT_free(x,u)    ((void)(u),free(x))
+   #define STBTT_malloc(x,u)  ((void)(u),RFONT_MALLOC(x))
+   #define STBTT_free(x,u)    ((void)(u),RFONT_FREE(x))
    #endif
 
 #ifdef __cplusplus
