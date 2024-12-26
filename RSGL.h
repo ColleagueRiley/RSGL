@@ -702,6 +702,9 @@ macos:
 #define RFont_area RSGL_area
 
 #define RFont_texture RSGL_texture
+#define RFONT_MALLOC malloc
+#define RFONT_FREE free
+
 #ifndef RSGL_NO_DEPS_FOLDER
 #include "deps/RFont.h"
 #else
