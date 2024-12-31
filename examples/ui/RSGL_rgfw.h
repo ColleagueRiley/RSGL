@@ -11,7 +11,7 @@
 
 #ifndef RSGL_H
 #include "RSGL.h"
-#include "RSGL_gui.h"
+#include "RSGL_ui.h"
 #endif
 
 void RSGL_setMouseStandard(void* userPtr, u32 mouse) {

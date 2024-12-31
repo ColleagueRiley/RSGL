@@ -1,6 +1,7 @@
-#define RSGL_IMPLEMENTATION
+#include <GLFW/glfw3.h>
 
-#include "RSGL_glfw.h" 
+#define RSGL_IMPLEMENTATION
+#include "RSGL.h"
 
 #define GLFW_UNUSED(x) if(x){}
 
@@ -33,12 +34,10 @@ int main(void)
 
     RSGL_init((RSGL_area){640, 480}, glfwGetProcAddress);
 
-	RSGL_glfw_init(window);
-
     u32 comicSans = RSGL_loadFont("COMICSANS.ttf");
 
     while (!glfwWindowShouldClose(window)) {
-		RSGL_checkEvent(window);
+		glfwPollEvents();
 
         RSGL_setFont(comicSans);
         RSGL_drawText("Hello, GLFW!", RSGL_CIRCLE(100, 100, 20), RSGL_RGB(255, 255, 255));
@@ -50,9 +49,6 @@ int main(void)
 	}
 
     glfwDestroyWindow(window);
-
-    if (stdCursor != NULL)
-        glfwDestroyCursor(stdCursor);
 
     RSGL_free();
 

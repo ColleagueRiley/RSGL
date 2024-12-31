@@ -6,12 +6,12 @@ RSGL_gui
 */
 
 #ifdef RSGL_IMPLEMENTATION
-#define RSGL_GUI_IMPLEMENTATION
+#define RSGL_UI_IMPLEMENTATION
 #endif
 
-#ifndef RSGL_GUI_H
+#ifndef RSGL_UI_H
 
-#define RSGL_GUI_H
+#define RSGL_UI_H
 
 /* 
 ******************
@@ -163,9 +163,9 @@ RSGLDEF void RSGL_grab(RSGL_rectF rect, RSGL_widgetStyle args, b8* grabbed);
 RSGLDEF void RSGL_slider(RSGL_rectF rect, RSGL_widgetStyle args, float* value, b8* grabbed);
 RSGLDEF RSGL_widgetState RSGL_radioButtons(RSGL_rectF rect, u32 count, RSGL_widgetStyle args, u8* selected, u8* index);
 RSGLDEF b8 RSGL_combobox(RSGL_rectF rect, u32 args, char* strings[], size_t len, b8* open, size_t* index); 
-#endif /* ndef RSGL_GUI_H */
+#endif /* ndef RSGL_UI_H */
 
-#ifdef RSGL_GUI_IMPLEMENTATION
+#ifdef RSGL_UI_IMPLEMENTATION
 
 /*
 ********************
@@ -828,4 +828,4 @@ RSGL_widgetState RSGL_button(RSGL_rectF rect, RSGL_widgetStyle args) {
 }
 
 
-#endif /*  RSGL_GUI_IMPLEMENTATION */
+#endif /*  RSGL_UI_IMPLEMENTATION */

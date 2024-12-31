@@ -34,14 +34,7 @@ int main(void) {
     win2 = RGFW_createWindow("subwindow", RGFW_RECT(200, 200, 200, 200), 0);
     #endif
 
-    /*unsigned short gp = RSGL_registerGamepad(win, 0);*/
-    unsigned char i;
-
-    RGFW_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
-
     RSGL_setClearArgs(true);
-
-	u32 fps = 0;
 
     RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
     
@@ -63,39 +56,8 @@ int main(void) {
         #endif
         
         while (RGFW_window_checkEvent(win))  {
-			if (win->event.type == RGFW_windowResized) {
-                printf("window resized");
-            }
-            else if (win->event.type == RGFW_windowMoved) {
-                printf("window moved");
-            }
-            else if (win->event.type == RGFW_quit) {
-                running = 0;  
-                break;
-            }
-            if (RGFW_isPressed(win, RGFW_Up))
-                printf("Pasted : %s\n", RGFW_readClipboard(NULL));
-            else if (RGFW_isPressed(win, RGFW_Down))
-                RGFW_writeClipboard("DOWN", 4);
-            else if (RGFW_isPressed(win, RGFW_Space))
-                printf("fps : %i\n", fps);
-            else if (RGFW_isPressed(win, RGFW_w))
-                RGFW_window_setMouseDefault(win);
-            else if (RGFW_isPressed(win, RGFW_q))
-                RGFW_window_showMouse(win, 0);
-            else if (RGFW_isPressed(win, RGFW_t)) {
-                RGFW_window_setMouse(win, icon, RGFW_AREA(3, 3), 4);
-            }
-            if (win->event.type == RGFW_dnd) {
-                for (i = 0; i < win->event.droppedFilesCount; i++)
-                    printf("dropped : %s\n", win->event.droppedFiles[i]);
-            }
-
-            else if (win->event.type == RGFW_gpButtonPressed)
-                printf("pressed %i\n", win->event.button);
-
-            else if (win->event.type == RGFW_gpAxisMove && !win->event.button)
-                printf("{%i, %i}\n", win->event.axis[0].x, win->event.axis[0].y);
+            if (win->event.type == RGFW_quit)
+                running = 0;
         }
 	
         RGFW_window_makeCurrent(win);
@@ -134,7 +96,6 @@ int main(void) {
             
 			RSGL_clear(RSGL_RGB(255, 255, 255));
 			RGFW_window_swapBuffers(win2);
-			fps = RGFW_window_checkFPS(win, 60);
         }
         #endif
     }

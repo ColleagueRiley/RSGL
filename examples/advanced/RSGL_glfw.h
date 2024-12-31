@@ -1,17 +1,11 @@
 #ifndef RSGL_BACKEND /* all backends must start like this */
 #define RSGL_BACKEND /* this is show RSGL knows if a backend has been loaded or not*/
 
-#define RGFW_point RSGL_point
-#define RGFW_area RSGL_area
-#define RGFW_rect RSGL_rect
-
 #include <GLFW/glfw3.h>
-
-#ifndef RSGL_H
 #include "RSGL.h"
-#endif
+#include "RSGL_ui.h"
 
-#define GLFW_UNUSED(x) (void)(x)
+#define GLFW_UNUSED(x) (void)(x);
 
 
 RSGLDEF void RSGL_glfw_init(GLFWwindow* window);
