@@ -8,6 +8,8 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
 
 `RSGL_gl.h` is used by default for rendering, it renders via OpenGL 1.0 - 4.4.
 
+UI elements have been moved to [`RSGL_ui`](https://github.com/ColleagueRiley/RSGL_ui/), in it's own repo. 
+
 # Build statuses
 ![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
 ![Windows workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/windows.yml/badge.svg)
