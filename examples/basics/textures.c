@@ -3,11 +3,6 @@
 
 #define RSGL_IMPLEMENTATION
 
-#ifdef _WIN32
-#undef __unix__
-#undef __linux__
-#endif
-
 #include "RSGL.h"
 #include <stdio.h>
 
