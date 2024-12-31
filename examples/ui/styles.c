@@ -1,6 +1,5 @@
 #define RSGL_IMPLEMENTATION
-#include "RSGL.h"
-#include "RSGL_gui.h"
+#include "RSGL_rgfw.h"
 
 int main(void) {
     RGFW_window* win = RGFW_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RGFW_CENTER);

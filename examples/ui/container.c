@@ -1,6 +1,5 @@
 #define RSGL_IMPLEMENTATION
-#include "RSGL.h"
-#include "RSGL_gui.h"
+#include "RSGL_rgfw.h"
 
 int main(void) {
     RGFW_setGLSamples(12);

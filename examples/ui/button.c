@@ -1,10 +1,9 @@
 #define RSGL_IMPLEMENTATION
-#include "RSGL.h"
-#include "RSGL_gui.h"
+#include "RSGL_rgfw.h"
 
 int main(void) {
     RGFW_setGLSamples(12);
-    RGFW_window* win = RGFW_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", RGFW_RECT(500, 500, 500, 500), RGFW_CENTER);
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 

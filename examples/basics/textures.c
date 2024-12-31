@@ -1,3 +1,6 @@
+#define RGFW_IMPLEMENTATION
+#include "RGFW.h"
+
 #define RSGL_IMPLEMENTATION
 
 #ifdef _WIN32
@@ -11,11 +14,11 @@
 unsigned char icon[4 * 3 * 3] = {0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF};
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RGFW_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
 		
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
-    RGFW_window_setIcon(win, icon, RSGL_AREA(3, 3), 4);
+    RGFW_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
@@ -26,7 +29,7 @@ int main(void) {
     size_t texTimer2 = 0;
 
     while (RGFW_window_shouldClose(win) == false) {
-        while (RSGL_checkEvent(win))
+        while (RGFW_window_checkEvent(win))
             if (win->event.type == RGFW_quit) {
                 break;
             }
