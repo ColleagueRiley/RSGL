@@ -192,7 +192,7 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
         return;
     }
     #else
-    RGFW_UNUSED(proc)
+    RSGL_UNUSED(proc);
     #endif
     
     static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
