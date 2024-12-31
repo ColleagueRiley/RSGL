@@ -70,7 +70,6 @@ EXAMPLE_OUTPUTS = \
 	basics/basic \
 	basics/text \
 	ui/container \
-	advanced/glVer \
 	basics/textures  \
 	ui/styles \
 	advanced/shader \

@@ -8,8 +8,6 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
 
 `RSGL_gl.h` is used by default for rendering, it renders via OpenGL 1.0 - 4.4.
 
-`RSGL_rgfw.h` is used by default for handling input devices. There is also a example GLFW backend, `examples/advanced/RSGL_glfw.h`
-
 # Build statuses
 ![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
 ![Windows workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/windows.yml/badge.svg)
@@ -18,16 +16,14 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
 # Features
 - No external dependencies, all dependencies are lightweight, bundled in and optional
 - *Can* be used as a single-header file
-- (RSG_rgfw.h) Supports multiple platforms, Windows, MacOS, Linux, etc
 - (RSGL_gl.h) Supports multiple versions of OpenGL (even allowing you to switch during runtime)
 - Easily swappable rendering module 
-- Easily swappable the backend module
+- Bring Your Own Backend (windowing)
 - Basic shape drawing, collisions and drawing operations
 - Many examples included
 - Supports many image file types via stb_image.h
 - Very modular and can easily be changed to suit your needs
 - Free and Open Source
-- Small RSGL_gui.h widget library with dynamic GUI via a convenient styling system (RSGL_gui.h)
 
 # Contacts
 - email : ColleagueRiley@gmail.com 
@@ -42,11 +38,6 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
   - `#define RSGL_NO_TEXT` - makes it so RSGL does not include text rendering functions
   `#define RSGL_NO_SAVE_IMAGE` - makes it so RSGL does not save/load images (don't use RSGL_drawImage if you use this). This is here because RSGL_drawImage saves the file name with its loaded texture so it can load the texture when you use the same file. \
 
-# RSGL_gui 
-RSGL_gui widgets are WIP, the supported widgets include\
-RSGL_alignRect, RSGL_button (checkboxes, toggle buttons, combo boxes, sliders and radio buttons) and widget containers \
-
-RSGL_textBox and RSGL_expandableRect are currently WIP.
 
 # Using RSGL 
 
@@ -94,33 +85,29 @@ RSGL_textBox and RSGL_expandableRect are currently WIP.
 #include "RSGL.h"
 
 int main() {
-    RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);
+    // create window with your API choice here
 
+    u32 WIDTH = //??? window width
+    u32 HEIGHT = //??? window height
+    void* procAddress = //??? renderer proc address (ex. RGFW_getProcAddress/glfwGetProcAddress)
+
+    RSGL_init(RSGL_AREA(WIDTH, HEIGHT), RGFW_getProcAddress);	
+    
     bool running = true;
-
     while (running) {
-      while (RSGL_window_checkEvent(win)) {
-          if (win->event.type == RSGL_quit) {
-            running = false;
-            break;
-          }
-      }
+      // (handle your API's events here)
 
       RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
       RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
+
+      // swap draw buffer with API here 
+      // for example RGFW_window_swapBuffer or glfwSwapBuffers
     }
 
-    RSGL_window_close(win);
+    RSGL_free();
+    // free window API here
 }
 ```
-
-This example can be compiled with :\
-Linux:\
-`gcc <file.c> -lX11 -lGLX -lm -o example`\
-Windows :\
-`gcc <file.c> -lopengl32 -lgdi32 -lshell32 -o example`\
-MacOS :\
-`gcc <file.c> -lm -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo -o example`
 
 Both of the included makefiles  (`Makefile` or `examples/Makefile`) use the Unlicense license so feel free to copy from either of them if you wish. 
 
@@ -137,28 +124,17 @@ Ensure you're running the example in the `./examples` folder so the fonts are pr
 
 ![example screenshot](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot.PNG?raw=true)
 
-### RSGL_gui.h
-![example screenshot 2](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot2.PNG?raw=true)
-![example screenshot 3](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot3.PNG?raw=true)
-![example screenshot 4](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot4.PNG?raw=true)
-![example screenshot 5](https://github.com/ColleagueRiley/RSGL/blob/main/screenshot5.PNG?raw=true)
+NOTE: Most of these examples use RGFW, but the library used can easily be changed. 
 
 ## basics/basic.c 
 `examples/basics/basic.c` is a basic example that shows many of the window managing features RSGL has\
 It also shows multiple ways of drawing a triangle
 
-## basics/events.c
-`example/basics/events.c` is an example that shows off all the events that RSGL has and prints out their event data into the terminal
-
 ## advanced/glfw.c
-`examples/advanced/glfw.c` is an example that shows how you can use RSGL with GLFW instead of with RGFW.
+`examples/advanced/glfw.c` is an example that shows how you can use RSGL with GLFW.
 
 This example requires GLFW to be installed.\
 You can download GLFW [here](https://www.glfw.org/download)
-
-## advanced/glVer.c
-`examples/advanced/glVer.c` is an example that shows how RSGL can switch between legacy and modern OpenGL\
-in the example, you can toggle between OpenGL 3.0+ and OpenGL 2.0- by pressing the spacebar
 
 ## basics/shapes.c
 `examples/basics/shapes.c` is an example that shows off shape rendering using RSGL, the shapes rotate and switch between being filled and unfilled 
@@ -168,17 +144,6 @@ in the example, you can toggle between OpenGL 3.0+ and OpenGL 2.0- by pressing t
 
 ## basics/textures.c
 `examples/basics/textures.c` is an example that shows off rendering textures on a shape, the textures switch between being enabled and disabled as the shapes spin
-
-## gui/button.c 
-`examples/gui/button.c` is an example that shows off how to create and manage buttons using RSGL,
-these include, a default style button, a checkbox, a toggle button, radio buttons, a combo box, a slider and a custom button
-
-## gui/styles.c
-`examples/gui/styles.c` is an example that shows off button styles, there are groups of buttons for each style.
-There is also a switch button that allows you to toggle dark mode.
-
-## gui/container.c
-`examples/gui/container.c` is an example that shows how to create and manage a widget container
 
 ## advanced/shader.c
 `examples/advanced/shader.c` is an example of how you'd use shaders with RSGL. It renders a circle, using a grid shader with changing colors, that follows the mouse.
