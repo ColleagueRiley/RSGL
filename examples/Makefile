@@ -85,16 +85,16 @@ examples: $(EXAMPLE_OUTPUTS)
 
 advanced/rsoft: advanced/rsoft.c ../RSGL.h
 ifeq ($(CC),emcc)
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I../deps $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
 else
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I../deps $< $(LIBS) -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 endif
 
 advanced/glfw: advanced/glfw.c ../RSGL.h 
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I../deps $< $(LIBS) -lglfw -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
-	$(CC) $(WARNINGS) -I../ -I../deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
+	$(CC) $(WARNINGS) -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
@@ -114,7 +114,7 @@ debug: all
 	make initwayland
 	#$(CC) -x c $(CUSTOM_CFLAGS) -c ../RSGL.h -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT -D RGFW_EXPORT
 	cp ../RSGL.h RSGL.c
-	$(CC) -o ../RSGL.o $(CUSTOM_CFLAGS) -I../ -I../deps -c RSGL.c -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT 
+	$(CC) -o ../RSGL.o $(CUSTOM_CFLAGS) -I../ -I./deps -c RSGL.c -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT 
 	rm RSGL.c
 
 ../libRSGL$(LIB_EXT): ../RSGL.h ../RSGL.o
