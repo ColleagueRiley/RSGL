@@ -3,20 +3,16 @@
 
 #define RGFW_IMPLEMENTATION
 
-#define RGFW_point RSGL_point
-#define RGFW_area RSGL_area
-#define RGFW_rect RSGL_rect
-
-#ifndef RSGL_NO_DEPS_FOLDER
-#include "deps/RGFW.h"
-#else
 #include "RGFW.h"
-#endif
+
+#define RSGL_point RGFW_point
+#define RSGL_area RGFW_area
+#define RSGL_rect RGFW_rect
 
 #ifndef RSGL_H
 #include "RSGL.h"
+#include "RSGL_gui.h"
 #endif
-
 
 void RSGL_setMouseStandard(void* userPtr, u32 mouse) {
 	RGFW_window_setMouseStandard((RGFW_window*)userPtr, mouse);

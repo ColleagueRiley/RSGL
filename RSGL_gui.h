@@ -13,6 +13,88 @@ RSGL_gui
 
 #define RSGL_GUI_H
 
+/* 
+******************
+	RSGL_UI_BACKEND 
+	this stuff is used by RSGL for abstracting backends
+	or used by backend modules
+******************
+*/
+
+typedef RSGL_ENUM(u8, RSGL_event_types) {
+	/*! event codes */
+ 	RSGL_keyPressed = 1, /* a key has been pressed */
+	RSGL_keyReleased, /*!< a key has been released*/
+	RSGL_mouseButtonPressed, /*!< a mouse button has been pressed (left,middle,right)*/
+	RSGL_mouseButtonReleased, /*!< a mouse button has been released (left,middle,right)*/
+	RSGL_mousePosChanged, /*!< the position of the mouse has been changed*/
+};
+
+typedef RSGL_ENUM(u8, RSGL_mouseCodes) {
+	RSGL_mouseLeft  =  1, /*!< left mouse button is pressed*/
+	RSGL_mouseMiddle =  2, /*!< mouse-wheel-button is pressed*/
+	RGL_mouseRight  = 3, /*!< right mouse button is pressed*/
+	RSGL_mouseScrollUp =  4, /*!< mouse wheel is scrolling up*/
+	RSGL_mouseScrollDown =  5 /*!< mouse wheel is scrolling down*/
+};
+
+typedef RSGL_ENUM(u8, RSGL_mouseIcons) {
+	RSGL_MOUSE_ARROW = 1,
+	RSGL_MOUSE_IBEAM  = 2,
+	RSGL_MOUSE_POINTING_HAND = 4,
+};
+
+typedef RSGL_ENUM(u8, RSGL_keys) { 
+	RSGL_key_none = 0,
+	RSGL_Up,
+	RSGL_Down,
+	RSGL_Left,
+	RSGL_Right,
+	RSGL_Tab,
+	RSGL_BackSpace,
+	RSGL_last_key
+};
+
+typedef struct {
+    u32 type;  /*!< event type */
+    RSGL_point point; /*!< cursor point */
+    u8 button; /*!< which mouse button has been clicked (0) left (1) middle (2) right OR which joystick button was pressed*/
+    double scroll; /*!< the raw mouse scroll value */
+    u32 keyCode; /*!< code of key pressed */
+	char ch; /*!< key char */
+} RSGL_Event;
+
+/*!< it checks if the key is pressed globally */
+RSGLDEF b8 RSGL_isPressed(u32 key); /*!< if key is pressed (key code)*/
+RSGLDEF b8 RSGL_isReleased(u32 key); /*!< if key is released (key code)*/
+
+
+/*!, if mouse button is pressed globally */
+RSGLDEF b8 RSGL_isMousePressed(u32 key);
+RSGLDEF b8 RSGL_isMouseReleased(u32 key);
+
+/*!< get current mouse point */
+RSGLDEF RSGL_point RSGL_getMousePoint(void);
+
+/*!< send event to RSGL (should be used by the platform in RSGL_checkEvent ) */ 
+RSGLDEF void RSGL_sendEvent(void* userPtr, RSGL_Event event);
+
+/*! these functions are to be defined by the backend */
+
+ /*!< sets the mouse to an standard mouse */
+RSGLDEF void RSGL_setMouseStandard(void* userPtr, u32 mouse);
+
+/*! mark released keys as not released after its frame is done (should be used by the platform in RSGL_checkEvent */ 
+RSGLDEF void RSGL_clearReleased(void);
+
+/*!< check events and update internal data for event *
+* returns true if there was an event */
+RSGLDEF b8 RSGL_checkEvent(void* userPtr);
+
+/*
+	RSGL UI
+*/
+
 typedef RSGL_ENUM(u8, RSGL_widgetState) {
 	RSGL_STATE_NONE = 0,
 	RSGL_HOVERED = 1,
@@ -84,6 +166,77 @@ RSGLDEF b8 RSGL_combobox(RSGL_rectF rect, u32 args, char* strings[], size_t len,
 #endif /* ndef RSGL_GUI_H */
 
 #ifdef RSGL_GUI_IMPLEMENTATION
+
+/*
+********************
+RSGL_UI_BACKEND
+*********************
+*/
+
+typedef struct RSGL_key {
+	u8 pressed : 1;
+	u8 released : 1;
+} RSGL_key;
+
+RSGL_key RSGL_keyMap[RSGL_last_key] = {{0}};
+RSGL_key RSGL_mouseMap[5] = {{0}};
+
+RSGL_point RSGL_mousePoint = {0, 0};
+/* where the mouse was when it was pressed, this is used checking if a button was released */
+RSGL_point RSGL_mousePressPoint = {0, 0};
+b8 RSGL_wasMousePosChanged = 0;
+
+char RSGL_charQueue[20] = {0};
+size_t RSGL_charQueue_size = 0; 
+
+u8 RSGL_isPressed(u32 key) { return RSGL_keyMap[key].pressed; }
+
+b8 RSGL_isReleased(u32 key) { return RSGL_keyMap[key].released; } 
+b8 RSGL_isMousePressed(u32 button) { return RSGL_mouseMap[button].pressed; }
+b8 RSGL_isMouseReleased(u32 button) { return RSGL_mouseMap[button].released; }
+RSGL_point RSGL_getMousePoint(void) { return RSGL_mousePoint; }
+
+void RSGL_sendEvent(void* userPtr, RSGL_Event event) {	
+	switch (event.type) {
+		case RSGL_keyPressed:
+			RSGL_keyMap[event.keyCode].released = 0;	
+			RSGL_keyMap[event.keyCode].pressed = 1;
+			
+			RSGL_charQueue[RSGL_charQueue_size] = event.ch;
+			RSGL_charQueue_size += 1;
+			break;
+		case RSGL_keyReleased:
+			RSGL_keyMap[event.keyCode].pressed = 0;	
+			RSGL_keyMap[event.keyCode].released = 1;	
+			break;
+		case RSGL_mouseButtonPressed:
+			RSGL_mouseMap[event.button].released = 0;
+			RSGL_mouseMap[event.button].pressed = 1;
+			RSGL_mousePressPoint = RSGL_mousePoint;
+			break;
+		case RSGL_mouseButtonReleased:
+			RSGL_mouseMap[event.button].pressed = 0;
+			RSGL_mouseMap[event.button].released = 1;
+			break;
+		case RSGL_mousePosChanged:
+			RSGL_mousePoint = event.point;
+			RSGL_wasMousePosChanged = 1;
+			break;
+	}
+}
+
+void RSGL_clearReleased(void) {
+	size_t i;
+	for (i = 0; i < RSGL_last_key; i++)
+		RSGL_keyMap[i].released = 0;	
+	for (i = 0; i < 5; i++)
+		RSGL_mouseMap[i].released = 0;
+
+	RSGL_wasMousePosChanged = 0;
+}
+
+/* RSGL_UI */
+
 struct RSGL_widgetInfo {
 	RSGL_rect r;
 	RSGL_color color[4]; // 1 color per stat 

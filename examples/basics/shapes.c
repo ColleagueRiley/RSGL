@@ -1,3 +1,6 @@
+#define RGFW_IMPLEMENTATION
+#include "RGFW.h"
+
 #define RSGL_IMPLEMENTATION
 #ifdef _WIN32
 #undef __unix__
@@ -5,19 +8,20 @@
 #endif
 
 #include "RSGL.h"
+
 #include <stdio.h>
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL shapes example", (RSGL_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("RSGL shapes example", (RGFW_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
 
-	RSGL_init(RGFW_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
     bool fill = true;
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 	
     while (RGFW_window_shouldClose(win) == false) {
-        while (RSGL_checkEvent(win)) {
+        while (RGFW_window_checkEvent(win)) {
 			if (win->event.type == RGFW_quit) {
                 break;
             }

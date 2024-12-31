@@ -96,7 +96,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 
 						RSoft_rect texRect = {info->texCoords[tIndex] * tex->memsize.w, info->texCoords[tIndex + 1] * tex->memsize.h, 
 											tex->memsize.w, tex->memsize.h};	
-						RSoft_setTexture(tex->bitmap, texRect, tex->memsize);
+						RSoft_setTexture(tex->bitmap, texRect, *(RGFW_area*)&tex->memsize);
 						RSoft_drawTriangleF(RSGL_rsoft.buffer, npoints, color);
 						
 						tIndex += 6;

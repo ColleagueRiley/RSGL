@@ -1,8 +1,12 @@
+#define RGFW_IMPLEMENTATION
+#include "RGFW.h"
+
 #define RGFW_ALLOC_DROPFILES
 #define RSGL_IMPLEMENTATION
 #define RSGL_NO_X11_CURSOR
 
 #include "RSGL.h"
+
 #include <stdio.h>
 
 void drawLoop(RGFW_window* w); /* I seperate the draw loop only because it's run twice */
@@ -19,7 +23,7 @@ unsigned char running = 1;
 float gradient[3 * 4] = {1, 0, 0, 1,      0, 1, 0, 1,       0, 0, 1, 1};
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL Example Window", RSGL_RECT(500, 500, 500, 500), RGFW_ALLOW_DND | RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("RSGL Example Window", RGFW_RECT(500, 500, 500, 500), RGFW_ALLOW_DND | RGFW_CENTER);
     RGFW_window_makeCurrent(win);
     
     if (win == NULL)
@@ -27,7 +31,7 @@ int main(void) {
     
 
     #ifndef __EMSCRIPTEN__
-    win2 = RGFW_createWindow("subwindow", RSGL_RECT(200, 200, 200, 200), 0);
+    win2 = RGFW_createWindow("subwindow", RGFW_RECT(200, 200, 200, 200), 0);
     #endif
 
     /*unsigned short gp = RSGL_registerGamepad(win, 0);*/
@@ -39,7 +43,7 @@ int main(void) {
 
 	u32 fps = 0;
 
-    RSGL_init(RGFW_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
+    RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
     
     while (RGFW_window_shouldClose(win) == false) {
 
@@ -53,13 +57,12 @@ int main(void) {
         */
        
         #ifndef __EMSCRIPTEN__
-        RSGL_checkEvent(win2);
+        RGFW_window_checkEvent(win2);
         if (win2->event.type == RGFW_quit)
             running = 0;
         #endif
         
-        while (RSGL_checkEvent(win))  {
-			RSGL_updateSize(RGFW_AREA(win->r.w, win->r.h));
+        while (RGFW_window_checkEvent(win))  {
 			if (win->event.type == RGFW_windowResized) {
                 printf("window resized");
             }
@@ -81,7 +84,7 @@ int main(void) {
             else if (RGFW_isPressed(win, RGFW_q))
                 RGFW_window_showMouse(win, 0);
             else if (RGFW_isPressed(win, RGFW_t)) {
-                RGFW_window_setMouse(win, icon, RSGL_AREA(3, 3), 4);
+                RGFW_window_setMouse(win, icon, RGFW_AREA(3, 3), 4);
             }
             if (win->event.type == RGFW_dnd) {
                 for (i = 0; i < win->event.droppedFilesCount; i++)
@@ -97,7 +100,7 @@ int main(void) {
 	
         RGFW_window_makeCurrent(win);
 	
-        RSGL_updateSize(RGFW_AREA(win->r.w, win->r.h));
+        RSGL_updateSize(RSGL_AREA(win->r.w, win->r.h));
         
 		RSGL_setGradient(gradient, 3);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(20, win->r.h - 20), RSGL_POINT(win->r.w - 20,win->r.h - 20), RSGL_POINT((win->r.w - 40) / 2, 20)), RSGL_RGB(255, 255, 0));

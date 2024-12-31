@@ -1,8 +1,11 @@
+#define RGFW_IMPLEMENTATION
+#include "RGFW.h"
+
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("name", (RSGL_rect){500, 500, 500, 500}, RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", (RGFW_rect){500, 500, 500, 500}, RGFW_CENTER);
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
@@ -11,7 +14,7 @@ int main(void) {
 	u32 fps;
 
     for (; RGFW_window_shouldClose(win) == false;) {
-        RSGL_checkEvent(win);
+        RGFW_window_checkEvent(win);
 
         if (win->event.type == RGFW_quit)
             break;
