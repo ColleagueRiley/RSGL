@@ -69,14 +69,9 @@ endif
 EXAMPLE_OUTPUTS = \
 	basics/basic \
 	basics/text \
-	ui/container \
-	advanced/glVer \
 	basics/textures  \
-	ui/styles \
 	advanced/shader \
 	basics/shapes  \
-	ui/button \
-	ui/textbox
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft ../libRSGL$(LIB_EXT) ../libRSGL.a
 
