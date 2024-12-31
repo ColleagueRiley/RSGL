@@ -35,7 +35,7 @@ int main(void) {
     #endif
 
     RSGL_setClearArgs(true);
-    
+
     RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
     
     while (RGFW_window_shouldClose(win) == false) {
@@ -96,7 +96,6 @@ int main(void) {
             
 			RSGL_clear(RSGL_RGB(255, 255, 255));
 			RGFW_window_swapBuffers(win2);
-			fps = RGFW_window_checkFPS(win, 60);
         }
         #endif
     }
