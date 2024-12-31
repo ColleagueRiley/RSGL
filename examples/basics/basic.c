@@ -34,13 +34,8 @@ int main(void) {
     win2 = RGFW_createWindow("subwindow", RGFW_RECT(200, 200, 200, 200), 0);
     #endif
 
-    /*unsigned short gp = RSGL_registerGamepad(win, 0);*/
-    unsigned char i;
-
     RSGL_setClearArgs(true);
-
-	u32 fps = 0;
-
+    
     RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
     
     while (RGFW_window_shouldClose(win) == false) {
