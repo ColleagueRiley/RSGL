@@ -1,5 +1,5 @@
 #define RSGL_IMPLEMENTATION
-#include "RSGL_rgfw.h"
+#include "../ui/RSGL_rgfw.h"
 
 int main(void) {
 	RGFW_setGLVersion(RGFW_GL_COMPATIBILITY, 3, 3);
