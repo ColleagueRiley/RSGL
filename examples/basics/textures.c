@@ -28,7 +28,8 @@ int main(void) {
             if (win->event.type == RGFW_quit) {
                 break;
             }
-        
+
+        RSGL_clear(RSGL_RGB(65, 65, 65));
         rotate.z += 1;
 
         RSGL_rotate(rotate);
@@ -56,8 +57,8 @@ int main(void) {
         RSGL_rotate(rotate);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)), RSGL_RGB(255, 255, 255));
 
-        RSGL_clear(RSGL_RGB(65, 65, 65));
-		RGFW_window_swapBuffers(win);
+		RSGL_draw();
+        RGFW_window_swapBuffers(win);
 
 		RGFW_window_checkFPS(win, 60);
 	}

@@ -154,6 +154,17 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
     info->vert_len = 0;
 }
 
+void RSGL_renderScissorStart(RSGL_rectF scissor) {
+    RSGL_draw();
+
+	// TODO
+}
+
+void RSGL_renderScissorEnd(void) {
+    RSGL_draw();
+	// TODO
+}
+
 /* textures / images */
 RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
 	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)RSGL_MALLOC(sizeof(RSGL_rsoft_texture));

@@ -88,9 +88,6 @@ endif
 advanced/glfw: advanced/glfw.c ../RSGL.h 
 	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
-advanced/glfw_ui: advanced/glfw_ui.c ../RSGL.h 
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
-
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
 	$(CC) $(WARNINGS) -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
@@ -104,9 +101,7 @@ debug: all
 	.$(OS_DIR)advanced$(OS_DIR)rsoft
 
 	make advanced/glfw
-	make advanced/glfw_ui
 	.$(OS_DIR)advanced$(OS_DIR)glfw
-	.$(OS_DIR)advanced$(OS_DIR)glfw_ui
 	make clean
 
 
