@@ -34,6 +34,7 @@ int main(void) {
                 break;
             }
         
+        RSGL_clear(RSGL_RGB(65, 65, 65));
         rotate.z += 1;
         
         RSGL_rotate(rotate);
@@ -44,8 +45,8 @@ int main(void) {
 		//RSGL_drawPolygon(RSGL_RECT(200, 200, 200, 200), 360, RSGL_RGB(0, 255, 0));
 
         //RSGL_drawText("Hello, RSOFT!", RSGL_CIRCLE(100, 20, 20), RSGL_RGB(255, 255, 255));
-
-        RSGL_clear(RSGL_RGB(65, 65, 65));
+        
+        RSGL_draw();
 		RGFW_window_swapBuffers(win);
 
 		RGFW_window_checkFPS(win, 60);

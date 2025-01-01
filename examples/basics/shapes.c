@@ -27,6 +27,8 @@ int main(void) {
             }
 		}
 
+        RSGL_clear(RSGL_RGB(65, 65, 65));
+        
         rotate.z += 1;
 
         if ((rand() % 200) <= 5) 
@@ -43,7 +45,7 @@ int main(void) {
         RSGL_rotate(rotate);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)), RSGL_RGB(0, 0, 255));
 
-        RSGL_clear(RSGL_RGB(65, 65, 65));
+        RSGL_draw();
 		RGFW_window_swapBuffers(win);
 
 		RGFW_window_checkFPS(win, 60);

@@ -67,6 +67,7 @@ int main(void) {
 			if (window->event.type == RGFW_quit) break;
 		}
 
+        RSGL_clear(RSGL_RGB(20, 20, 20));
         RSGL_setProgram(0);
         RSGL_drawRect(RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 0, 0));
 
@@ -78,8 +79,7 @@ int main(void) {
         RSGL_renderSetShaderValue(program.program, "u_mouse", (float[3]){RSGL_GET_WORLD_POINT((float)window->event.point.x, (float)window->event.point.y, 0)}, 2);
         RSGL_renderSetShaderValue(program.program, "pos", (float[2]){(float)window->event.point.x, (float)window->event.point.y}, 2);
 
-
-        RSGL_clear(RSGL_RGB(20, 20, 20));
+        RSGL_draw();
 		RGFW_window_swapBuffers(window);
 	}
 

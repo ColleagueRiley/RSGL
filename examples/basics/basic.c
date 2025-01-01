@@ -59,21 +59,24 @@ int main(void) {
             if (win->event.type == RGFW_quit)
                 running = 0;
         }
-	
+
         RGFW_window_makeCurrent(win);
-	
+
         RSGL_updateSize(RSGL_AREA(win->r.w, win->r.h));
         
+        RSGL_clear(RSGL_RGB(255, 255, 255));    
 		RSGL_setGradient(gradient, 3);
         RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(20, win->r.h - 20), RSGL_POINT(win->r.w - 20,win->r.h - 20), RSGL_POINT((win->r.w - 40) / 2, 20)), RSGL_RGB(255, 255, 0));
 		
-        RSGL_clear(RSGL_RGB(255, 255, 255));    
+        RSGL_draw();
 		RGFW_window_swapBuffers(win);
         
         #ifndef __EMSCRIPTEN__
         {
 			RGFW_window_makeCurrent(win2);
 			RSGL_updateSize(RSGL_AREA(win2->r.w, win2->r.h));
+			RSGL_clear(RSGL_RGB(255, 255, 255));
+            
             float points[] = {
                                         RSGL_GET_WORLD_POINT(20, win2->r.h - 20, 0.0f), 
                                         RSGL_GET_WORLD_POINT(win2->r.w - 20, win2->r.h - 20,  0.0f), 
@@ -93,8 +96,8 @@ int main(void) {
 
             if (running == false)
                 break;
-            
-			RSGL_clear(RSGL_RGB(255, 255, 255));
+
+            RSGL_draw();
 			RGFW_window_swapBuffers(win2);
         }
         #endif
