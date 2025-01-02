@@ -93,7 +93,7 @@ int main(void) {
 
             RSGL_setGradient(gradient, 3);
 
-            RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, RSGL_RGB(255, 255, 0), 3);
+            RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, RSGL_RGB(255, 255, 0), 3);
 
 
             if (running == false)
