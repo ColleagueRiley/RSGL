@@ -996,7 +996,6 @@ b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
    glBindTexture(GL_TEXTURE_2D, 0);
 
    *atlas = newAtlas;
-   printf("%i\n", newAtlas);
    return 1;
 }
 #ifndef GL_UNPACK_ROW_LENGTH
