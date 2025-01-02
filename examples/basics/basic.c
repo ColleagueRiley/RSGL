@@ -5,7 +5,9 @@
 #define RSGL_IMPLEMENTATION
 #define RSGL_NO_X11_CURSOR
 
+#define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+#include "RSGL_gl.h"
 
 #include <stdio.h>
 

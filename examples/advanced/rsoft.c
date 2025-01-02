@@ -1,8 +1,10 @@
-#define RGFW_IMPLEMENTATION
 #define RGFW_BUFFER
 #include "RGFW.h"
 
 #define RSoft_area RGFW_area
+#include "RSGL.h"
+
+#define RSGL_IMPLEMENTATION
 #include "RSGL_rsoft.h"
 #include <stdio.h>
 

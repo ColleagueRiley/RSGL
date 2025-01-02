@@ -3,6 +3,7 @@
 
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+#include "RSGL_gl.h"
 
 /*
     this example is designed for Opengl 3.3 GLSL shaders
