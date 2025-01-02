@@ -197,6 +197,10 @@ RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
 	return (u64)RSGL_renderCreateTexture(NULL, RSGL_AREA(atlasWidth, atlasHeight), 4);
 }
 
+b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
+	
+}
+
 void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
 	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)atlas;
 	

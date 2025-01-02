@@ -495,6 +495,10 @@ RSGLDEF const char* RFont_fmt(const char* string, ...);
 
 /* loads a font into RSGL, returns it's index into the RSGL_fonts array, this is used as an id in later functions */
 RSGLDEF i32 RSGL_loadFont(const char* font);
+/* (pro) loads a font into RSGL, returns it's index into the RSGL_fonts array, this is used as an id in later functions 
+    using a given atlasWidth + atlasHeight
+*/
+RSGLDEF i32 RSGL_loadFontPro(const char* font, size_t atlasWidth, size_t atlasHeight);
 /* sets font as the current font in use based on index in RSGL_font, given when it was loaded */
 RSGLDEF void RSGL_setFont(i32 font);
 
@@ -1355,6 +1359,10 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
 #endif
 
 i32 RSGL_loadFont(const char* font) {
+    return RSGL_loadFontPro(font, RFONT_ATLAS_WIDTH_DEFAULT, RFONT_ATLAS_HEIGHT_DEFAULT);
+}
+
+i32 RSGL_loadFontPro(const char* font, size_t atlasWidth, size_t atlasHeight) {
     u32 i;
     for (i = 0; i < RSGL_font.len; i++) 
         if (RSGL_font.fonts[i].name == font)
@@ -1377,7 +1385,7 @@ i32 RSGL_loadFont(const char* font) {
 
 
     RSGL_font.fonts[RSGL_font.len].name = (char*)font; 
-    RSGL_font.fonts[RSGL_font.len].f = RFont_font_init(font);
+    RSGL_font.fonts[RSGL_font.len].f = RFont_font_init_pro(font, atlasWidth, atlasHeight);
     RSGL_font.len++;
 
     return RSGL_font.len - 1;

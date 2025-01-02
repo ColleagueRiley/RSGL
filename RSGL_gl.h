@@ -736,6 +736,37 @@ RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    return id;
 }
 
+b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
+    GLuint newAtlas;
+    glGenTextures(1, &newAtlas);
+    glBindTexture(GL_TEXTURE_2D, newAtlas);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newWidth, newHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, *atlas);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, newWidth - RFONT_ATLAS_RESIZE_LEN, newHeight);
+
+    glDeleteTextures(1, (u32*)atlas);
+
+    glBindTexture(GL_TEXTURE_2D, newAtlas);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    /* swizzle new atlas */
+    glBindTexture(GL_TEXTURE_2D, newAtlas);
+	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    *atlas = newAtlas;
+    return 1;
+}
+
 #ifndef GL_UNPACK_ROW_LENGTH
 #define GL_UNPACK_ROW_LENGTH 0x0CF2
 #define GL_UNPACK_SKIP_PIXELS 0x0CF4
