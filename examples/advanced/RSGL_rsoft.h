@@ -198,7 +198,15 @@ RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
 }
 
 b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
-	
+	RSGL_rsoft_texture* texture = (RSGL_rsoft_texture*)*atlas;
+	RSGL_rsoft_texture* newTexture = (RSGL_rsoft_texture*)RSGL_MALLOC(sizeof(RSGL_rsoft_texture));
+	*newTexture = (RSGL_rsoft_texture){(u8*)RSGL_MALLOC(newWidth * newHeight * texture->channels), RSGL_AREA(newWidth, newHeight), texture->channels, NULL, NULL};
+
+	memcpy(newTexture->bitmap, texture->bitmap, texture->memsize.w * texture->memsize.h * texture->channels);
+	RSGL_renderDeleteTexture(*atlas);
+	*atlas = (u64)newTexture;
+
+	return TRUE;
 }
 
 void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
