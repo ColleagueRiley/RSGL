@@ -206,7 +206,7 @@ b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
 	RSGL_renderDeleteTexture(*atlas);
 	*atlas = (u64)newTexture;
 
-	return TRUE;
+	return 1;
 }
 
 void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
