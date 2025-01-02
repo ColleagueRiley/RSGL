@@ -1,4 +1,5 @@
 #define RGFW_BUFFER
+#define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
 #define RSoft_area RGFW_area
