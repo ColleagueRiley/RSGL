@@ -5,7 +5,9 @@
 #define RSGL_IMPLEMENTATION
 #define RSGL_NO_X11_CURSOR
 
+#define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+#include "RSGL_gl.h"
 
 #include <stdio.h>
 
@@ -91,7 +93,7 @@ int main(void) {
 
             RSGL_setGradient(gradient, 3);
 
-            RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, RSGL_RGB(255, 255, 0), 3);
+            RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, RSGL_RGB(255, 255, 0), 3);
 
 
             if (running == false)

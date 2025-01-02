@@ -49,7 +49,7 @@ u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
     return id;
 }
 
-void RSGL_renderUpdateTexture(u32 texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
     
 }
 
@@ -67,11 +67,23 @@ void RSGL_renderDeleteProgram(RSGL_programInfo program) {
 
 }
 
-u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+void RSGL_renderScissorStart(RSGL_rectF scissor) {
+
+}
+
+void RSGL_renderScissorEnd(void) {
+
+}
+
+u32 RFont_create_atlas(RSGL_texture atlasWidth, u32 atlasHeight) {
    u32 id = 0;
    return id;
 }
 
-void RFont_bitmap_to_atlas(u32 atlas, u8* bitmap, float x, float y, float w, float h) {
+b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
+    return 1;
+}
+
+void RFont_bitmap_to_atlas(RSGL_texture atlas, u8* bitmap, float x, float y, float w, float h) {
 
 }

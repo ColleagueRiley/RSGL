@@ -965,18 +965,18 @@ function dbg(text) {
 // === Body ===
 
 var ASM_CONSTS = {
-  73944: () => { Module.canvas.focus(); },  
- 73969: () => { window.addEventListener("keydown", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 1); }, true, ); },  
- 74122: () => { window.addEventListener("keyup", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 0); }, true, ); },  
- 74273: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; _RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
- 75292: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
- 75363: () => { document.getElementById('canvas').style.cursor = 'none'; },  
- 75420: () => { return window.mouseX || 0; },  
- 75451: () => { return window.mouseY || 0; },  
- 75482: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
- 75629: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
- 75682: () => { return window.innerWidth; },  
- 75712: () => { return window.innerHeight; }
+  75912: () => { Module.canvas.focus(); },  
+ 75937: () => { window.addEventListener("keydown", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 1); }, true, ); },  
+ 76090: () => { window.addEventListener("keyup", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 0); }, true, ); },  
+ 76241: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; _RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
+ 77260: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
+ 77331: () => { document.getElementById('canvas').style.cursor = 'none'; },  
+ 77388: () => { return window.mouseX || 0; },  
+ 77419: () => { return window.mouseY || 0; },  
+ 77450: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
+ 77597: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
+ 77650: () => { return window.innerWidth; },  
+ 77680: () => { return window.innerHeight; }
 };
 
 
@@ -9738,34 +9738,6 @@ var ASM_CONSTS = {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10755,77 +10727,25 @@ var wasmImports = {
   /** @export */
   fd_write: _fd_write,
   /** @export */
-  glActiveTexture: _glActiveTexture,
-  /** @export */
-  glAttachShader: _glAttachShader,
-  /** @export */
-  glBindAttribLocation: _glBindAttribLocation,
-  /** @export */
-  glBindBuffer: _glBindBuffer,
-  /** @export */
   glBindTexture: _glBindTexture,
   /** @export */
-  glBindVertexArray: _glBindVertexArray,
-  /** @export */
   glBlendFunc: _glBlendFunc,
-  /** @export */
-  glBufferData: _glBufferData,
-  /** @export */
-  glBufferSubData: _glBufferSubData,
   /** @export */
   glClear: _glClear,
   /** @export */
   glClearColor: _glClearColor,
   /** @export */
-  glCompileShader: _glCompileShader,
-  /** @export */
   glCopyTexSubImage2D: _glCopyTexSubImage2D,
-  /** @export */
-  glCreateProgram: _glCreateProgram,
-  /** @export */
-  glCreateShader: _glCreateShader,
-  /** @export */
-  glDeleteBuffers: _glDeleteBuffers,
-  /** @export */
-  glDeleteProgram: _glDeleteProgram,
-  /** @export */
-  glDeleteShader: _glDeleteShader,
   /** @export */
   glDeleteTextures: _glDeleteTextures,
   /** @export */
-  glDepthMask: _glDepthMask,
-  /** @export */
-  glDetachShader: _glDetachShader,
-  /** @export */
-  glDisable: _glDisable,
-  /** @export */
-  glDrawArrays: _glDrawArrays,
-  /** @export */
   glEnable: _glEnable,
-  /** @export */
-  glEnableVertexAttribArray: _glEnableVertexAttribArray,
-  /** @export */
-  glGenBuffers: _glGenBuffers,
   /** @export */
   glGenTextures: _glGenTextures,
   /** @export */
-  glGetError: _glGetError,
-  /** @export */
   glGetIntegerv: _glGetIntegerv,
   /** @export */
-  glGetProgramiv: _glGetProgramiv,
-  /** @export */
-  glGetShaderInfoLog: _glGetShaderInfoLog,
-  /** @export */
-  glGetShaderiv: _glGetShaderiv,
-  /** @export */
-  glLineWidth: _glLineWidth,
-  /** @export */
-  glLinkProgram: _glLinkProgram,
-  /** @export */
   glPixelStorei: _glPixelStorei,
-  /** @export */
-  glShaderSource: _glShaderSource,
   /** @export */
   glTexImage2D: _glTexImage2D,
   /** @export */
@@ -10834,10 +10754,6 @@ var wasmImports = {
   glTexParameteriv: _glTexParameteriv,
   /** @export */
   glTexSubImage2D: _glTexSubImage2D,
-  /** @export */
-  glUseProgram: _glUseProgram,
-  /** @export */
-  glVertexAttribPointer: _glVertexAttribPointer,
   /** @export */
   glViewport: _glViewport
 };

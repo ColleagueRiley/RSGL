@@ -1,6 +1,4 @@
-#define RSGL_CUSTOM_RENDER
-#define RSGL_IMPLEMENTATION
-
+#ifdef RSGL_IMPLEMENTATION
 #define RSGL_GET_WORLD_X(x) (float)(x)
 #define RSGL_GET_WORLD_Y(y) (float)(y)
 #define RSGL_GET_WORLD_Z(z) (float)(z)
@@ -224,3 +222,4 @@ RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* F
 	RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
 	return (RSGL_programInfo) {};
 }
+#endif

@@ -965,18 +965,18 @@ function dbg(text) {
 // === Body ===
 
 var ASM_CONSTS = {
-  75352: () => { Module.canvas.focus(); },  
- 75377: () => { window.addEventListener("keydown", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 1); }, true, ); },  
- 75530: () => { window.addEventListener("keyup", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 0); }, true, ); },  
- 75681: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; _RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
- 76700: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
- 76771: () => { document.getElementById('canvas').style.cursor = 'none'; },  
- 76828: () => { return window.mouseX || 0; },  
- 76859: () => { return window.mouseY || 0; },  
- 76890: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
- 77037: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
- 77090: () => { return window.innerWidth; },  
- 77120: () => { return window.innerHeight; }
+  75336: () => { Module.canvas.focus(); },  
+ 75361: () => { window.addEventListener("keydown", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 1); }, true, ); },  
+ 75514: () => { window.addEventListener("keyup", (event) => { Module._RGFW_handleKeyEvent(stringToNewUTF8(event.key), stringToNewUTF8(event.code), 0); }, true, ); },  
+ 75665: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; _RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
+ 76684: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
+ 76755: () => { document.getElementById('canvas').style.cursor = 'none'; },  
+ 76812: () => { return window.mouseX || 0; },  
+ 76843: () => { return window.mouseY || 0; },  
+ 76874: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
+ 77021: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
+ 77074: () => { return window.innerWidth; },  
+ 77104: () => { return window.innerHeight; }
 };
 
 
@@ -9731,8 +9731,6 @@ var ASM_CONSTS = {
 
 
 
-
-
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10756,11 +10754,7 @@ var wasmImports = {
   /** @export */
   glDeleteTextures: _glDeleteTextures,
   /** @export */
-  glDepthMask: _glDepthMask,
-  /** @export */
   glDetachShader: _glDetachShader,
-  /** @export */
-  glDisable: _glDisable,
   /** @export */
   glDrawArrays: _glDrawArrays,
   /** @export */

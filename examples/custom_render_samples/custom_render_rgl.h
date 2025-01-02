@@ -1,5 +1,6 @@
 #define RSGL_CUSTOM_RENDER
 
+#define RSGL_texture u32
 #ifdef RSGL_CUSTOM_RENDER
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
@@ -8,7 +9,7 @@
 #define RGL_IMPLEMENTATION
 #include "RGL.h"
 
-void RSGL_renderDeleteTexture(u32 tex) { glDeleteTextures(1, &tex); }
+void RSGL_renderDeleteTexture(RSGL_texture tex) { glDeleteTextures(1, &tex); }
 void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
 
 void RSGL_renderClear(float r, float g, float b, float a) {
@@ -29,19 +30,28 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
     size_t i, j;
     size_t tIndex = 0, cIndex = 0, vIndex = 0;
     for (i = 0; i < info->len; i++) {
+        glEnable(GL_TEXTURE_2D);
+        rglSetTexture(info->batches[i].tex);
+        rglLineWidth(info->batches[i].lineWidth);
+        
         u32 mode = info->batches[i].type;
-
         if (mode > 0x0100) {
             glEnable(GL_BLEND);
             mode -= 0x0100;
         } else {
-            #ifndef RGL_MODERN_OPENGL
             glDisable(GL_BLEND);
-            #endif
         }
-        
-        rglSetTexture(info->batches[i].tex);
-        rglLineWidth(info->batches[i].lineWidth);
+
+        if (mode > 0x0010) {
+            mode -= 0x0010;
+            glDisable(GL_DEPTH_TEST);
+            glDepthMask(GL_FALSE);
+        }
+        else {
+            glEnable(GL_DEPTH_TEST);
+            glDepthMask(GL_TRUE);
+        }
+
         rglBegin(mode);
 
         for (j = info->batches[i].start; j < info->batches[i].len; j++) {
@@ -66,6 +76,10 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
         }
 
         rglEnd();
+        
+        if (info->batches[i].type > 0x0010) {
+            glEnable(GL_DEPTH_TEST);
+        }
     }
 
     info->len = 0;
@@ -76,6 +90,19 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 #ifndef GL_RG
 #define GL_RG                             0x8227
 #endif
+
+void RSGL_renderScissorStart(RSGL_rectF scissor) {
+    RSGL_draw();
+    glEnable(GL_SCISSOR_TEST);
+
+    glScissor(scissor.x, RSGL_args.currentRect.h - (scissor.y + scissor.h), scissor.w, scissor.h);
+    glScissor(scissor.x, scissor.y, scissor.w, scissor.h);
+}
+
+void RSGL_renderScissorEnd(void) {
+    RSGL_draw();
+    glDisable(GL_SCISSOR_TEST);
+}
 
 /* textures / images */
 u32 RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
@@ -295,6 +322,37 @@ u32 RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
 
    glBindTexture(GL_TEXTURE_2D, 0);
    return id;
+}
+
+b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
+    GLuint newAtlas;
+    glGenTextures(1, &newAtlas);
+    glBindTexture(GL_TEXTURE_2D, newAtlas);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, newWidth, newHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, *atlas);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, newWidth - RFONT_ATLAS_RESIZE_LEN, newHeight);
+
+    glDeleteTextures(1, (u32*)atlas);
+
+    glBindTexture(GL_TEXTURE_2D, newAtlas);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    /* swizzle new atlas */
+    glBindTexture(GL_TEXTURE_2D, newAtlas);
+	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    *atlas = newAtlas;
+    return 1;
 }
 
 #ifndef GL_UNPACK_ROW_LENGTH

@@ -1,7 +1,17 @@
-#ifdef RSGL_CUSTOM_RENDER
-#define RSGL_IMPLEMENTATION
-#include "RSGL.h"
+#ifndef RSGL_GL_H
+#define RSGL_GL_H
+
+/* toggle the use of legacy OpenGL, on by default unless it fails to load */
+RSGLDEF void RSGL_GL_setLegacy(i32 legacy);
+
 #endif
+
+#ifdef RSGL_IMPLEMENTATION
+
+b8 RSGL_GL_legacy = 0;
+void RSGL_GL_setLegacy(i32 legacy) {
+    RSGL_GL_legacy = legacy;
+}
 
 #ifndef __APPLE__
 #include <GL/gl.h>
@@ -185,7 +195,7 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
     #ifdef RSGL_MODERN_OPENGL
     #ifndef __EMSCRIPTEN__
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
-        RSGL_args.legacy = 2;
+        RSGL_GL_legacy = 2;
         #ifdef RSGL_DEBUG
         printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
         #endif
@@ -308,7 +318,7 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
 
 void RSGL_renderFree(void) {   
     #ifdef RSGL_MODERN_OPENGL 
-    if (RSGL_args.legacy == 2)
+    if (RSGL_GL_legacy == 2)
         return;
     
     /* Unbind everything */
@@ -345,7 +355,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     #ifdef RSGL_MODERN_OPENGL
-    if (info->vert_len > 0 && RSGL_args.legacy == 0) {
+    if (info->vert_len > 0 && RSGL_GL_legacy == 0) {
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
         glBindVertexArray(RSGL_gl.vao);
         #endif
@@ -403,12 +413,6 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
 
             if (mode > 0x0010) {
                 mode -= 0x0010;
-                glDisable(GL_DEPTH_TEST);
-                glDepthMask(GL_FALSE);
-            }
-            else {
-                glEnable(GL_DEPTH_TEST);
-                glDepthMask(GL_TRUE);
             }
 
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
@@ -424,11 +428,6 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
                 glUseProgram(RSGL_gl.program.program);
             
             glDrawArrays(mode, info->batches[i].start, info->batches[i].len);
-
-            if (info->batches[i].type > 0x0010) {
-                glEnable(GL_DEPTH_TEST);
-                glDepthMask(GL_TRUE);
-            }
         }
 
         if (!RSGL_gl.vao) {
@@ -444,7 +443,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
         glUseProgram(0);    /* Unbind shader program */
     }
 
-    else if (RSGL_args.legacy)
+    else if (RSGL_GL_legacy)
     #endif
     #ifndef RSGL_GL_NO_LEGACY
     {
@@ -456,22 +455,16 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
             glLineWidth(info->batches[i].lineWidth);
 
             u32 mode = info->batches[i].type;
-            if (mode > 0x0100) {
-                glEnable(GL_BLEND);
-                mode -= 0x0100;
-            } else {
-                glDisable(GL_BLEND);
-            }
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+            //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            //glDisable(GL_BLEND);
 
-            if (mode > 0x0010) {
-                mode -= 0x0010;
-                glDisable(GL_DEPTH_TEST);
-                glDepthMask(GL_FALSE);
-            }
-            else {
-                glEnable(GL_DEPTH_TEST);
-                glDepthMask(GL_TRUE);
-            }
+            //glDisable(GL_DEPTH_TEST);
+             //   glDepthMask(GL_FALSE);
+        
+            //glEnable(GL_DEPTH_TEST);
+            //glDepthMask(GL_TRUE);
 
             glBegin(mode);
 
@@ -486,9 +479,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
             }
 
             glEnd();
-
-            if (info->batches[i].type > 0x0010)
-                glEnable(GL_DEPTH_TEST);
+            // glEnable(GL_DEPTH_TEST);
         }
     }
     #endif
@@ -501,7 +492,7 @@ void RSGL_renderScissorStart(RSGL_rectF scissor) {
     RSGL_draw();
     glEnable(GL_SCISSOR_TEST);
 
-    glScissor(scissor.x, RSGL_args.currentRect.h - (scissor.y + scissor.h), scissor.w, scissor.h);
+    glScissor(scissor.x, RSGL_args.currentArea.h - (scissor.y + scissor.h), scissor.w, scissor.h);
     glScissor(scissor.x, scissor.y, scissor.w, scissor.h);
 }
 
@@ -684,7 +675,20 @@ void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
 
     glUseProgram(0);
 }
+#else
+RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName) {
+    RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
+    RSGL_programInfo program = {0};
+    return program;
+}
 
+void RSGL_renderDeleteProgram(RSGL_programInfo program) {
+    RSGL_UNUSED(program);
+}
+
+void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
+    RSGL_UNUSED(program); RSGL_UNUSED(var); RSGL_UNUSED(value); RSGL_UNUSED(len);
+}
 #endif
 
 #ifndef GL_PERSPECTIVE_CORRECTION_HINT
@@ -897,3 +901,4 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
 #endif
 
 #endif /* RSGL_MODERN_OPENGL */
+#endif /* RSGL_IMPLEMENTATION */

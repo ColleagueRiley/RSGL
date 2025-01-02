@@ -2,6 +2,7 @@
 
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+#include "RSGL_gl.h"
 
 #define GLFW_UNUSED(x) if(x){}
 

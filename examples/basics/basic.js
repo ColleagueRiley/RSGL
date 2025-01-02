@@ -9730,8 +9730,6 @@ var ASM_CONSTS = {
 
 
 
-
-
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10753,11 +10751,7 @@ var wasmImports = {
   /** @export */
   glDeleteTextures: _glDeleteTextures,
   /** @export */
-  glDepthMask: _glDepthMask,
-  /** @export */
   glDetachShader: _glDetachShader,
-  /** @export */
-  glDisable: _glDisable,
   /** @export */
   glDrawArrays: _glDrawArrays,
   /** @export */
