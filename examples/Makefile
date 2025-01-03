@@ -104,22 +104,6 @@ debug: all
 	.$(OS_DIR)advanced$(OS_DIR)glfw
 	make clean
 
-
-../RSGL.o: ../RSGL.h
-	make initwayland
-	#$(CC) -x c $(CUSTOM_CFLAGS) -c ../RSGL.h -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT -D RGFW_EXPORT
-	cp ../RSGL.h RSGL.c
-	$(CC) -o ../RSGL.o $(CUSTOM_CFLAGS) -I../ -I./deps -c RSGL.c -D RSGL_IMPLEMENTATION -fPIC -D RSGL_EXPORT 
-	rm RSGL.c
-
-../libRSGL$(LIB_EXT): ../RSGL.h ../RSGL.o
-	make ../RSGL.o
-	$(CC) $(CUSTOM_CFLAGS) -shared ../RSGL.o $(LIBS) -o ../libRSGL$(LIB_EXT)
-
-../libRSGL.a: ../RSGL.h ../RSGL.o
-	make ../RSGL.o
-	$(AR) rcs ../libRSGL.a ../RSGL.o
-
 xdg-shell.c:
 	make initwayland
 
