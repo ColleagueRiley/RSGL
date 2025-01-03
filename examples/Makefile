@@ -51,7 +51,7 @@ LINK_GL2 =
 ifneq (,$(filter $(CC),cl /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
 	WARNINGS =
 	LIBS = /static
-else ifeq ($(CC),emcc)
+else ifeq ($(CC),emcc)	
 	LINK_GL1 = -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
 	LINK_GL3 = -s FULL_ES3
 	LINK_GL2 = -s FULL_ES2
