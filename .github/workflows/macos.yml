@@ -39,14 +39,4 @@ jobs:
 
     - name: Setup Environment
       run: | 
-        mkdir build
-        cd build
-        mkdir ${{ env.RELEASE_NAME }}
-        cd ${{ env.RELEASE_NAME }}
-        mkdir include
-        mkdir lib
-        cd ../..
-   
-    - name: Generate Artifacts
-      run: |
         make
