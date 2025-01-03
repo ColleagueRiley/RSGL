@@ -63,6 +63,8 @@ int main(void) {
 
     RSGL_programInfo program = RSGL_renderCreateProgram(MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 
+    RGFW_window_showMouse(window, 0);
+
     while (RGFW_window_shouldClose(window) == false) {
         while (RGFW_window_checkEvent(window)) {
 			if (window->event.type == RGFW_quit) break;
