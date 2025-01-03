@@ -73,7 +73,7 @@ EXAMPLE_OUTPUTS = \
 	advanced/shader \
 	basics/shapes  \
 
-all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft ../libRSGL$(LIB_EXT) ../libRSGL.a
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft 
 
 examples: $(EXAMPLE_OUTPUTS)
 
