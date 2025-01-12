@@ -4,7 +4,7 @@
 #include "custom_render_rgl.h"
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("name", RGFW_RECT(0, 0, 500, 500), RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", RGFW_RECT(0, 0, 500, 500), RGFW_windowCenter);
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
     u32 comicSans = RSGL_loadFont("COMICSANS.ttf");
