@@ -1,7 +1,7 @@
 #include "custom_render_rgl.h"
 
 int main(void) {
-    RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RSGL_CENTER);
+    RSGL_window* win = RSGL_createWindow("name", RSGL_RECT(0, 0, 500, 500), RGFW_windowCenter);
 
     u32 easy_font = RSGL_loadFont("Super Easy.ttf");
     RSGL_setFont(easy_font);
