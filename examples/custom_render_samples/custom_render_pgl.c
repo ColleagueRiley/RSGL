@@ -6,7 +6,7 @@
 #include "custom_render_pgl.h"
 
 int main() {
-    RGFW_window* win = RGFW_createWindow("name", RGFW_RECT(0, 0, 500, 500), RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", RSGL_RECT(0, 0, 500, 500), RGFW_windowCenter);
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), win->buffer);    
     RSGL_setFont(RSGL_loadFont("COMICSANS.ttf"));

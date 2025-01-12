@@ -25,7 +25,7 @@ unsigned char running = 1;
 float gradient[3 * 4] = {1, 0, 0, 1,      0, 1, 0, 1,       0, 0, 1, 1};
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL Example Window", RGFW_RECT(500, 500, 500, 500), RGFW_ALLOW_DND | RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("RSGL Example Window", RGFW_RECT(500, 500, 500, 500), RGFW_windowAllowDND | RGFW_windowCenter);
     RGFW_window_makeCurrent(win);
     
     if (win == NULL)
