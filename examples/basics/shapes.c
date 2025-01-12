@@ -12,7 +12,7 @@
 #include <stdio.h>
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL shapes example", (RGFW_rect){0, 0, 500, 500}, RGFW_ALLOW_DND | RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("RSGL shapes example", (RGFW_rect){0, 0, 500, 500}, RGFW_windowCenter);
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 

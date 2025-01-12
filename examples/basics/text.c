@@ -5,7 +5,7 @@
 #include "RSGL.h"
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("name", (RGFW_rect){500, 500, 500, 500}, RGFW_CENTER);
+    RGFW_window* win = RGFW_createWindow("name", (RGFW_rect){500, 500, 500, 500}, RGFW_windowCenter);
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
 
