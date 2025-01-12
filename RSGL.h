@@ -84,25 +84,9 @@ RSGL basicDraw types
 */
 
 #ifndef RSGL_QUADS
-#define RSGL_POINTS                               0x0000
 #define RSGL_LINES                                0x0001      
-#define RSGL_LINE_LOOP                            0x0002
-#define RSGL_LINE_STRIP                           0x0003
 #define RSGL_TRIANGLES                            0x0004      
-#define RSGL_TRIANGLE_STRIP                       0x0005
-#define RSGL_TRIANGLE_FAN                         0x0006      
-#define RSGL_QUADS                                 0x0007
-
-/* these are to ensure GL_DEPTH_TEST is disabled when they're being rendered */
-#define RSGL_POINTS_2D                               0x0010
-#define RSGL_LINES_2D                                0x0011    
-#define RSGL_LINE_LOOP_2D                            0x0012
-#define RSGL_LINE_STRIP_2D                           0x0013
-#define RSGL_TRIANGLES_2D                            0x0014     
-#define RSGL_TRIANGLE_STRIP_2D                       0x0015
-#define RSGL_TRIANGLE_FAN_2D                         0x0016
-
-#define RSGL_TRIANGLES_2D_BLEND     0x0114
+#define RSGL_TRIANGLE_FAN                         0x0006    
 #endif
 
 #ifndef RSGL_H
@@ -250,9 +234,6 @@ typedef struct RSGL_color {
 #define RSGL_RGB_TO_HEX(r, g, b, a) (RSGL_COLOR_TO_HEX(RSGL_RGBA(r, g, b, a)))
 #define RSGL_RGBA_TO_HEX(r, g, b) (RSGL_COLOR_TO_HEX(RSGL_RGB(r, g, b, a)))
 
-/* toggle the use of legacy OpenGL, on by default unless it fails to load */
-RSGLDEF void RSGL_legacy(i32 legacy);
-
 /* 
 *********************
 RSGL_GRAPHICS_CONTEXT
@@ -291,13 +272,12 @@ typedef struct RSGL_drawArgs {
     RSGL_texture texture;
     u32 gradient_len;
 
-    RSGL_rect currentRect; /* size of current surface */
+    RSGL_area currentArea; /* size of current surface */
     RSGL_point3D rotate; 
 
     bool fill;
     RSGL_point3DF center;
     float lineWidth;
-    i32 legacy;
     u32 program;
 } RSGL_drawArgs;
 
@@ -336,21 +316,6 @@ typedef RSGL_ENUM(u8, RSGL_alignment) {
 /* align smaller rect onto larger rect based on a given alignment */
 RSGLDEF RSGL_rect RSGL_alignRect(RSGL_rect larger, RSGL_rect smaller, u16 alignment);
 RSGLDEF RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment);
-
-#ifndef RSGL_GET_WORLD_X
-#define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentRect.w - 1.0f)
-#define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentRect.h)
-#define RSGL_GET_WORLD_Z(z) (float)(z)
-#endif
-
-#define RSGL_GET_MATRIX_X(x, y, z) (matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
-#define RSGL_GET_MATRIX_Y(x, y, z) (matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13])
-#define RSGL_GET_MATRIX_Z(x, y, z) (matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14])
-
-#define RSGL_GET_MATRIX_POINT(x, y, z) RSGL_GET_MATRIX_X(x, y, z), RSGL_GET_MATRIX_Y(x, y, z), RSGL_GET_MATRIX_Z(x, y, z)
-#define RSGL_GET_WORLD_POINT(x, y, z) RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z))
-
-#define RSGL_GET_FINAL_POINT(x, y, z) RSGL_GET_MATRIX_POINT(RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z)))
 
 typedef struct RSGL_MATRIX {
     float m[16];
@@ -620,6 +585,21 @@ macos:
 
 #ifdef RSGL_IMPLEMENTATION
 
+#ifndef RSGL_GET_WORLD_X
+#define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentArea.w - 1.0f)
+#define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentArea.h)
+#define RSGL_GET_WORLD_Z(z) (float)(z)
+#endif
+
+#define RSGL_GET_MATRIX_X(x, y, z) (matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
+#define RSGL_GET_MATRIX_Y(x, y, z) (matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13])
+#define RSGL_GET_MATRIX_Z(x, y, z) (matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14])
+
+#define RSGL_GET_MATRIX_POINT(x, y, z) RSGL_GET_MATRIX_X(x, y, z), RSGL_GET_MATRIX_Y(x, y, z), RSGL_GET_MATRIX_Z(x, y, z)
+#define RSGL_GET_WORLD_POINT(x, y, z) RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z))
+
+#define RSGL_GET_FINAL_POINT(x, y, z) RSGL_GET_MATRIX_POINT(RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z)))
+
 #ifdef RSGL_RENDER_LEGACY
 #define RFONT_RENDER_LEGACY
 #endif
@@ -682,7 +662,7 @@ typedef struct RSGL_fontsData {
 RSGL_fontsData RSGL_font = {NULL, NULL, 0, 0};
 #endif
 
-RSGL_drawArgs RSGL_args = {NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0, 0};
+RSGL_drawArgs RSGL_args = {NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0};
 bool RSGL_argsClear = false;
 
 RSGL_image* RSGL_images = NULL;
@@ -774,10 +754,6 @@ RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center) {
 
 RSGL_RENDER_INFO RSGL_renderInfo = {NULL, NULL, NULL, NULL, 0, 0};
 
-#ifndef RSGL_CUSTOM_RENDER
-#include "RSGL_gl.h"
-#endif
-
 void RSGL_basicDraw(u32 type, float* points, float* texPoints, RSGL_color c, size_t len) {
     if (RSGL_renderInfo.len + 1 >= RSGL_MAX_BATCHES || RSGL_renderInfo.vert_len + len >= RSGL_MAX_VERTS) {
         RSGL_renderBatch(&RSGL_renderInfo);
@@ -790,7 +766,7 @@ void RSGL_basicDraw(u32 type, float* points, float* texPoints, RSGL_color c, siz
         RSGL_renderInfo.batches[RSGL_renderInfo.len - 1].tex != RSGL_args.texture  ||
         RSGL_renderInfo.batches[RSGL_renderInfo.len - 1].lineWidth != RSGL_args.lineWidth ||
         RSGL_renderInfo.batches[RSGL_renderInfo.len - 1].type != type ||
-        RSGL_renderInfo.batches[RSGL_renderInfo.len - 1].type == RSGL_TRIANGLE_FAN_2D
+        RSGL_renderInfo.batches[RSGL_renderInfo.len - 1].type == RSGL_TRIANGLE_FAN
     ) {
         RSGL_renderInfo.len += 1;
     
@@ -832,11 +808,6 @@ void RSGL_basicDraw(u32 type, float* points, float* texPoints, RSGL_color c, siz
     }
 }
 
-void RSGL_legacy(i32 legacy) {
-    if (RSGL_args.legacy != 2)
-        RSGL_args.legacy = legacy;
-}
-
 /*
 *********************
 RSGL_GRAPHICS_CONTEXT
@@ -846,7 +817,7 @@ RSGL_GRAPHICS_CONTEXT
 void RSGL_init(RSGL_area r, void* loader) {
     RSGL_renderViewport(0, 0, r.w, r.h);
     
-    RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
+    RSGL_args.currentArea = r;
 
     #ifndef RSGL_NO_TEXT
     RFont_init(r.w, r.h);
@@ -873,7 +844,7 @@ void RSGL_clear(RSGL_color color) {
 }
 
 void RSGL_updateSize(RSGL_area r) {
-    RSGL_args.currentRect = (RSGL_rect){0, 0, r.w, r.h};
+    RSGL_args.currentArea = r;
     RFont_update_framebuffer(r.w, r.h);
     RSGL_renderViewport(0, 0, r.w, r.h);
 }
@@ -935,7 +906,7 @@ void RSGL_setClearArgs(bool clearArgs) {
     RSGL_argsClear = clearArgs;
 }
 void RSGL_clearArgs(void) {
-    RSGL_args = (RSGL_drawArgs){NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0, 0};
+    RSGL_args = (RSGL_drawArgs){NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0};
 }
 
 
@@ -1031,7 +1002,7 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
                 ((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f,
     };
     
-    RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, c, 3);
+    RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 3);
 }
 
 #ifndef PI
@@ -1086,7 +1057,7 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
                                 RSGL_GET_FINAL_POINT(r.x, r.y + r.h, 0.0f),  
                             };
 
-    RSGL_basicDraw(RSGL_TRIANGLES_2D, (float*)points, (float*)texPoints, c, 6);
+    RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 6);
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
@@ -1139,7 +1110,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     texcoords[tIndex + 1] = 0;
     texcoords[tIndex + 2] = 0;
 
-    RSGL_basicDraw(RSGL_TRIANGLE_FAN_2D, verts, texcoords, c, vIndex / 3);
+    RSGL_basicDraw(RSGL_TRIANGLE_FAN, verts, texcoords, c, vIndex / 3);
 }
 
 void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (int)sides}, c); }
@@ -1183,7 +1154,7 @@ void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c)
     float points[] = {RSGL_GET_FINAL_POINT(p1.x, p1.y, 0.0f), RSGL_GET_FINAL_POINT(p2.x, p2.y, 0.0f)};
     float texPoints[] = {0, 0.0f,          0, 0.0f};
 
-    RSGL_basicDraw(RSGL_LINES_2D, (float*)points, (float*)texPoints, c, 2);
+    RSGL_basicDraw(RSGL_LINES, (float*)points, (float*)texPoints, c, 2);
 }
 
 void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c) {
@@ -1200,7 +1171,7 @@ void RSGL_drawTriangleFOutline(RSGL_triangleF t, u32 thickness, RSGL_color c) {
     
     float texCoords[18];
 
-    RSGL_basicDraw(RSGL_LINES_2D, (float*)points, texCoords, c, 6);
+    RSGL_basicDraw(RSGL_LINES, (float*)points, texCoords, c, 6);
 }
 void RSGL_drawRectFOutline(RSGL_rectF r, u32 thickness, RSGL_color c) {
     RSGL_point3DF oCenter = RSGL_args.center;
@@ -1261,7 +1232,7 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
         }
     }
 
-    RSGL_basicDraw(RSGL_LINES_2D, verts, texCoords, c, index / 3);
+    RSGL_basicDraw(RSGL_LINES, verts, texCoords, c, index / 3);
 }
 
 void RSGL_drawPolygonFOutline(RSGL_rectF o, u32 sides, u32 thickness, RSGL_color c) {
@@ -1453,7 +1424,7 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
     RSGL_drawArgs save = RSGL_args;
     RSGL_rotate(RSGL_POINT3D(0, 0, 0));
     RSGL_setTexture(atlas);
-    RSGL_basicDraw(RSGL_TRIANGLES_2D_BLEND, verts, tcoords, RFontcolor, nverts);
+    RSGL_basicDraw(RSGL_TRIANGLES, verts, tcoords, RFontcolor, nverts);
     RSGL_args = save;
 }
 

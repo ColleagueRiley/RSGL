@@ -7,7 +7,9 @@
 #undef __linux__
 #endif
 
+#define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+#include "RSGL_gl.h"
 
 #include <stdio.h>
 

@@ -3,6 +3,7 @@
 
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+#include "RSGL_gl.h"
 
 /*
     this example is designed for Opengl 3.3 GLSL shaders
@@ -61,6 +62,8 @@ int main(void) {
 	RSGL_init(RSGL_AREA(window->r.w, window->r.h), RGFW_getProcAddress);
 
     RSGL_programInfo program = RSGL_renderCreateProgram(MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
+
+    RGFW_window_showMouse(window, 0);
 
     while (RGFW_window_shouldClose(window) == false) {
         while (RGFW_window_checkEvent(window)) {

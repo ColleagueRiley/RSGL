@@ -1,6 +1,4 @@
-#define RSGL_CUSTOM_RENDER
-#define RSGL_IMPLEMENTATION
-
+#ifdef RSGL_IMPLEMENTATION
 #define RSGL_GET_WORLD_X(x) (float)(x)
 #define RSGL_GET_WORLD_Y(y) (float)(y)
 #define RSGL_GET_WORLD_Z(z) (float)(z)
@@ -206,7 +204,7 @@ b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
 	RSGL_renderDeleteTexture(*atlas);
 	*atlas = (u64)newTexture;
 
-	return TRUE;
+	return 1;
 }
 
 void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
@@ -224,3 +222,4 @@ RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* F
 	RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
 	return (RSGL_programInfo) {};
 }
+#endif
