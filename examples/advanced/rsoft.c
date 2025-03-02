@@ -12,10 +12,9 @@
 unsigned char icon[4 * 3 * 3] = {0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF};
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RGFW_rect){0, 0, 500, 500}, RGFW_windowCenter);
-	
+    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RGFW_rect){0, 0, 500, 500}, RGFW_windowCenter | RGFW_windowTransparent);
+	RGFW_window_initBuffer(win);
 
-    RSoft_setBufferSize(RGFW_getScreenSize());
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), win->buffer);
 
     RGFW_window_setIcon(win, icon, RGFW_AREA(3, 3), 4);
@@ -37,7 +36,7 @@ int main(void) {
                 break;
             }
         
-        RSGL_clear(RSGL_RGB(65, 65, 65));
+        RSGL_clear(RSGL_RGBA(65, 65, 65, 255));
         rotate.z += 1;
         
         RSGL_rotate(rotate);
@@ -52,7 +51,7 @@ int main(void) {
         RSGL_draw();
 		RGFW_window_swapBuffers(win);
 
-		RGFW_window_checkFPS(win, 60);
+		//RGFW_window_checkFPS(win, 60);
 	}
 	
     RSGL_renderDeleteTexture(iconTex);
