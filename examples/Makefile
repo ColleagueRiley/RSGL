@@ -7,7 +7,7 @@ AR = ar
 # used for compiling RGFW.o
 CUSTOM_CFLAGS ?=
 # used for the examples
-CFLAGS =  
+CFLAGS = 
 
 LIBS := -static -lgdi32 -lm -lopengl32 -lwinmm -ggdb
 EXT = .exe
@@ -80,16 +80,16 @@ examples: $(EXAMPLE_OUTPUTS)
 
 advanced/rsoft: advanced/rsoft.c ../RSGL.h
 ifeq ($(CC),emcc)
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps/ -I./deps/RGFW $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
 else
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps/ -I./deps/RGFW $< $(LIBS) -o $@$(EXT)
 endif
 
 advanced/glfw: advanced/glfw.c ../RSGL.h 
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps -I./deps/RGFW $< $(LIBS) -lglfw -o $@$(EXT)
 
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
-	$(CC) $(WARNINGS) -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
+	$(CC) $(WARNINGS) -I../ -I./deps -I./deps/RGFW $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
@@ -120,7 +120,7 @@ else
 endif
 
 clean:
-	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)  .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm 
+	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)  .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm  advanced/rsoft
 	
 
 .PHONY: all examples clean

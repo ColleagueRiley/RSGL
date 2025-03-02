@@ -1,0 +1,3 @@
+[submodule "examples/deps/RGFW"]
+	path = examples/deps/RGFW
+	url = https://github.com/ColleagueRiley/RGFW.git
