@@ -58,8 +58,10 @@ int main(void) {
         #endif
         
         while (RGFW_window_checkEvent(win))  {
-            if (win->event.type == RGFW_quit)
+            if (win->event.type == RGFW_quit) {
                 running = 0;
+                break;
+            }
         }
 
         RGFW_window_makeCurrent(win);
