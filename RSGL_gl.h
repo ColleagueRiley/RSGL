@@ -618,7 +618,7 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 	}
 }
 
-RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName) {
+RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
     RSGL_programInfo program;
 
 	/* compile vertex shader */
