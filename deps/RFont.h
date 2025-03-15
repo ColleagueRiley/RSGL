@@ -788,7 +788,7 @@ RFont_area RFont_text_area_len(RFont_font* font, const char* text, size_t len, u
       x += (float)glyph.advance + spacing;
    }
 
-   return (RFont_area){(u32)x, y * size};
+   return (RFont_area){(u32)x, (u32)y * size};
 }
 
 RFont_area RFont_draw_text(RFont_font* font, const char* text, float x, float y, u32 size) {
@@ -932,7 +932,7 @@ RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, f
       RFont_render_text(font->atlas, verts, tcoords, i / 3);
    #endif
    
-   return (RFont_area){(u32)(x - startX), (u32)(y - startY) + (-font->descent * scale)};
+   return (RFont_area){(u32)(x - startX), (u32)(y - startY) + (u32)(-font->descent * scale)};
 }
 
 #if !defined(RFONT_NO_OPENGL) && !defined(RFONT_NO_GRAPHICS)
