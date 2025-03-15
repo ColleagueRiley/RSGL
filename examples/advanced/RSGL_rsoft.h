@@ -218,7 +218,7 @@ void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, fl
 
 void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) { RSGL_UNUSED(program); RSGL_UNUSED(value); RSGL_UNUSED(len);}
 void RSGL_renderDeleteProgram(RSGL_programInfo program) { }
-RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName) { 
+RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) { 
 	RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
 	return (RSGL_programInfo) {};
 }

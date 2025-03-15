@@ -151,10 +151,10 @@ typedef struct RSGL_rect {
     i32 x, y, w, h;
 } RSGL_rect;
 #endif
-#define RSGL_RECT(x, y, w, h) (RSGL_rect){x, y, w, h}
+#define RSGL_RECT(x, y, w, h) (RSGL_rect){(i32)(x), (i32)(y), (i32)(w), (i32)(h)}
 
 typedef struct RSGL_rectF { float x, y, w, h; } RSGL_rectF;
-#define RSGL_RECTF(x, y, w, h) (RSGL_rectF){x, y, w, h}
+#define RSGL_RECTF(x, y, w, h) (RSGL_rectF){(float)x, (float)y, (float)w, (float)h}
 
 #ifndef RSGL_point
 typedef struct RSGL_point {
@@ -185,19 +185,19 @@ typedef struct RSGL_point3D {
 
 typedef struct RSGL_point3DF { float x, y, z; } RSGL_point3DF;
 
-#define RSGL_POINT3D(x, y, z) (RSGL_point3D){x, y, z}
-#define RSGL_POINT3DF(x, y, z) (RSGL_point3DF){x, y, z}
+#define RSGL_POINT3D(x, y, z) (RSGL_point3D){(i32)x, (i32)y, (i32)z}
+#define RSGL_POINT3DF(x, y, z) (RSGL_point3DF){(float)x, (float)y, (float)z}
 
 typedef struct RSGL_areaF { float w, h;} RSGL_areaF;
-#define RSGL_AREAF(w, h) (RSGL_areaF){w, h}
+#define RSGL_AREAF(w, h) (RSGL_areaF){(float)w, (float)h}
 
 typedef struct RSGL_circle {
     i32 x, y, d;
 } RSGL_circle;
-#define RSGL_CIRCLE(x, y, d) (RSGL_circle){x, y, d}
+#define RSGL_CIRCLE(x, y, d) (RSGL_circle){(i32)x, (i32)y, (i32)d}
 
 typedef struct RSGL_circleF { float x, y, d; } RSGL_circleF;
-#define RSGL_CIRCLEF(x, y, d) (RSGL_circleF){x, y, d}
+#define RSGL_CIRCLEF(x, y, d) (RSGL_circleF){(float)x, (float)y, (float)d}
 
 typedef struct RSGL_triangle {
     RSGL_point p1, p2, p3;
@@ -227,8 +227,8 @@ typedef struct RSGL_color {
     u8 a, b, g, r;
 } RSGL_color;
 
-#define RSGL_RGBA(r, g, b, a) ((RSGL_color){(a), (b), (g), (r)})
-#define RSGL_RGB(r, g, b) ((RSGL_color){255, (b), (g), (r)})
+#define RSGL_RGBA(r, g, b, a) ((RSGL_color){(u8)(a), (u8)(b), (u8)(g), (u8)(r)})
+#define RSGL_RGB(r, g, b) ((RSGL_color){255, (u8)(b), (u8)(g), (u8)(r)})
 
 #define RSGL_COLOR_TO_HEX(color) ((u32)(color) & 0xFFFFFF00)
 #define RSGL_RGB_TO_HEX(r, g, b, a) (RSGL_COLOR_TO_HEX(RSGL_RGBA(r, g, b, a)))
@@ -379,7 +379,7 @@ typedef struct RSGL_programInfo {
     u32 vShader, fShader, program;
 } RSGL_programInfo;
 
-RSGLDEF RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, char* posName, char* texName, char* colorName);
+RSGLDEF RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_renderDeleteProgram(RSGL_programInfo program);
 RSGLDEF void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len);
 
@@ -1064,13 +1064,13 @@ void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
     if (RSGL_args.fill == false)
         return RSGL_drawRoundRectFOutline(r, rounding, 1, c);
 
-    RSGL_drawRect((RSGL_rect) {r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h}, c);
-    RSGL_drawRect((RSGL_rect) {r.x, r.y + (rounding.y / 2), r.w,  r.h - rounding.y}, c);
+    RSGL_drawRect(RSGL_RECT(r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h), c);
+    RSGL_drawRect(RSGL_RECT(r.x, r.y + (rounding.y / 2), r.w,  r.h - rounding.y), c);
 
-    RSGL_drawArc((RSGL_rect) {r.x, r.y, rounding.x, rounding.y}, (RSGL_point){180, 270}, c);
-    RSGL_drawArc((RSGL_rect) {r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y}, (RSGL_point){90, 180}, c);
-    RSGL_drawArc((RSGL_rect) {r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y), rounding.x, rounding.y}, (RSGL_point){0, 90}, c);
-    RSGL_drawArc((RSGL_rect) {r.x, r.y  + (r.h - rounding.y),  rounding.x, rounding.y}, (RSGL_point){270, 360}, c);
+    RSGL_drawArc(RSGL_RECT(r.x, r.y, rounding.x, rounding.y), (RSGL_point){180, 270}, c);
+    RSGL_drawArc(RSGL_RECT(r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y), (RSGL_point){90, 180}, c);
+    RSGL_drawArc(RSGL_RECT(r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y), rounding.x, rounding.y), (RSGL_point){0, 90}, c);
+    RSGL_drawArc(RSGL_RECT(r.x, r.y  + (r.h - rounding.y),  rounding.x, rounding.y), (RSGL_point){270, 360}, c);
 }
 
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c);
@@ -1113,7 +1113,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     RSGL_basicDraw(RSGL_TRIANGLE_FAN, verts, texcoords, c, vIndex / 3);
 }
 
-void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (int)sides}, c); }
+void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (float)sides}, c); }
 
 
 #ifndef M_PI
@@ -1191,15 +1191,15 @@ void RSGL_drawRectFOutline(RSGL_rectF r, u32 thickness, RSGL_color c) {
     RSGL_center(oCenter);
 }
 void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness, RSGL_color c) {
-    RSGL_drawRectF((RSGL_rectF) {r.x + (rounding.x/2), r.y, r.w - rounding.x, (int)(thickness + !thickness)}, c);
-    RSGL_drawRectF((RSGL_rectF) {r.x + (rounding.x/2), r.y + r.h, r.w - rounding.x, (int)(thickness + !thickness)}, c);    
-    RSGL_drawRectF((RSGL_rectF) {r.x, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y}, c);
-    RSGL_drawRectF((RSGL_rectF) {r.x + r.w, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y}, c);
+    RSGL_drawRectF(RSGL_RECTF(r.x + (rounding.x/2), r.y, r.w - rounding.x, (int)(thickness + !thickness)), c);
+    RSGL_drawRectF(RSGL_RECTF(r.x + (rounding.x/2), r.y + r.h, r.w - rounding.x, (int)(thickness + !thickness)), c);    
+    RSGL_drawRectF(RSGL_RECTF(r.x, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y), c);
+    RSGL_drawRectF(RSGL_RECTF(r.x + r.w, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y), c);
 
-    RSGL_drawArcFOutline((RSGL_rectF) {r.x, r.y, rounding.x, rounding.y}, (RSGL_pointF){180, 270}, thickness, c);
-    RSGL_drawArcFOutline((RSGL_rectF) {r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y}, (RSGL_pointF){90, 180}, thickness, c);
-    RSGL_drawArcFOutline((RSGL_rectF) {r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y) - 1, rounding.x, rounding.y + 2}, (RSGL_pointF){0, 90}, thickness, c);
-    RSGL_drawArcFOutline((RSGL_rectF) {r.x + 1, r.y  + (r.h - rounding.y) - 1,  rounding.x, rounding.y + 2}, (RSGL_pointF){270, 360}, thickness, c);
+    RSGL_drawArcFOutline(RSGL_RECTF(r.x, r.y, rounding.x, rounding.y), (RSGL_pointF){180, 270}, thickness, c);
+    RSGL_drawArcFOutline(RSGL_RECTF(r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y), (RSGL_pointF){90, 180}, thickness, c);
+    RSGL_drawArcFOutline(RSGL_RECTF(r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y) - 1, rounding.x, rounding.y + 2), (RSGL_pointF){0, 90}, thickness, c);
+    RSGL_drawArcFOutline(RSGL_RECTF(r.x + 1, r.y  + (r.h - rounding.y) - 1,  rounding.x, rounding.y + 2), (RSGL_pointF){270, 360}, thickness, c);
 }
 
 void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
@@ -1237,7 +1237,7 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
 
 void RSGL_drawPolygonFOutline(RSGL_rectF o, u32 sides, u32 thickness, RSGL_color c) {
     RSGL_args.lineWidth = thickness;
-    RSGL_drawPolygonFOutlinePro(o, sides, (RSGL_pointF){0, (int)sides}, c);
+    RSGL_drawPolygonFOutlinePro(o, sides, (RSGL_pointF){0, (float)sides}, c);
 }
 void RSGL_drawArcFOutline(RSGL_rectF o, RSGL_pointF arc, u32 thickness, RSGL_color color) {
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
@@ -1444,8 +1444,8 @@ RSGL_Other
 */
 
 /* collision detection */
-bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p) { return RSGL_circleCollideRect(c, (RSGL_rect) {p.x, p.y, 1, 1}); }
-bool RSGL_circleCollidePointF(RSGL_circleF c, RSGL_pointF p) { return RSGL_circleCollideRectF(c, (RSGL_rectF) {p.x, p.y, 1, 1}); }
+bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p) { return RSGL_circleCollideRect(c, RSGL_RECT(p.x, p.y, 1, 1)); }
+bool RSGL_circleCollidePointF(RSGL_circleF c, RSGL_pointF p) { return RSGL_circleCollideRectF(c, RSGL_RECTF(p.x, p.y, 1, 1)); }
 
 bool RSGL_circleCollideRectF(RSGL_circleF c, RSGL_rectF r) {
     // test cords
