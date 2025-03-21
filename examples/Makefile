@@ -1,8 +1,8 @@
 # CUSTOM ARGS :
 # RGFW_WAYLAND=1 -> use wayland 
 
-CC = gcc
-AR = ar
+CC ?= gcc
+AR ?= ar
 
 # used for compiling RGFW.o
 CUSTOM_CFLAGS ?=
@@ -62,7 +62,7 @@ else ifeq ($(CC),emcc)
 	detected_OS = web
 	
 	LIBS += -DRSGL_GL_NO_LEGACY 
-else
+else ifeq (,$(filter $(CC), g++ clang++))
 	LIBS += -std=c99 
 endif
 

@@ -83,8 +83,13 @@ UI elements have been moved to [`RSGL_ui`](https://github.com/ColleagueRiley/RSG
 ## a basic example
 
 ```c
+// (see application in basic.c)
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+
+// include graphics backend header here too
+#include "RSGL_gl.h"
+
 
 int main() {
     // create window with your API choice here
@@ -93,14 +98,15 @@ int main() {
     u32 HEIGHT = //??? window height
     void* procAddress = //??? renderer proc address (ex. RGFW_getProcAddress/glfwGetProcAddress)
 
-    RSGL_init(RSGL_AREA(WIDTH, HEIGHT), RGFW_getProcAddress);	
+    RSGL_init(RSGL_AREA(WIDTH, HEIGHT), procAddress);	
     
     bool running = true;
     while (running) {
       // (handle your API's events here)
 
       RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
-      RSGL_window_clear(win, RSGL_RGB(255, 255, 255));
+      RSGL_clear(RSGL_RGBA(255, 255, 255));
+      RSGL_draw();
 
       // swap draw buffer with API here 
       // for example RGFW_window_swapBuffer or glfwSwapBuffers
