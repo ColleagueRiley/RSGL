@@ -13,8 +13,10 @@ int main(void) {
 
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
     
-	u32 fps;
-RFONT_UNUSED(fps);
+    u32 fps = 0;
+    u32 frameCount = 0;
+    double startTime = RGFW_getTime(); 
+
     for (; RGFW_window_shouldClose(win) == false;) {
         RGFW_window_checkEvent(win);
 
@@ -31,9 +33,10 @@ RFONT_UNUSED(fps);
         RSGL_drawRect(RSGL_RECT(50, 50, 100, 100), RSGL_RGBA(0, 255, 0, 50));
         RSGL_draw();
 		RGFW_window_swapBuffers(win);
-
-		fps = RGFW_window_checkFPS(win, 0);
-	}
+        
+		fps = RGFW_checkFPS(startTime, frameCount, 0);
+        frameCount++;
+    }
 	
 	RSGL_free();
 	RGFW_window_close(win);

@@ -24,6 +24,9 @@ int main(void) {
     size_t texTimer = (size_t)time(0);
     size_t texTimer2 = 0;
 
+    u32 frameCount = 0;
+    double startTime = RGFW_getTime();
+
     while (RGFW_window_shouldClose(win) == false) {
         while (RGFW_window_checkEvent(win))
             if (win->event.type == RGFW_quit) {
@@ -61,8 +64,9 @@ int main(void) {
 		RSGL_draw();
         RGFW_window_swapBuffers(win);
 
-		RGFW_window_checkFPS(win, 60);
-	}
+		RGFW_checkFPS(startTime, frameCount, 60);
+        frameCount++;
+    }
 	
     RSGL_renderDeleteTexture(iconTex);
 	RSGL_free();
