@@ -21,7 +21,10 @@ int main(void) {
     bool fill = true;
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
-	
+
+    u32 frameCount = 0;
+    float startTime = RGFW_getTime();
+
     while (RGFW_window_shouldClose(win) == false) {
         while (RGFW_window_checkEvent(win)) {
 			if (win->event.type == RGFW_quit) {
@@ -50,7 +53,8 @@ int main(void) {
         RSGL_draw();
 		RGFW_window_swapBuffers(win);
 
-		RGFW_window_checkFPS(win, 60);
+		RGFW_checkFPS(startTime, frameCount, 60);
+        frameCount++;
 	}
 	
 	RSGL_free();
