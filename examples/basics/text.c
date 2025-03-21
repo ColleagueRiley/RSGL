@@ -33,9 +33,9 @@ int main(void) {
         RSGL_draw();
 		RGFW_window_swapBuffers(win);
         
-        frameCount++;
 		fps = RGFW_checkFPS(startTime, frameCount, 0);
-	}
+        frameCount++;
+    }
 	
 	RSGL_free();
 	RGFW_window_close(win);
