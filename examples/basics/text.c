@@ -13,7 +13,8 @@ int main(void) {
 
     RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
     
-    u32 fps, frameCount;
+    u32 fps = 0;
+    u32 frameCount = 0;
     double startTime = RGFW_getTime(); 
 
     for (; RGFW_window_shouldClose(win) == false;) {
