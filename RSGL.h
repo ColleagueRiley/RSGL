@@ -124,17 +124,18 @@ RSGL basicDraw types
 	#endif
 #endif
 
-#if !defined(b8)
-	#define b8 b8
-	typedef u8 b8;
-	typedef u32 b32;
+#if !defined(RSGL_bool)
+#include <stdbool.h>
+#define RSGL_bool bool
 #endif
+
+#define RSGL_TRUE (RSGL_bool)1
+#define RSGL_FALSE (RSGL_bool)0
 
 #ifndef RSGL_texture
 #define RSGL_texture size_t
 #endif
 
-#include <stdbool.h>
 #include <stddef.h>
 
 #define RSGL_between(x, lower, upper) (((lower) <= (x)) && ((x) <= (upper)))
@@ -153,7 +154,10 @@ typedef struct RSGL_rect {
 #endif
 #define RSGL_RECT(x, y, w, h) (RSGL_rect){(i32)(x), (i32)(y), (i32)(w), (i32)(h)}
 
+#ifndef RSGL_rectF
 typedef struct RSGL_rectF { float x, y, w, h; } RSGL_rectF;
+#endif
+
 #define RSGL_RECTF(x, y, w, h) (RSGL_rectF){(float)x, (float)y, (float)w, (float)h}
 
 #ifndef RSGL_point
@@ -176,46 +180,71 @@ RSGL_[shape]
 *******
 */
 
+#ifndef RSGL_pointF
 typedef struct RSGL_pointF { float x, y; } RSGL_pointF;
+#endif
 #define RSGL_POINTF(x, y) (RSGL_pointF){x, y}
 
+#ifndef RSGL_point3D
 typedef struct RSGL_point3D {
     i32 x, y, z;
 } RSGL_point3D;
+#endif
 
+#ifndef RSGL_point3DF
 typedef struct RSGL_point3DF { float x, y, z; } RSGL_point3DF;
+#endif
 
 #define RSGL_POINT3D(x, y, z) (RSGL_point3D){(i32)x, (i32)y, (i32)z}
 #define RSGL_POINT3DF(x, y, z) (RSGL_point3DF){(float)x, (float)y, (float)z}
 
+#ifndef RSGL_areaF
 typedef struct RSGL_areaF { float w, h;} RSGL_areaF;
 #define RSGL_AREAF(w, h) (RSGL_areaF){(float)w, (float)h}
+#endif
 
+#ifndef RSGL_circle
 typedef struct RSGL_circle {
     i32 x, y, d;
 } RSGL_circle;
+#endif
+
 #define RSGL_CIRCLE(x, y, d) (RSGL_circle){(i32)x, (i32)y, (i32)d}
 
+#ifndef RSGL_circleF
 typedef struct RSGL_circleF { float x, y, d; } RSGL_circleF;
+#endif
 #define RSGL_CIRCLEF(x, y, d) (RSGL_circleF){(float)x, (float)y, (float)d}
 
+#ifndef RSGL_triangle
 typedef struct RSGL_triangle {
     RSGL_point p1, p2, p3;
 } RSGL_triangle;
+#endif
+
 #define RSGL_TRIANGLE(p1, p2, p3) (RSGL_triangle){p1, p2, p3}
 
+#ifndef RSGL_triangleF
 typedef struct RSGL_triangleF { RSGL_pointF p1, p2, p3; } RSGL_triangleF;
+#endif
+
 #define RSGL_TRIANGLEF(p1, p2, p3) (RSGL_triangleF){p1, p2, p3}
 
 #define RSGL_createTriangle(x1, y1, x2, y2, x3, y3) (RSGL_triangle){{x1, y1}, {x2, y2}, {x3, y3}}
 #define RSGL_createTriangleF(x1, y1, x2, y2, x3, y3) (RSGL_triangleF){{x1, y1}, {x2, y2}, {x3, y3}}
 
+#ifndef RSGL_cube
 typedef struct RSGL_cube {
     i32 x, y, z, w, h, l;
 } RSGL_cube;
+#endif
+
 #define RSGL_CUBE(x, y, z, w, h, l) (RSGL_cube){x, y, z, w, h, l}
 
+#ifndef RSGL_cubeF
 typedef struct RSGL_cubeF { float x, y, z, w, h, l; } RSGL_cubeF;
+#endif
+
 #define RSGL_CUBEF(x, y, z, w, h, l) (RSGL_cubeF){x, y, z, w, h, l}
 
 /* 
@@ -223,9 +252,11 @@ the color stucture is in
 ABGR by default for performance reasons 
 (converting color to hex for example)
 */
+#ifndef RSGL_color
 typedef struct RSGL_color {
     u8 a, b, g, r;
 } RSGL_color;
+#endif
 
 #define RSGL_RGBA(r, g, b, a) ((RSGL_color){(u8)(a), (u8)(b), (u8)(g), (u8)(r)})
 #define RSGL_RGB(r, g, b) ((RSGL_color){255, (u8)(b), (u8)(g), (u8)(r)})
@@ -275,7 +306,7 @@ typedef struct RSGL_drawArgs {
     RSGL_area currentArea; /* size of current surface */
     RSGL_point3D rotate; 
 
-    bool fill;
+    RSGL_bool fill;
     RSGL_point3DF center;
     float lineWidth;
     u32 program;
@@ -288,11 +319,11 @@ RSGLDEF void RSGL_setGradient(
                                 float* gradient, /* array of gradients */
                                 size_t len /* length of array */
                             ); /* apply gradient to drawing, based on color list*/
-RSGLDEF void RSGL_fill(bool fill); /* toggle filling, if fill is false it runs RSGL_draw<whatever>_outline instead */
+RSGLDEF void RSGL_fill(RSGL_bool fill); /* toggle filling, if fill is RSGL_FALSE it runs RSGL_draw<whatever>_outline instead */
 RSGLDEF void RSGL_center(RSGL_point3DF center); /* the center of the drawing (or shape), this is used for rotation */
 
 /* args clear after a draw function by default, this toggles that */
-RSGLDEF void RSGL_setClearArgs(bool clearArgs); /* toggles if args are cleared by default or not */
+RSGLDEF void RSGL_setClearArgs(RSGL_bool clearArgs); /* toggles if args are cleared by default or not */
 RSGLDEF void RSGL_clearArgs(void); /* clears the args */
 
 /* calculate the align a smaller rect with larger rect */
@@ -317,9 +348,11 @@ typedef RSGL_ENUM(u8, RSGL_alignment) {
 RSGLDEF RSGL_rect RSGL_alignRect(RSGL_rect larger, RSGL_rect smaller, u16 alignment);
 RSGLDEF RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment);
 
+#ifndef RSGL_MATRIX
 typedef struct RSGL_MATRIX {
     float m[16];
 } RSGL_MATRIX;
+#endif
 
 RSGLDEF RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center);
 
@@ -375,9 +408,11 @@ RSGLDEF void RSGL_renderScissorStart(RSGL_rectF scissor);
 RSGLDEF void RSGL_renderScissorEnd(void);
 
 /* custom shader program */
+#ifndef RSGL_programInfo
 typedef struct RSGL_programInfo {
     u32 vShader, fShader, program;
 } RSGL_programInfo;
+#endif
 
 RSGLDEF RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_renderDeleteProgram(RSGL_programInfo program);
@@ -502,7 +537,10 @@ RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textE
     but you can still free it early
 */
 
+#ifndef RSGL_image
 typedef struct RSGL_image { RSGL_texture tex; RSGL_area srcSize; char file[255]; } RSGL_image;
+#endif
+
 RSGLDEF RSGL_image RSGL_drawImage(const char* image, RSGL_rect r);
 
 #define RSGL_loadImage(image) ((RSGL_image) RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0}))
@@ -519,19 +557,19 @@ extra
 */
 
 /* ** collision functions ** */
-RSGLDEF bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
-RSGLDEF bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r);
-RSGLDEF bool RSGL_circleCollide(RSGL_circle cir1, RSGL_circle cir2);
-RSGLDEF bool RSGL_rectCollidePoint(RSGL_rect r, RSGL_point p);
-RSGLDEF bool RSGL_rectCollide(RSGL_rect r, RSGL_rect r2);
-RSGLDEF bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
+RSGLDEF RSGL_bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p);
+RSGLDEF RSGL_bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r);
+RSGLDEF RSGL_bool RSGL_circleCollide(RSGL_circle cir1, RSGL_circle cir2);
+RSGLDEF RSGL_bool RSGL_rectCollidePoint(RSGL_rect r, RSGL_point p);
+RSGLDEF RSGL_bool RSGL_rectCollide(RSGL_rect r, RSGL_rect r2);
+RSGLDEF RSGL_bool RSGL_pointCollide(RSGL_point p, RSGL_point p2);
 
-RSGLDEF bool RSGL_circleCollidePointF(RSGL_circleF c, RSGL_pointF p);
-RSGLDEF bool RSGL_circleCollideRectF(RSGL_circleF c, RSGL_rectF r);
-RSGLDEF bool RSGL_circleCollideF(RSGL_circleF cir1, RSGL_circleF cir2);
-RSGLDEF bool RSGL_rectCollidePointF(RSGL_rectF r, RSGL_pointF p);
-RSGLDEF bool RSGL_rectCollideF(RSGL_rectF r, RSGL_rectF r2);
-RSGLDEF bool RSGL_pointCollideF(RSGL_pointF p, RSGL_pointF p2);
+RSGLDEF RSGL_bool RSGL_circleCollidePointF(RSGL_circleF c, RSGL_pointF p);
+RSGLDEF RSGL_bool RSGL_circleCollideRectF(RSGL_circleF c, RSGL_rectF r);
+RSGLDEF RSGL_bool RSGL_circleCollideF(RSGL_circleF cir1, RSGL_circleF cir2);
+RSGLDEF RSGL_bool RSGL_rectCollidePointF(RSGL_rectF r, RSGL_pointF p);
+RSGLDEF RSGL_bool RSGL_rectCollideF(RSGL_rectF r, RSGL_rectF r2);
+RSGLDEF RSGL_bool RSGL_pointCollideF(RSGL_pointF p, RSGL_pointF p2);
 
 #endif /* ndef RSGL_H */
 
@@ -632,7 +670,7 @@ macos:
 #ifndef RSGL_NO_DEPS_FOLDER
 #include "deps/stb_image.h"
 #else
-#include <stb_image.h>
+#include "stb_image.h"
 #endif
 
 #endif
@@ -642,8 +680,6 @@ u8* stbi_load            (char const *filename, int *x, int *y, int *channels_in
 #endif
 
 #include <time.h>
-
-#include <stdbool.h>
 
 #ifndef RSGL_NO_TEXT
 typedef struct RSGL_fontData {
@@ -663,27 +699,27 @@ RSGL_fontsData RSGL_font = {NULL, NULL, 0, 0};
 #endif
 
 RSGL_drawArgs RSGL_args = {NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0};
-bool RSGL_argsClear = false;
+RSGL_bool RSGL_argsClear = RSGL_FALSE;
 
 RSGL_image* RSGL_images = NULL;
 size_t RSGL_images_len = 0;
 
-RSGLDEF bool RSGL_cstr_equal(const char* str, const char* str2);
-bool RSGL_cstr_equal(const char* str, const char* str2) {
+RSGLDEF RSGL_bool RSGL_cstr_equal(const char* str, const char* str2);
+RSGL_bool RSGL_cstr_equal(const char* str, const char* str2) {
     char* s;
     char* s2 = (char*)str2;
     
     for (s = (char*)str; *s && *s2; s++) {
         if (*s != *s2)
-            return false;
+            return RSGL_FALSE;
 
         s2++;
     }
 
     if (*s == '\0' && *s2 == '\0')
-        return true;
+        return RSGL_TRUE;
     
-    return false;
+    return RSGL_FALSE;
 }
 
 RSGL_rect RSGL_alignRect(RSGL_rect larger, RSGL_rect smaller, u16 alignment) {
@@ -896,13 +932,13 @@ void RSGL_setGradient(float gradient[], size_t len) {
     RSGL_args.gradient_len = len;
     RSGL_args.gradient = gradient;
 }
-void RSGL_fill(bool fill) {
+void RSGL_fill(RSGL_bool fill) {
     RSGL_args.fill = fill;
 }
 void RSGL_center(RSGL_point3DF center) {
     RSGL_args.center = center;
 }
-void RSGL_setClearArgs(bool clearArgs) {
+void RSGL_setClearArgs(RSGL_bool clearArgs) {
     RSGL_argsClear = clearArgs;
 }
 void RSGL_clearArgs(void) {
@@ -986,7 +1022,7 @@ void RSGL_plotLines(RSGL_pointF* lines, size_t points_count, u32 thickness, RSGL
 }
 
 void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
-    if (RSGL_args.fill == false)
+    if (RSGL_args.fill == RSGL_FALSE)
         return RSGL_drawTriangleFOutline(t, 1, c);
 
     RSGL_point3DF center = {RSGL_GET_WORLD_POINT(t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0)};
@@ -1032,7 +1068,7 @@ void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_co
 }
 
 void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
-    if (RSGL_args.fill == false)
+    if (RSGL_args.fill == RSGL_FALSE)
         return RSGL_drawRectFOutline(r, 1, c);
         
     float texPoints[] = {
@@ -1061,7 +1097,7 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
-    if (RSGL_args.fill == false)
+    if (RSGL_args.fill == RSGL_FALSE)
         return RSGL_drawRoundRectFOutline(r, rounding, 1, c);
 
     RSGL_drawRect(RSGL_RECT(r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h), c);
@@ -1079,7 +1115,7 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     static float verts[360 * 3];
     static float texcoords[360 * 2];
 
-    if (RSGL_args.fill == false)
+    if (RSGL_args.fill == RSGL_FALSE)
         return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
     
     RSGL_point3DF center =  (RSGL_point3DF){RSGL_GET_WORLD_POINT(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0)};
@@ -1321,7 +1357,7 @@ RSGL_image RSGL_drawImage(const char* image, RSGL_rect r) {
 
 #ifndef RSGL_NO_TEXT
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #define F_OK 0
 #define access _access
@@ -1444,10 +1480,10 @@ RSGL_Other
 */
 
 /* collision detection */
-bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p) { return RSGL_circleCollideRect(c, RSGL_RECT(p.x, p.y, 1, 1)); }
-bool RSGL_circleCollidePointF(RSGL_circleF c, RSGL_pointF p) { return RSGL_circleCollideRectF(c, RSGL_RECTF(p.x, p.y, 1, 1)); }
+RSGL_bool RSGL_circleCollidePoint(RSGL_circle c, RSGL_point p) { return RSGL_circleCollideRect(c, RSGL_RECT(p.x, p.y, 1, 1)); }
+RSGL_bool RSGL_circleCollidePointF(RSGL_circleF c, RSGL_pointF p) { return RSGL_circleCollideRectF(c, RSGL_RECTF(p.x, p.y, 1, 1)); }
 
-bool RSGL_circleCollideRectF(RSGL_circleF c, RSGL_rectF r) {
+RSGL_bool RSGL_circleCollideRectF(RSGL_circleF c, RSGL_rectF r) {
     // test cords
     float testX = c.x; 
     float testY = c.y;
@@ -1468,9 +1504,9 @@ bool RSGL_circleCollideRectF(RSGL_circleF c, RSGL_rectF r) {
     // check
     return ( sqrt( ( (c.x - testX) * (c.x - testX) ) + ( (c.y - testY) * (c.y - testY) ) )  <= (c.d/2) );
 }
-bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r) { return RSGL_circleCollideRectF(RSGL_CIRCLEF(c.x, c.y, c.d), RSGL_RECTF(r.x, r.y, r.w, r.h)); }
+RSGL_bool RSGL_circleCollideRect(RSGL_circle c, RSGL_rect r) { return RSGL_circleCollideRectF(RSGL_CIRCLEF(c.x, c.y, c.d), RSGL_RECTF(r.x, r.y, r.w, r.h)); }
 
-bool RSGL_circleCollideF(RSGL_circleF cir, RSGL_circleF cir2) {
+RSGL_bool RSGL_circleCollideF(RSGL_circleF cir, RSGL_circleF cir2) {
     float distanceBetweenCircles = (float) sqrt(
         (cir2.x - cir.x) * (cir2.x - cir.x) + 
         (cir2.y - cir.y) * (cir2.y - cir.y)
@@ -1479,15 +1515,15 @@ bool RSGL_circleCollideF(RSGL_circleF cir, RSGL_circleF cir2) {
     return !(distanceBetweenCircles > (cir.d/2) + (cir2.d/2)); // check if there is a collide
 }
 
-bool RSGL_circleCollide(RSGL_circle cir, RSGL_circle cir2) { return RSGL_circleCollideF(RSGL_CIRCLEF(cir.x, cir.y, cir.d), RSGL_CIRCLEF(cir2.x, cir2.y, cir2.d)); }
+RSGL_bool RSGL_circleCollide(RSGL_circle cir, RSGL_circle cir2) { return RSGL_circleCollideF(RSGL_CIRCLEF(cir.x, cir.y, cir.d), RSGL_CIRCLEF(cir2.x, cir2.y, cir2.d)); }
 
-bool RSGL_rectCollidePoint(RSGL_rect r, RSGL_point p){ return (p.x >= r.x &&  p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h); }
-bool RSGL_rectCollide(RSGL_rect r, RSGL_rect r2){ return (r.x + r.w >= r2.x && r.x <= r2.x + r2.w && r.y + r.h >= r2.y && r.y <= r2.y + r2.h); }
-bool RSGL_pointCollide(RSGL_point p, RSGL_point p2){ return (p.x == p2.x && p.y == p2.y); }
+RSGL_bool RSGL_rectCollidePoint(RSGL_rect r, RSGL_point p){ return (p.x >= r.x &&  p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h); }
+RSGL_bool RSGL_rectCollide(RSGL_rect r, RSGL_rect r2){ return (r.x + r.w >= r2.x && r.x <= r2.x + r2.w && r.y + r.h >= r2.y && r.y <= r2.y + r2.h); }
+RSGL_bool RSGL_pointCollide(RSGL_point p, RSGL_point p2){ return (p.x == p2.x && p.y == p2.y); }
 
-bool RSGL_rectCollidePointF(RSGL_rectF r, RSGL_pointF p){ return (p.x >= r.x &&  p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h); }
-bool RSGL_rectCollideF(RSGL_rectF r, RSGL_rectF r2){ return (r.x + r.w >= r2.x && r.x <= r2.x + r2.w && r.y + r.h >= r2.y && r.y <= r2.y + r2.h); }
-bool RSGL_pointCollideF(RSGL_pointF p, RSGL_pointF p2){ return (p.x == p2.x && p.y == p2.y); }
+RSGL_bool RSGL_rectCollidePointF(RSGL_rectF r, RSGL_pointF p){ return (p.x >= r.x &&  p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h); }
+RSGL_bool RSGL_rectCollideF(RSGL_rectF r, RSGL_rectF r2){ return (r.x + r.w >= r2.x && r.x <= r2.x + r2.w && r.y + r.h >= r2.y && r.y <= r2.y + r2.h); }
+RSGL_bool RSGL_pointCollideF(RSGL_pointF p, RSGL_pointF p2){ return (p.x == p2.x && p.y == p2.y); }
 
 /* Multiply the current matrix by a translation matrix */
 RSGL_MATRIX RSGL_translatef(RSGL_MATRIX* matrix, float x, float y, float z) {
