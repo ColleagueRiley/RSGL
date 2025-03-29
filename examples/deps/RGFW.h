@@ -422,6 +422,7 @@ int main() {
 	this is mostly used to allow you to force the use of XWayland
 */
 RGFWDEF void RGFW_useWayland(RGFW_bool wayland);
+RGFWDEF RGFW_bool RGFW_usingWayland(void);
 /*
 	regular RGFW stuff
 */
@@ -740,7 +741,6 @@ typedef struct RGFW_window_src {
 	void* view; /* apple viewpoint thingy */
 
 #if defined(RGFW_OSMESA) || defined(RGFW_BUFFER)
-	void* image;
 #endif
 } RGFW_window_src;
 #elif defined(RGFW_WASM)
@@ -1273,7 +1273,7 @@ typedef RGFW_ENUM(u8, RGFW_glHints)  {
 	RGFW_glReleaseBehavior,
 	RGFW_glProfile,
 	RGFW_glMajor, RGFW_glMinor,
-	RGFW_glFinalHint, /*!< the final hint (not for setting) */
+	RGFW_glFinalHint = 32, /*!< the final hint (not for setting) */
 	RGFW_releaseFlush = 0,  RGFW_glReleaseNone, /* RGFW_glReleaseBehavior options */
 	RGFW_glCore = 0,  RGFW_glCompatibility /*!< RGFW_glProfile options */
 };
@@ -1470,8 +1470,8 @@ typedef RGFW_ENUM(u8, RGFW_key) {
 	RGFW_KP_Period,
 	RGFW_KP_Return,
 	RGFW_scrollLock,
-	RGFW_keyLast
-};
+	RGFW_keyLast = 256 /* padding for alignment ~(175 by default) */
+ };
 
 RGFWDEF u32 RGFW_apiKeyToRGFW(u32 keycode);
 
@@ -1487,6 +1487,7 @@ typedef RGFW_ENUM(u8, RGFW_mouseIcons) {
 	RGFW_mouseResizeNESW,
 	RGFW_mouseResizeAll,
 	RGFW_mouseNotAllowed,
+    RGFW_mouseIconFinal = 16 /* padding for alignment */
 };
 
 /** @} */
@@ -1615,7 +1616,7 @@ This is the start of keycode data
 #define RGFW_MAP RGFW_keycodes
 #endif
 
-u8 RGFW_keycodes [RGFW_OS_BASED_VALUE(136, 0x15C + 1, 128, DOM_VK_WIN_OEM_CLEAR + 1)] = {
+u8 RGFW_keycodes [RGFW_OS_BASED_VALUE(256, 512, 128, 256)] = {
 #ifdef __cplusplus
 	0
 };
@@ -1770,7 +1771,7 @@ void RGFW_resetKey(void) {
 */
 
 /* gamepad data */
-RGFW_keyState RGFW_gamepadPressed[4][18]; /*!< if a key is currently pressed or not (per gamepad) */
+RGFW_keyState RGFW_gamepadPressed[4][32]; /*!< if a key is currently pressed or not (per gamepad) */
 RGFW_point RGFW_gamepadAxes[4][4]; /*!< if a key is currently pressed or not (per gamepad) */
 
 RGFW_gamepadType RGFW_gamepads_type[4]; /*!< if a key is currently pressed or not (per gamepad) */
@@ -1898,7 +1899,7 @@ RGFW_window* RGFW_createWindow(const char* name, RGFW_rect rect, RGFW_windowFlag
 	#include "XDL.h"
 #endif
 
-#define RGFW_MAX_EVENTS 20
+#define RGFW_MAX_EVENTS 32
 typedef struct RGFW_globalStruct {
     i32 windowCount;
     RGFW_window* root;
@@ -3917,7 +3918,6 @@ RGFW_window* RGFW_createWindowPtr(const char* name, RGFW_rect rect, RGFW_windowF
 	/* set the background */
 	RGFW_window_setName(win, name);
 
-	RGFW_window_show(win);
 	XMoveWindow(win->src.display, (Drawable) win->src.window, win->r.x, win->r.y); /*!< move the window to it's proper cords */
 
 	if (flags & RGFW_windowAllowDND) { /* init drag and drop atoms and turn on drag and drop for this window */
@@ -3953,6 +3953,7 @@ RGFW_window* RGFW_createWindowPtr(const char* name, RGFW_rect rect, RGFW_windowF
 	RGFW_window_setMouseDefault(win);
 	RGFW_window_setFlags(win, flags);
 
+	RGFW_window_show(win);
 	return win; /*return newly created window */
 #endif
 #ifdef RGFW_WAYLAND
@@ -5108,7 +5109,7 @@ RGFW_bool RGFW_window_setMouseStandard(RGFW_window* win, u8 mouse) {
 	RGFW_ASSERT(win != NULL);
 	RGFW_GOTO_WAYLAND(0);
 #ifdef RGFW_X11
-	static const u8 mouseIconSrc[] = { XC_arrow, XC_left_ptr, XC_xterm, XC_crosshair, XC_hand2, XC_sb_h_double_arrow, XC_sb_v_double_arrow, XC_bottom_left_corner, XC_bottom_right_corner, XC_fleur, XC_X_cursor};
+	static const u8 mouseIconSrc[16] = { XC_arrow, XC_left_ptr, XC_xterm, XC_crosshair, XC_hand2, XC_sb_h_double_arrow, XC_sb_v_double_arrow, XC_bottom_left_corner, XC_bottom_right_corner, XC_fleur, XC_X_cursor};
 
 	if (mouse > (sizeof(mouseIconSrc) / sizeof(u8)))
 		return RGFW_FALSE;
@@ -5123,7 +5124,7 @@ RGFW_bool RGFW_window_setMouseStandard(RGFW_window* win, u8 mouse) {
 #endif
 #ifdef RGFW_WAYLAND
 	wayland:
-	static const char* iconStrings[] = { "left_ptr", "left_ptr", "text", "cross", "pointer", "e-resize", "n-resize", "nw-resize", "ne-resize", "all-resize", "not-allowed" };
+	static const char* iconStrings[16] = { "left_ptr", "left_ptr", "text", "cross", "pointer", "e-resize", "n-resize", "nw-resize", "ne-resize", "all-resize", "not-allowed" };
 
 	struct wl_cursor* wlcursor = wl_cursor_theme_get_cursor(RGFW_wl_cursor_theme, iconStrings[mouse]);
 	RGFW_cursor_image = wlcursor->images[0];
@@ -6443,12 +6444,12 @@ RGFW_window* RGFW_createWindowPtr(const char* name, RGFW_rect rect, RGFW_windowF
 	if ((flags & RGFW_windowNoInitAPI) == 0)
 		RGFW_window_initOpenGL(win, RGFW_BOOL(flags & RGFW_windowOpenglSoftware));
 	
-	RGFW_window_show(win);
 	RGFW_window_setFlags(win, flags);
-
 	RGFW_win32_makeWindowTransparent(win);
 	RGFW_sendDebugInfo(RGFW_typeInfo, RGFW_infoWindow, RGFW_DEBUG_CTX(win, 0), "a new window was created");
-	return win;
+    RGFW_window_show(win);
+    
+    return win;
 }
 
 void RGFW_window_setBorder(RGFW_window* win, RGFW_bool border) {
@@ -7226,7 +7227,7 @@ RGFW_bool RGFW_window_setMouseDefault(RGFW_window* win) {
 RGFW_bool RGFW_window_setMouseStandard(RGFW_window* win, u8 mouse) {
 	RGFW_ASSERT(win != NULL);
 
-	static const u32 mouseIconSrc[] = {OCR_NORMAL, OCR_NORMAL, OCR_IBEAM, OCR_CROSS, OCR_HAND, OCR_SIZEWE, OCR_SIZENS, OCR_SIZENWSE, OCR_SIZENESW, OCR_SIZEALL, OCR_NO};
+	static const u32 mouseIconSrc[16] = {OCR_NORMAL, OCR_NORMAL, OCR_IBEAM, OCR_CROSS, OCR_HAND, OCR_SIZEWE, OCR_SIZENS, OCR_SIZENWSE, OCR_SIZENESW, OCR_SIZEALL, OCR_NO};
 	if (mouse > (sizeof(mouseIconSrc) / sizeof(u32)))
 		return RGFW_FALSE;
 
@@ -8294,10 +8295,6 @@ void RGFW_window_initBufferPtr(RGFW_window* win, u8* buffer, RGFW_area area) {
 		win->buffer = buffer;
 		win->bufferSize = area;
 		win->_flags |= RGFW_BUFFER_ALLOC;
-	
-		win->src.image = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSImage"), sel_getUid("alloc"));
-		NSSize size = (NSSize){win->bufferSize.w, win->bufferSize.h};
-		win->src.image = ((id (*)(id, SEL, NSSize))objc_msgSend)((id)win->src.image, sel_getUid("initWithSize:"), size);
 	#ifdef RGFW_OSMESA
 		win->src.ctx = OSMesaCreateContext(OSMESA_RGBA, NULL);
 		OSMesaMakeCurrent(win->src.ctx, win->buffer, GL_UNSIGNED_BYTE, win->r.w, win->r.h);
@@ -8504,7 +8501,9 @@ RGFW_window* RGFW_createWindowPtr(const char* name, RGFW_rect rect, RGFW_windowF
 		NSregisterForDraggedTypes((id)win->src.window, types, 3);
 	}
 
-	// Show the window
+	RGFW_window_setFlags(win, flags);
+	
+    // Show the window
 	objc_msgSend_void_bool(NSApp, sel_registerName("activateIgnoringOtherApps:"), true);
 	((id(*)(id, SEL, SEL))objc_msgSend)((id)win->src.window, sel_registerName("makeKeyAndOrderFront:"), NULL);
 	RGFW_window_show(win);
@@ -8518,8 +8517,6 @@ RGFW_window* RGFW_createWindowPtr(const char* name, RGFW_rect rect, RGFW_windowF
 	objc_msgSend_void(win->src.window, sel_registerName("makeKeyWindow"));
 
 	objc_msgSend_void(NSApp, sel_registerName("finishLaunching"));
-	
-	RGFW_window_setFlags(win, flags);
 	NSRetain(win->src.window);
 	NSRetain(NSApp);
 
@@ -9101,7 +9098,7 @@ void RGFW_window_showMouse(RGFW_window* win, RGFW_bool show) {
 }
 
 RGFW_bool RGFW_window_setMouseStandard(RGFW_window* win, u8 stdMouses) {
-	static const char* mouseIconSrc[] = {"arrowCursor", "arrowCursor", "IBeamCursor", "crosshairCursor", "pointingHandCursor", "resizeLeftRightCursor", "resizeUpDownCursor", "_windowResizeNorthWestSouthEastCursor", "_windowResizeNorthEastSouthWestCursor", "closedHandCursor", "operationNotAllowedCursor"};
+	static const char* mouseIconSrc[16] = {"arrowCursor", "arrowCursor", "IBeamCursor", "crosshairCursor", "pointingHandCursor", "resizeLeftRightCursor", "resizeUpDownCursor", "_windowResizeNorthWestSouthEastCursor", "_windowResizeNorthEastSouthWestCursor", "closedHandCursor", "operationNotAllowedCursor"};
 	if (stdMouses > ((sizeof(mouseIconSrc)) / (sizeof(char*))))
 		return RGFW_FALSE;
 
@@ -9371,18 +9368,23 @@ void RGFW_window_swapBuffers_software(RGFW_window* win) {
 #if defined(RGFW_OSMESA) || defined(RGFW_BUFFER)
 	RGFW_RGB_to_BGR(win, win->buffer);
 	i32 channels = 4;
+	id image = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSImage"), sel_getUid("alloc"));
+	NSSize size = (NSSize){win->bufferSize.w, win->bufferSize.h};
+	image = ((id (*)(id, SEL, NSSize))objc_msgSend)((id)image, sel_getUid("initWithSize:"), size);
+
 	id rep  = NSBitmapImageRep_initWithBitmapData(&win->buffer, win->r.w, win->r.h , 8, channels, (channels == 4), false, 
 							"NSDeviceRGBColorSpace", 1 << 1, (u32)win->bufferSize.w  * (u32)channels, 8 * (u32)channels);
-	((void (*)(id, SEL, id))objc_msgSend)((id)win->src.image, sel_getUid("addRepresentation:"), rep);
+	((void (*)(id, SEL, id))objc_msgSend)((id)image, sel_getUid("addRepresentation:"), rep);
 
 	id contentView = ((id (*)(id, SEL))objc_msgSend)((id)win->src.window, sel_getUid("contentView"));
 	((void (*)(id, SEL, BOOL))objc_msgSend)(contentView, sel_getUid("setWantsLayer:"), YES);
 	id layer = ((id (*)(id, SEL))objc_msgSend)(contentView, sel_getUid("layer"));
 
-	((void (*)(id, SEL, id))objc_msgSend)(layer, sel_getUid("setContents:"), (id)win->src.image);
+	((void (*)(id, SEL, id))objc_msgSend)(layer, sel_getUid("setContents:"), (id)image);
 	((void (*)(id, SEL, BOOL))objc_msgSend)(contentView, sel_getUid("setNeedsDisplay:"), YES);
 	
 	NSRelease(rep);
+	NSRelease(image);
 #else
 	RGFW_UNUSED(win);
 #endif
@@ -9399,7 +9401,6 @@ void RGFW_window_close(RGFW_window* win) {
 	if ((win->_flags & RGFW_windowNoInitAPI) == 0) RGFW_window_freeOpenGL(win);
 
 	#if defined(RGFW_OSMESA) || defined(RGFW_BUFFER)
-		NSRelease((id)win->src.image);
 		if ((win->_flags & RGFW_BUFFER_ALLOC))
 			RGFW_FREE(win->buffer);
 	#endif
@@ -10102,7 +10103,7 @@ void RGFW_window_setMouse(RGFW_window* win, RGFW_mouse* mouse) { RGFW_UNUSED(win
 void RGFW_freeMouse(RGFW_mouse* mouse) { RGFW_UNUSED(mouse); }
 
 RGFW_bool RGFW_window_setMouseStandard(RGFW_window* win, u8 mouse) {
-	static const char cursors[11][12] = {
+	static const char cursors[16][16] = {
 		"default", "default", "text", "crosshair",
 		"pointer", "ew-resize", "ns-resize", "nwse-resize", "nesw-resize",
 		"move", "not-allowed"
