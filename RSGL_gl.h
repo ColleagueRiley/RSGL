@@ -32,7 +32,6 @@ void RSGL_GL_setLegacy(i32 legacy) {
 #endif
 #endif
 
-#if defined(__WIN32) && !defined(__linux__) && !defined(GL_VERTEX_SHADER)
 typedef char GLchar;
 typedef int	 GLsizei;
 typedef ptrdiff_t GLintptr;
@@ -45,10 +44,11 @@ typedef uintptr_t GLsizeiptr;
 #define GL_STATIC_DRAW  0x88E4
 #define GL_DYNAMIC_DRAW 0x88E8
 #define GL_TEXTURE0 0x84C0
-#endif
 
 #if !defined(RSGL_NO_GL_LOADER) && defined(RSGL_MODERN_OPENGL)
-#define RSGL_PROC_DEF(proc, name) name##SRC = (name##PROC)proc(#name)
+
+typedef void (*RSGL_gl_proc)(void); // function pointer equivalent of void*
+#define RSGL_PROC_DEF(proc, name) name##SRC = (name##PROC)(RSGL_gl_proc)proc(#name)
 
 typedef void (*RSGLapiproc)(void);
 typedef RSGLapiproc (*RSGLloadfunc)(const char *name);
