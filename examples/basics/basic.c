@@ -1,10 +1,7 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
-#define RGFW_ALLOC_DROPFILES
-#define RSGL_IMPLEMENTATION
-#define RSGL_NO_X11_CURSOR
-
+#define RSGLDEF
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
@@ -114,4 +111,6 @@ int main(void) {
     #endif
 
     RGFW_window_close(win);
+    
+    return 0;
 }
