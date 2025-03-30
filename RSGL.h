@@ -543,7 +543,7 @@ typedef struct RSGL_image { RSGL_texture tex; RSGL_area srcSize; char file[255];
 
 RSGLDEF RSGL_image RSGL_drawImage(const char* image, RSGL_rect r);
 
-#define RSGL_loadImage(image) ((RSGL_image) RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0}))
+#define RSGL_loadImage(image) (RSGL_drawImage(image, (RSGL_rect){0, 0, 0, 0}))
 
 /* 
     these two functions can be used before RSGL_renderCreateTexture in order to create 
@@ -698,8 +698,9 @@ typedef struct RSGL_fontsData {
 RSGL_fontsData RSGL_font = {NULL, NULL, 0, 0};
 #endif
 
-RSGL_drawArgs RSGL_args = {NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 1, 0};
+RSGL_drawArgs RSGL_args;
 RSGL_bool RSGL_argsClear = RSGL_FALSE;
+RSGL_color RFontcolor; 
 
 RSGL_image* RSGL_images = NULL;
 size_t RSGL_images_len = 0;
@@ -851,6 +852,8 @@ RSGL_GRAPHICS_CONTEXT
 */
 
 void RSGL_init(RSGL_area r, void* loader) {
+    RSGL_clearArgs();
+    RFontcolor = RSGL_RGBA(0, 0, 0, 0); 
     RSGL_renderViewport(0, 0, r.w, r.h);
     
     RSGL_args.currentArea = r;
@@ -1022,8 +1025,10 @@ void RSGL_plotLines(RSGL_pointF* lines, size_t points_count, u32 thickness, RSGL
 }
 
 void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
-    if (RSGL_args.fill == RSGL_FALSE)
-        return RSGL_drawTriangleFOutline(t, 1, c);
+    if (RSGL_args.fill == RSGL_FALSE) {
+        RSGL_drawTriangleFOutline(t, 1, c);
+        return;
+    }
 
     RSGL_point3DF center = {RSGL_GET_WORLD_POINT(t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0)};
     RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
@@ -1068,9 +1073,11 @@ void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_co
 }
 
 void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
-    if (RSGL_args.fill == RSGL_FALSE)
-        return RSGL_drawRectFOutline(r, 1, c);
-        
+    if (RSGL_args.fill == RSGL_FALSE) {
+        RSGL_drawRectFOutline(r, 1, c);
+        return;
+    }
+
     float texPoints[] = {
                                 0.0f, 0.0f,
                                 0.0f, 1.0f,
@@ -1097,8 +1104,10 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
 }
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
-    if (RSGL_args.fill == RSGL_FALSE)
-        return RSGL_drawRoundRectFOutline(r, rounding, 1, c);
+    if (RSGL_args.fill == RSGL_FALSE) {
+        RSGL_drawRoundRectFOutline(r, rounding, 1, c);
+        return;
+    }
 
     RSGL_drawRect(RSGL_RECT(r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h), c);
     RSGL_drawRect(RSGL_RECT(r.x, r.y + (rounding.y / 2), r.w,  r.h - rounding.y), c);
@@ -1115,9 +1124,11 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     static float verts[360 * 3];
     static float texcoords[360 * 2];
 
-    if (RSGL_args.fill == RSGL_FALSE)
-        return RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
-    
+    if (RSGL_args.fill == RSGL_FALSE) {
+        RSGL_drawPolygonFOutlinePro(o, sides, arc, c);
+        return;
+    }
+
     RSGL_point3DF center =  (RSGL_point3DF){RSGL_GET_WORLD_POINT(o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0)};
     
     o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};    
@@ -1451,7 +1462,6 @@ RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textEnd, size
     return RFont_text_area_len(RSGL_font.f, text, textEnd, fontSize, line, 0.0);
 }
 
-RSGL_color RFontcolor = RSGL_RGBA(0, 0, 0, 0);
 void RFont_render_set_color(float r, float g, float b, float a) {
     RFontcolor = RSGL_RGBA(r * 255, g * 255, b * 255, a * 255);
 }

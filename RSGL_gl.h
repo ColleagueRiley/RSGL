@@ -32,7 +32,7 @@ void RSGL_GL_setLegacy(i32 legacy) {
 #endif
 #endif
 
-#if defined(__WIN32) && !defined(__linux__) && !defined(GL_VERTEX_SHADER)
+#if defined(_WIN32)
 typedef char GLchar;
 typedef int	 GLsizei;
 typedef ptrdiff_t GLintptr;
@@ -48,7 +48,9 @@ typedef uintptr_t GLsizeiptr;
 #endif
 
 #if !defined(RSGL_NO_GL_LOADER) && defined(RSGL_MODERN_OPENGL)
-#define RSGL_PROC_DEF(proc, name) name##SRC = (name##PROC)proc(#name)
+
+typedef void (*RSGL_gl_proc)(void); // function pointer equivalent of void*
+#define RSGL_PROC_DEF(proc, name) name##SRC = (name##PROC)(RSGL_gl_proc)proc(#name)
 
 typedef void (*RSGLapiproc)(void);
 typedef RSGLapiproc (*RSGLloadfunc)(const char *name);
@@ -204,24 +206,50 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
     #else
     RSGL_UNUSED(proc);
     #endif
-    
-    static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
-    #if defined(RSGL_OPENGL_21)
+
+#ifdef RSGL_DEBUG
+    #ifndef GL_SHADING_LANGUAGE_VERSION
+        #define GL_SHADING_LANGUAGE_VERSION 0x8B8C
+    #endif
+
+
+    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
+    printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("Vendor: %s\n", glGetString(GL_VENDOR));
+    printf("Renderer: %s\n", glGetString(GL_RENDERER));
+#endif
+
+    static const char *defaultVShaderCode = 
+#ifdef RSGL_OPENGL_21
+RSGL_MULTILINE_STR(
         \x23version 120                       \n
         attribute vec3 vertexPosition;     \n
         attribute vec2 vertexTexCoord;     \n
         attribute vec4 vertexColor;        \n
         varying vec2 fragTexCoord;         \n
         varying vec4 fragColor;            \n
-    #elif defined(RSGL_OPENGL_33)
+        void main() {
+            fragTexCoord = vertexTexCoord;
+            fragColor = vertexColor;
+            gl_Position = vec4(vertexPosition, 1.0);
+        }
+    );
+#elif defined(RSGL_OPENGL_33)
+RSGL_MULTILINE_STR(
         \x23version 330                     \n
         in vec3 vertexPosition;            \n
         in vec2 vertexTexCoord;            \n
         in vec4 vertexColor;               \n
         out vec2 fragTexCoord;             \n
         out vec4 fragColor;                \n
-    #endif
-    #if defined(RSGL_OPENGL_ES2)
+        void main() {
+            fragTexCoord = vertexTexCoord;
+            fragColor = vertexColor;
+            gl_Position = vec4(vertexPosition, 1.0);
+        }
+    );
+#elif defined(RSGL_OPENGL_ES2)
+    RSGL_MULTILINE_STR(
         \x23version 100                     \n
         precision mediump float;           \n
         attribute vec3 vertexPosition;     \n
@@ -229,40 +257,62 @@ void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) {
         attribute vec4 vertexColor;        \n
         varying vec2 fragTexCoord;         \n
         varying vec4 fragColor;            \n
-    #endif
         void main() {
             fragTexCoord = vertexTexCoord;
             fragColor = vertexColor;
             gl_Position = vec4(vertexPosition, 1.0);
         }
     );
+#else
+RSGL_MULTILINE_STR(
+    void main() {
+        fragTexCoord = vertexTexCoord;
+        fragColor = vertexColor;
+        gl_Position = vec4(vertexPosition, 1.0);
+    }
+);
+#endif
 
-    static const char* defaultFShaderCode = RSGL_MULTILINE_STR(
+        static const char* defaultFShaderCode =
 #if defined(RSGL_OPENGL_21)
+RSGL_MULTILINE_STR(
     \x23version 120 \n
     varying vec2 fragTexCoord;
     varying vec4 fragColor;
+    void main() { 
+            gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
+        }                               
+    );
 #elif defined(RSGL_OPENGL_33)
+RSGL_MULTILINE_STR(
     \x23version 330       \n
     in vec2 fragTexCoord;
     in vec4 fragColor;
     out vec4 finalColor;
-#endif
-#if defined(RSGL_OPENGL_ES2)
+    uniform sampler2D texture0;        
+    void main() { 
+            finalColor = texture(texture0, fragTexCoord) * fragColor;
+        }                               
+    );
+#elif defined(RSGL_OPENGL_ES2)
+RSGL_MULTILINE_STR(
         \x23version 100                    \n
         precision mediump float;           \n
         varying vec2 fragTexCoord;         \n
         varying vec4 fragColor;            \n
-#endif
         uniform sampler2D texture0;        
         void main() { 
-            #ifdef RSGL_OPENGL_33
-            finalColor = texture(texture0, fragTexCoord) * fragColor;
-            #else
             gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
-            #endif
         }                               
     );
+#else
+RSGL_MULTILINE_STR(
+        uniform sampler2D texture0;        
+        void main() { 
+            gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
+        }                               
+    );
+#endif
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
 	glGenVertexArrays(1, &RSGL_gl.vao);
