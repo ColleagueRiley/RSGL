@@ -242,6 +242,7 @@ RSGL_MULTILINE_STR(
         in vec4 vertexColor;               \n
         out vec2 fragTexCoord;             \n
         out vec4 fragColor;                \n
+
         void main() {
             fragTexCoord = vertexTexCoord;
             fragColor = vertexColor;
@@ -476,7 +477,7 @@ void RSGL_renderBatch(RSGL_RENDER_INFO* info) {
                 glUseProgram(RSGL_args.program);
             else
                 glUseProgram(RSGL_gl.program.program);
-            
+
             glDrawArrays(mode, info->batches[i].start, info->batches[i].len);
         }
 
@@ -720,6 +721,7 @@ void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
         case 2: glUniform2f(loc, value[0], value[1]); break;
         case 3: glUniform3f(loc, value[0], value[1], value[2]); break;
         case 4: glUniform4f(loc, value[0], value[1], value[2], value[3]); break;
+        case 16: glUniformMatrix4fv(loc, 1, GL_FALSE, value); break;
         default: break;
     }
 

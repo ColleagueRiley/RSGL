@@ -160,6 +160,19 @@ typedef struct RSGL_rectF { float x, y, w, h; } RSGL_rectF;
 
 #define RSGL_RECTF(x, y, w, h) (RSGL_rectF){(float)x, (float)y, (float)w, (float)h}
 
+#ifndef RSGL_rect3D
+typedef struct RSGL_rect3D {
+    i32 x, y, z, w, h;
+} RSGL_rect3D;
+#endif
+#define RSGL_RECT3D(x, y, z, w, h) (RSGL_rect3D){(i32)(x), (i32)(y), (i32)z, (i32)(w), (i32)(h)}
+
+#ifndef RSGL_rect3DF
+typedef struct RSGL_rect3DF { float x, y, z, w, h; } RSGL_rect3DF;
+#endif
+
+#define RSGL_RECT3DF(x, y, z, w, h) (RSGL_rect3DF){(float)x, (float)y, (float)z, (float)w, (float)h}
+
 #ifndef RSGL_point
 typedef struct RSGL_point {
     i32 x, y;
@@ -233,6 +246,24 @@ typedef struct RSGL_triangleF { RSGL_pointF p1, p2, p3; } RSGL_triangleF;
 #define RSGL_createTriangle(x1, y1, x2, y2, x3, y3) (RSGL_triangle){{x1, y1}, {x2, y2}, {x3, y3}}
 #define RSGL_createTriangleF(x1, y1, x2, y2, x3, y3) (RSGL_triangleF){{x1, y1}, {x2, y2}, {x3, y3}}
 
+
+#ifndef RSGL_triangle
+typedef struct RSGL_triangle3D {
+    RSGL_point3D p1, p2, p3;
+} RSGL_triangle3D;
+#endif
+
+#define RSGL_TRIANGLE3D(p1, p2, p3) (RSGL_triangle3D){p1, p2, p3}
+
+#ifndef RSGL_triangleF
+typedef struct RSGL_triangle3DF { RSGL_point3DF p1, p2, p3; } RSGL_triangle3DF;
+#endif
+
+#define RSGL_TRIANGLE3DF(p1, p2, p3) (RSGL_triangle3DF){p1, p2, p3}
+
+#define RSGL_createTriangle3D(x1, y1, z1, x2, y2, z2, x3, y3, z3) (RSGL_triangle3D){{x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}}
+#define RSGL_createTriangle3DF(x1, y1, z1, x2, y2, z2, x3, y3, z3) (RSGL_triangle3DF){{x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}}
+
 #ifndef RSGL_cube
 typedef struct RSGL_cube {
     i32 x, y, z, w, h, l;
@@ -297,6 +328,13 @@ RSGL_draw
     you can also run RSGL_clearArgs to clear the args by hand
 */
 /* RSGL_args */
+#ifndef RSGL_MATRIX
+typedef struct RSGL_MATRIX {
+    float m[16];
+} RSGL_MATRIX;
+#endif
+
+
 typedef struct RSGL_drawArgs {
     float* gradient; /* does not allocate any memory */
     
@@ -310,6 +348,7 @@ typedef struct RSGL_drawArgs {
     RSGL_point3DF center;
     float lineWidth;
     u32 program;
+    RSGL_MATRIX perspective;
 } RSGL_drawArgs;
 
 RSGLDEF void RSGL_rotate(RSGL_point3D rotate); /* apply rotation to drawing */
@@ -347,13 +386,6 @@ typedef RSGL_ENUM(u8, RSGL_alignment) {
 /* align smaller rect onto larger rect based on a given alignment */
 RSGLDEF RSGL_rect RSGL_alignRect(RSGL_rect larger, RSGL_rect smaller, u16 alignment);
 RSGLDEF RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment);
-
-#ifndef RSGL_MATRIX
-typedef struct RSGL_MATRIX {
-    float m[16];
-} RSGL_MATRIX;
-#endif
-
 RSGLDEF RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center);
 
 /* 
@@ -427,23 +459,31 @@ void RFont_bitmap_to_atlas(RSGL_rsoft_texture atlas, u8* bitmap, float x, float 
 
 /* RSGL translation */
 RSGLDEF RSGL_MATRIX RSGL_matrixMultiply(float left[16], float right[16]);
+RSGLDEF RSGL_MATRIX RSGL_loadIdentity(void);
 RSGLDEF RSGL_MATRIX RSGL_rotatef(RSGL_MATRIX* matrix, float angle, float x, float y, float z); 
 RSGLDEF RSGL_MATRIX RSGL_translatef(RSGL_MATRIX* matrix, float x, float y, float z);
+RSGLDEF void RSGL_setPerspective(float fovY, float aspect, float zNear, float zFar);
 /* 2D shape drawing */
 /* in the function names, F means float */
 
 RSGLDEF void RSGL_drawPoint(RSGL_point p, RSGL_color c);
 RSGLDEF void RSGL_drawPointF(RSGL_pointF p, RSGL_color c);
+RSGLDEF void RSGL_drawPoint3D(RSGL_point3D p, RSGL_color c);
+RSGLDEF void RSGL_drawPoint3DF(RSGL_point3DF p, RSGL_color c);
 RSGLDEF void RSGL_plotLines(RSGL_pointF* lines, size_t points_count, u32 thickness, RSGL_color c);
 
 RSGLDEF void RSGL_drawTriangle(RSGL_triangle t, RSGL_color c);
 RSGLDEF void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c);
 
+RSGLDEF void RSGL_drawTriangle3D(RSGL_triangle3D t, RSGL_color c);
+RSGLDEF void RSGL_drawTriangle3DF(RSGL_triangle3DF t, RSGL_color c);
+
 RSGLDEF void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color);
 
 RSGLDEF void RSGL_drawRect(RSGL_rect r, RSGL_color c);
 RSGLDEF void RSGL_drawRectF(RSGL_rectF r, RSGL_color c);
-
+RSGLDEF void RSGL_drawRect3D(RSGL_rect3D r, RSGL_color c);
+RSGLDEF void RSGL_drawRect3DF(RSGL_rect3DF r, RSGL_color c);
 
 RSGLDEF void RSGL_drawRoundRect(RSGL_rect r, RSGL_point rounding, RSGL_color c);
 RSGLDEF void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c);
@@ -462,7 +502,8 @@ RSGLDEF void RSGL_drawOvalF(RSGL_rectF o, RSGL_color c);
 
 RSGLDEF void RSGL_drawLine(RSGL_point p1, RSGL_point p2, u32 thickness, RSGL_color c);
 RSGLDEF void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c);
-
+RSGLDEF void RSGL_drawLine3D(RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawLine3DF(RSGL_point3DF p1, RSGL_point3DF p2, u32 thickness, RSGL_color c);
 /* 2D outlines */
 
 /* thickness means the thickness of the line */
@@ -629,11 +670,28 @@ macos:
 #define RSGL_GET_WORLD_Z(z) (float)(z)
 #endif
 
-#define RSGL_GET_MATRIX_X(x, y, z) (matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
-#define RSGL_GET_MATRIX_Y(x, y, z) (matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13])
-#define RSGL_GET_MATRIX_Z(x, y, z) (matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14])
+#define RSGL_GET_MATRIX_X(x, y, z) (float)(matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
+#define RSGL_GET_MATRIX_Y(x, y, z) (float)(matrix.m[1] * x + matrix.m[5] * y + matrix.m[9] * z + matrix.m[13])
+#define RSGL_GET_MATRIX_Z(x, y, z) (float)(matrix.m[2] * x + matrix.m[6] * y + matrix.m[10] * z + matrix.m[14])
 
-#define RSGL_GET_MATRIX_POINT(x, y, z) RSGL_GET_MATRIX_X(x, y, z), RSGL_GET_MATRIX_Y(x, y, z), RSGL_GET_MATRIX_Z(x, y, z)
+float RSGL_getMatrixW(RSGL_MATRIX matrix, float x, float y, float z) {
+    float out = (float)(matrix.m[3] * x + matrix.m[7] * y + matrix.m[11] * z + matrix.m[15]);
+    if (out != 0) return out;
+    return 1.0f;
+}
+#define RSGL_GET_MATRIX_W(x, y, z) RSGL_getMatrixW(matrix, x, y, z)
+
+#define RSGL_GET_MATRIX_POINT(x, y, z) \
+            RSGL_GET_MATRIX_X(x, y, z) / RSGL_GET_MATRIX_W(x, y, z), \
+            RSGL_GET_MATRIX_Y(x, y, z) / RSGL_GET_MATRIX_W(x, y, z), \
+            RSGL_GET_MATRIX_Z(x, y, z) / RSGL_GET_MATRIX_W(x, y, z)
+
+#define RSGL_GET_MATRIX_POINTW(x, y, z) \
+            RSGL_GET_MATRIX_X(x, y, z), \
+            RSGL_GET_MATRIX_Y(x, y, z), \
+            RSGL_GET_MATRIX_Z(x, y, z), \
+            RSGL_GET_MATRIX_W(x, y, z) \
+
 #define RSGL_GET_WORLD_POINT(x, y, z) RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z))
 
 #define RSGL_GET_FINAL_POINT(x, y, z) RSGL_GET_MATRIX_POINT(RSGL_GET_WORLD_X((x)), RSGL_GET_WORLD_Y((y)), RSGL_GET_WORLD_Z((z)))
@@ -765,7 +823,8 @@ RSGL_rectF RSGL_alignRectF(RSGL_rectF larger, RSGL_rectF smaller, u16 alignment)
     return aligned;
 }
 
-RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center) {    
+
+RSGL_MATRIX RSGL_loadIdentity(void) {
     RSGL_MATRIX matrix = (RSGL_MATRIX) { 
         {
             1.0f, 0.0f, 0.0f, 0.0f,
@@ -774,7 +833,14 @@ RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center) {
             0.0f, 0.0f, 0.0f, 1.0f
         }
     };
-        
+
+    return matrix;
+}
+ 
+
+RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center) {    
+    RSGL_MATRIX matrix = RSGL_loadIdentity(); 
+
     if (RSGL_args.rotate.x || RSGL_args.rotate.y || RSGL_args.rotate.z) {
         if (RSGL_args.center.x != -1 && RSGL_args.center.y != -1 &&  RSGL_args.center.z != -1)
             center = RSGL_args.center;
@@ -784,6 +850,10 @@ RSGL_MATRIX RSGL_initDrawMatrix(RSGL_point3DF center) {
         matrix = RSGL_rotatef(&matrix, RSGL_args.rotate.y, 0, 1, 0);
         matrix = RSGL_rotatef(&matrix, RSGL_args.rotate.x, 1, 0, 0);
         matrix = RSGL_translatef(&matrix, -center.x, -center.y, -center.z);
+    }
+    
+    if (center.z) {
+        matrix = RSGL_matrixMultiply(matrix.m, RSGL_args.perspective.m); 
     }
 
     return matrix;
@@ -855,6 +925,8 @@ void RSGL_init(RSGL_area r, void* loader) {
     RSGL_clearArgs();
     RFontcolor = RSGL_RGBA(0, 0, 0, 0); 
     RSGL_renderViewport(0, 0, r.w, r.h);
+    
+    RSGL_setPerspective(60, 16.0 / 9.0, 1, 100);
     
     RSGL_args.currentArea = r;
 
@@ -945,7 +1017,9 @@ void RSGL_setClearArgs(RSGL_bool clearArgs) {
     RSGL_argsClear = clearArgs;
 }
 void RSGL_clearArgs(void) {
+    RSGL_MATRIX perspective = RSGL_args.perspective;
     RSGL_args = (RSGL_drawArgs){NULL, 0, 0, { }, {0, 0, 0}, 1, RSGL_POINT3DF(-1, -1, -1), 0, 0};
+    RSGL_args.perspective = perspective;
 }
 
 
@@ -953,12 +1027,26 @@ void RSGL_drawPoint(RSGL_point p, RSGL_color c) {
     RSGL_drawPointF((RSGL_pointF){(float)p.x, (float)p.y}, c);
 }
 
+void RSGL_drawPoint3D(RSGL_point3D p, RSGL_color c) {
+    RSGL_drawPoint3DF((RSGL_point3DF){(float)p.x, (float)p.y, (float)p.z}, c);
+}
+
 void RSGL_drawTriangle(RSGL_triangle t, RSGL_color c) {
     RSGL_drawTriangleF(RSGL_createTriangleF((float)t.p1.x, (float)t.p1.y, (float)t.p2.x, (float)t.p2.y, (float)t.p3.x, (float)t.p3.y), c);
 }
 
+void RSGL_drawTriangle3D(RSGL_triangle3D t, RSGL_color c) {
+    RSGL_drawTriangle3DF(RSGL_createTriangle3DF((float)t.p1.x, (float)t.p1.y, (float)t.p1.z, 
+                                              (float)t.p2.x, (float)t.p2.y, (float)t.p2.z, 
+                                              (float)t.p3.x, (float)t.p3.y, (float)t.p3.z), c);
+}
+
 void RSGL_drawRect(RSGL_rect r, RSGL_color c) {
     RSGL_drawRectF((RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, c);
+}
+
+void RSGL_drawRect3D(RSGL_rect3D r, RSGL_color c) {
+    RSGL_drawRect3DF((RSGL_rect3DF){(float)r.x, (float)r.y, (float)r.z, (float)r.w, (float)r.h}, c);
 }
 
 void RSGL_drawRoundRect(RSGL_rect r, RSGL_point rounding, RSGL_color c) {
@@ -983,6 +1071,10 @@ void RSGL_drawOval(RSGL_rect o, RSGL_color c) {
 
 void RSGL_drawLine(RSGL_point p1, RSGL_point p2, u32 thickness, RSGL_color c) {
     RSGL_drawLineF((RSGL_pointF){(float)p1.x, (float)p1.y}, (RSGL_pointF){(float)p2.x, (float)p2.y}, thickness, c);
+}
+
+void RSGL_drawLine3D(RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c) {
+    RSGL_drawLine3DF((RSGL_point3DF){(float)p1.x, (float)p1.y, (float)p1.z}, (RSGL_point3DF){(float)p2.x, (float)p2.y, (float)p2.z}, thickness, c);
 }
 
 void RSGL_drawTriangleOutline(RSGL_triangle t, u32 thickness, RSGL_color c) {
@@ -1017,6 +1109,10 @@ void RSGL_drawPointF(RSGL_pointF p, RSGL_color c) {
     RSGL_drawRectF((RSGL_rectF){p.x, p.y, 1.0f, 1.0f}, c);
 }
 
+void RSGL_drawPoint3DF(RSGL_point3DF p, RSGL_color c) {
+    RSGL_drawRect3DF((RSGL_rect3DF){p.x, p.y, p.z, 1.0f, 1.0f}, c);
+}
+
 void RSGL_plotLines(RSGL_pointF* lines, size_t points_count, u32 thickness, RSGL_color c) {
     size_t i;
     for (i = 0; i < points_count; i += 2) {
@@ -1044,6 +1140,24 @@ void RSGL_drawTriangleF(RSGL_triangleF t, RSGL_color c) {
     };
     
     RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 3);
+}
+
+void RSGL_drawTriangle3DF(RSGL_triangle3DF t, RSGL_color c) {
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(RSGL_POINT3DF(200, 400, 1));
+  
+    float points[] = { 
+            RSGL_GET_FINAL_POINT(t.p1.x, t.p1.y, t.p1.z),
+            RSGL_GET_FINAL_POINT(t.p2.x, t.p2.y, t.p2.z),
+            RSGL_GET_FINAL_POINT(t.p3.x, t.p3.y, t.p3.z)
+    };
+    
+    float texPoints[] = {   
+                0.0f, 1.0f, 
+                1.0f, 1.0f,
+                ((float)(points[6] - points[0])/points[3]< 1) ? (float)(points[6] - points[0]) / points[3] : 0, 0.0f,
+    };
+
+    RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, RSGL_RGB(0, 0, 0), 3);
 }
 
 #ifndef PI
@@ -1102,6 +1216,33 @@ void RSGL_drawRectF(RSGL_rectF r, RSGL_color c) {
 
     RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 6);
 }
+void RSGL_drawRect3DF(RSGL_rect3DF r, RSGL_color c) {
+    float texPoints[] = {
+                                0.0f, 0.0f,
+                                0.0f, 1.0f,
+                                1.0f, 0.0f,
+                                1.0f, 1.0f,
+                                1.0f, 0.0f, 
+                                0.0f, 1.0f
+                            };
+
+    RSGL_point3DF center = (RSGL_point3DF){RSGL_GET_WORLD_POINT(r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 1)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
+
+    float points[] = {
+                                RSGL_GET_FINAL_POINT(r.x, r.y, r.z), 
+                                RSGL_GET_FINAL_POINT(r.x, r.y + r.h, r.z),       
+                                RSGL_GET_FINAL_POINT(r.x + r.w, r.y, r.z), 
+
+                                RSGL_GET_FINAL_POINT(r.x + r.w, r.y + r.h, r.z),        
+                                RSGL_GET_FINAL_POINT(r.x + r.w, r.y, r.z),     
+                                RSGL_GET_FINAL_POINT(r.x, r.y + r.h, r.z),  
+                            };
+
+    RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 6);
+}
+
+
 
 void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
     if (RSGL_args.fill == RSGL_FALSE) {
@@ -1199,6 +1340,18 @@ void RSGL_drawLineF(RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c)
     RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
 
     float points[] = {RSGL_GET_FINAL_POINT(p1.x, p1.y, 0.0f), RSGL_GET_FINAL_POINT(p2.x, p2.y, 0.0f)};
+    float texPoints[] = {0, 0.0f,          0, 0.0f};
+
+    RSGL_basicDraw(RSGL_LINES, (float*)points, (float*)texPoints, c, 2);
+}
+
+void RSGL_drawLine3DF(RSGL_point3DF p1, RSGL_point3DF p2, u32 thickness, RSGL_color c) {
+    RSGL_args.lineWidth = thickness;
+    
+    RSGL_point3DF center = {RSGL_GET_WORLD_POINT((p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0)};
+    RSGL_MATRIX matrix = RSGL_initDrawMatrix(center);
+
+    float points[] = {RSGL_GET_FINAL_POINT(p1.x, p1.y, p1.y), RSGL_GET_FINAL_POINT(p2.x, p2.y, p2.y)};
     float texPoints[] = {0, 0.0f,          0, 0.0f};
 
     RSGL_basicDraw(RSGL_LINES, (float*)points, (float*)texPoints, c, 2);
@@ -1576,6 +1729,19 @@ RSGL_MATRIX RSGL_rotatef(RSGL_MATRIX* matrix, float angle, float x, float y, flo
 
 	return RSGL_matrixMultiply(matRotation, matrix->m);
 }
+
+void RSGL_setPerspective(float fovY, float aspect, float zNear, float zFar) {
+    fovY =  (fovY * DEG2RAD) / 2.0f;
+    const float f = (cosf(fovY) / sinf(fovY));
+
+    RSGL_args.perspective.m[0] = f / aspect;
+    RSGL_args.perspective.m[5] = f;
+    RSGL_args.perspective.m[10] = (zFar + zNear) / (zNear - zFar);
+    RSGL_args.perspective.m[11] = -1.0;
+    RSGL_args.perspective.m[14] = (2.0 * zFar * zNear) / (zNear - zFar);
+}
+
+
 
 RSGL_MATRIX RSGL_matrixMultiply(float left[16], float right[16]) {
     return (RSGL_MATRIX) {
