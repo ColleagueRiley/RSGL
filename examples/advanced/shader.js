@@ -9738,6 +9738,7 @@ var ASM_CONSTS = {
 
 
 
+
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10802,6 +10803,8 @@ var wasmImports = {
   glUniform3f: _glUniform3f,
   /** @export */
   glUniform4f: _glUniform4f,
+  /** @export */
+  glUniformMatrix4fv: _glUniformMatrix4fv,
   /** @export */
   glUseProgram: _glUseProgram,
   /** @export */
