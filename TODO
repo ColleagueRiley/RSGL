@@ -5,9 +5,6 @@ This list is not ordered in any special way
 
 
 - EBO support for `RSGL_GL.h` (if it's worth it)
-- selecting text from a textbox (with keyboard and mouse)
-- look into 3D support
-- `RSGL_VK.h` for vulkan (supporting multiple versions ?) (maybe seperate from the repo, just as an example)
 - `RSGL_DX.h` for DirectX 
 - fix `custom_render_pgl.h`
 - `RSGL_ogl` for libogc (Wii and Gamecube)
