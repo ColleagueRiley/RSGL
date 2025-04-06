@@ -35,7 +35,7 @@ int main(void) {
 
     RSGL_setClearArgs(true);
 
-    RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
+    RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress, RSGL_GL_renderer());	
     
     while (RGFW_window_shouldClose(win) == false) {
 
@@ -80,8 +80,8 @@ int main(void) {
             
             float points[] = {
                                         RSGL_GET_WORLD_POINT(20, win2->r.h - 20, 0.0f), 
-                                        RSGL_GET_WORLD_POINT(win2->r.w - 20, win2->r.h - 20,  0.0f), 
-                                        RSGL_GET_WORLD_POINT((win2->r.w - 20) / 2, 20, 0.0f)
+                                        RSGL_GET_WORLD_POINT(win2->r.w - 20, win2->r.h - 20,  1.0f), 
+                                        RSGL_GET_WORLD_POINT((win2->r.w - 20) / 2, 20, 1.0f)
                                       };
             
             float texPoints[] = {   

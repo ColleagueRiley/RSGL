@@ -59,7 +59,7 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
 int main(void) {
     RGFW_window* window = RGFW_createWindow("RSGL Shader example", RGFW_RECT(0, 0, 750, 500), RGFW_windowCenter);
     
-	RSGL_init(RSGL_AREA(window->r.w, window->r.h), RGFW_getProcAddress);
+	RSGL_init(RSGL_AREA(window->r.w, window->r.h), RGFW_getProcAddress, RSGL_GL_renderer());
 
     RSGL_programInfo program = RSGL_renderCreateProgram(MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 

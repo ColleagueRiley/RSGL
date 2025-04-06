@@ -963,21 +963,21 @@ function dbg(text) {
 // === Body ===
 
 var ASM_CONSTS = {
-  83376: () => { Module.canvas.focus(); },  
- 83401: () => { Module.useWebGL = true; GLImmediate.init(); },  
- 83447: () => { window.addEventListener("keydown", (event) => { var key = stringToNewUTF8(event.key); var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(key, code, 1); _free(key); _free(code); }, true); window.addEventListener("keyup", (event) => { var key = stringToNewUTF8(event.key); var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(key, code, 0); _free(key); _free(code); }, true); },  
- 84393: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; _RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
- 85412: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
- 85483: () => { document.getElementById('canvas').style.cursor = 'none'; },  
- 85540: () => { return window.mouseX || 0; },  
- 85571: () => { return window.mouseY || 0; },  
- 85602: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
- 85749: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
- 85802: () => { return window.innerWidth; },  
- 85832: () => { return window.innerHeight; },  
- 85863: () => { Module.requestFullscreen(false, true); },  
- 85902: () => { Module.exitFullscreen(false, true); },  
- 85938: ($0, $1) => { var element = document.getElementById("canvas"); if (element) element.style.opacity = $1; }
+  83328: () => { Module.canvas.focus(); },  
+ 83353: () => { Module.useWebGL = true; GLImmediate.init(); },  
+ 83399: () => { window.addEventListener("keydown", (event) => { var key = stringToNewUTF8(event.key); var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(key, code, 1); _free(key); _free(code); }, true); window.addEventListener("keyup", (event) => { var key = stringToNewUTF8(event.key); var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(key, code, 0); _free(key); _free(code); }, true); },  
+ 84345: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; _RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
+ 85364: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
+ 85435: () => { document.getElementById('canvas').style.cursor = 'none'; },  
+ 85492: () => { return window.mouseX || 0; },  
+ 85523: () => { return window.mouseY || 0; },  
+ 85554: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
+ 85701: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
+ 85754: () => { return window.innerWidth; },  
+ 85784: () => { return window.innerHeight; },  
+ 85815: () => { Module.requestFullscreen(false, true); },  
+ 85854: () => { Module.exitFullscreen(false, true); },  
+ 85890: ($0, $1) => { var element = document.getElementById("canvas"); if (element) element.style.opacity = $1; }
 };
 
 
@@ -3925,35 +3925,6 @@ var ASM_CONSTS = {
         return stream;
       },
   };
-  function ___syscall_faccessat(dirfd, path, amode, flags) {
-  try {
-  
-      path = SYSCALLS.getStr(path);
-      assert(flags === 0);
-      path = SYSCALLS.calculateAt(dirfd, path);
-      if (amode & ~7) {
-        // need a valid mode
-        return -28;
-      }
-      var lookup = FS.lookupPath(path, { follow: true });
-      var node = lookup.node;
-      if (!node) {
-        return -44;
-      }
-      var perms = '';
-      if (amode & 4) perms += 'r';
-      if (amode & 2) perms += 'w';
-      if (amode & 1) perms += 'x';
-      if (perms /* otherwise, they've just passed F_OK */ && FS.nodePermissions(node, perms)) {
-        return -2;
-      }
-      return 0;
-    } catch (e) {
-    if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
-    return -e.errno;
-  }
-  }
-
   function ___syscall_fcntl64(fd, cmd, varargs) {
   SYSCALLS.varargs = varargs;
   try {
@@ -11648,8 +11619,6 @@ function checkIncomingModuleAPI() {
 var wasmImports = {
   /** @export */
   __assert_fail: ___assert_fail,
-  /** @export */
-  __syscall_faccessat: ___syscall_faccessat,
   /** @export */
   __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */
