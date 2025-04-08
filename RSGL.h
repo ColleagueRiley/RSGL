@@ -413,7 +413,7 @@ typedef struct RSGL_camera {
 } RSGL_camera;
 
 RSGLDEF RSGL_mat4 RSGL_getCameraMatrix(RSGL_camera camera);
-RSGLDEF RSGL_mat4 RSGL_getCameraMatrixPro(RSGL_camera camera, float ratio, float min, float max);
+RSGLDEF RSGL_mat4 RSGL_getCameraMatrixEx(RSGL_camera camera, float ratio, float maxPitch, float min, float max);
 
 RSGLDEF void RSGL_setGlobalMatrix(RSGL_mat4 matrix);
 RSGLDEF void RSGL_resetGlobalMatrix();
@@ -501,7 +501,7 @@ typedef struct RFont_font RSGL_font;
 /* loads a font into the RSGL_font struct */
 RSGLDEF RSGL_font* RSGL_loadFont(const char* font);
 /*     using a given atlasWidth + atlasHeight */
-RSGLDEF RSGL_font* RSGL_loadFontPro(const char* font, size_t atlasWidth, size_t atlasHeight);
+RSGLDEF RSGL_font* RSGL_loadFontEx(const char* font, size_t atlasWidth, size_t atlasHeight);
 RSGLDEF void RSGL_freeFont(RSGL_font* font);
 
 RSGLDEF void RSGL_setFont(RSGL_font* font);
@@ -752,7 +752,7 @@ RSGL_draw
 
 /* RSGL_args */
 void RSGL_setRotate(RSGL_point3D rotate){
-    RSGL_args.rotate = rotate;
+    RSGL_args.rotate = RSGL_POINT3D(rotate.x * DEG2RAD, rotate.y * DEG2RAD, rotate.z * DEG2RAD);
 }
 void RSGL_setTexture(RSGL_texture texture) { 
     RSGL_args.texture = texture;
@@ -917,9 +917,9 @@ void RSGL_drawRoundRectF(RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
     RSGL_drawArc(RSGL_RECT(r.x, r.y  + (r.h - rounding.y),  rounding.x, rounding.y), (RSGL_point){270, 360}, c);
 }
 
-void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c);
+void RSGL_drawPolygonFOutlineEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c);
 
-void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
+void RSGL_drawPolygonFEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
     static float verts[360 * 3];
     static float texcoords[360 * 2];
 
@@ -954,28 +954,28 @@ void RSGL_drawPolygonFPro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c
     RSGL_basicDraw(RSGL_TRIANGLE_FAN, verts, texcoords, c, vIndex / 3);
 }
 
-void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFPro(o, sides, (RSGL_pointF){0, (float)sides}, c); }
+void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFEx(o, sides, (RSGL_pointF){0, (float)sides}, c); }
 
 
 void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {  
     u32 verts = (u32)round((float)((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10));
     verts = (verts > 360 ? 360 : verts);
 
-    RSGL_drawPolygonFPro(o, verts, arc, color); 
+    RSGL_drawPolygonFEx(o, verts, arc, color); 
 }
 
 void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  
     float verts = ((2 * M_PI * c.d) / 10);
     verts = (verts > 360 ? 360 : verts);
 
-    RSGL_drawPolygonFPro((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
+    RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
 }
 
 void RSGL_drawOvalF(RSGL_rectF o, RSGL_color c) { 
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
     verts = (verts > 360 ? 360 : verts);
 
-    RSGL_drawPolygonFPro(o, verts, (RSGL_pointF){0, verts}, c); 
+    RSGL_drawPolygonFEx(o, verts, (RSGL_pointF){0, verts}, c); 
 }
 
 /*
@@ -1164,7 +1164,7 @@ void RSGL_drawRoundRectFOutline(RSGL_rectF r, RSGL_point rounding, u32 thickness
     RSGL_drawArcFOutline(RSGL_RECTF(r.x + 1, r.y  + (r.h - rounding.y) - 1,  rounding.x, rounding.y + 2), (RSGL_pointF){270, 360}, thickness, c);
 }
 
-void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
+void RSGL_drawPolygonFOutlineEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
     static float verts[360 * 2 * 3];
     static float texCoords[360 * 2 * 2];
 
@@ -1199,38 +1199,38 @@ void RSGL_drawPolygonFOutlinePro(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_
 
 void RSGL_drawPolygonFOutline(RSGL_rectF o, u32 sides, u32 thickness, RSGL_color c) {
     RSGL_args.lineWidth = thickness;
-    RSGL_drawPolygonFOutlinePro(o, sides, (RSGL_pointF){0, (float)sides}, c);
+    RSGL_drawPolygonFOutlineEx(o, sides, (RSGL_pointF){0, (float)sides}, c);
 }
 void RSGL_drawArcFOutline(RSGL_rectF o, RSGL_pointF arc, u32 thickness, RSGL_color color) {
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
     verts = (verts > 360 ? 360 : verts);
 
     RSGL_args.lineWidth = thickness;
-    RSGL_drawPolygonFOutlinePro(o, verts, arc, color);
+    RSGL_drawPolygonFOutlineEx(o, verts, arc, color);
 }
 void RSGL_drawCircleFOutline(RSGL_circleF c, u32 thickness, RSGL_color color) {
     float verts = ((2 * M_PI * c.d) / 10);
     verts = (verts > 360 ? 360 : verts);
 
     RSGL_args.lineWidth = thickness;
-    RSGL_drawPolygonFOutlinePro((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color);
+    RSGL_drawPolygonFOutlineEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color);
 }
 void RSGL_drawOvalFOutline(RSGL_rectF o, u32 thickness, RSGL_color c) {
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
     verts = (verts > 360 ? 360 : verts);
 
     RSGL_args.lineWidth = thickness;
-    RSGL_drawPolygonFOutlinePro(o, verts, (RSGL_pointF){0, verts}, c);
+    RSGL_drawPolygonFOutlineEx(o, verts, (RSGL_pointF){0, verts}, c);
 }
 
 #ifndef RSGL_NO_TEXT
 RSGL_font* RSGL_internalFont = NULL;
 
 RSGL_font* RSGL_loadFont(const char* font) {
-    return RSGL_loadFontPro(font, RFONT_ATLAS_WIDTH_DEFAULT, RFONT_ATLAS_HEIGHT_DEFAULT);
+    return RSGL_loadFontEx(font, RFONT_ATLAS_WIDTH_DEFAULT, RFONT_ATLAS_HEIGHT_DEFAULT);
 }
 
-RFont_font* RSGL_loadFontPro(const char* font, size_t atlasWidth, size_t atlasHeight) {
+RFont_font* RSGL_loadFontEx(const char* font, size_t atlasWidth, size_t atlasHeight) {
     return RFont_font_init_pro(font, atlasWidth, atlasHeight);
 }
 
@@ -1341,28 +1341,21 @@ RSGL_mat4 RSGL_translate(float matrix[16], float x, float y, float z) {
 
 /* Multiply the current matrix by a rotation matrix */
 RSGL_mat4 RSGL_getCameraMatrix(RSGL_camera camera) {
-    return RSGL_getCameraMatrixPro(camera, (16.0 / 9.0), 0.001, 1000.0);
+    return RSGL_getCameraMatrixEx(camera, (16.0 / 9.0), 90, 0.001, 1000.0);
 }
 
-#ifndef RSGL_GET_WORLD_X
-#define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentArea.w - 1.0f)
-#define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentArea.h)
-#define RSGL_GET_WORLD_Z(z) (float)(z)
-#endif
-
-#define RSGL_GET_WORLD_POINT(x, y, z) RSGL_GET_WORLD_X(x), RSGL_GET_WORLD_Y(y), RSGL_GET_WORLD_Z(z)
-RSGL_mat4 RSGL_getCameraMatrixPro(RSGL_camera camera, float ratio, float min, float max) {
+RSGL_mat4 RSGL_getCameraMatrixEx(RSGL_camera camera, float ratio, float maxPitch, float min, float max) {
     RSGL_mat4 matrix = RSGL_loadIdentity();
     matrix = RSGL_perspective(matrix.m, camera.fov, ratio, min, max);
 
-    if (camera.pitch >= camera.fov)
-        camera.pitch = camera.fov;
-    else if (camera.pitch <= -camera.fov)
-        camera.pitch = -camera.fov;
+    if (camera.pitch >= maxPitch)
+        camera.pitch = maxPitch;
+    else if (camera.pitch <= -maxPitch)
+        camera.pitch = -maxPitch;
 
-    matrix = RSGL_rotate(matrix.m, camera.pitch, 1.0, 0.0, 0.0);
-    matrix = RSGL_rotate(matrix.m, camera.yaw, 0.0, 1.0, 0.0);
-    matrix = RSGL_translate(matrix.m, RSGL_GET_WORLD_POINT(camera.pos.x, camera.pos.y, camera.pos.z));
+    matrix = RSGL_rotate(matrix.m, camera.pitch * DEG2RAD, 1.0, 0.0, 0.0);
+    matrix = RSGL_rotate(matrix.m, camera.yaw * DEG2RAD, 0.0, 1.0, 0.0);
+    matrix = RSGL_translate(matrix.m, camera.pos.x, camera.pos.y, -camera.pos.z);
 
     return matrix;
 }
@@ -1391,8 +1384,8 @@ RSGL_mat4 RSGL_rotate(float matrix[16], float angle, float x, float y, float z) 
 	}
 
 	/* Rotation matrix generation */
-	float sinres = sinf(DEG2RAD * angle);
-	float cosres = cosf(DEG2RAD * angle);
+	float sinres = sinf(angle);
+	float cosres = cosf(angle);
 	float t = 1.0f - cosres;
 
 	float matRotation[16] =  {
