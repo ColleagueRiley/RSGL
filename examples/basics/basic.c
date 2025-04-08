@@ -79,9 +79,9 @@ int main(void) {
 			RSGL_clear(RSGL_RGB(255, 255, 255));
             
             float points[] = {
-                                        RSGL_GET_WORLD_POINT(20, win2->r.h - 20, 0.0f), 
-                                        RSGL_GET_WORLD_POINT(win2->r.w - 20, win2->r.h - 20,  1.0f), 
-                                        RSGL_GET_WORLD_POINT((win2->r.w - 20) / 2, 20, 1.0f)
+                                        20, win2->r.h - 20, 0.0f, 
+                                        win2->r.w - 20, win2->r.h - 20,  1.0f, 
+                                        (win2->r.w - 20) / 2, 20, 1.0f
                                       };
             
             float texPoints[] = {   
