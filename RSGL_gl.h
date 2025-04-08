@@ -2,6 +2,15 @@
 #include "RSGL.h"
 #endif
 
+#ifndef RSGL_GET_WORLD_X
+#define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentArea.w - 1.0f)
+#define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentArea.h)
+#define RSGL_GET_WORLD_Z(z) (float)(z)
+#endif
+
+#define RSGL_GET_WORLD_POINT(x, y, z) RSGL_GET_WORLD_X(x), RSGL_GET_WORLD_Y(y), RSGL_GET_WORLD_Z(z)
+
+
 #ifndef RSGL_GL_H
 #define RSGL_GL_H
 
