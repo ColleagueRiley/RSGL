@@ -2,6 +2,7 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+#define RSGL_INT_DEFINED
 #define RSoft_area RGFW_area
 #include "RSGL.h"
 
@@ -16,8 +17,8 @@
 unsigned char icon[4 * 3 * 3] = {0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF};
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RGFW_rect){0, 0, 500, 500}, RGFW_windowCenter | RGFW_windowTransparent);
-	RGFW_window_initBuffer(win);
+    RGFW_window* win = RGFW_createWindow("RSGL texture example", (RGFW_rect){0, 0, 500, 500}, RGFW_windowCenter);
+	RGFW_window_initBufferSize(win, RGFW_AREA(win->r.w, win->r.h));
 
 	RSGL_init(RSGL_AREA(win->r.w, win->r.h), win->buffer, RSGL_RSoft_renderer());
 
@@ -57,7 +58,7 @@ int main(void) {
         //RSGL_drawText("Hello, RSOFT!", RSGL_CIRCLE(100, 20, 20), RSGL_RGB(255, 255, 255));
         
         RSGL_draw();
-		RGFW_window_swapBuffers(win);
+		RGFW_window_swapBuffers_software(win);
 
 		//RGFW_window_checkFPS(win, 60);
 	}

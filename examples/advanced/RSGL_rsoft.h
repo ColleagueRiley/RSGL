@@ -31,13 +31,7 @@ void RSGL_RSoft_bitmap_to_atlas(RSGL_texture atlas, u8* bitmap, float x, float y
 
 
 #ifdef RSGL_IMPLEMENTATION
-#define RSGL_GET_WORLD_X(x) (float)(x)
-#define RSGL_GET_WORLD_Y(y) (float)(y)
-#define RSGL_GET_WORLD_Z(z) (float)(z)
-
-
 #define RGFW_BUFFER
-
 #include "RSGL.h"
 
 #define RSOFT_IMPLEMENTATION
@@ -146,10 +140,12 @@ void RSGL_RSoft_batch(RSGL_RENDER_INFO* info) {
 						u8 color[4] = {info->colors[cIndex] * 255, info->colors[cIndex + 1] * 255, 
 										info->colors[cIndex + 2] * 255, info->colors[cIndex + 3] * 255};
 
-						RSoft_rect texRect = {info->texCoords[tIndex] * tex->memsize.w, info->texCoords[tIndex + 1] * tex->memsize.h, 
-											tex->memsize.w, tex->memsize.h};	
-						RSoft_setTexture(tex->bitmap, texRect, *(RGFW_area*)&tex->memsize);
-						RSoft_drawTriangleF(RSGL_rsoft.buffer, npoints, color);
+//						RSoft_rect texRect = {info->texCoords[tIndex] * tex->memsize.w, info->texCoords[tIndex + 1] * tex->memsize.h, 
+//											tex->memsize.w, tex->memsize.h};	
+	//					RSoft_setTexture(tex->bitmap, texRect, *(RGFW_area*)&tex->memsize);
+
+                        RSoft_drawTriangleF(RSGL_rsoft.buffer, npoints, color);
+
 						
 						tIndex += 6;
 						vIndex += 9;

@@ -1,6 +1,7 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+#define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
@@ -24,7 +25,7 @@ int main(void) {
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     int w, h, c;
-    u8* logo = stbi_load("icon.png", &w, &h, &c, 4);
+    u8* logo = stbi_load("logo.png", &w, &h, &c, 4);
     u32 texture = RSGL_renderCreateTexture(logo, RSGL_AREA(w, h), c);
     free(logo);
 
