@@ -7,7 +7,16 @@
 #include "RSGL.h"
 #include "RSGL_gl.h"
 
-#include <gl/gl.h>
+#ifdef __APPLE__
+	#ifndef GL_SILENCE_DEPRECATION
+		#define GL_SILENCE_DEPRECATION
+	#endif
+	#include <OpenGL/gl.h>
+	#include <OpenGL/OpenGL.h>
+#else
+    #include <GL/gl.h>
+#endif
+
 
 int main(void) {
     RGFW_window* win = RGFW_createWindow("First person camera", RGFW_RECT(0, 0, 800, 450), RGFW_windowCenter | RGFW_windowNoResize );
