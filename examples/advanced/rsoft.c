@@ -2,6 +2,7 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+#define RSGL_INT_DEFINED
 #define RSoft_area RGFW_area
 #include "RSGL.h"
 

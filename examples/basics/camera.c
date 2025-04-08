@@ -1,6 +1,8 @@
 #include <stdio.h>
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
+
+#define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
