@@ -1,63 +1,15 @@
-#ifndef RSGL_RSOFT_H
-#define RSGL_RSOFT_H
-
-RSGLDEF RSGL_renderer RSGL_RSoft_renderer(void);
-
-RSGLDEF void RSGL_RSoft_batch(RSGL_RENDER_INFO* info);
-RSGLDEF void RSGL_RSoft_init(void* proc, RSGL_RENDER_INFO* info); /* init render backend */
-RSGLDEF void RSGL_RSoft_free(void); /* free render backend */
-RSGLDEF void RSGL_RSoft_clear(float r, float g, float b, float a);
-RSGLDEF void RSGL_RSoft_viewport(i32 x, i32 y, i32 w, i32 h);
-/* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
-RSGLDEF RSGL_texture RSGL_RSoft_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
-/* updates an existing texture wiht a new bitmap */
-RSGLDEF void RSGL_RSoft_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
-/* delete a texture */
-RSGLDEF void RSGL_RSoft_deleteTexture(RSGL_texture tex);
-/* starts scissoring */
-RSGLDEF void RSGL_RSoft_scissorStart(RSGL_rectF scissor);
-/* stops scissoring */
-RSGLDEF void RSGL_RSoft_scissorEnd(void);
-/* program loading */
-RSGLDEF RSGL_programInfo RSGL_RSoft_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
-RSGLDEF void RSGL_RSoft_deleteProgram(RSGL_programInfo program);
-RSGLDEF void RSGL_RSoft_setShaderValue(u32 program, char* var, float value[], u8 len);
-/* RFont */
-RSGL_texture RSGL_RSoft_create_atlas(u32 atlasWidth, u32 atlasHeight);
-u8 RSGL_RSoft_resize_atlas(RSGL_texture* atlas, u32 newWidth, u32 newHeight);
-void RSGL_RSoft_bitmap_to_atlas(RSGL_texture atlas, u8* bitmap, float x, float y, float w, float h);
-
-#endif
-
-
 #ifdef RSGL_IMPLEMENTATION
+#define RSGL_GET_WORLD_X(x) (float)(x)
+#define RSGL_GET_WORLD_Y(y) (float)(y)
+#define RSGL_GET_WORLD_Z(z) (float)(z)
+
+
 #define RGFW_BUFFER
+
 #include "RSGL.h"
 
 #define RSOFT_IMPLEMENTATION
 #include "RSoft.h"
-
-RSGL_renderer RSGL_RSoft_renderer() {
-    RSGL_renderer renderer;
-    renderer.batch = RSGL_RSoft_batch;
-    renderer.init = RSGL_RSoft_init;
-    renderer.free = RSGL_RSoft_free;
-    renderer.clear = RSGL_RSoft_clear;
-    renderer.viewport = RSGL_RSoft_viewport;
-    renderer.createTexture = RSGL_RSoft_createTexture;
-    renderer.updateTexture = RSGL_RSoft_updateTexture;
-    renderer.deleteTexture = RSGL_RSoft_deleteTexture;
-    renderer.scissorStart = RSGL_RSoft_scissorStart;
-    renderer.scissorEnd =  RSGL_RSoft_scissorEnd;
-    renderer.createProgram = RSGL_RSoft_createProgram;
-    renderer.deleteProgram = RSGL_RSoft_deleteProgram;
-    renderer.setShaderValue = RSGL_RSoft_setShaderValue;
-    renderer.createAtlas = RSGL_RSoft_create_atlas;
-    renderer.resizeAtlas = RSGL_RSoft_resize_atlas;
-    renderer.bitmapToAtlas = RSGL_RSoft_bitmap_to_atlas;
-    return renderer;
-}
-
 
 
 typedef struct RSGL_INFO {
@@ -77,7 +29,7 @@ typedef struct RSGL_rsoft_texture {
 
 RSGL_rsoft_texture* RSGL_rsoft_textures = NULL;
 
-void RSGL_RSoft_deleteTexture(RSGL_texture tex) { 
+void RSGL_renderDeleteTexture(RSGL_texture tex) { 
 	RSGL_rsoft_texture* texture = (RSGL_rsoft_texture*)tex;
 	if (texture->prev != NULL)
 		texture->prev->next = texture->next;
@@ -87,22 +39,22 @@ void RSGL_RSoft_deleteTexture(RSGL_texture tex) {
 	free(texture->bitmap);
 	free(texture);
 }
-void RSGL_RSoft_viewport(i32 x, i32 y, i32 w, i32 h) { 
+void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h) { 
 	RSoft_setCanvasSize(RSOFT_AREA(w, h));
 }
 
-void RSGL_RSoft_clear(float r, float g, float b, float a) {
+void RSGL_renderClear(float r, float g, float b, float a) {
 	u8 color[4] = {r * 255, g * 255, b * 255, a * 255};
 
 	RSoft_clear(RSGL_rsoft.buffer, color);
 }
 
-void RSGL_RSoft_init(void* buffer, RSGL_RENDER_INFO* info) {
+void RSGL_renderInit(void* buffer, RSGL_RENDER_INFO* info) {
     RSGL_UNUSED(info);
 	RSGL_rsoft.buffer = buffer;
 }
 
-void RSGL_RSoft_free(void) {   
+void RSGL_renderFree(void) {   
 	if (RSGL_rsoft_textures != NULL) {
 		RSGL_rsoft_texture* texture = RSGL_rsoft_textures;
 		while (texture != NULL) {
@@ -114,7 +66,7 @@ void RSGL_RSoft_free(void) {
 	}
 }
 
-void RSGL_RSoft_batch(RSGL_RENDER_INFO* info) { 
+void RSGL_renderBatch(RSGL_RENDER_INFO* info) { 
         size_t i, j;
         size_t tIndex = 0, cIndex = 0, vIndex = 0;
        
@@ -140,12 +92,10 @@ void RSGL_RSoft_batch(RSGL_RENDER_INFO* info) {
 						u8 color[4] = {info->colors[cIndex] * 255, info->colors[cIndex + 1] * 255, 
 										info->colors[cIndex + 2] * 255, info->colors[cIndex + 3] * 255};
 
-//						RSoft_rect texRect = {info->texCoords[tIndex] * tex->memsize.w, info->texCoords[tIndex + 1] * tex->memsize.h, 
-//											tex->memsize.w, tex->memsize.h};	
-	//					RSoft_setTexture(tex->bitmap, texRect, *(RGFW_area*)&tex->memsize);
-
-                        RSoft_drawTriangleF(RSGL_rsoft.buffer, npoints, color);
-
+						RSoft_rect texRect = {info->texCoords[tIndex] * tex->memsize.w, info->texCoords[tIndex + 1] * tex->memsize.h, 
+											tex->memsize.w, tex->memsize.h};	
+						RSoft_setTexture(tex->bitmap, texRect, *(RGFW_area*)&tex->memsize);
+						RSoft_drawTriangleF(RSGL_rsoft.buffer, npoints, color);
 						
 						tIndex += 6;
 						vIndex += 9;
@@ -202,19 +152,19 @@ void RSGL_RSoft_batch(RSGL_RENDER_INFO* info) {
     info->vert_len = 0;
 }
 
-void RSGL_RSoft_scissorStart(RSGL_rectF scissor) {
+void RSGL_renderScissorStart(RSGL_rectF scissor) {
     RSGL_draw();
 
 	// TODO
 }
 
-void RSGL_RSoft_scissorEnd(void) {
+void RSGL_renderScissorEnd(void) {
     RSGL_draw();
 	// TODO
 }
 
 /* textures / images */
-RSGL_texture RSGL_RSoft_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
+RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
 	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)RSGL_MALLOC(sizeof(RSGL_rsoft_texture));
 	*tex = (RSGL_rsoft_texture){(u8*)RSGL_MALLOC(memsize.w * memsize.h * channels), memsize, channels, NULL, NULL};
 	
@@ -231,7 +181,7 @@ RSGL_texture RSGL_RSoft_createTexture(u8* bitmap, RSGL_area memsize, u8 channels
     return (u64)tex;
 }
 
-void RSGL_RSoft_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
 	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)texture;
 	tex->memsize = memsize;
 	tex->channels = channels;
@@ -241,11 +191,11 @@ void RSGL_RSoft_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsiz
 	free(tex->bitmap);
 }
 
-RSGL_texture RSGL_RSoft_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
 	return (u64)RSGL_renderCreateTexture(NULL, RSGL_AREA(atlasWidth, atlasHeight), 4);
 }
 
-u8 RSGL_RSoft_resize_atlas(RSGL_texture* atlas, u32 newWidth, u32 newHeight) {
+b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
 	RSGL_rsoft_texture* texture = (RSGL_rsoft_texture*)*atlas;
 	RSGL_rsoft_texture* newTexture = (RSGL_rsoft_texture*)RSGL_MALLOC(sizeof(RSGL_rsoft_texture));
 	*newTexture = (RSGL_rsoft_texture){(u8*)RSGL_MALLOC(newWidth * newHeight * texture->channels), RSGL_AREA(newWidth, newHeight), texture->channels, NULL, NULL};
@@ -257,7 +207,7 @@ u8 RSGL_RSoft_resize_atlas(RSGL_texture* atlas, u32 newWidth, u32 newHeight) {
 	return 1;
 }
 
-void RSGL_RSoft_bitmap_to_atlas(RSGL_texture atlas, u8* bitmap, float x, float y, float w, float h) {
+void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
 	RSGL_rsoft_texture* tex = (RSGL_rsoft_texture*)atlas;
 	
 	for (float i = 0; i < h; i++) {
@@ -266,9 +216,9 @@ void RSGL_RSoft_bitmap_to_atlas(RSGL_texture atlas, u8* bitmap, float x, float y
 	}
 }
 
-void RSGL_RSoft_setShaderValue(u32 program, char* var, float value[], u8 len) { RSGL_UNUSED(program); RSGL_UNUSED(value); RSGL_UNUSED(len);}
-void RSGL_RSoft_deleteProgram(RSGL_programInfo program) { }
-RSGL_programInfo RSGL_RSoft_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) { 
+void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) { RSGL_UNUSED(program); RSGL_UNUSED(value); RSGL_UNUSED(len);}
+void RSGL_renderDeleteProgram(RSGL_programInfo program) { }
+RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) { 
 	RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
 	return (RSGL_programInfo) {};
 }

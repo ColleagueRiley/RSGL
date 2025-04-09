@@ -2,7 +2,6 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
-#define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
@@ -10,10 +9,9 @@
 int main(void) {
     RGFW_window* win = RGFW_createWindow("name", (RGFW_rect){500, 500, 500, 500}, RGFW_windowCenter);
 
-	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress, RSGL_GL_renderer());
-    
-    RSGL_font* font = RSGL_loadFont("Super Easy.ttf");
-    RSGL_setFont(font);
+	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);
+
+    RSGL_setFont(RSGL_loadFont("Super Easy.ttf"));
     
     u32 fps = 0;
     u32 frameCount = 0;
@@ -39,9 +37,7 @@ int main(void) {
 		fps = RGFW_checkFPS(startTime, frameCount, 0);
         frameCount++;
     }
-    
-    RSGL_freeFont(font);
-
+	
 	RSGL_free();
 	RGFW_window_close(win);
 }

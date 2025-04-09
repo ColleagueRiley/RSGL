@@ -1,7 +1,6 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
-#define RSGL_INT_DEFINED
 #define RSGLDEF
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
@@ -36,7 +35,7 @@ int main(void) {
 
     RSGL_setClearArgs(true);
 
-    RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress, RSGL_GL_renderer());	
+    RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress);	
     
     while (RGFW_window_shouldClose(win) == false) {
 
@@ -80,9 +79,9 @@ int main(void) {
 			RSGL_clear(RSGL_RGB(255, 255, 255));
             
             float points[] = {
-                                        20, win2->r.h - 20, 0.0f, 
-                                        win2->r.w - 20, win2->r.h - 20,  1.0f, 
-                                        (win2->r.w - 20) / 2, 20, 1.0f
+                                        RSGL_GET_WORLD_POINT(20, win2->r.h - 20, 0.0f), 
+                                        RSGL_GET_WORLD_POINT(win2->r.w - 20, win2->r.h - 20,  0.0f), 
+                                        RSGL_GET_WORLD_POINT((win2->r.w - 20) / 2, 20, 0.0f)
                                       };
             
             float texPoints[] = {   

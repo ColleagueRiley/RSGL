@@ -1,3 +1,0 @@
--D RSGL_IMPLEMENTATION
--I./
--I./examples/deps

@@ -13,8 +13,6 @@ EXAMPLE_OUTPUTS = \
 	basics/textures  \
 	advanced/shader \
 	basics/shapes  \
-	basics/camera \
-
 
 $(EXAMPLE_OUTPUTS): %: examples/%.c RSGL.h
 	cd examples && make $@ CC=$(CC) CUSTOM_CFLAGS="$(CUSTOM_CFLAGS)"
