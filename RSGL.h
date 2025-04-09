@@ -71,6 +71,12 @@
 #define RSGL_FREE free
 #endif
 
+#ifndef RSGL_SIN
+#include <math.h>
+#define RSGL_SIN sinf
+#define RSGL_COS cosf
+#endif
+
 #ifndef RSGL_UNUSED
 #define RSGL_UNUSED(x) (void) (x);
 #endif
@@ -462,8 +468,6 @@ RSGLDEF void RSGL_drawTriangle3D(RSGL_triangle3D t, RSGL_color c);
 RSGLDEF void RSGL_drawPoint3D(RSGL_point3D p, RSGL_color c);
 RSGLDEF void RSGL_drawLine3D(RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c);
 RSGLDEF void RSGL_drawCube(RSGL_cube cube, RSGL_color c);
-RSGLDEF void RSGL_drawSphere(RSGL_cube, RSGL_color color);
-RSGLDEF void RSGL_drawCylinder(RSGL_cube cube, float radiusBottom, u32 sides, RSGL_color color);
 
 /* 2D outlines */
 
@@ -869,8 +873,8 @@ void RSGL_drawTriangleHyp(RSGL_pointF p, size_t angle, float hypotenuse, RSGL_co
     float dir = (hypotenuse > 0);
     hypotenuse = fabsf(hypotenuse);
 
-    float base = hypotenuse * (cos(angle) * DEG2RAD);
-    float opp = hypotenuse * (sin(angle) * DEG2RAD); 
+    float base = hypotenuse * (RSGL_COS(angle) * DEG2RAD);
+    float opp = hypotenuse * (RSGL_SIN(angle) * DEG2RAD); 
     
     RSGL_triangleF t = RSGL_TRIANGLEF(
         p,
@@ -936,7 +940,7 @@ void RSGL_drawPolygonFEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c)
 
     u32 i;
     for (i = 0; i < sides; i++) {
-        RSGL_pointF p = {sinf(angle * DEG2RAD), cosf(angle * DEG2RAD)};
+        RSGL_pointF p = {RSGL_SIN(angle * DEG2RAD), RSGL_COS(angle * DEG2RAD)};
 
         texcoords[tIndex] = (p.x + 1.0f) * 0.5;
         texcoords[tIndex + 1] = (p.y + 1.0f) * 0.5;
@@ -958,15 +962,15 @@ void RSGL_drawPolygonF(RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygon
 
 
 void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {  
-    u32 verts = (u32)round((float)((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10));
-    verts = (verts > 360 ? 360 : verts);
-
+    u32 verts = (u32)((float)((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10) + 0.5);
+    verts %= 360;
+    
     RSGL_drawPolygonFEx(o, verts, arc, color); 
 }
 
 void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  
     float verts = ((2 * M_PI * c.d) / 10);
-    verts = (verts > 360 ? 360 : verts);
+    verts %= 360;
 
     RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
 }
@@ -1093,16 +1097,6 @@ void RSGL_drawCube(RSGL_cube cube, RSGL_color c) {
     RSGL_basicDraw(RSGL_TRIANGLES, points, texPoints, c, 36);
 }
 
-
-
-void RSGL_drawSphere(RSGL_cube cube, RSGL_color color) {
-    // TODO
-}
-
-void RSGL_drawCylinder(RSGL_cube cube, float radiusBottom, u32 sides, RSGL_color color) {
-    // TODO
-}
-
 /* 
 outlines
 */
@@ -1184,8 +1178,8 @@ void RSGL_drawPolygonFOutlineEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_c
         for (j = 0; j < 2; j++) {
             memcpy(verts + index, (float[3]) {
                         RSGL_GET_MATRIX_POINT(
-                            o.x + (sinf(DEG2RAD * centralAngle) * o.w),
-                            o.y + (cosf(DEG2RAD * centralAngle) * o.h),
+                            o.x + (RSGL_SIN(DEG2RAD * centralAngle) * o.w),
+                            o.y + (RSGL_COS(DEG2RAD * centralAngle) * o.h),
                             (0.0))
                         }, sizeof(float) * 3);
             
@@ -1384,8 +1378,8 @@ RSGL_mat4 RSGL_rotate(float matrix[16], float angle, float x, float y, float z) 
 	}
 
 	/* Rotation matrix generation */
-	float sinres = sinf(angle);
-	float cosres = cosf(angle);
+	float sinres = RSGL_SIN(angle);
+	float cosres = RSGL_COS(angle);
 	float t = 1.0f - cosres;
 
 	float matRotation[16] =  {
@@ -1400,7 +1394,7 @@ RSGL_mat4 RSGL_rotate(float matrix[16], float angle, float x, float y, float z) 
 
 RSGL_mat4 RSGL_perspective(float matrix[16], float fovY, float aspect, float zNear, float zFar) {
     fovY =  (fovY * DEG2RAD) / 2.0f;
-    const float f = (cosf(fovY) / sinf(fovY));
+    const float f = (RSGL_COS(fovY) / RSGL_SIN(fovY));
     
     float perspective[16] = {
             (f / aspect), 0.0f,  0.0f,                                   0.0f,
