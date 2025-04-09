@@ -41,28 +41,24 @@ int main(void) {
                 }
                 case RGFW_keyPressed:
                     switch (win->event.key) {
-                        case RGFW_left:
-                            camera.yaw -= 5;
-                            break;
-                        case RGFW_right:
-                            camera.yaw += 5;
-                            break;
-                        case RGFW_up:
-                            camera.pitch -= 5;
-                            break;
-                        case RGFW_down:
-                            camera.pitch += 5;
-                            break;
-                        default: break;
+                       default: break;
                     }
                 default: break;
             }
         } 
 
+        if (RGFW_isPressed(win, RGFW_left))
+            camera.yaw--;
+        if (RGFW_isPressed(win, RGFW_right))
+            camera.yaw++;
+        if (RGFW_isPressed(win, RGFW_up))
+            camera.pitch--;
+        if (RGFW_isPressed(win, RGFW_down))
+            camera.pitch++;
+
         if (RGFW_isPressed(win, RGFW_w)) { 
             camera.pos.x += cos((camera.yaw + 90) * DEG2RAD)/5.0;
             camera.pos.z -= sin((camera.yaw + 90) * DEG2RAD)/5.0;
-
         }
         if (RGFW_isPressed(win, RGFW_s)) {
             camera.pos.x += cos((camera.yaw + 270) * DEG2RAD)/5.0;
@@ -80,18 +76,15 @@ int main(void) {
         } 
 
         if (RGFW_isPressed(win, RGFW_controlL))
-            camera.pos.y += 0.5;
+            camera.pos.y += 0.1;
         if (RGFW_isPressed(win, RGFW_space))
-            camera.pos.y -= 0.5; 
+            camera.pos.y -= 0.1; 
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         RSGL_clear(RSGL_RGB(80, 80, 110));
        
         RSGL_setGlobalMatrix(RSGL_getCameraMatrix(camera));
- //           RSGL_drawCylinder(RSGL_CUBE(19, 20, 9, 20, 300, 0.5), 200, 8, RSGL_RGB(255, 0, 0)); 
-//            RSGL_drawSphere(RSGL_CUBE(20, 20, 3, 200, 200, 0.5), RSGL_RGB(255, 0, 0));
-
             RSGL_drawCube(RSGL_CUBE(49, 20, 5, 200, 200, 0.5), RSGL_RGB(255, 0, 0));
             RSGL_drawTriangle3D(
                 RSGL_createTriangle3D(25.0f, 480.0f, 0.0,
