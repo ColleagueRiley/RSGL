@@ -969,8 +969,7 @@ void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {
 }
 
 void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  
-    float verts = ((2 * M_PI * c.d) / 10);
-    verts %= 360;
+    u32 verts = (u32)((2.0 * M_PI * c.d) / 10) % 360;
 
     RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
 }
