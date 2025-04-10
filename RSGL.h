@@ -412,11 +412,13 @@ void RFont_bitmap_to_atlas(RSGL_rsoft_texture atlas, u8* bitmap, float x, float 
 */
 
 /* RSGL translation */
+#ifndef RSGL_camera
 typedef struct RSGL_camera {
     RSGL_point3D pos;
     float fov; 
     float pitch, yaw; 
 } RSGL_camera;
+#endif
 
 RSGLDEF RSGL_mat4 RSGL_getCameraMatrix(RSGL_camera camera);
 RSGLDEF RSGL_mat4 RSGL_getCameraMatrixEx(RSGL_camera camera, float ratio, float maxPitch, float min, float max);
@@ -779,9 +781,12 @@ void RSGL_setCenter(RSGL_point3D center) {
 void RSGL_setClearArgs(RSGL_bool clearArgs) {
     RSGL_argsClear = clearArgs;
 }
+
+#ifndef my_RSGL_clearArgs 
 void RSGL_clearArgs(void) {
     RSGL_args = (RSGL_drawArgs){NULL, 0, 0, { }, {0, 0, 0}, RSGL_POINT3D(-1, -1, -1), 0, 0};
 }
+#endif
 
 
 void RSGL_drawPoint(RSGL_point p, RSGL_color c) {
