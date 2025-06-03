@@ -568,6 +568,8 @@ RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textE
 #define RFONT_MALLOC RSGL_MALLOC
 #define RFONT_FREE RSGL_FREE
 
+#define RFONT_GET_WORLD_X(x, w) (float)x
+#define RFONT_GET_WORLD_Y(y, h) (float)y 
 #include "RFont.h"
 #endif /* RSGL_NO_TEXT */
 
@@ -734,12 +736,13 @@ void RSGL_updateSize(RSGL_area r) {
     RSGL_args.currentArea = r;
     RFont_update_framebuffer(r.w, r.h);
     RSGL_renderViewport(0, 0, r.w, r.h);
+
+    RSGL_renderInfo.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
 }
 
 void RSGL_free() {
-    RSGL_renderFree();
-
     if (RSGL_renderInfo.batches != NULL) {
+        RSGL_renderFree();
         RSGL_FREE(RSGL_renderInfo.batches);
         RSGL_FREE(RSGL_renderInfo.verts);
         RSGL_FREE(RSGL_renderInfo.colors);
@@ -1254,7 +1257,7 @@ void RSGL_drawText_len(const char* text, size_t len, RSGL_circle c, RSGL_color c
 void RSGL_drawText_pro(const char* text, size_t len, float spacing, RSGL_circle c, RSGL_color color) {
     if (text == NULL || RSGL_internalFont == NULL)
         return;
-
+    
     RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
     RFont_draw_text_len(RSGL_internalFont, text, len, c.x, c.y, c.d, spacing);
 }
