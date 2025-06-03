@@ -568,6 +568,8 @@ RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textE
 #define RFONT_MALLOC RSGL_MALLOC
 #define RFONT_FREE RSGL_FREE
 
+#define RFONT_GET_WORLD_X(x, w) (float)x
+#define RFONT_GET_WORLD_Y(y, h) (float)y 
 #include "RFont.h"
 #endif /* RSGL_NO_TEXT */
 
