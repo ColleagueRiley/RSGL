@@ -9744,7 +9744,6 @@ var ASM_CONSTS = {
 
 
 
-
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10770,8 +10769,6 @@ var wasmImports = {
   /** @export */
   glDeleteTextures: _glDeleteTextures,
   /** @export */
-  glDetachShader: _glDetachShader,
-  /** @export */
   glDisable: _glDisable,
   /** @export */
   glDrawArrays: _glDrawArrays,
@@ -10857,7 +10854,7 @@ var dynCall_vii = Module['dynCall_vii'] = createExportWrapper('dynCall_vii');
 var dynCall_v = Module['dynCall_v'] = createExportWrapper('dynCall_v');
 var dynCall_vffff = Module['dynCall_vffff'] = createExportWrapper('dynCall_vffff');
 var dynCall_viiii = Module['dynCall_viiii'] = createExportWrapper('dynCall_viiii');
-var dynCall_viiiiii = Module['dynCall_viiiiii'] = createExportWrapper('dynCall_viiiiii');
+var dynCall_iiiiii = Module['dynCall_iiiiii'] = createExportWrapper('dynCall_iiiiii');
 var dynCall_iii = Module['dynCall_iii'] = createExportWrapper('dynCall_iii');
 var dynCall_viiffff = Module['dynCall_viiffff'] = createExportWrapper('dynCall_viiffff');
 var dynCall_ii = Module['dynCall_ii'] = createExportWrapper('dynCall_ii');
@@ -10876,6 +10873,7 @@ var dynCall_vif = Module['dynCall_vif'] = createExportWrapper('dynCall_vif');
 var dynCall_viff = Module['dynCall_viff'] = createExportWrapper('dynCall_viff');
 var dynCall_vifff = Module['dynCall_vifff'] = createExportWrapper('dynCall_vifff');
 var dynCall_viffff = Module['dynCall_viffff'] = createExportWrapper('dynCall_viffff');
+var dynCall_viiiiii = Module['dynCall_viiiiii'] = createExportWrapper('dynCall_viiiiii');
 var dynCall_viiiiiiiiii = Module['dynCall_viiiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiiii');
 var dynCall_viiiiiiiiiii = Module['dynCall_viiiiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiiiii');
 var dynCall_iiiii = Module['dynCall_iiiii'] = createExportWrapper('dynCall_iiiii');

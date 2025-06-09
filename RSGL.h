@@ -287,7 +287,7 @@ typedef struct RSGL_RENDER_INFO {
 /* custom shader program */
 #ifndef RSGL_programInfo
 typedef struct RSGL_programInfo {
-    u32 vShader, fShader, program;
+    u32 program;
 } RSGL_programInfo;
 #endif
 
