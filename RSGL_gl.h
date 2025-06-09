@@ -730,45 +730,43 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 }
 
 RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
-    RSGL_programInfo program;
+	RSGL_programInfo program;
+	u32 vShader, fShader;
 
 	/* compile vertex shader */
-	program.vShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(program.vShader, 1, &VShaderCode, NULL);
-	glCompileShader(program.vShader);
+	vShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vShader, 1, &VShaderCode, NULL);
+	glCompileShader(vShader);
 
-    RSGL_debug_shader(program.vShader, "Vertex", "compile");
+	RSGL_debug_shader(vShader, "Vertex", "compile");
 
 	/* compile fragment shader */
-	program.fShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(program.fShader, 1, &FShaderCode, NULL);
-	glCompileShader(program.fShader);
+	fShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fShader, 1, &FShaderCode, NULL);
+	glCompileShader(fShader);
 
-    RSGL_debug_shader(program.fShader, "Fragment", "compile");
+	RSGL_debug_shader(fShader, "Fragment", "compile");
 
 	/* create program and link vertex and fragment shaders */
 	program.program = glCreateProgram();
 
-	glAttachShader(program.program, program.vShader);
-	glAttachShader(program.program, program.fShader);
+	glAttachShader(program.program, vShader);
+	glAttachShader(program.program, fShader);
 
-    glBindAttribLocation(program.program, 0, posName);
-    glBindAttribLocation(program.program, 1, texName);
-    glBindAttribLocation(program.program, 2, colorName);
+	glBindAttribLocation(program.program, 0, posName);
+	glBindAttribLocation(program.program, 1, texName);
+	glBindAttribLocation(program.program, 2, colorName);
 
 	glLinkProgram(program.program);
 
-    return program;
+	glDeleteShader(vShader);
+	glDeleteShader(fShader);
+	
+	return program;
 }
 
 void RSGL_GL_deleteProgram(RSGL_programInfo program) {
     glUseProgram(0);
-
-    glDetachShader(program.program, program.vShader);
-    glDetachShader(program.program, program.fShader);
-    glDeleteShader(program.vShader);
-    glDeleteShader(program.fShader);
-
     glDeleteProgram(program.program);
 }
 

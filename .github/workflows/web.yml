@@ -26,6 +26,7 @@ jobs:
         make CC=emcc
 
     - name: Deploy Pages
+      if: github.event_name != 'pull_request' 
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
