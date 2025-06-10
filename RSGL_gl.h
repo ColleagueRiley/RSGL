@@ -1,4 +1,3 @@
-#include <GL/glext.h>
 #ifndef RSGL_H
 #include "RSGL.h"
 #endif
