@@ -1329,15 +1329,17 @@ RSGL_mat4 RSGL_ortho(float matrix[16], float left, float right, float bottom, fl
 
 /* Multiply the current matrix by a translation matrix */
 RSGL_mat4 RSGL_translate(float matrix[16], float x, float y, float z) {
-    float matTranslation[16] = { 
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            x,    y,    z,    1.0f
-    };
+	RSGL_mat4 result;
 
-    /* NOTE: We transpose matrix with multiplication order */
-    return RSGL_mat4Multiply(matTranslation, matrix);
+	for (int i = 0; i < 16; ++i) {
+		result.m[i] = matrix[i];
+	}
+
+	result.m[12] += matrix[0]*x + matrix[4]*y + matrix[8]*z;
+	result.m[13] += matrix[1]*x + matrix[5]*y + matrix[9]*z;
+	result.m[14] += matrix[2]*x + matrix[6]*y + matrix[10]*z;
+
+	return result;
 }
 
 /* Multiply the current matrix by a rotation matrix */
