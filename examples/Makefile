@@ -72,7 +72,8 @@ EXAMPLE_OUTPUTS = \
 	basics/textures  \
 	advanced/shader \
 	basics/shapes  \
-	basics/camera
+	basics/camera \
+	advanced/compute
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft 
 
@@ -121,7 +122,7 @@ else
 endif
 
 clean:
-	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)  .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm 
+	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM) advanced/rsoft .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm 
 	
 
 .PHONY: all examples clean
