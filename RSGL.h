@@ -284,10 +284,19 @@ typedef struct RSGL_RENDER_INFO {
     RSGL_mat4 matrix;
 } RSGL_RENDER_INFO; /* render data */
 
+/* used internally for RSGL_deleteProgram */
+typedef enum RSGL_shaderType {
+	RSGL_shaderTypeNone = 0,
+	RSGL_shaderTypeStandard = 1, /* standard vertex+fragment shader */
+	RSGL_shaderTypeCompute = 2,
+	RSGL_shaderTypeGeometry = 4, /* unimplemented as of now */
+} RSGL_shaderType;
+
 /* custom shader program */
 #ifndef RSGL_programInfo
 typedef struct RSGL_programInfo {
     u32 program;
+	 RSGL_shaderType type;
 } RSGL_programInfo;
 #endif
 
@@ -308,6 +317,12 @@ typedef struct RSGL_renderer {
     RSGL_texture (* createAtlas)(u32 atlasWidth, u32 atlasHeight);
     u8 (* resizeAtlas)(RSGL_texture* atlas, u32 newWidth, u32 newHeight);
     void (* bitmapToAtlas)(RSGL_texture atlas, u8* bitmap, float x, float y, float w, float h);
+
+#ifdef RSGL_USE_COMPUTE
+	 RSGL_programInfo (*createComputeProgram)(const char* CShaderCode);
+	 void (*dispatchComputeProgram)(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
+	 void (*bindComputeTexture)(u32 texture, u8 format);
+#endif
 } RSGL_renderer;
 
 RSGLDEF void RSGL_setRenderer(RSGL_renderer renderer);
@@ -403,6 +418,11 @@ RSGLDEF void RSGL_renderScissorEnd(void);
 RSGLDEF RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_renderDeleteProgram(RSGL_programInfo program);
 RSGLDEF void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len);
+
+#ifdef RSGL_USE_COMPUTE
+RSGLDEF RSGL_programInfo RSGL_renderCreateComputeProgram(const char *CShaderCode);
+RSGLDEF void RSGL_renderDispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
+#endif
 
 /* these are RFont functions that also must be defined by the renderer
 
@@ -698,6 +718,16 @@ void RSGL_renderDeleteProgram(RSGL_programInfo program) { return RSGL_currentRen
 void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
     return RSGL_currentRenderer.setShaderValue(program, var, value, len);
 }
+
+#ifdef RSGL_USE_COMPUTE
+RSGL_programInfo RSGL_renderCreateComputeProgram(const char* CShaderCode) {
+	return RSGL_currentRenderer.createComputeProgram(CShaderCode);
+}
+
+void RSGL_renderDispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
+	RSGL_currentRenderer.dispatchComputeProgram(program, groups_x, groups_y, groups_z);
+}
+#endif
 
 void RSGL_init(RSGL_area r, void* loader, RSGL_renderer renderer) {
     RSGL_setRenderer(renderer);

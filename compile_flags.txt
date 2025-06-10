@@ -1,3 +1,4 @@
 -D RSGL_IMPLEMENTATION
+-D RSGL_USE_COMPUTE
 -I./
 -I./examples/deps

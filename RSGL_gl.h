@@ -1,3 +1,4 @@
+#include <GL/glext.h>
 #ifndef RSGL_H
 #include "RSGL.h"
 #endif
@@ -41,6 +42,12 @@ RSGLDEF void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 le
 RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight);
 b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight);
 void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h);
+
+#ifdef RSGL_USE_COMPUTE
+RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode);
+RSGLDEF void RSGL_GL_dispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
+RSGLDEF void RSGL_GL_bindComputeTexture(u32 texture, u8 format);
+#endif
 
 #endif
 
@@ -159,6 +166,18 @@ glUniform2fPROC glUniform2fSRC = NULL;
 glUniform3fPROC glUniform3fSRC = NULL;
 glUniform4fPROC glUniform4fSRC = NULL;
 
+#ifdef RSGL_USE_COMPUTE
+typedef void (*glDispatchComputePROC)(GLuint x, GLuint y, GLuint z);
+glDispatchComputePROC glDispatchComputeSRC = NULL;
+
+typedef void (*glMemoryBarrierPROC)(GLenum e);
+glMemoryBarrierPROC glMemoryBarrierSRC = NULL;
+
+typedef void (*glBindImageTexturePROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
+glBindImageTexturePROC glBindImageTextureSRC = NULL;
+
+#endif
+
 #if defined(RSGL_OPENGL_ES2) && !defined(RSGL_OPENGL_ES3)
 typedef void (* PFNGLGENVERTEXARRAYSOESPROC) (GLsizei n, GLuint *arrays);
 typedef void (* PFNGLBINDVERTEXARRAYOESPROC) (GLuint array);
@@ -207,6 +226,12 @@ glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 #define glGetUniformLocation glGetUniformLocationSRC
 #define glUniformMatrix4fv glUniformMatrix4fvSRC
 
+#ifdef RSGL_USE_COMPUTE
+#define glMemoryBarrier glMemoryBarrierSRC
+#define glDispatchCompute glDispatchComputeSRC
+#define glBindImageTexture glBindImageTextureSRC
+#endif
+
 extern int RSGL_loadGLModern(RSGLloadfunc proc);
 #endif
 
@@ -239,6 +264,12 @@ RSGL_renderer RSGL_GL_renderer() {
     renderer.createAtlas = RFont_GL_create_atlas;
     renderer.resizeAtlas = RFont_GL_resize_atlas;
     renderer.bitmapToAtlas = RFont_GL_bitmap_to_atlas;
+
+#ifdef RSGL_USE_COMPUTE
+	renderer.createComputeProgram = RSGL_GL_createComputeProgram;
+	renderer.dispatchComputeProgram = RSGL_GL_dispatchComputeProgram;
+	renderer.bindComputeTexture = RSGL_GL_bindComputeTexture;
+#endif
     return renderer;
 }
 
@@ -254,7 +285,7 @@ void RSGL_GL_init(void* proc, RSGL_RENDER_INFO* info) {
     RSGL_UNUSED(info);
 
     #ifdef RSGL_MODERN_OPENGL
-    #ifndef __EMSCRIPTEN__
+    #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
         RSGL_GL_legacy = 2;
         #ifdef RSGL_DEBUG
@@ -527,7 +558,7 @@ void RSGL_GL_batch(RSGL_RENDER_INFO* info) {
                 info->batches[i].tex = RSGL_gl.defaultTex;
             
             glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
-            glLineWidth(info->batches[i].lineWidth);
+            glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
             
             if (RSGL_args.program)
                 glUseProgram(RSGL_args.program);
@@ -563,7 +594,7 @@ void RSGL_GL_batch(RSGL_RENDER_INFO* info) {
         for (i = 0; i < info->len; i++) {
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
-            glLineWidth(info->batches[i].lineWidth);
+            glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
 
             u32 mode = info->batches[i].type;
             glEnable(GL_BLEND);
@@ -713,16 +744,13 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 	else {
 		printf("%s Shader failed to %s.\n", shader, action);
 
+		GLchar infoLog[512];
 		if (action[0] == 'c') {
-			GLint infoLogLength;
-			glGetShaderiv(src, GL_INFO_LOG_LENGTH, &infoLogLength);
-
-			if (infoLogLength > 0) {
-				GLchar *infoLog = (GLchar *)RSGL_MALLOC(infoLogLength);
-				glGetShaderInfoLog(src, infoLogLength, NULL, infoLog);
-				printf("%s Shader info log:\n%s\n", shader, infoLog);
-				free(infoLog);
-			}
+			glGetShaderInfoLog(src, 512, NULL, infoLog);
+			printf("%s Shader info log:\n%s\n", shader, infoLog);
+		} else {
+			glGetProgramInfoLog(src, 512, NULL, infoLog);
+			printf("%s info log:\n%s\n", shader, infoLog); 
 		}
 
 		RSGL_opengl_getError();
@@ -758,10 +786,12 @@ RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FSha
 	glBindAttribLocation(program.program, 2, colorName);
 
 	glLinkProgram(program.program);
+	RSGL_debug_shader(program.program, "Program", "link");
 
 	glDeleteShader(vShader);
 	glDeleteShader(fShader);
 	
+	program.type = RSGL_shaderTypeStandard;
 	return program;
 }
 
@@ -920,6 +950,45 @@ void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y,
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+#ifdef RSGL_USE_COMPUTE
+RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode) {
+	RSGL_programInfo program;
+	program.type = RSGL_shaderTypeCompute;
+
+	u32 compute = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(compute, 1, &CShaderCode, NULL);
+	glCompileShader(compute);
+	RSGL_debug_shader(compute, "Compute", "compile");
+
+	program.program = glCreateProgram();
+	glAttachShader(program.program, compute);
+	glLinkProgram(program.program);
+	RSGL_debug_shader(program.program, "Program", "link");
+
+	glDeleteShader(compute);
+
+	return program;
+}
+
+void RSGL_GL_dispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
+	glUseProgram(program.program);
+	glDispatchCompute(groups_x, groups_y, groups_z);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+}
+
+void RSGL_GL_bindComputeTexture(u32 texture, u8 format) {
+	u16 c = 0;
+   switch (format) {
+       case 2: c = GL_RG8; break;
+       case 3: c = GL_RGB8; break;
+       case 4: c = GL_RGBA8; break;
+       default: break;
+   }
+	glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, c);
+}
+
+#endif
+
 #ifdef RSGL_MODERN_OPENGL
 
 #ifndef RSGL_NO_GL_LOADER
@@ -959,7 +1028,11 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glUniform2f);
     RSGL_PROC_DEF(proc, glUniform3f);
     RSGL_PROC_DEF(proc, glUniform4f);
-
+    #ifdef RSGL_USE_COMPUTE
+    RSGL_PROC_DEF(proc, glDispatchCompute);
+	 RSGL_PROC_DEF(proc, glMemoryBarrier);
+	 RSGL_PROC_DEF(proc, glBindImageTexture);
+    #endif
     #if defined(RSGL_OPENGL_ES2) && !defined(RSGL_OPENGL_ES3)
         glGenVertexArraysSRC = (PFNGLGENVERTEXARRAYSOESPROC)((RSGLloadfunc)loader)("glGenVertexArraysOES");
         glBindVertexArraySRC = (PFNGLBINDVERTEXARRAYOESPROC)((RSGLloadfunc)loader)("glBindVertexArrayOES");
