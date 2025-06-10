@@ -972,7 +972,7 @@ void RSGL_drawPolygonFEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c)
 
     RSGL_point3D center =  (RSGL_point3D){o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0};
     
-    o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};    
+o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};    
     RSGL_mat4 matrix = RSGL_initDrawMatrix(center);
 
     float displacement = 360.0f / (float)sides;

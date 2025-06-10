@@ -975,6 +975,22 @@ void RSGL_GL_dispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
+#ifndef GL_RG8
+#define GL_RG8 0x822B
+#endif
+
+#ifndef GL_READ_WRITE
+#define GL_READ_WRITE 0x88BA
+#endif
+
+#ifndef GL_COMPUTE_SHADER
+#define GL_COMPUTE_SHADER 0x91B9
+#endif
+
+#ifndef GL_SHADER_IMAGE_ACCESS_BARRIER_BIT
+#define GL_SHADER_IMAGE_ACCESS_BARRIER_BIT 0x00000020
+#endif
+
 void RSGL_GL_bindComputeTexture(u32 texture, u8 format) {
 	u16 c = 0;
    switch (format) {
