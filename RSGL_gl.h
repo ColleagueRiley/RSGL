@@ -705,6 +705,7 @@ void RSGL_GL_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, 
 #define GL_INFO_LOG_LENGTH                0x8B84 
 #endif
 
+#ifdef RSGL_DEBUG
 void RSGL_opengl_getError(void) {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {
@@ -731,6 +732,7 @@ void RSGL_opengl_getError(void) {
 	}
 }
 
+
 void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
     GLint status;
 	if (action[0] == 'l')
@@ -755,6 +757,7 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 		RSGL_opengl_getError();
 	}
 }
+#endif
 
 RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
 	RSGL_programInfo program;
@@ -765,14 +768,18 @@ RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FSha
 	glShaderSource(vShader, 1, &VShaderCode, NULL);
 	glCompileShader(vShader);
 
+#ifdef RSGL_DEBUG
 	RSGL_debug_shader(vShader, "Vertex", "compile");
+#endif
 
 	/* compile fragment shader */
 	fShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fShader, 1, &FShaderCode, NULL);
 	glCompileShader(fShader);
 
+#ifdef RSGL_DEBUG
 	RSGL_debug_shader(fShader, "Fragment", "compile");
+#endif
 
 	/* create program and link vertex and fragment shaders */
 	program.program = glCreateProgram();
@@ -785,7 +792,10 @@ RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FSha
 	glBindAttribLocation(program.program, 2, colorName);
 
 	glLinkProgram(program.program);
+
+#ifdef RSGL_DEBUG
 	RSGL_debug_shader(program.program, "Program", "link");
+#endif
 
 	glDeleteShader(vShader);
 	glDeleteShader(fShader);
@@ -974,12 +984,17 @@ RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode) {
 	u32 compute = glCreateShader(GL_COMPUTE_SHADER);
 	glShaderSource(compute, 1, &CShaderCode, NULL);
 	glCompileShader(compute);
+
+#ifdef RSGL_DEBUG
 	RSGL_debug_shader(compute, "Compute", "compile");
+#endif
 
 	program.program = glCreateProgram();
 	glAttachShader(program.program, compute);
 	glLinkProgram(program.program);
+#ifdef RSGL_DEBUG
 	RSGL_debug_shader(program.program, "Program", "link");
+#endif
 
 	glDeleteShader(compute);
 

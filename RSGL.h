@@ -1279,7 +1279,11 @@ void RSGL_freeFont(RSGL_font* font) { RFont_font_free(font); }
 
 void RSGL_setFont(RFont_font* font) {
     if (font == NULL) {
+
+#ifdef RSGL_DEBUG
         printf("RSGL_setFont : invalid font\n");
+#endif
+
         return;
     }
     
