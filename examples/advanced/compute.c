@@ -70,4 +70,11 @@ int main(void) {
 	RGFW_window_close(window);
 }
 
+#else
+
+int main(void) {
+	printf("This example does not support emscripten\n");
+	return 1;
+}
+
 #endif // __EMSCRIPTEN__
