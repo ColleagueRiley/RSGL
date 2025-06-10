@@ -138,6 +138,11 @@ typedef bool RSGL_bool;
 #define RSGL_texture size_t
 #endif
 
+// WebGL doesn't support compute shaders iirc so yeah
+#if defined(__EMSCRIPTEN__) && defined(RSGL_USE_COMPUTE)
+#undef RSGL_USE_COMPUTE
+#endif
+
 /* 
 *******
 RSGL_[shape]

@@ -12,6 +12,8 @@
 	Written by TKPMonke
 */
 
+#ifndef __EMSCRIPTEN__
+
 const static char* ComputeShader = RSGL_MULTILINE_STR(
 	\x23version 430 core		\n
 	layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;		\n
@@ -67,3 +69,5 @@ int main(void) {
 	RSGL_free();
 	RGFW_window_close(window);
 }
+
+#endif // __EMSCRIPTEN__
