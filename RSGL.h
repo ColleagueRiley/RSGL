@@ -422,6 +422,7 @@ RSGLDEF void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8
 #ifdef RSGL_USE_COMPUTE
 RSGLDEF RSGL_programInfo RSGL_renderCreateComputeProgram(const char *CShaderCode);
 RSGLDEF void RSGL_renderDispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
+RSGLDEF void RSGL_renderBindComputeTexture(u32 texture, u8 format);
 #endif
 
 /* these are RFont functions that also must be defined by the renderer
@@ -726,6 +727,10 @@ RSGL_programInfo RSGL_renderCreateComputeProgram(const char* CShaderCode) {
 
 void RSGL_renderDispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
 	RSGL_currentRenderer.dispatchComputeProgram(program, groups_x, groups_y, groups_z);
+}
+
+void RSGL_renderBindComputeTexture(u32 texture, u8 format) {
+	RSGL_currentRenderer.bindComputeTexture(texture, format);
 }
 #endif
 

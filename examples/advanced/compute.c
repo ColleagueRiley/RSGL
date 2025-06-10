@@ -47,7 +47,7 @@ int main(void) {
 		}
 
 		RSGL_setProgram(program.program);
-		RSGL_GL_bindComputeTexture(texture, 4);
+		RSGL_renderBindComputeTexture(texture, 4);
 		RSGL_renderSetShaderValue(program.program, "u_time", (float[1]){RGFW_getTime()}, 1);
 		RSGL_renderSetShaderValue(program.program, "u_screen_size", (float[2]){20, 20}, 2);
 		RSGL_renderDispatchComputeProgram(program, 20, 20, 1);
