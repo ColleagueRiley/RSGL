@@ -1,10 +1,8 @@
 This list is not ordered in any special way
 
-- allow GPU matrix to be loaded
-- allow matricies to be batched by the user 
-
+- review `RSGL_drawArgs` / the RSGL state machine
 
 - EBO support for `RSGL_GL.h` (if it's worth it)
 - `RSGL_DX.h` for DirectX 
-- fix `custom_render_pgl.h`
+- fix `RSGL_rsoft.h`
 - `RSGL_ogl` for libogc (Wii and Gamecube)
