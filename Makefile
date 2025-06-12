@@ -14,6 +14,7 @@ EXAMPLE_OUTPUTS = \
 	advanced/shader \
 	basics/shapes  \
 	basics/camera \
+	advanced/compute \
 
 
 $(EXAMPLE_OUTPUTS): %: examples/%.c RSGL.h

@@ -72,7 +72,8 @@ EXAMPLE_OUTPUTS = \
 	basics/textures  \
 	advanced/shader \
 	basics/shapes  \
-	basics/camera
+	basics/camera	\
+	advanced/compute
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft 
 
