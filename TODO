@@ -1,5 +1,7 @@
 This list is not ordered in any special way
 
+- review `RSGL_drawArgs` / the RSGL state machine
+
 - EBO support for `RSGL_GL.h` (if it's worth it)
 - `RSGL_DX.h` for DirectX 
 - fix `RSGL_rsoft.h`
