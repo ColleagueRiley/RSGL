@@ -91,31 +91,31 @@ int main () {
 #include <string.h>
 
 #if !defined(u8)
-   #if defined(_MSC_VER) || defined(__SYMBIAN32__)
-      typedef unsigned char   u8;
-      typedef signed char     i8;
-      typedef unsigned short  u16;
-      typedef signed short    i16;
-      typedef unsigned int    u32;
-      typedef signed int      i32;
-      typedef unsigned long   u64;
-      typedef signed long     i64;
-   #else
-      #include <stdint.h>
+	#if defined(_MSC_VER) || defined(__SYMBIAN32__)
+		typedef unsigned char 	u8;
+		typedef signed char		i8;
+		typedef unsigned short  u16;
+		typedef signed short 	i16;
+		typedef unsigned int 	u32;
+		typedef signed int		i32;
+		typedef unsigned long	u64;
+		typedef signed long		i64;
+	#else
+		#include <stdint.h>
 
-      typedef uint8_t     u8;
-      typedef int8_t      i8;
-      typedef uint16_t   u16;
-      typedef int16_t    i16;
-      typedef uint32_t   u32;
-      typedef int32_t    i32;
-      typedef uint64_t   u64;
-      typedef int64_t    i64;
-   #endif
+		typedef uint8_t     u8;
+		typedef int8_t      i8;
+		typedef uint16_t   u16;
+		typedef int16_t    i16;
+		typedef uint32_t   u32;
+		typedef int32_t    i32;
+		typedef uint64_t   u64;
+		typedef int64_t    i64;
+	#endif
 #endif
 
 #if !defined(b8)
-   typedef u8 b8;
+	typedef u8 b8;
 #endif
 
 /* 
@@ -683,7 +683,7 @@ RFont_glyph RFont_font_add_codepoint(RFont_font* font, u32 codepoint, size_t siz
 }
 
 RFont_glyph RFont_font_add_codepointPro(RFont_font* font, u32 codepoint, size_t size, b8 fallback) {
-   u32 i;
+	u32 i;
    for (i = 0; i < font->glyph_len; i++)
       if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == size)
          return font->glyphs[i];
@@ -949,7 +949,7 @@ RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, f
 #endif
 
 #ifndef GL_PERSPECTIVE_CORRECTION_HINT
-#define GL_PERSPECTIVE_CORRECTION_HINT    0x0C50
+#define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
 #endif
 
 #ifndef GL_TEXTURE_SWIZZLE_RGBA
@@ -957,11 +957,11 @@ RFont_area RFont_draw_text_len(RFont_font* font, const char* text, size_t len, f
 #endif
 
 #ifndef GL_TEXTURE0
-#define GL_TEXTURE0           0x84C0
+#define GL_TEXTURE0				0x84C0
 #endif
 
 #ifndef GL_CLAMP_TO_EDGE
-#define GL_CLAMP_TO_EDGE         0x812F
+#define GL_CLAMP_TO_EDGE			0x812F
 #endif
 
 #ifdef RFONT_DEBUG
@@ -1002,7 +1002,7 @@ void RFont_opengl_getError(void) {
                   break;
             case GL_STACK_UNDERFLOW:
                   printf("OpenGL error: GL_STACK_UNDERFLOW\n");
-                  break;   
+                  break;	
             default:
                   printf("OpenGL error: Unknown error code 0x%x\n", err);
                   break;
@@ -1039,8 +1039,8 @@ RFont_texture RFont_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    RFONT_FREE(data);
 
    glBindTexture(GL_TEXTURE_2D, id);
-   static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
-   glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 
    glBindTexture(GL_TEXTURE_2D, 0);
    return id;
@@ -1068,8 +1068,8 @@ b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
    
    /* swizzle new atlas */
    glBindTexture(GL_TEXTURE_2D, newAtlas);
-   static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
-   glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 
    glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -1085,32 +1085,32 @@ b8 RFont_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
 
 void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
 void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
-   glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-   glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-   glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
-   glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
+	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
 }
 
 void RFont_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
    glEnable(GL_TEXTURE_2D);
    
-   GLint alignment, rowLength, skipPixels, skipRows;
+	GLint alignment, rowLength, skipPixels, skipRows;
    glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-   glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
-   glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-   glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
+	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
+	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
    
    #if !defined(RFONT_RENDER_LEGACY)
    glActiveTexture(GL_TEXTURE0 + atlas - 1);
    #endif
 
-   glBindTexture(GL_TEXTURE_2D, atlas);
+	glBindTexture(GL_TEXTURE_2D, atlas);
 
-   RFont_push_pixel_values(1, w, 0, 0);
+	RFont_push_pixel_values(1, w, 0, 0);
 
-   glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RED, GL_UNSIGNED_BYTE, bitmap);
 
-   RFont_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
+	RFont_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
 
    glBindTexture(GL_TEXTURE_2D, 0);
 }
@@ -1128,7 +1128,7 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
 
    rglMatrixMode(RGL_MODELVIEW);
    rglLoadIdentity();
-   rglPushMatrix();
+	rglPushMatrix();
 
    glDisable(GL_DEPTH_TEST);
    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -1141,19 +1141,19 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
 
    rglSetTexture(atlas);
    
-   rglBegin(RGL_TRIANGLES_2D);
+	rglBegin(RGL_TRIANGLES_2D);
 
-   size_t i;
+	size_t i;
    size_t tIndex = 0;
 
-   for (i = 0; i < (nverts * 3); i += 3) {
-      rglTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
+	for (i = 0; i < (nverts * 3); i += 3) {
+		rglTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
       tIndex += 2;
-      
+		
       rglVertex2f(verts[i], verts[i + 1]);
-   }
-   rglEnd();
-   rglPopMatrix();
+	}
+	rglEnd();
+	rglPopMatrix();
    
    rglSetTexture(0);
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -1190,21 +1190,21 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
 
    glBindTexture(GL_TEXTURE_2D, atlas);
 
-   glPushMatrix();
+	glPushMatrix();
 
-   glBegin(GL_TRIANGLES);
+	glBegin(GL_TRIANGLES);
 
-   size_t i;
+	size_t i;
    size_t tIndex = 0;
 
-   for (i = 0; i < (nverts * 3); i += 3) {
-      glTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
-      tIndex += 2;
+	for (i = 0; i < (nverts * 3); i += 3) {
+		glTexCoord2f(tcoords[tIndex], tcoords[tIndex + 1]);
+		tIndex += 2;
 
       glVertex2f(verts[i], verts[i + 1]);
-   }
-   glEnd();
-   glPopMatrix();
+	}
+	glEnd();
+	glPopMatrix();
 
    glBindTexture(GL_TEXTURE_2D, 0);
    glEnable(GL_DEPTH_TEST);
@@ -1452,7 +1452,7 @@ void RFont_render_text(RFont_texture atlas, float* verts, float* tcoords, size_t
    }
 
    glBindTexture(GL_TEXTURE_2D, 0);
-   glDisable(GL_TEXTURE_2D);
+	glDisable(GL_TEXTURE_2D);
    glEnable(GL_DEPTH_TEST);
 }
 
