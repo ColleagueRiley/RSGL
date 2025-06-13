@@ -24,7 +24,7 @@
 /*
     define args
     (MAKE SURE RSGL_IMPLEMENTATION is in exactly one header or you use -DRSGL_IMPLEMENTATION)
-	#define RSGL_IMPLEMENTATION - makes it so source code is included with header
+    #define RSGL_IMPLEMENTATION - makes it so source code is included with header
     
     #define RSGL_NO_TEXT - do not include text rendering functions
     #define RSGL_INIT_FONTS [number of fonts] - set how much room should be pre-allocated for fonts by fontstash
@@ -101,27 +101,27 @@ RSGL basicDraw types
 
 #ifndef RSGL_INT_DEFINED
     #define RSGL_INT_DEFINED
-	#if defined(_MSC_VER) || defined(__SYMBIAN32__)
-		typedef unsigned char 	u8;
-		typedef signed char		i8;
-		typedef unsigned short  u16;
-		typedef signed short 	i16;
-		typedef unsigned int 	u32;
-		typedef signed int		i32;
-		typedef unsigned long	u64;
-		typedef signed long		i64;
-	#else
-		#include <stdint.h>
+    #if defined(_MSC_VER) || defined(__SYMBIAN32__)
+        typedef unsigned char   u8;
+        typedef signed char     i8;
+        typedef unsigned short  u16;
+        typedef signed short    i16;
+        typedef unsigned int    u32;
+        typedef signed int      i32;
+        typedef unsigned long   u64;
+        typedef signed long     i64;
+    #else
+        #include <stdint.h>
 
-		typedef uint8_t     u8;
-		typedef int8_t      i8;
-		typedef uint16_t   u16;
-		typedef int16_t    i16;
-		typedef uint32_t   u32;
-		typedef int32_t    i32;
-		typedef uint64_t   u64;
-		typedef int64_t    i64;
-	#endif
+        typedef uint8_t     u8;
+        typedef int8_t      i8;
+        typedef uint16_t   u16;
+        typedef int16_t    i16;
+        typedef uint32_t   u32;
+        typedef int32_t    i32;
+        typedef uint64_t   u64;
+        typedef int64_t    i64;
+    #endif
 #endif
 
 #ifndef RSGL_BOOL_DEFINED
@@ -291,17 +291,17 @@ typedef struct RSGL_RENDER_INFO {
 
 /* used internally for RSGL_deleteProgram */
 typedef enum RSGL_shaderType {
-	RSGL_shaderTypeNone = 0,
-	RSGL_shaderTypeStandard = 1, /* standard vertex+fragment shader */
-	RSGL_shaderTypeCompute = 2,
-	RSGL_shaderTypeGeometry = 4, /* unimplemented as of now */
+    RSGL_shaderTypeNone = 0,
+    RSGL_shaderTypeStandard = 1, /* standard vertex+fragment shader */
+    RSGL_shaderTypeCompute = 2,
+    RSGL_shaderTypeGeometry = 4, /* unimplemented as of now */
 } RSGL_shaderType;
 
 /* custom shader program */
 #ifndef RSGL_programInfo
 typedef struct RSGL_programInfo {
     u32 program;
-	 RSGL_shaderType type;
+     RSGL_shaderType type;
 } RSGL_programInfo;
 #endif
 
@@ -324,9 +324,9 @@ typedef struct RSGL_renderer {
     void (* bitmapToAtlas)(RSGL_texture atlas, u8* bitmap, float x, float y, float w, float h);
 
 #ifdef RSGL_USE_COMPUTE
-	 RSGL_programInfo (*createComputeProgram)(const char* CShaderCode);
-	 void (*dispatchComputeProgram)(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
-	 void (*bindComputeTexture)(u32 texture, u8 format);
+     RSGL_programInfo (*createComputeProgram)(const char* CShaderCode);
+     void (*dispatchComputeProgram)(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
+     void (*bindComputeTexture)(u32 texture, u8 format);
 #endif
 } RSGL_renderer;
 
@@ -556,10 +556,10 @@ RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textE
     #define M_PI 3.14159265358979323846f
 #endif
 #ifndef DEG2RAD
-    #define DEG2RAD (M_PI / 180.0f)
+    #define DEG2RAD (float)(M_PI / 180.0f)
 #endif
 #ifndef RAD2DEG
-    #define RAD2DEG (180.0f / M_PI)
+    #define RAD2DEG (float)(180.0f / M_PI)
 #endif
 
 #define RSGL_GET_MATRIX_X(x, y, z) (float)(matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
@@ -727,15 +727,15 @@ void RSGL_renderSetShaderValue(u32 program, char* var, float value[], u8 len) {
 
 #ifdef RSGL_USE_COMPUTE
 RSGL_programInfo RSGL_renderCreateComputeProgram(const char* CShaderCode) {
-	return RSGL_currentRenderer.createComputeProgram(CShaderCode);
+    return RSGL_currentRenderer.createComputeProgram(CShaderCode);
 }
 
 void RSGL_renderDispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
-	RSGL_currentRenderer.dispatchComputeProgram(program, groups_x, groups_y, groups_z);
+    RSGL_currentRenderer.dispatchComputeProgram(program, groups_x, groups_y, groups_z);
 }
 
 void RSGL_renderBindComputeTexture(u32 texture, u8 format) {
-	RSGL_currentRenderer.bindComputeTexture(texture, format);
+    RSGL_currentRenderer.bindComputeTexture(texture, format);
 }
 #endif
 
@@ -1019,7 +1019,7 @@ void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {
 void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  
     u32 verts = (u32)((2.0 * M_PI * c.d) / 10) % 360;
 
-    RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
+    RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0.0f, (float)verts}, color); 
 }
 
 void RSGL_drawOvalF(RSGL_rectF o, RSGL_color c) { 
@@ -1040,7 +1040,7 @@ void RSGL_drawPoint3D(RSGL_point3D p, RSGL_color c) {
 void RSGL_drawLine3D(RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c) {
     RSGL_args.lineWidth = thickness;
     
-    RSGL_point3D center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0};
+    RSGL_point3D center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0f};
     RSGL_mat4 matrix = RSGL_initDrawMatrix(center);
 
     float points[] = {RSGL_GET_MATRIX_POINT(p1.x, p1.y, p1.z), RSGL_GET_MATRIX_POINT(p2.x, p2.y, p2.z)};
@@ -1373,17 +1373,17 @@ RSGL_mat4 RSGL_ortho(float matrix[16], float left, float right, float bottom, fl
 
 /* Multiply the current matrix by a translation matrix */
 RSGL_mat4 RSGL_translate(float matrix[16], float x, float y, float z) {
-	RSGL_mat4 result;
+    RSGL_mat4 result;
 
-	for (int i = 0; i < 16; ++i) {
-		result.m[i] = matrix[i];
-	}
+    for (int i = 0; i < 16; ++i) {
+        result.m[i] = matrix[i];
+    }
 
-	result.m[12] += matrix[0]*x + matrix[4]*y + matrix[8]*z;
-	result.m[13] += matrix[1]*x + matrix[5]*y + matrix[9]*z;
-	result.m[14] += matrix[2]*x + matrix[6]*y + matrix[10]*z;
+    result.m[12] += matrix[0]*x + matrix[4]*y + matrix[8]*z;
+    result.m[13] += matrix[1]*x + matrix[5]*y + matrix[9]*z;
+    result.m[14] += matrix[2]*x + matrix[6]*y + matrix[10]*z;
 
-	return result;
+    return result;
 }
 
 /* Multiply the current matrix by a rotation matrix */
@@ -1421,28 +1421,28 @@ RSGL_mat4 RSGL_loadIdentity(void) {
 } 
 
 RSGL_mat4 RSGL_rotate(float matrix[16], float angle, float x, float y, float z) {
-	/* Axis vector (x, y, z) normalization */
-	float lengthSquared = x * x + y * y + z * z;
-	if ((lengthSquared != 1.0f) && (lengthSquared != 0.0f)) {
-		float inverseLength = 1.0f / sqrtf(lengthSquared);
-		x *= inverseLength;
-		y *= inverseLength;
-		z *= inverseLength;
-	}
+    /* Axis vector (x, y, z) normalization */
+    float lengthSquared = x * x + y * y + z * z;
+    if ((lengthSquared != 1.0f) && (lengthSquared != 0.0f)) {
+        float inverseLength = 1.0f / sqrtf(lengthSquared);
+        x *= inverseLength;
+        y *= inverseLength;
+        z *= inverseLength;
+    }
 
-	/* Rotation matrix generation */
-	float sinres = RSGL_SIN(angle);
-	float cosres = RSGL_COS(angle);
-	float t = 1.0f - cosres;
+    /* Rotation matrix generation */
+    float sinres = RSGL_SIN(angle);
+    float cosres = RSGL_COS(angle);
+    float t = 1.0f - cosres;
 
-	float matRotation[16] =  {
-            x * x * t + cosres,   	  	y * x * t + z * sinres,   	z * x * t - y * sinres,   	0.0f,
-            x * y * t - z * sinres,   	y * y * t + cosres,   		z * y * t + x * sinres,   	0.0f,
-            x * z * t + y * sinres,   	y * z * t - x * sinres,  	z * z * t + cosres,   		0.0f,
-            0.0f,   					0.0f,   					0.0f,   					1.0f
-	};
+    float matRotation[16] =  {
+            x * x * t + cosres,         y * x * t + z * sinres,     z * x * t - y * sinres,     0.0f,
+            x * y * t - z * sinres,     y * y * t + cosres,         z * y * t + x * sinres,     0.0f,
+            x * z * t + y * sinres,     y * z * t - x * sinres,     z * z * t + cosres,         0.0f,
+            0.0f,                       0.0f,                       0.0f,                       1.0f
+    };
 
-	return RSGL_mat4Multiply(matRotation, matrix);
+    return RSGL_mat4Multiply(matRotation, matrix);
 }
 
 RSGL_mat4 RSGL_perspective(float matrix[16], float fovY, float aspect, float zNear, float zFar) {
@@ -1453,10 +1453,10 @@ RSGL_mat4 RSGL_perspective(float matrix[16], float fovY, float aspect, float zNe
             (f / aspect), 0.0f,  0.0f,                                   0.0f,
             0,            f,     0.0f,                                   0.0f,
             0.0f,         0.0f,  (zFar + zNear) / (zNear - zFar),       -1.0f,
-            0.0f,         0.0f,  (2.0 * zFar * zNear) / (zNear - zFar),  0.0f
+            0.0f,         0.0f,  (2.0f * zFar * zNear) / (zNear - zFar),  0.0f
     };
     
-	return RSGL_mat4Multiply(matrix, perspective);
+    return RSGL_mat4Multiply(matrix, perspective);
 }
 
 RSGL_mat4 RSGL_mat4Multiply(float left[16], float right[16]) {
