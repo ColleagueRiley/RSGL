@@ -556,10 +556,10 @@ RSGLDEF RSGL_area RSGL_textLineArea(const char* text, u32 fontSize, size_t textE
     #define M_PI 3.14159265358979323846f
 #endif
 #ifndef DEG2RAD
-    #define DEG2RAD (M_PI / 180.0f)
+    #define DEG2RAD (float)(M_PI / 180.0f)
 #endif
 #ifndef RAD2DEG
-    #define RAD2DEG (180.0f / M_PI)
+    #define RAD2DEG (float)(180.0f / M_PI)
 #endif
 
 #define RSGL_GET_MATRIX_X(x, y, z) (float)(matrix.m[0] * x + matrix.m[4] * y + matrix.m[8] * z + matrix.m[12])
@@ -1019,7 +1019,7 @@ void RSGL_drawArcF(RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {
 void RSGL_drawCircleF(RSGL_circleF c, RSGL_color color) {  
     u32 verts = (u32)((2.0 * M_PI * c.d) / 10) % 360;
 
-    RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color); 
+    RSGL_drawPolygonFEx((RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, (float)verts}, color); 
 }
 
 void RSGL_drawOvalF(RSGL_rectF o, RSGL_color c) { 
@@ -1040,7 +1040,7 @@ void RSGL_drawPoint3D(RSGL_point3D p, RSGL_color c) {
 void RSGL_drawLine3D(RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c) {
     RSGL_args.lineWidth = thickness;
     
-    RSGL_point3D center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0};
+    RSGL_point3D center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0f};
     RSGL_mat4 matrix = RSGL_initDrawMatrix(center);
 
     float points[] = {RSGL_GET_MATRIX_POINT(p1.x, p1.y, p1.z), RSGL_GET_MATRIX_POINT(p2.x, p2.y, p2.z)};
@@ -1453,7 +1453,7 @@ RSGL_mat4 RSGL_perspective(float matrix[16], float fovY, float aspect, float zNe
             (f / aspect), 0.0f,  0.0f,                                   0.0f,
             0,            f,     0.0f,                                   0.0f,
             0.0f,         0.0f,  (zFar + zNear) / (zNear - zFar),       -1.0f,
-            0.0f,         0.0f,  (2.0 * zFar * zNear) / (zNear - zFar),  0.0f
+            0.0f,         0.0f,  (2.0f * zFar * zNear) / (zNear - zFar),  0.0f
     };
     
 	return RSGL_mat4Multiply(matrix, perspective);
