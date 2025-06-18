@@ -19,13 +19,15 @@ static const char* MY_VShaderCode = RSGL_MULTILINE_STR(
     out vec4 fragColor;                \n
     out vec4 position;                \n
 
+    uniform mat4 mat; \n
+
     uniform vec2 u_mouse;
     uniform vec2 u_resolution;
 
     void main() {
         fragTexCoord = vertexTexCoord;
         fragColor = vertexColor;
-        gl_Position = vec4(vertexPosition, 1.0) + vec4(u_mouse.x, u_mouse.y, 0, 0);
+        gl_Position = mat * (vec4(vertexPosition, 1.0) + vec4(u_mouse.x, u_mouse.y, 0, 0));
         position = gl_Position;
     }
 );
@@ -43,7 +45,7 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
 
     precision mediump float;
     vec2 pitch  = vec2(50., 50.);
-
+    
     void main() {    
         vec2 uv = gl_FragCoord.xy / u_resolution.xy;
         vec3 color = 0.5 + 0.5 * cos(u_time + uv.xyx + vec3(0, 2, 4));
@@ -76,11 +78,14 @@ int main(void) {
         RSGL_drawRect(RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 0, 0));
 
         RSGL_setProgram(program.program);
-        RSGL_drawCircle(RSGL_CIRCLE(300, 200, 60), RSGL_RGB(255, 0, 0));
+        RSGL_drawCircle(RSGL_CIRCLE(0, 0, 60), RSGL_RGB(255, 0, 0));
+
+        RSGL_mat4 matrix =  RSGL_ortho(RSGL_loadIdentity().m, 0, window->r.w, window->r.h, 0, 0, 1.0);
+        RSGL_renderSetShaderValue(program.program, "mat", matrix.m, 16);
 
         RSGL_renderSetShaderValue(program.program, "u_time", (float[1]){RGFW_getTime()}, 1);
         RSGL_renderSetShaderValue(program.program, "u_resolution", (float[2]){(float)window->r.w, (float)window->r.h}, 2);
-        RSGL_renderSetShaderValue(program.program, "u_mouse", (float[3]){RSGL_GET_WORLD_POINT((float)window->event.point.x, (float)window->event.point.y, 0)}, 2);
+        RSGL_renderSetShaderValue(program.program, "u_mouse", (float[3]){(float)window->event.point.x, (float)window->event.point.y, 0}, 2);
         RSGL_renderSetShaderValue(program.program, "pos", (float[2]){(float)window->event.point.x, (float)window->event.point.y}, 2);
 
         RSGL_draw();

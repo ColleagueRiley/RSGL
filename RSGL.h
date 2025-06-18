@@ -524,9 +524,6 @@ RSGLDEF void RSGL_drawOvalOutline(RSGL_rect o, u32 thickness, RSGL_color c);
 
 /* format a string */
 #ifndef RSGL_NO_TEXT
-RSGLDEF const char* RFont_fmt(const char* string, ...);
-#define RSGL_strFmt RFont_fmt
-
 struct RFont_font;
 typedef struct RFont_font RSGL_font;
 
@@ -1272,7 +1269,7 @@ RSGL_font* RSGL_loadFont(const char* font) {
 }
 
 RFont_font* RSGL_loadFontEx(const char* font, size_t atlasWidth, size_t atlasHeight) {
-    return RFont_font_init_pro(font, atlasWidth, atlasHeight);
+    return RFont_font_init_ex(font, atlasWidth, atlasHeight);
 }
 
 void RSGL_freeFont(RSGL_font* font) { RFont_font_free(font); }
