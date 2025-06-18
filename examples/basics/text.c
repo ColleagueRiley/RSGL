@@ -27,10 +27,13 @@ int main(void) {
 
         RSGL_clear(RSGL_RGB(255, 255, 255));
 
-        //RSGL_drawRect(RSGL_RECT(0, 0, 100, 100), RSGL_RGB(0, 255, 0));
 
         RSGL_drawText("Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20), RSGL_RGB(255, 0, 0));
-        RSGL_drawText(RSGL_strFmt("FPS : %i\nOpenGL %s", fps, RSGL_GL_legacy ? "legacy (2-)" : "modern (3.3 +)"), RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
+        
+        char data[256];
+        snprintf(data, sizeof(data), "FPS : %i\nOpenGL %s", fps, RSGL_GL_legacy ? "legacy (2-)" : "modern (3.3 +)");
+
+        RSGL_drawText(data, RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
         RSGL_drawRect(RSGL_RECT(0, 0, 100, 100), RSGL_RGB(0, 255, 0));
         RSGL_drawRect(RSGL_RECT(50, 50, 100, 100), RSGL_RGBA(0, 255, 0, 50));
         RSGL_draw();

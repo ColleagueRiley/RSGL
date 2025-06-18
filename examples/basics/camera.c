@@ -26,6 +26,7 @@ int main(void) {
     
     RSGL_camera camera = {.fov = 60};
     RGFW_window_mouseHold(win, RGFW_AREA(win->r.w / 2, win->r.h / 2));    
+    RGFW_window_showMouse(win, RGFW_FALSE);
     glEnable(GL_DEPTH_TEST); 
 
     u32 frames = 0;
