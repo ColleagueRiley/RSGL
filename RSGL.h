@@ -108,8 +108,8 @@ RSGL basicDraw types
 		typedef signed short 	i16;
 		typedef unsigned int 	u32;
 		typedef signed int		i32;
-		typedef unsigned __int64	u64;
-		typedef signed __int64		i64;
+		typedef unsigned long long	u64;
+		typedef signed   long long	i64;
 	#else
 		#include <stdint.h>
 
