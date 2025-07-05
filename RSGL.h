@@ -1064,7 +1064,7 @@ void RSGL_drawTriangle3D(RSGL_triangle3D t, RSGL_color c) {
                 ((float)(points[6] - points[0])/points[3]< 1) ? (float)(points[6] - points[0]) / points[3] : 0, 0.0f,
     };
 
-    RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, RSGL_RGB(0, 0, 0), 3);
+    RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 3);
 }
 
 void RSGL_drawCube(RSGL_cube cube, RSGL_color c) {
