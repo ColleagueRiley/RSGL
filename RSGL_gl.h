@@ -699,7 +699,10 @@ RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_area memsize) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     if (result.id > 0) {
-        u8 transparent[4 * memsize.w * memsize.h] = {0};
+        u8 transparent[4 * memsize.w * memsize.h];
+        for (u32 i = 0; i < (4 * memsize.w * memsize.h); ++i) {
+            transparent[i] = 0;
+        }
         result.texture = RSGL_renderCreateTexture(transparent, memsize, 4);
 
         RSGL_GL_attachFramebuffer(result.id, result.texture, 0, 0); // also binds
