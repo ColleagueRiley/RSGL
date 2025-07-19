@@ -993,7 +993,8 @@ o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
         texcoords[tIndex] = (p.x + 1.0f) * 0.5;
         texcoords[tIndex + 1] = (p.y + 1.0f) * 0.5;
 
-        memcpy(verts + vIndex, (float[3]){RSGL_GET_MATRIX_POINT(o.x + o.w + (p.x * o.w), o.y + o.h + (p.y * o.h), 0.0)}, 3 * sizeof(float));
+        float temp[3] = { RSGL_GET_MATRIX_POINT(o.x + o.w + (p.x * o.w), o.y + o.h + (p.y * o.h), 0.0) };
+        memcpy(verts + vIndex, temp, 3 * sizeof(float));
 
         angle += displacement;
         tIndex += 2;
@@ -1223,12 +1224,14 @@ void RSGL_drawPolygonFOutlineEx(RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_c
 
     for (i = arc.x; i < arc.y; i++) {
         for (j = 0; j < 2; j++) {
-            memcpy(verts + index, (float[3]) {
-                        RSGL_GET_MATRIX_POINT(
-                            o.x + (RSGL_SIN(DEG2RAD * centralAngle) * o.w),
-                            o.y + (RSGL_COS(DEG2RAD * centralAngle) * o.h),
-                            (0.0))
-                        }, sizeof(float) * 3);
+            float temp[3] = {
+                RSGL_GET_MATRIX_POINT(
+                    o.x + (RSGL_SIN(DEG2RAD * centralAngle) * o.w),
+                    o.y + (RSGL_COS(DEG2RAD * centralAngle) * o.h),
+                    (0.0)
+                )
+            };
+            memcpy(verts + index, temp, sizeof(float) * 3);
             
             if (!j) centralAngle += displacement;
             index += 3;
