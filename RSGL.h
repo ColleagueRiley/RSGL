@@ -771,8 +771,11 @@ void RSGL_clear(RSGL_color color) {
 
 void RSGL_updateSize(RSGL_area r) {
     RSGL_args.currentArea = r;
-    RFont_update_framebuffer(r.w, r.h);
     RSGL_renderViewport(0, 0, r.w, r.h);
+
+    #ifndef RSGL_NO_TEXT
+    RFont_update_framebuffer(r.w, r.h);
+    #endif /* RSGL_NO_TEXT */
 
     RSGL_renderInfo.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
 }

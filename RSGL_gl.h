@@ -37,10 +37,12 @@ RSGLDEF void RSGL_GL_scissorEnd(void);
 RSGLDEF RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_GL_deleteProgram(RSGL_programInfo program);
 RSGLDEF void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len);
+#ifndef RSGL_NO_TEXT
 /* RFont */
 RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight);
 b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight);
 void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h);
+#endif /* RSGL_NO_TEXT */
 
 #ifdef RSGL_USE_COMPUTE
 RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode);
@@ -260,9 +262,11 @@ RSGL_renderer RSGL_GL_renderer() {
     renderer.createProgram = RSGL_GL_createProgram;
     renderer.deleteProgram = RSGL_GL_deleteProgram;
     renderer.setShaderValue = RSGL_GL_setShaderValue;
+    #ifndef RSGL_NO_TEXT
     renderer.createAtlas = RFont_GL_create_atlas;
     renderer.resizeAtlas = RFont_GL_resize_atlas;
     renderer.bitmapToAtlas = RFont_GL_bitmap_to_atlas;
+    #endif /* RSGL_NO_TEXT */
 
 #ifdef RSGL_USE_COMPUTE
 	renderer.createComputeProgram = RSGL_GL_createComputeProgram;
@@ -856,6 +860,13 @@ void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len) {
 #define GL_CLAMP_TO_EDGE			0x812F
 #endif
 
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH 0x0CF2
+#define GL_UNPACK_SKIP_PIXELS 0x0CF4
+#define GL_UNPACK_SKIP_ROWS 0x0CF3
+#endif
+
+#ifndef RSGL_NO_TEXT
 RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
@@ -920,13 +931,6 @@ b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
     return 1;
 }
 
-#ifndef GL_UNPACK_ROW_LENGTH
-#define GL_UNPACK_ROW_LENGTH 0x0CF2
-#define GL_UNPACK_SKIP_PIXELS 0x0CF4
-#define GL_UNPACK_SKIP_ROWS 0x0CF3
-#endif
-
-
 void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
 void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
@@ -958,6 +962,7 @@ void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y,
 
    glBindTexture(GL_TEXTURE_2D, 0);
 }
+#endif /* RSGL_NO_TEXT */
 
 #ifdef RSGL_USE_COMPUTE
 
