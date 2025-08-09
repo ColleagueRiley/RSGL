@@ -638,7 +638,6 @@ void RSGL_GL_scissorStart(RSGL_rectF scissor) {
     glEnable(GL_SCISSOR_TEST);
 
     glScissor(scissor.x, RSGL_args.currentArea.h - (scissor.y + scissor.h), scissor.w, scissor.h);
-    glScissor(scissor.x, scissor.y, scissor.w, scissor.h);
 }
 
 void RSGL_GL_scissorEnd(void) {
