@@ -1305,7 +1305,7 @@ void RSGL_drawText_pro(const char* text, size_t len, float spacing, RSGL_circle 
     if (text == NULL || RSGL_internalFont == NULL)
         return;
     
-    RFont_set_color(color.r / 255.0f, color.b / 255.0f, color.g / 255.0f, color.a / 255.0f);
+    RFont_set_color(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
     RFont_draw_text_len(RSGL_internalFont, text, len, c.x, c.y, c.d, spacing);
 }
 
