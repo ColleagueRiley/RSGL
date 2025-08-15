@@ -67,31 +67,33 @@ else ifeq (,$(filter $(CC), g++ clang++))
 endif
 
 EXAMPLE_OUTPUTS = \
-	basics/basic \
-	basics/text \
-	basics/textures  \
+	advanced/compute \
 	advanced/shader \
-	basics/shapes  \
+	basics/basic \
 	basics/camera	\
-	advanced/compute
+	basics/shapes  \
+	basics/text \
+	basics/textures
 
-all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft 
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) advanced/rsoft advanced/microui
 
 examples: $(EXAMPLE_OUTPUTS)
 
+advanced/microui: advanced/microui.c deps/microui.c ../RSGL.h
+	$(CC) $(CFLAGS) $(WARNINGS) -Wno-implicit-function-declaration -I../ -I./deps $^ $(LIBS) -o $@$(EXT)
 
 advanced/rsoft: advanced/rsoft.c ../RSGL.h
 ifeq ($(CC),emcc)
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNINGS) -I../ -I./deps $< -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0 -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']" -o $@$(EXT)
 else
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNINGS) -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 endif
 
 advanced/glfw: advanced/glfw.c ../RSGL.h 
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNINGS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
-	$(CC) $(WARNINGS) -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
+	$(CC) $(CFLAGS) $(WARNINGS) -I../ -I./deps $< $(LIBS) $(LINK_GL3) -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
@@ -122,7 +124,7 @@ else
 endif
 
 clean:
-	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM) advanced/rsoft .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm 
+	rm -f *.o *.obj *.dll .dylib *.a *.so $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM) advanced/microui advanced/rsoft .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.exe .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.js .$(OS_DIR)examples$(OS_DIR)*$(OS_DIR)*.wasm 
 	
 
 .PHONY: all examples clean
