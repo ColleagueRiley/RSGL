@@ -2,9 +2,14 @@
 #include "RSGL.h"
 #endif
 
+// WebGL doesn't support compute shaders iirc so yeah
+#if defined(__EMSCRIPTEN__) && defined(RSGL_USE_COMPUTE)
+#undef RSGL_USE_COMPUTE
+#endif
+
 #ifndef RSGL_GET_WORLD_X
-#define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / RSGL_args.currentArea.w - 1.0f)
-#define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / RSGL_args.currentArea.h)
+#define RSGL_GET_WORLD_X(x) (float)(2.0f * (x) / renderer->state.currentArea.w - 1.0f)
+#define RSGL_GET_WORLD_Y(y) (float)(1.0f + -2.0f * (y) / renderer->state.currentArea.h)
 #define RSGL_GET_WORLD_Z(z) (float)(z)
 #endif
 
@@ -15,49 +20,43 @@
 #define RSGL_GL_H
 
 /* toggle the use of legacy OpenGL, on by default unless it fails to load */
-RSGLDEF void RSGL_GL_setLegacy(i32 legacy);
 RSGLDEF RSGL_renderer RSGL_GL_renderer(void);
 
-RSGLDEF void RSGL_GL_batch(RSGL_RENDER_INFO* info);
-RSGLDEF void RSGL_GL_init(void* proc, RSGL_RENDER_INFO* info); /* init render backend */
-RSGLDEF void RSGL_GL_free(void); /* free render backend */
-RSGLDEF void RSGL_GL_clear(float r, float g, float b, float a);
-RSGLDEF void RSGL_GL_viewport(i32 x, i32 y, i32 w, i32 h);
+RSGLDEF void RSGL_GL_flush(RSGL_renderer* renderer);
+RSGLDEF void RSGL_GL_init(RSGL_renderer* renderer, void* proc); /* init render backend */
+RSGLDEF void RSGL_GL_free(RSGL_renderer* renderer); /* free render backend */
+RSGLDEF void RSGL_GL_clear(RSGL_renderer* renderer, float r, float g, float b, float a);
+RSGLDEF void RSGL_GL_viewport(RSGL_renderer* renderer, i32 x, i32 y, i32 w, i32 h);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
-RSGLDEF RSGL_texture RSGL_GL_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
+RSGLDEF RSGL_texture RSGL_GL_createTexture(RSGL_renderer* renderer, u8* bitmap, RSGL_area memsize,  u8 channels);
 /* updates an existing texture wiht a new bitmap */
-RSGLDEF void RSGL_GL_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
+RSGLDEF void RSGL_GL_updateTexture(RSGL_renderer* renderer, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
 /* delete a texture */
-RSGLDEF void RSGL_GL_deleteTexture(RSGL_texture tex);
+RSGLDEF void RSGL_GL_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex);
 /* starts scissoring */
-RSGLDEF void RSGL_GL_scissorStart(RSGL_rectF scissor);
+RSGLDEF void RSGL_GL_scissorStart(RSGL_renderer* renderer, RSGL_rectF scissor);
 /* stops scissoring */
-RSGLDEF void RSGL_GL_scissorEnd(void);
+RSGLDEF void RSGL_GL_scissorEnd(RSGL_renderer* renderer);
 /* program loading */
-RSGLDEF RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
-RSGLDEF void RSGL_GL_deleteProgram(RSGL_programInfo program);
-RSGLDEF void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len);
+RSGLDEF RSGL_programInfo RSGL_GL_createProgram(RSGL_renderer* renderer, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
+RSGLDEF void RSGL_GL_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program);
+RSGLDEF void RSGL_GL_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len);
 #ifndef RSGL_NO_TEXT
 /* RFont */
-RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight);
-b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight);
-void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h);
+RFont_texture RFont_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight);
+b8 RFont_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newWidth, u32 newHeight);
+void RFont_GL_bitmap_to_atlas(RSGL_renderer* renderer, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h);
 #endif /* RSGL_NO_TEXT */
 
 #ifdef RSGL_USE_COMPUTE
-RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode);
-RSGLDEF void RSGL_GL_dispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
-RSGLDEF void RSGL_GL_bindComputeTexture(u32 texture, u8 format);
+RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_renderer* renderer, const char* CShaderCode);
+RSGLDEF void RSGL_GL_dispatchComputeProgram(RSGL_renderer* renderer, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
+RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8 format);
 #endif
 
 #endif
 
 #ifdef RSGL_IMPLEMENTATION
-
-b8 RSGL_GL_legacy = 0;
-void RSGL_GL_setLegacy(i32 legacy) {
-    RSGL_GL_legacy = legacy;
-}
 
 #ifndef __APPLE__
 #include <GL/gl.h>
@@ -238,18 +237,16 @@ extern int RSGL_loadGLModern(RSGLloadfunc proc);
 
 #define RSGL_MULTILINE_STR(...) #__VA_ARGS__
 
-typedef struct RSGL_INFO {
+typedef struct RSGL_glRenderer {
     RSGL_programInfo program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 defaultTex;
 
     u32 vao, vbo, tbo, cbo; /* array object and array buffers */
-} RSGL_INFO;
-
-RSGL_INFO RSGL_gl;
+} RSGL_glRenderer;
 
 RSGL_renderer RSGL_GL_renderer() {
     RSGL_renderer renderer;
-    renderer.batch = RSGL_GL_batch;
+    renderer.flush = RSGL_GL_flush;
     renderer.init = RSGL_GL_init;
     renderer.free = RSGL_GL_free;
     renderer.clear = RSGL_GL_clear;
@@ -262,35 +259,42 @@ RSGL_renderer RSGL_GL_renderer() {
     renderer.createProgram = RSGL_GL_createProgram;
     renderer.deleteProgram = RSGL_GL_deleteProgram;
     renderer.setShaderValue = RSGL_GL_setShaderValue;
-    #ifndef RSGL_NO_TEXT
+#ifndef RSGL_NO_TEXT
     renderer.createAtlas = RFont_GL_create_atlas;
     renderer.resizeAtlas = RFont_GL_resize_atlas;
     renderer.bitmapToAtlas = RFont_GL_bitmap_to_atlas;
-    #endif /* RSGL_NO_TEXT */
+#else
+    renderer.createAtlas = NULL;
+    renderer.resizeAtlas = NULL;
+    renderer.bitmapToAtlas = NULL;
+#endif /* RSGL_NO_TEXT */
 
 #ifdef RSGL_USE_COMPUTE
 	renderer.createComputeProgram = RSGL_GL_createComputeProgram;
 	renderer.dispatchComputeProgram = RSGL_GL_dispatchComputeProgram;
 	renderer.bindComputeTexture = RSGL_GL_bindComputeTexture;
+#else
+	renderer.createComputeProgram = NULL;
+	renderer.dispatchComputeProgram = NULL;
+	renderer.bindComputeTexture = NULL;
 #endif
     return renderer;
 }
 
-void RSGL_GL_deleteTexture(RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
-void RSGL_GL_viewport(i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
+void RSGL_GL_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
+void RSGL_GL_viewport(RSGL_renderer* renderer, i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
 
-void RSGL_GL_clear(float r, float g, float b, float a) {
+void RSGL_GL_clear(RSGL_renderer* renderer, float r, float g, float b, float a) {
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void RSGL_GL_init(void* proc, RSGL_RENDER_INFO* info) {
-    RSGL_UNUSED(info);
+void RSGL_GL_init(RSGL_renderer* renderer, void* proc) {
+	renderer->internal = (void*)RSGL_MALLOC(sizeof(RSGL_glRenderer));
 
     #ifdef RSGL_MODERN_OPENGL
     #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
-        RSGL_GL_legacy = 2;
         #ifdef RSGL_DEBUG
         printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
         #endif
@@ -312,7 +316,7 @@ void RSGL_GL_init(void* proc, RSGL_RENDER_INFO* info) {
     printf("Renderer: %s\n", glGetString(GL_RENDERER));
 #endif
 
-    static const char *defaultVShaderCode = 
+    static const char *defaultVShaderCode =
 #ifdef RSGL_OPENGL_21
 RSGL_MULTILINE_STR(
         \x23version 120                       \n
@@ -321,7 +325,7 @@ RSGL_MULTILINE_STR(
         attribute vec4 vertexColor;        \n
         varying vec2 fragTexCoord;         \n
         varying vec4 fragColor;            \n
-     
+
         uniform mat4 mat; \n
         void main() {
             fragTexCoord = vertexTexCoord;
@@ -338,7 +342,7 @@ RSGL_MULTILINE_STR(
         out vec2 fragTexCoord;             \n
         out vec4 fragColor;                \n
         uniform mat4 mat; \n
-        
+
         void main() {
             fragTexCoord = vertexTexCoord;
             fragColor = vertexColor;
@@ -370,9 +374,9 @@ RSGL_MULTILINE_STR(
     \x23version 120 \n
     varying vec2 fragTexCoord;
     varying vec4 fragColor;
-    void main() { 
+    void main() {
             gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
-        }                               
+        }
     );
 #elif defined(RSGL_OPENGL_33)
 RSGL_MULTILINE_STR(
@@ -380,10 +384,10 @@ RSGL_MULTILINE_STR(
     in vec2 fragTexCoord;
     in vec4 fragColor;
     out vec4 finalColor;
-    uniform sampler2D texture0;        
-    void main() { 
+    uniform sampler2D texture0;
+    void main() {
             finalColor = texture(texture0, fragTexCoord) * fragColor;
-        }                               
+        }
     );
 #elif defined(RSGL_OPENGL_ES2)
 RSGL_MULTILINE_STR(
@@ -391,84 +395,81 @@ RSGL_MULTILINE_STR(
         precision mediump float;           \n
         varying vec2 fragTexCoord;         \n
         varying vec4 fragColor;            \n
-        uniform sampler2D texture0;        
-        void main() { 
+        uniform sampler2D texture0;
+        void main() {
             gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
-        }                               
+        }
     );
 #else
 RSGL_MULTILINE_STR(
-        uniform sampler2D texture0;        
-        void main() { 
+        uniform sampler2D texture0;
+        void main() {
             gl_FragColor = texture2D(texture0, fragTexCoord) * fragColor;
-        }                               
+        }
     );
 #endif
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-	glGenVertexArrays(1, &RSGL_gl.vao);
-	glBindVertexArray(RSGL_gl.vao);
+	glGenVertexArrays(1, &((RSGL_glRenderer*)renderer->internal)->vao);
+	glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
     #endif
 
-	glGenBuffers(1, &RSGL_gl.vbo);
-	glGenBuffers(1, &RSGL_gl.tbo);
-	glGenBuffers(1, &RSGL_gl.cbo);
+	glGenBuffers(1, &((RSGL_glRenderer*)renderer->internal)->vbo);
+	glGenBuffers(1, &((RSGL_glRenderer*)renderer->internal)->tbo);
+	glGenBuffers(1, &((RSGL_glRenderer*)renderer->internal)->cbo);
 
-    RSGL_gl.program = RSGL_renderCreateProgram(defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
-    
+    ((RSGL_glRenderer*)renderer->internal)->program = RSGL_renderer_createProgram(renderer, defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
+
     /* Init default vertex arrays buffers */
     /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-    glBindVertexArray(RSGL_gl.vao);
+    glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
     #endif
 
     /* Quads - Vertex buffers binding and attributes enable */
     /* Vertex position buffer (shader-location = 0) */
-    glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->vbo);
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 3 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
 
     /* Vertex texcoord buffer (shader-location = 1) */
-    glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.tbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->tbo);
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 2 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
-    
+
     /* Vertex color buffer (shader-location = 3) */
-    glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.cbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->cbo);
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
     /* Unbind the current VAO */
-    if (RSGL_gl.vao) 
+    if (((RSGL_glRenderer*)renderer->internal)->vao)
         glBindVertexArray(0);
     #endif
 
     /* load default texture */
     u8 white[4] = {255, 255, 255, 255};
-    RSGL_gl.defaultTex = RSGL_renderCreateTexture(white, RSGL_AREA(1, 1), 4);
+    ((RSGL_glRenderer*)renderer->internal)->defaultTex = RSGL_renderer_createTexture(renderer,white, RSGL_AREA(1, 1), 4);
 
     #else
     RSGL_UNUSED(proc);
     #endif
 }
 
-void RSGL_GL_free(void) {   
-    #ifdef RSGL_MODERN_OPENGL 
-    if (RSGL_GL_legacy == 2)
-        return;
-    
+void RSGL_GL_free(RSGL_renderer* renderer) {
+    #ifdef RSGL_MODERN_OPENGL
     /* Unbind everything */
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     /* Unload all vertex buffers data */
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-    glBindVertexArray(RSGL_gl.vao);
+    glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
@@ -477,76 +478,78 @@ void RSGL_GL_free(void) {
     #endif
 
     /* Delete VBOs from GPU (VRAM) */
-    glDeleteBuffers(1, &RSGL_gl.vbo);
-    glDeleteBuffers(1, &RSGL_gl.tbo);
-    glDeleteBuffers(1, &RSGL_gl.cbo);
+    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->internal)->vbo);
+    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->internal)->tbo);
+    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->internal)->cbo);
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-    glDeleteVertexArrays(1, &RSGL_gl.vao);
+    glDeleteVertexArrays(1, &((RSGL_glRenderer*)renderer->internal)->vao);
     #endif
 
-    RSGL_renderDeleteProgram(RSGL_gl.program);
+    RSGL_renderer_deleteProgram(renderer, ((RSGL_glRenderer*)renderer->internal)->program);
 
-    glDeleteTextures(1, (u32*)&RSGL_gl.defaultTex); /* Unload default texture */
+    glDeleteTextures(1, (u32*)&((RSGL_glRenderer*)renderer->internal)->defaultTex); /* Unload default texture */
     #endif
+
+	RSGL_FREE(renderer->internal);
 }
 
-void RSGL_GL_batch(RSGL_RENDER_INFO* info) { 
+void RSGL_GL_flush(RSGL_renderer* renderer) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     #ifdef RSGL_MODERN_OPENGL
-    if (info->vert_len > 0 && RSGL_GL_legacy == 0) {
+    if (renderer->info.vert_len > 0) {
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-        glBindVertexArray(RSGL_gl.vao);
+        glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
         #endif
 
         /* Vertex positions buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, info->vert_len * 3 * sizeof(float), info->verts);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->info.vert_len * 3 * sizeof(float), renderer->info.verts);
 
         /* Texture coordinates buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.tbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, info->vert_len * 2 * sizeof(float), info->texCoords);
-        
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->tbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->info.vert_len * 2 * sizeof(float), renderer->info.texCoords);
+
         /* Colors buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.cbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, info->vert_len * 4 * sizeof(float), info->colors); 
-        
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->cbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->info.vert_len * 4 * sizeof(float), renderer->info.colors);
+
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
         glBindVertexArray(0);
         #endif
 
         /* Set current shader */
-        if (RSGL_args.program)
-            glUseProgram(RSGL_args.program);
+        if (renderer->state.program)
+            glUseProgram(renderer->state.program);
         else
-            glUseProgram(RSGL_gl.program.program);
-        
+            glUseProgram(((RSGL_glRenderer*)renderer->internal)->program.program);
+
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-        glBindVertexArray(RSGL_gl.vao);
+        glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
         #endif
 
         /* Bind vertex attrib: position (shader-location = 0) */
-        glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->vbo);
         glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
         glEnableVertexAttribArray(0);
 
         /* Bind vertex attrib: texcoord (shader-location = 1) */
-        glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.tbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->tbo);
         glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
         glEnableVertexAttribArray(1);
 
         /* Bind vertex attrib: color (shader-location = 3) */
-        glBindBuffer(GL_ARRAY_BUFFER, RSGL_gl.cbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->cbo);
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
         glEnableVertexAttribArray(2);
 
         glActiveTexture(GL_TEXTURE0);
 
         u32 i;
-        for (i = 0; i < info->len; i++) {
-            GLenum mode = info->batches[i].type;
+        for (i = 0; i < renderer->info.len; i++) {
+            GLenum mode = renderer->info.batches[i].type;
 
             if (mode > 0x0100) {
                 mode -= 0x0100;
@@ -557,49 +560,48 @@ void RSGL_GL_batch(RSGL_RENDER_INFO* info) {
             }
 
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
-            if (info->batches[i].tex == 0)
-                info->batches[i].tex = RSGL_gl.defaultTex;
-            
-            glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
-            glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
-            
-            if (RSGL_args.program)
-                glUseProgram(RSGL_args.program);
-            else {
-                glUseProgram(RSGL_gl.program.program);
+            if (renderer->info.batches[i].tex == 0)
+                renderer->info.batches[i].tex = ((RSGL_glRenderer*)renderer->internal)->defaultTex;
 
-                int loc = glGetUniformLocation(RSGL_gl.program.program, "mat");
-                glUniformMatrix4fv(loc, 1, GL_FALSE, info->batches[i].matrix.m);
+            glBindTexture(GL_TEXTURE_2D, renderer->info.batches[i].tex);
+            glLineWidth(renderer->info.batches[i].lineWidth > 0 ? renderer->info.batches[i].lineWidth : 0.1f);
+
+            if (renderer->state.program)
+                glUseProgram(renderer->state.program);
+            else {
+                glUseProgram(((RSGL_glRenderer*)renderer->internal)->program.program);
+
+                int loc = glGetUniformLocation(((RSGL_glRenderer*)renderer->internal)->program.program, "mat");
+                glUniformMatrix4fv(loc, 1, GL_FALSE, renderer->info.batches[i].matrix.m);
            }
 
-            glDrawArrays(mode, info->batches[i].start, info->batches[i].len);
+            glDrawArrays(mode, renderer->info.batches[i].start, renderer->info.batches[i].len);
         }
 
-        if (!RSGL_gl.vao) {
+        if (!((RSGL_glRenderer*)renderer->internal)->vao) {
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
 
         glBindTexture(GL_TEXTURE_2D, 0);    /* Unbind textures */
-    
-        if (RSGL_gl.vao) 
+
+        if (((RSGL_glRenderer*)renderer->internal)->vao)
             glBindVertexArray(0); /* Unbind VAO */
 
         glUseProgram(0);    /* Unbind shader program */
     }
 
-    else if (RSGL_GL_legacy)
     #endif
-    #ifndef RSGL_GL_NO_LEGACY
+	#ifndef RSGL_GL_LEGACY
     {
         size_t i, j;
         size_t tIndex = 0, cIndex = 0, vIndex = 0;
-        for (i = 0; i < info->len; i++) {
+        for (i = 0; i < renderer->info.len; i++) {
             glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
-            glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
+            glBindTexture(GL_TEXTURE_2D, renderer->info.batches[i].tex);
+            glLineWidth(renderer->info.batches[i].lineWidth > 0 ? renderer->info.batches[i].lineWidth : 0.1f);
 
-            u32 mode = info->batches[i].type;
+            u32 mode = renderer->info.batches[i].type;
             glEnable(GL_BLEND);
             glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
             //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -607,16 +609,16 @@ void RSGL_GL_batch(RSGL_RENDER_INFO* info) {
 
             //glDisable(GL_DEPTH_TEST);
              //   glDepthMask(GL_FALSE);
-        
+
             //glEnable(GL_DEPTH_TEST);
             //glDepthMask(GL_TRUE);
 
             glBegin(mode);
 
-            for (j = info->batches[i].start; j < info->batches[i].len; j++) {
-                glTexCoord2f(info->texCoords[tIndex], info->texCoords[tIndex + 1]);
-                glColor4f(info->colors[cIndex], info->colors[cIndex + 1], info->colors[cIndex + 2], info->colors[cIndex + 3]);
-                glVertex3f(info->verts[vIndex], info->verts[vIndex + 1],  info->verts[vIndex + 2]);
+            for (j = renderer->info.batches[i].start; j < renderer->info.batches[i].len; j++) {
+                glTexCoord2f(renderer->info.texCoords[tIndex], renderer->info.texCoords[tIndex + 1]);
+                glColor4f(renderer->info.colors[cIndex], renderer->info.colors[cIndex + 1], renderer->info.colors[cIndex + 2], renderer->info.colors[cIndex + 3]);
+                glVertex3f(renderer->info.verts[vIndex], renderer->info.verts[vIndex + 1],  renderer->info.verts[vIndex + 2]);
 
                 tIndex += 2;
                 vIndex += 3;
@@ -629,19 +631,19 @@ void RSGL_GL_batch(RSGL_RENDER_INFO* info) {
     }
     #endif
 
-    info->len = 0;
-    info->vert_len = 0;
+    renderer->info.len = 0;
+    renderer->info.vert_len = 0;
 }
 
-void RSGL_GL_scissorStart(RSGL_rectF scissor) {
-    RSGL_draw();
+void RSGL_GL_scissorStart(RSGL_renderer* renderer, RSGL_rectF scissor) {
+    RSGL_renderer_flush(renderer);
     glEnable(GL_SCISSOR_TEST);
 
-    glScissor(scissor.x, RSGL_args.currentArea.h - (scissor.y + scissor.h), scissor.w, scissor.h);
+    glScissor(scissor.x, renderer->state.currentArea.h - (scissor.y + scissor.h), scissor.w, scissor.h);
 }
 
-void RSGL_GL_scissorEnd(void) {
-    RSGL_draw();
+void RSGL_GL_scissorEnd(RSGL_renderer* renderer) {
+    RSGL_renderer_flush(renderer);
     glDisable(GL_SCISSOR_TEST);
 }
 
@@ -650,7 +652,7 @@ void RSGL_GL_scissorEnd(void) {
 #endif
 
 /* textures / images */
-RSGL_texture RSGL_GL_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
+RSGL_texture RSGL_GL_createTexture(RSGL_renderer* renderer, u8* bitmap, RSGL_area memsize, u8 channels) {
     unsigned int id = 0;
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -660,9 +662,9 @@ RSGL_texture RSGL_GL_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
+
     glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
-    
+
     unsigned int c = 0;
 
     switch (channels) {
@@ -680,7 +682,7 @@ RSGL_texture RSGL_GL_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
     return id;
 }
 
-void RSGL_GL_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+void RSGL_GL_updateTexture(RSGL_renderer* renderer, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
     glBindTexture(GL_TEXTURE_2D, texture);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
 
@@ -705,7 +707,7 @@ void RSGL_GL_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, 
 #define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
 #define GL_COMPILE_STATUS                 0x8B81
 #define GL_LINK_STATUS                    0x8B82
-#define GL_INFO_LOG_LENGTH                0x8B84 
+#define GL_INFO_LOG_LENGTH                0x8B84
 #endif
 
 #ifdef RSGL_DEBUG
@@ -754,7 +756,7 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 			printf("%s Shader info log:\n%s\n", shader, infoLog);
 		} else {
 			glGetProgramInfoLog(src, 512, NULL, infoLog);
-			printf("%s info log:\n%s\n", shader, infoLog); 
+			printf("%s info log:\n%s\n", shader, infoLog);
 		}
 
 		RSGL_opengl_getError();
@@ -762,7 +764,7 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 }
 #endif
 
-RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
+RSGL_programInfo RSGL_GL_createProgram(RSGL_renderer* renderer, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
 	RSGL_programInfo program;
 	u32 vShader, fShader;
 
@@ -802,17 +804,17 @@ RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FSha
 
 	glDeleteShader(vShader);
 	glDeleteShader(fShader);
-	
+
 	program.type = RSGL_shaderTypeStandard;
 	return program;
 }
 
-void RSGL_GL_deleteProgram(RSGL_programInfo program) {
+void RSGL_GL_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program) {
     glUseProgram(0);
     glDeleteProgram(program.program);
 }
 
-void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len) {
+void RSGL_GL_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len) {
     glUseProgram(program);
     int loc = glGetUniformLocation(program, var);
 
@@ -828,7 +830,7 @@ void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len) {
     glUseProgram(0);
 }
 #else
-RSGL_programInfo RSGL_GL_createProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
+RSGL_programInfo RSGL_GL_createProgram(RSGL_renderer* renderer, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
     RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
     RSGL_programInfo program = {0};
     return program;
@@ -838,7 +840,7 @@ void RSGL_GL_deleteProgram(RSGL_programInfo program) {
     RSGL_UNUSED(program);
 }
 
-void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len) {
+void RSGL_GL_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len) {
     RSGL_UNUSED(program); RSGL_UNUSED(var); RSGL_UNUSED(value); RSGL_UNUSED(len);
 }
 #endif
@@ -866,14 +868,14 @@ void RSGL_GL_setShaderValue(u32 program, char* var, float value[], u8 len) {
 #endif
 
 #ifndef RSGL_NO_TEXT
-RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight) {
+RFont_texture RFont_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
    #endif
-   
+
    u32 id = 0;
    glEnable(GL_TEXTURE_2D);
-   
+
    glBindTexture(GL_TEXTURE_2D, 0);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glGenTextures(1, &id);
@@ -884,7 +886,7 @@ RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   
+
    u8* data = (u8*)calloc(atlasWidth * atlasHeight * 4, sizeof(u8));
 
    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -899,7 +901,7 @@ RFont_texture RFont_GL_create_atlas(u32 atlasWidth, u32 atlasHeight) {
    return id;
 }
 
-b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
+b8 RFont_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newWidth, u32 newHeight) {
     GLuint newAtlas;
     glGenTextures(1, &newAtlas);
     glBindTexture(GL_TEXTURE_2D, newAtlas);
@@ -918,7 +920,7 @@ b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
+
     /* swizzle new atlas */
     glBindTexture(GL_TEXTURE_2D, newAtlas);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
@@ -930,23 +932,23 @@ b8 RFont_GL_resize_atlas(RFont_texture* atlas, u32 newWidth, u32 newHeight) {
     return 1;
 }
 
-void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
-void RFont_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
+void RFont_push_pixel_values(RSGL_renderer* renderer, GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
+void RFont_push_pixel_values(RSGL_renderer* renderer, GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
 }
 
-void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
+void RFont_GL_bitmap_to_atlas(RSGL_renderer* renderer, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
    glEnable(GL_TEXTURE_2D);
-   
+
 	GLint alignment, rowLength, skipPixels, skipRows;
    glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-   
+
    #if !defined(RFONT_RENDER_LEGACY)
    glActiveTexture(GL_TEXTURE0 + atlas - 1);
    #endif
@@ -981,7 +983,7 @@ void RFont_GL_bitmap_to_atlas(RFont_texture atlas, u8* bitmap, float x, float y,
 #define GL_SHADER_IMAGE_ACCESS_BARRIER_BIT 0x00000020
 #endif
 
-RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode) {
+RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_renderer* renderer, const char* CShaderCode) {
 	RSGL_programInfo program;
 	program.type = RSGL_shaderTypeCompute;
 
@@ -1005,14 +1007,14 @@ RSGL_programInfo RSGL_GL_createComputeProgram(const char* CShaderCode) {
 	return program;
 }
 
-void RSGL_GL_dispatchComputeProgram(RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
+void RSGL_GL_dispatchComputeProgram(RSGL_renderer* renderer, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
 	glUseProgram(program.program);
 	glDispatchCompute(groups_x, groups_y, groups_z);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
 
-void RSGL_GL_bindComputeTexture(u32 texture, u8 format) {
+void RSGL_GL_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8 format) {
 	u16 c = 0;
    switch (format) {
        case 2: c = GL_RG8; break;
@@ -1106,11 +1108,11 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     #if !defined(RSGL_OPENGL_21)
     GLuint vao;
     glGenVertexArraysSRC(1, &vao);
-    
+
     if (vao == 0)
         return 1;
     #endif
-    
+
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
     glDeleteVertexArraysSRC(1, &vao);
     #endif
