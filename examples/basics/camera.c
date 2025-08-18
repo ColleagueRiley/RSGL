@@ -90,13 +90,13 @@ int main(void) {
         RSGL_renderer_clear(&renderer, RSGL_RGB(80, 80, 110));
 
         RSGL_renderer_setMatrix(&renderer, RSGL_renderer_getCameraMatrix(&renderer, camera));
-            RSGL_drawCube(&renderer, RSGL_CUBE(49, 20, 5, 200, 200, 0.5), RSGL_RGB(255, 0, 0));
-            RSGL_drawTriangle3D(&renderer,
-                RSGL_createTriangle3D(25.0f, 480.0f, 0.0,
-                                      250, 480, 3.0f,
-                                      800, 480.0f, 0.0f),
-                    RSGL_RGB(255, 0, 0)
-            );
+
+		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
+		RSGL_drawCube(&renderer, RSGL_CUBE(49, 20, 5, 200, 200, 0.5));
+		RSGL_drawTriangle3D(&renderer, RSGL_createTriangle3D(25.0f, 480.0f, 0.0,
+															250, 480, 3.0f,
+															800, 480.0f, 0.0f));
+
         RSGL_renderer_resetMatrix(&renderer);
 
         RSGL_renderer_render(&renderer);

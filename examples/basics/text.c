@@ -26,7 +26,8 @@ int main(void) {
 
 		RSGL_renderer_clear(&renderer, RSGL_RGB(255, 255, 255));
 
-        RSGL_drawText(&renderer, "Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20), RSGL_RGB(255, 0, 0));
+		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
+        RSGL_drawText(&renderer, "Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20));
 
         RSGL_renderer_render(&renderer);
 		RGFW_window_swapBuffers_OpenGL(win);

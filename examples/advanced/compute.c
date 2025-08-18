@@ -64,7 +64,9 @@ int main(void) {
 		RSGL_renderer_clear(&renderer, RSGL_RGB(20, 20, 20));
 		RSGL_renderer_setProgram(&renderer, 0);
 		RSGL_renderer_setTexture(&renderer, texture);
-		RSGL_drawRect(&renderer, RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 255, 255));
+
+		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
+		RSGL_drawRect(&renderer, RSGL_RECT(100, 200, 200, 200));
 
 
 		RSGL_renderer_render(&renderer);

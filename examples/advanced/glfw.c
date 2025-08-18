@@ -43,9 +43,12 @@ int main(void)
 
         RSGL_renderer_setFont(&renderer, comicSans);
         RSGL_renderer_clear(&renderer, RSGL_RGB(20, 20, 60));
-        RSGL_drawText(&renderer, "Hello, GLFW!", RSGL_CIRCLE(100, 100, 20), RSGL_RGB(255, 255, 255));
 
-        RSGL_drawRect(&renderer, (RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
+		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 255,  255));
+        RSGL_drawText(&renderer, "Hello, GLFW!", RSGL_CIRCLE(100, 100, 20));
+
+		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
+        RSGL_drawRect(&renderer, (RSGL_rect){200, 200, 200, 200});
 
         RSGL_renderer_render(&renderer);
 		glfwSwapBuffers(window);

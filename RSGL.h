@@ -84,6 +84,7 @@
 #ifndef RSGL_MEMCPY
 	#include <string.h>
 	#define RSGL_MEMCPY(dest, src, count) memcpy(dest, src, count)
+	#define RSGL_MEMSET(ptr, value, num) memset(ptr, value, num)
 #endif
 
 /*
@@ -237,7 +238,7 @@ typedef struct RSGL_triangle3D {
 
 #define RSGL_TRIANGLE3D(p1, p2, p3) (RSGL_triangle3D){p1, p2, p3}
 
-#define RSGL_createTriangle3D(x1, y1, z1, x2, y2, z2, x3, y3, z3) (RSGL_triangle3D){{x1, y1, z1}, {x2, y2, z2}, {x3, y3, z3}}
+#define RSGL_createTriangle3D(x1, y1, z1, x2, y2, z2, x3, y3, z3) (RSGL_triangle3D){(RSGL_point3D){x1, y1, z1}, (RSGL_point3D){x2, y2, z2}, (RSGL_point3D){x3, y3, z3}}
 
 /*
 the color stucture is in
@@ -335,6 +336,8 @@ typedef struct RSGL_renderState {
     RSGL_texture texture;
     u32 gradient_len;
 
+	RSGL_color color;
+
     RSGL_area currentArea; /* size of current surface */
     RSGL_point3D rotate;
 
@@ -345,7 +348,6 @@ typedef struct RSGL_renderState {
 	RSGL_mat4 customMatrix;
 	RSGL_bool forceBatch;
 	RSGL_font* font;
-	RSGL_color RFontcolor;
 } RSGL_renderState;
 
 typedef struct RSGL_renderer {
@@ -396,8 +398,9 @@ RSGLDEF void RSGL_renderer_freePtr(RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_renderer_free(RSGL_renderer* renderer);
 
-RSGLDEF void RSGL_renderer_setRotate(RSGL_renderer* renderer,RSGL_point3D rotate); /* apply rotation to drawing */
-RSGLDEF void RSGL_renderer_setTexture(RSGL_renderer* renderer,RSGL_texture texture); /* apply texture to drawing */
+RSGLDEF void RSGL_renderer_setRotate(RSGL_renderer* renderer, RSGL_point3D rotate); /* apply rotation to drawing */
+RSGLDEF void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture texture); /* apply texture to drawing */
+RSGLDEF void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color); /* apply color to drawing */
 RSGLDEF void RSGL_renderer_setProgram(RSGL_renderer* renderer,u32 program); /* use shader program for drawing */
 RSGLDEF void RSGL_renderer_setGradient(RSGL_renderer* renderer,
                                 float* gradient, /* array of gradients */
@@ -483,77 +486,76 @@ RSGLDEF void RSGL_basicDraw(RSGL_renderer* renderer,
                 u32 TYPE, /* type of shape  RSGL_TRIANGLES, RSGL_LINES */
                 float* points, /* array of 3D points */
                 float* texPoints, /* array of 2D texture points (must be same length as points)*/
-                RSGL_color c, /* the color to draw the shape */
                 size_t len /* the length of the points array */
             );
 
 /* 2D shape drawing */
 /* in the function names, F means float */
 
-RSGLDEF void RSGL_drawPoint(RSGL_renderer* renderer, RSGL_point p, RSGL_color c);
-RSGLDEF void RSGL_drawPointF(RSGL_renderer* renderer, RSGL_pointF p, RSGL_color c);
+RSGLDEF void RSGL_drawPoint(RSGL_renderer* renderer, RSGL_point p);
+RSGLDEF void RSGL_drawPointF(RSGL_renderer* renderer, RSGL_pointF p);
 
-RSGLDEF void RSGL_drawTriangle(RSGL_renderer* renderer, RSGL_triangle t, RSGL_color c);
-RSGLDEF void RSGL_drawTriangleF(RSGL_renderer* renderer, RSGL_triangleF t, RSGL_color c);
+RSGLDEF void RSGL_drawTriangle(RSGL_renderer* renderer, RSGL_triangle t);
+RSGLDEF void RSGL_drawTriangleF(RSGL_renderer* renderer, RSGL_triangleF t);
 
-RSGLDEF void RSGL_drawTriangleHyp(RSGL_renderer* renderer, RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color);
+RSGLDEF void RSGL_drawTriangleHyp(RSGL_renderer* renderer, RSGL_pointF p, size_t angle, float hypotenuse);
 
-RSGLDEF void RSGL_drawRect(RSGL_renderer* renderer, RSGL_rect r, RSGL_color c);
-RSGLDEF void RSGL_drawRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_color c);
+RSGLDEF void RSGL_drawRect(RSGL_renderer* renderer, RSGL_rect r);
+RSGLDEF void RSGL_drawRectF(RSGL_renderer* renderer, RSGL_rectF r);
 
-RSGLDEF void RSGL_drawRoundRect(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding, RSGL_color c);
-RSGLDEF void RSGL_drawRoundRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding, RSGL_color c);
+RSGLDEF void RSGL_drawRoundRect(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding);
+RSGLDEF void RSGL_drawRoundRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding);
 
-RSGLDEF void RSGL_drawPolygon(RSGL_renderer* renderer, RSGL_rect r, u32 sides, RSGL_color c);
-RSGLDEF void RSGL_drawPolygonF(RSGL_renderer* renderer, RSGL_rectF r, u32 sides, RSGL_color c);
+RSGLDEF void RSGL_drawPolygon(RSGL_renderer* renderer, RSGL_rect r, u32 sides);
+RSGLDEF void RSGL_drawPolygonF(RSGL_renderer* renderer, RSGL_rectF r, u32 sides);
 
-RSGLDEF void RSGL_drawArc(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc, RSGL_color color);
-RSGLDEF void RSGL_drawArcF(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc, RSGL_color color);
+RSGLDEF void RSGL_drawArc(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc);
+RSGLDEF void RSGL_drawArcF(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc);
 
-RSGLDEF void RSGL_drawCircle(RSGL_renderer* renderer, RSGL_circle c, RSGL_color color);
-RSGLDEF void RSGL_drawCircleF(RSGL_renderer* renderer, RSGL_circleF c, RSGL_color color);
+RSGLDEF void RSGL_drawCircle(RSGL_renderer* renderer, RSGL_circle c);
+RSGLDEF void RSGL_drawCircleF(RSGL_renderer* renderer, RSGL_circleF c);
 
-RSGLDEF void RSGL_drawOval(RSGL_renderer* renderer, RSGL_rect o, RSGL_color c);
-RSGLDEF void RSGL_drawOvalF(RSGL_renderer* renderer, RSGL_rectF o, RSGL_color c);
+RSGLDEF void RSGL_drawOval(RSGL_renderer* renderer, RSGL_rect o);
+RSGLDEF void RSGL_drawOvalF(RSGL_renderer* renderer, RSGL_rectF o);
 
-RSGLDEF void RSGL_drawLine(RSGL_renderer* renderer, RSGL_point p1, RSGL_point p2, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawLineF(RSGL_renderer* renderer, RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawLine(RSGL_renderer* renderer, RSGL_point p1, RSGL_point p2, u32 thickness);
+RSGLDEF void RSGL_drawLineF(RSGL_renderer* renderer, RSGL_pointF p1, RSGL_pointF p2, u32 thickness);
 
 /* 3D objects */
-RSGLDEF void RSGL_drawTriangle3D(RSGL_renderer* renderer, RSGL_triangle3D t, RSGL_color c);
-RSGLDEF void RSGL_drawPoint3D(RSGL_renderer* renderer, RSGL_point3D p, RSGL_color c);
-RSGLDEF void RSGL_drawLine3D(RSGL_renderer* renderer, RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube, RSGL_color c);
+RSGLDEF void RSGL_drawTriangle3D(RSGL_renderer* renderer, RSGL_triangle3D t);
+RSGLDEF void RSGL_drawPoint3D(RSGL_renderer* renderer, RSGL_point3D p);
+RSGLDEF void RSGL_drawLine3D(RSGL_renderer* renderer, RSGL_point3D p1, RSGL_point3D p2, u32 thickness);
+RSGLDEF void RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube);
 
 /* 2D outlines */
 
 /* thickness means the thickness of the line */
 
-RSGLDEF void RSGL_drawTriangleOutline(RSGL_renderer* renderer, RSGL_triangle t, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawTriangleFOutline(RSGL_renderer* renderer, RSGL_triangleF t, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawTriangleOutline(RSGL_renderer* renderer, RSGL_triangle t, u32 thickness);
+RSGLDEF void RSGL_drawTriangleFOutline(RSGL_renderer* renderer, RSGL_triangleF t, u32 thickness);
 
-RSGLDEF void RSGL_drawRectOutline(RSGL_renderer* renderer, RSGL_rect r, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawRectOutline(RSGL_renderer* renderer, RSGL_rect r, u32 thickness);
+RSGLDEF void RSGL_drawRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, u32 thickness);
 
-RSGLDEF void RSGL_drawRoundRectOutline(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawRoundRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawRoundRectOutline(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding, u32 thickness);
+RSGLDEF void RSGL_drawRoundRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding, u32 thickness);
 
-RSGLDEF void RSGL_drawPolygonOutline(RSGL_renderer* renderer, RSGL_rect r, u32 sides, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawPolygonFOutline(RSGL_renderer* renderer, RSGL_rectF r, u32 sides, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawPolygonOutline(RSGL_renderer* renderer, RSGL_rect r, u32 sides, u32 thickness);
+RSGLDEF void RSGL_drawPolygonFOutline(RSGL_renderer* renderer, RSGL_rectF r, u32 sides, u32 thickness);
 
-RSGLDEF void RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc, u32 thickness, RSGL_color color);
-RSGLDEF void RSGL_drawArcFOutline(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc, u32 thickness, RSGL_color color);
+RSGLDEF void RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc, u32 thickness);
+RSGLDEF void RSGL_drawArcFOutline(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc, u32 thickness);
 
-RSGLDEF void RSGL_drawCircleOutline(RSGL_renderer* renderer, RSGL_circle c, u32 thickness, RSGL_color color);
-RSGLDEF void RSGL_drawCircleFOutline(RSGL_renderer* renderer, RSGL_circleF c, u32 thickness, RSGL_color color);
+RSGLDEF void RSGL_drawCircleOutline(RSGL_renderer* renderer, RSGL_circle c, u32 thickness);
+RSGLDEF void RSGL_drawCircleFOutline(RSGL_renderer* renderer, RSGL_circleF c, u32 thickness);
 
-RSGLDEF void RSGL_drawOvalFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 thickness, RSGL_color c);
-RSGLDEF void RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thickness, RSGL_color c);
+RSGLDEF void RSGL_drawOvalFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 thickness);
+RSGLDEF void RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thickness);
 
 #ifndef RSGL_NO_TEXT
-RSGLDEF void RSGL_drawText_len(RSGL_renderer* renderer, const char* text, size_t len, RSGL_circle c, RSGL_color color);
-RSGLDEF void RSGL_drawText_pro(RSGL_renderer* renderer, const char* text, size_t len, float spacing, RSGL_circle c, RSGL_color color);
-RSGLDEF void RSGL_drawText(RSGL_renderer* renderer, const char* text, RSGL_circle c, RSGL_color color);
+RSGLDEF void RSGL_drawText_len(RSGL_renderer* renderer, const char* text, size_t len, RSGL_circle c);
+RSGLDEF void RSGL_drawText_pro(RSGL_renderer* renderer, const char* text, size_t len, float spacing, RSGL_circle c);
+RSGLDEF void RSGL_drawText(RSGL_renderer* renderer, const char* text, RSGL_circle c);
 
 /*
     returns the width of a text when rendered with the set font with the size of `fontSize
@@ -632,12 +634,13 @@ RSGL_mat4 RSGL_renderer_initDrawMatrix(RSGL_renderer* renderer, RSGL_point3D cen
     return matrix;
 }
 
-void RSGL_basicDraw(RSGL_renderer* renderer, u32 type, float* points, float* texPoints, RSGL_color c, size_t len) {
+void RSGL_basicDraw(RSGL_renderer* renderer, u32 type, float* points, float* texPoints, size_t len) {
     if (renderer->info.len + 1 >= RSGL_MAX_BATCHES || renderer->info.vert_len + len >= RSGL_MAX_VERTS) {
         RSGL_renderer_render(renderer);
     }
 
     RSGL_BATCH* batch = NULL;
+	RSGL_color c = renderer->state.color;
 
     if (
         renderer->info.len == 0 ||
@@ -697,7 +700,7 @@ void RSGL_RFont_render_text(RSGL_renderer* renderer, RFont_texture atlas, float*
     RSGL_renderState save = renderer->state;
     RSGL_renderer_setRotate(renderer, RSGL_POINT3D(0, 0, 0));
     RSGL_renderer_setTexture(renderer, atlas);
-    RSGL_basicDraw(renderer, RSGL_TRIANGLES, verts, tcoords, renderer->state.RFontcolor, nverts);
+    RSGL_basicDraw(renderer, RSGL_TRIANGLES, verts, tcoords, nverts);
     renderer->state = save;
 }
 #endif
@@ -714,7 +717,7 @@ size_t RSGL_renderer_size(RSGL_renderer* renderer) {
 
 void RSGL_renderer_initPtr(RSGL_renderer* renderer, RSGL_area r, void* proc, void* data) {
     RSGL_renderer_clearArgs(renderer);
-    renderer->state.RFontcolor = RSGL_RGBA(0, 0, 0, 0);
+    renderer->state.color = RSGL_RGBA(0, 0, 0, 255);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, r.w, r.h));
 
     renderer->state.customMatrix = RSGL_loadIdentity();
@@ -807,12 +810,14 @@ void RSGL_renderer_updateSize(RSGL_renderer* renderer, RSGL_area r) {
     renderer->info.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
 }
 
-/* RSGL_renderState */
 void RSGL_renderer_setRotate(RSGL_renderer* renderer, RSGL_point3D rotate){
     renderer->state.rotate = RSGL_POINT3D(rotate.x * DEG2RAD, rotate.y * DEG2RAD, rotate.z * DEG2RAD);
 }
 void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture texture) {
     renderer->state.texture = texture;
+}
+void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color) {
+	renderer->state.color = color;
 }
 void RSGL_renderer_setProgram(RSGL_renderer* renderer, u32 program) {
     if (renderer->state.program != program) {
@@ -831,7 +836,8 @@ void RSGL_renderer_setCenter(RSGL_renderer* renderer, RSGL_point3D center) {
 }
 
 void RSGL_renderer_clearArgs(RSGL_renderer* renderer) {
-    renderer->state = (RSGL_renderState){NULL, 0, 0, { }, {0, 0, 0}, RSGL_POINT3D(-1, -1, -1), 0, 0};
+	RSGL_MEMSET(&renderer->state, 0, sizeof(renderer->state));
+	renderer->state.center =  RSGL_POINT3D(-1, -1, -1);
 }
 
 /*
@@ -840,75 +846,75 @@ RSGL_draw
 ****
 */
 
-void RSGL_drawPoint(RSGL_renderer* renderer, RSGL_point p, RSGL_color c) {
-    RSGL_drawPointF(renderer, (RSGL_pointF){(float)p.x, (float)p.y}, c);
+void RSGL_drawPoint(RSGL_renderer* renderer, RSGL_point p) {
+    RSGL_drawPointF(renderer, (RSGL_pointF){(float)p.x, (float)p.y});
 }
 
-void RSGL_drawTriangle(RSGL_renderer* renderer, RSGL_triangle t, RSGL_color c) {
-    RSGL_drawTriangleF(renderer, RSGL_createTriangleF((float)t.p1.x, (float)t.p1.y, (float)t.p2.x, (float)t.p2.y, (float)t.p3.x, (float)t.p3.y), c);
+void RSGL_drawTriangle(RSGL_renderer* renderer, RSGL_triangle t) {
+    RSGL_drawTriangleF(renderer, RSGL_createTriangleF((float)t.p1.x, (float)t.p1.y, (float)t.p2.x, (float)t.p2.y, (float)t.p3.x, (float)t.p3.y));
 }
 
-void RSGL_drawRect(RSGL_renderer* renderer, RSGL_rect r, RSGL_color c) {
-    RSGL_drawRectF(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, c);
+void RSGL_drawRect(RSGL_renderer* renderer, RSGL_rect r) {
+    RSGL_drawRectF(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h});
 }
 
-void RSGL_drawRoundRect(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding, RSGL_color c) {
-    RSGL_drawRoundRectF(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, rounding, c);
+void RSGL_drawRoundRect(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding) {
+    RSGL_drawRoundRectF(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, rounding);
 }
 
-void RSGL_drawPolygon(RSGL_renderer* renderer, RSGL_rect r, u32 sides, RSGL_color c) {
-    RSGL_drawPolygonF(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, sides, c);
+void RSGL_drawPolygon(RSGL_renderer* renderer, RSGL_rect r, u32 sides) {
+    RSGL_drawPolygonF(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, sides);
 }
 
-void RSGL_drawArc(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc, RSGL_color color) {
-    RSGL_drawArcF(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, (RSGL_pointF){(float)arc.x, (float)arc.y}, color);
+void RSGL_drawArc(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc) {
+    RSGL_drawArcF(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, (RSGL_pointF){(float)arc.x, (float)arc.y});
 }
 
-void RSGL_drawCircle(RSGL_renderer* renderer, RSGL_circle c, RSGL_color color) {
-    RSGL_drawCircleF(renderer, (RSGL_circleF){(float)c.x, (float)c.y, (float)c.d}, color);
+void RSGL_drawCircle(RSGL_renderer* renderer, RSGL_circle c) {
+    RSGL_drawCircleF(renderer, (RSGL_circleF){(float)c.x, (float)c.y, (float)c.d});
 }
 
-void RSGL_drawOval(RSGL_renderer* renderer, RSGL_rect o, RSGL_color c) {
-    RSGL_drawOvalF(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, c);
+void RSGL_drawOval(RSGL_renderer* renderer, RSGL_rect o) {
+    RSGL_drawOvalF(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h});
 }
 
-void RSGL_drawLine(RSGL_renderer* renderer, RSGL_point p1, RSGL_point p2, u32 thickness, RSGL_color c) {
-    RSGL_drawLineF(renderer, (RSGL_pointF){(float)p1.x, (float)p1.y}, (RSGL_pointF){(float)p2.x, (float)p2.y}, thickness, c);
+void RSGL_drawLine(RSGL_renderer* renderer, RSGL_point p1, RSGL_point p2, u32 thickness) {
+    RSGL_drawLineF(renderer, (RSGL_pointF){(float)p1.x, (float)p1.y}, (RSGL_pointF){(float)p2.x, (float)p2.y}, thickness);
 }
 
-void RSGL_drawTriangleOutline(RSGL_renderer* renderer, RSGL_triangle t, u32 thickness, RSGL_color c) {
-    RSGL_drawTriangleFOutline(renderer, RSGL_createTriangleF((float)t.p1.x, (float)t.p1.y, (float)t.p2.x, (float)t.p2.y, (float)t.p3.x, (float)t.p3.y), thickness, c);
+void RSGL_drawTriangleOutline(RSGL_renderer* renderer, RSGL_triangle t, u32 thickness) {
+    RSGL_drawTriangleFOutline(renderer, RSGL_createTriangleF((float)t.p1.x, (float)t.p1.y, (float)t.p2.x, (float)t.p2.y, (float)t.p3.x, (float)t.p3.y), thickness);
 }
 
-void RSGL_drawRectOutline(RSGL_renderer* renderer, RSGL_rect r, u32 thickness, RSGL_color c) {
-    RSGL_drawRectFOutline(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, thickness, c);
+void RSGL_drawRectOutline(RSGL_renderer* renderer, RSGL_rect r, u32 thickness) {
+    RSGL_drawRectFOutline(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, thickness);
 }
 
-void RSGL_drawRoundRectOutline(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding, u32 thickness, RSGL_color c) {
-    RSGL_drawRoundRectFOutline(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, rounding, thickness, c);
+void RSGL_drawRoundRectOutline(RSGL_renderer* renderer, RSGL_rect r, RSGL_point rounding, u32 thickness) {
+    RSGL_drawRoundRectFOutline(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, rounding, thickness);
 }
 
-void RSGL_drawPolygonOutline(RSGL_renderer* renderer, RSGL_rect r, u32 sides, u32 thickness, RSGL_color c) {
-    RSGL_drawPolygonFOutline(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, sides, thickness, c);
+void RSGL_drawPolygonOutline(RSGL_renderer* renderer, RSGL_rect r, u32 sides, u32 thickness) {
+    RSGL_drawPolygonFOutline(renderer, (RSGL_rectF){(float)r.x, (float)r.y, (float)r.w, (float)r.h}, sides, thickness);
 }
 
-void RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc, u32 thickness, RSGL_color color) {
-    RSGL_drawArcFOutline(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, (RSGL_pointF){(float)arc.x, (float)arc.y}, thickness, color);
+void RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_point arc, u32 thickness) {
+    RSGL_drawArcFOutline(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, (RSGL_pointF){(float)arc.x, (float)arc.y}, thickness);
 }
 
-void RSGL_drawCircleOutline(RSGL_renderer* renderer, RSGL_circle c, u32 thickness, RSGL_color color) {
-    RSGL_drawCircleFOutline(renderer, (RSGL_circleF){(float)c.x, (float)c.y, (float)c.d}, thickness, color);
+void RSGL_drawCircleOutline(RSGL_renderer* renderer, RSGL_circle c, u32 thickness) {
+    RSGL_drawCircleFOutline(renderer, (RSGL_circleF){(float)c.x, (float)c.y, (float)c.d}, thickness);
 }
 
-void RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thickness, RSGL_color c) {
-    RSGL_drawOvalFOutline(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, thickness, c);
+void RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thickness) {
+    RSGL_drawOvalFOutline(renderer, (RSGL_rectF){(float)o.x, (float)o.y, (float)o.w, (float)o.h}, thickness);
 }
 
-void RSGL_drawPointF(RSGL_renderer* renderer, RSGL_pointF p, RSGL_color c) {
-    RSGL_drawRectF(renderer, (RSGL_rectF){p.x, p.y, 1.0f, 1.0f}, c);
+void RSGL_drawPointF(RSGL_renderer* renderer, RSGL_pointF p) {
+    RSGL_drawRectF(renderer, (RSGL_rectF){p.x, p.y, 1.0f, 1.0f});
 }
 
-void RSGL_drawTriangleF(RSGL_renderer* renderer, RSGL_triangleF t, RSGL_color c) {
+void RSGL_drawTriangleF(RSGL_renderer* renderer, RSGL_triangleF t) {
     RSGL_point3D center = {t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0};
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, center);
 
@@ -922,10 +928,10 @@ void RSGL_drawTriangleF(RSGL_renderer* renderer, RSGL_triangleF t, RSGL_color c)
                 ((float)(t.p3.x - t.p1.x)/t.p2.x < 1) ? (float)(t.p3.x - t.p1.x) / t.p2.x : 0, 0.0f,
     };
 
-    RSGL_basicDraw(renderer, RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 3);
+    RSGL_basicDraw(renderer, RSGL_TRIANGLES, (float*)points, (float*)texPoints, 3);
 }
 
-void RSGL_drawTriangleHyp(RSGL_renderer* renderer, RSGL_pointF p, size_t angle, float hypotenuse, RSGL_color color) {
+void RSGL_drawTriangleHyp(RSGL_renderer* renderer, RSGL_pointF p, size_t angle, float hypotenuse) {
     float dir = (hypotenuse > 0);
     hypotenuse = fabsf(hypotenuse);
 
@@ -938,10 +944,10 @@ void RSGL_drawTriangleHyp(RSGL_renderer* renderer, RSGL_pointF p, size_t angle, 
         RSGL_POINTF(p.x + (base * dir), p.y - opp)
     );
 
-    RSGL_drawTriangleF(renderer, t, color);
+    RSGL_drawTriangleF(renderer, t);
 }
 
-void RSGL_drawRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_color c) {
+void RSGL_drawRectF(RSGL_renderer* renderer, RSGL_rectF r) {
     float texPoints[] = {
                                 0.0f, 0.0f,
                                 0.0f, 1.0f,
@@ -964,28 +970,28 @@ void RSGL_drawRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_color c) {
                                 RSGL_GET_MATRIX_POINT(r.x, r.y + r.h, 0.0f),
                             };
 
-    RSGL_basicDraw(renderer, RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 6);
+    RSGL_basicDraw(renderer, RSGL_TRIANGLES, (float*)points, (float*)texPoints, 6);
 }
 
-void RSGL_drawRoundRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding, RSGL_color c) {
-    RSGL_drawRect(renderer, RSGL_RECT(r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h), c);
-    RSGL_drawRect(renderer, RSGL_RECT(r.x, r.y + (rounding.y / 2), r.w,  r.h - rounding.y), c);
+void RSGL_drawRoundRectF(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding) {
+    RSGL_drawRect(renderer, RSGL_RECT(r.x + (rounding.x / 2), r.y, r.w - rounding.x, r.h));
+    RSGL_drawRect(renderer, RSGL_RECT(r.x, r.y + (rounding.y / 2), r.w,  r.h - rounding.y));
 
-    RSGL_drawArc(renderer, RSGL_RECT(r.x, r.y, rounding.x, rounding.y), (RSGL_point){180, 270}, c);
-    RSGL_drawArc(renderer, RSGL_RECT(r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y), (RSGL_point){90, 180}, c);
-    RSGL_drawArc(renderer, RSGL_RECT(r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y), rounding.x, rounding.y), (RSGL_point){0, 90}, c);
-    RSGL_drawArc(renderer, RSGL_RECT(r.x, r.y  + (r.h - rounding.y),  rounding.x, rounding.y), (RSGL_point){270, 360}, c);
+    RSGL_drawArc(renderer, RSGL_RECT(r.x, r.y, rounding.x, rounding.y), (RSGL_point){180, 270});
+    RSGL_drawArc(renderer, RSGL_RECT(r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y), (RSGL_point){90, 180});
+    RSGL_drawArc(renderer, RSGL_RECT(r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y), rounding.x, rounding.y), (RSGL_point){0, 90});
+    RSGL_drawArc(renderer, RSGL_RECT(r.x, r.y  + (r.h - rounding.y),  rounding.x, rounding.y), (RSGL_point){270, 360});
 }
 
-void RSGL_drawPolygonFOutlineEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c);
+void RSGL_drawPolygonFOutlineEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_pointF arc);
 
-void RSGL_drawPolygonFEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
+void RSGL_drawPolygonFEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_pointF arc) {
     static float verts[360 * 3];
     static float texcoords[360 * 2];
 
     RSGL_point3D center =  (RSGL_point3D){o.x + (o.w / 2.0f), o.y + (o.h / 2.0f), 0};
 
-o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
+	o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, center);
 
     float displacement = 360.0f / (float)sides;
@@ -1012,41 +1018,41 @@ o = (RSGL_rectF){o.x, o.y, o.w / 2, o.h / 2};
     texcoords[tIndex + 1] = 0;
     texcoords[tIndex + 2] = 0;
 
-    RSGL_basicDraw(renderer, RSGL_TRIANGLE_FAN, verts, texcoords, c, vIndex / 3);
+    RSGL_basicDraw(renderer, RSGL_TRIANGLE_FAN, verts, texcoords, vIndex / 3);
 }
 
-void RSGL_drawPolygonF(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_color c) { RSGL_drawPolygonFEx(renderer, o, sides, (RSGL_pointF){0, (float)sides}, c); }
+void RSGL_drawPolygonF(RSGL_renderer* renderer, RSGL_rectF o, u32 sides) { RSGL_drawPolygonFEx(renderer, o, sides, (RSGL_pointF){0, (float)sides}); }
 
 
-void RSGL_drawArcF(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc, RSGL_color color) {
+void RSGL_drawArcF(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc) {
     u32 verts = (u32)((float)((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10) + 0.5);
     verts %= 360;
 
-    RSGL_drawPolygonFEx(renderer, o, verts, arc, color);
+    RSGL_drawPolygonFEx(renderer, o, verts, arc);
 }
 
-void RSGL_drawCircleF(RSGL_renderer* renderer, RSGL_circleF c, RSGL_color color) {
+void RSGL_drawCircleF(RSGL_renderer* renderer, RSGL_circleF c) {
     u32 verts = (u32)((2.0 * M_PI * c.d) / 10) % 360;
 
-    RSGL_drawPolygonFEx(renderer, (RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, (float)verts}, color);
+    RSGL_drawPolygonFEx(renderer, (RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, (float)verts});
 }
 
-void RSGL_drawOvalF(RSGL_renderer* renderer, RSGL_rectF o, RSGL_color c) {
+void RSGL_drawOvalF(RSGL_renderer* renderer, RSGL_rectF o) {
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
     verts = (verts > 360 ? 360 : verts);
 
-    RSGL_drawPolygonFEx(renderer, o, verts, (RSGL_pointF){0, verts}, c);
+    RSGL_drawPolygonFEx(renderer, o, verts, (RSGL_pointF){0, verts});
 }
 
 /*
     3D
 */
 
-void RSGL_drawPoint3D(RSGL_renderer* renderer, RSGL_point3D p, RSGL_color c) {
-    RSGL_drawCube(renderer, (RSGL_cube){p.x, p.y, p.z, 1.0f, 1.0f, 1.0f}, c);
+void RSGL_drawPoint3D(RSGL_renderer* renderer, RSGL_point3D p) {
+    RSGL_drawCube(renderer, (RSGL_cube){p.x, p.y, p.z, 1.0f, 1.0f, 1.0f});
 }
 
-void RSGL_drawLine3D(RSGL_renderer* renderer, RSGL_point3D p1, RSGL_point3D p2, u32 thickness, RSGL_color c) {
+void RSGL_drawLine3D(RSGL_renderer* renderer, RSGL_point3D p1, RSGL_point3D p2, u32 thickness) {
     renderer->state.lineWidth = thickness;
 
     RSGL_point3D center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, (p1.z + p2.z) / 2.0f};
@@ -1055,10 +1061,10 @@ void RSGL_drawLine3D(RSGL_renderer* renderer, RSGL_point3D p1, RSGL_point3D p2, 
     float points[] = {RSGL_GET_MATRIX_POINT(p1.x, p1.y, p1.z), RSGL_GET_MATRIX_POINT(p2.x, p2.y, p2.z)};
     float texPoints[] = {0, 0.0f,          0, 0.0f};
 
-    RSGL_basicDraw(renderer, RSGL_LINES, (float*)points, (float*)texPoints, c, 2);
+    RSGL_basicDraw(renderer, RSGL_LINES, (float*)points, (float*)texPoints, 2);
 }
 
-void RSGL_drawTriangle3D(RSGL_renderer* renderer, RSGL_triangle3D t, RSGL_color c) {
+void RSGL_drawTriangle3D(RSGL_renderer* renderer, RSGL_triangle3D t) {
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, RSGL_POINT3D(200, 400, 1));
 
     float points[] = {
@@ -1073,10 +1079,10 @@ void RSGL_drawTriangle3D(RSGL_renderer* renderer, RSGL_triangle3D t, RSGL_color 
                 ((float)(points[6] - points[0])/points[3]< 1) ? (float)(points[6] - points[0]) / points[3] : 0, 0.0f,
     };
 
-    RSGL_basicDraw(renderer, RSGL_TRIANGLES, (float*)points, (float*)texPoints, c, 3);
+    RSGL_basicDraw(renderer, RSGL_TRIANGLES, (float*)points, (float*)texPoints, 3);
 }
 
-void RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube, RSGL_color c) {
+void RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube) {
     float texPoints[] = {
         0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
         1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
@@ -1150,14 +1156,14 @@ void RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube, RSGL_color c) {
         RSGL_GET_MATRIX_POINT(cube.x,         cube.y, cube.z),
     };
 
-    RSGL_basicDraw(renderer, RSGL_TRIANGLES, points, texPoints, c, 36);
+    RSGL_basicDraw(renderer, RSGL_TRIANGLES, points, texPoints, 36);
 }
 
 /*
 outlines
 */
 
-void RSGL_drawLineF(RSGL_renderer* renderer, RSGL_pointF p1, RSGL_pointF p2, u32 thickness, RSGL_color c) {
+void RSGL_drawLineF(RSGL_renderer* renderer, RSGL_pointF p1, RSGL_pointF p2, u32 thickness) {
     renderer->state.lineWidth = thickness;
 
     RSGL_point3D center = {(p1.x + p2.x) / 2.0f, (p1.y + p2.y) / 2.0f, 0.0f};
@@ -1166,10 +1172,10 @@ void RSGL_drawLineF(RSGL_renderer* renderer, RSGL_pointF p1, RSGL_pointF p2, u32
     float points[] = {RSGL_GET_MATRIX_POINT(p1.x, p1.y, 0.0f), RSGL_GET_MATRIX_POINT(p2.x, p2.y, 0.0f)};
     float texPoints[] = {0, 0.0f,          0, 0.0f};
 
-    RSGL_basicDraw(renderer, RSGL_LINES, (float*)points, (float*)texPoints, c, 2);
+    RSGL_basicDraw(renderer, RSGL_LINES, (float*)points, (float*)texPoints, 2);
 }
 
-void RSGL_drawTriangleFOutline(RSGL_renderer* renderer, RSGL_triangleF t, u32 thickness, RSGL_color c) {
+void RSGL_drawTriangleFOutline(RSGL_renderer* renderer, RSGL_triangleF t, u32 thickness) {
     renderer->state.lineWidth = thickness;
     RSGL_point3D center = {t.p3.x, (t.p3.y + t.p1.y) / 2.0f, 0};
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, center);
@@ -1183,38 +1189,38 @@ void RSGL_drawTriangleFOutline(RSGL_renderer* renderer, RSGL_triangleF t, u32 th
 
     float texCoords[18];
 
-    RSGL_basicDraw(renderer, RSGL_LINES, (float*)points, texCoords, c, 6);
+    RSGL_basicDraw(renderer, RSGL_LINES, (float*)points, texCoords, 6);
 }
-void RSGL_drawRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, u32 thickness, RSGL_color c) {
+void RSGL_drawRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, u32 thickness) {
     RSGL_point3D oCenter = renderer->state.center;
 
     RSGL_renderer_setCenter(renderer, (RSGL_point3D){r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f});
-    RSGL_drawLineF(renderer, (RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x + r.w, r.y}, thickness, c);
+    RSGL_drawLineF(renderer, (RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x + r.w, r.y}, thickness);
 
     RSGL_renderer_setCenter(renderer, (RSGL_point3D){r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f});
-    RSGL_drawLineF(renderer, (RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x, r.y + r.h}, thickness, c);
+    RSGL_drawLineF(renderer, (RSGL_pointF){r.x, r.y}, (RSGL_pointF){r.x, r.y + r.h}, thickness);
 
     RSGL_renderer_setCenter(renderer, (RSGL_point3D){r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f});
-    RSGL_drawLineF(renderer, (RSGL_pointF){r.x, r.y + r.h}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness, c);
+    RSGL_drawLineF(renderer, (RSGL_pointF){r.x, r.y + r.h}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness);
 
     RSGL_renderer_setCenter(renderer, (RSGL_point3D){r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f});
-    RSGL_drawLineF(renderer, (RSGL_pointF){r.x + r.w, r.y}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness, c);
+    RSGL_drawLineF(renderer, (RSGL_pointF){r.x + r.w, r.y}, (RSGL_pointF){r.x + r.w, r.y + r.h}, thickness);
 
     RSGL_renderer_setCenter(renderer, oCenter);
 }
-void RSGL_drawRoundRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding, u32 thickness, RSGL_color c) {
-    RSGL_drawRectF(renderer, RSGL_RECTF(r.x + (rounding.x/2), r.y, r.w - rounding.x, (int)(thickness + !thickness)), c);
-    RSGL_drawRectF(renderer, RSGL_RECTF(r.x + (rounding.x/2), r.y + r.h, r.w - rounding.x, (int)(thickness + !thickness)), c);
-    RSGL_drawRectF(renderer, RSGL_RECTF(r.x, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y), c);
-    RSGL_drawRectF(renderer, RSGL_RECTF(r.x + r.w, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y), c);
+void RSGL_drawRoundRectFOutline(RSGL_renderer* renderer, RSGL_rectF r, RSGL_point rounding, u32 thickness) {
+    RSGL_drawRectF(renderer, RSGL_RECTF(r.x + (rounding.x/2), r.y, r.w - rounding.x, (int)(thickness + !thickness)));
+    RSGL_drawRectF(renderer, RSGL_RECTF(r.x + (rounding.x/2), r.y + r.h, r.w - rounding.x, (int)(thickness + !thickness)));
+    RSGL_drawRectF(renderer, RSGL_RECTF(r.x, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y));
+    RSGL_drawRectF(renderer, RSGL_RECTF(r.x + r.w, r.y + (rounding.y/2), (int)(thickness + !thickness),  r.h - rounding.y));
 
-    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x, r.y, rounding.x, rounding.y), (RSGL_pointF){180, 270}, thickness, c);
-    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y), (RSGL_pointF){90, 180}, thickness, c);
-    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y) - 1, rounding.x, rounding.y + 2), (RSGL_pointF){0, 90}, thickness, c);
-    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x + 1, r.y  + (r.h - rounding.y) - 1,  rounding.x, rounding.y + 2), (RSGL_pointF){270, 360}, thickness, c);
+    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x, r.y, rounding.x, rounding.y), (RSGL_pointF){180, 270}, thickness);
+    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x + (r.w - rounding.x), r.y, rounding.x, rounding.y), (RSGL_pointF){90, 180}, thickness);
+    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x + (r.w - rounding.x), r.y  + (r.h - rounding.y) - 1, rounding.x, rounding.y + 2), (RSGL_pointF){0, 90}, thickness);
+    RSGL_drawArcFOutline(renderer, RSGL_RECTF(r.x + 1, r.y  + (r.h - rounding.y) - 1,  rounding.x, rounding.y + 2), (RSGL_pointF){270, 360}, thickness);
 }
 
-void RSGL_drawPolygonFOutlineEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_pointF arc, RSGL_color c) {
+void RSGL_drawPolygonFOutlineEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, RSGL_pointF arc) {
     static float verts[360 * 2 * 3];
     static float texCoords[360 * 2 * 2];
 
@@ -1246,33 +1252,33 @@ void RSGL_drawPolygonFOutlineEx(RSGL_renderer* renderer, RSGL_rectF o, u32 sides
         }
     }
 
-    RSGL_basicDraw(renderer, RSGL_LINES, verts, texCoords, c, index / 3);
+    RSGL_basicDraw(renderer, RSGL_LINES, verts, texCoords, index / 3);
 }
 
-void RSGL_drawPolygonFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, u32 thickness, RSGL_color c) {
+void RSGL_drawPolygonFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 sides, u32 thickness) {
     renderer->state.lineWidth = thickness;
-    RSGL_drawPolygonFOutlineEx(renderer, o, sides, (RSGL_pointF){0, (float)sides}, c);
+    RSGL_drawPolygonFOutlineEx(renderer, o, sides, (RSGL_pointF){0, (float)sides});
 }
-void RSGL_drawArcFOutline(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc, u32 thickness, RSGL_color color) {
+void RSGL_drawArcFOutline(RSGL_renderer* renderer, RSGL_rectF o, RSGL_pointF arc, u32 thickness) {
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
     verts = (verts > 360 ? 360 : verts);
 
     renderer->state.lineWidth = thickness;
-    RSGL_drawPolygonFOutlineEx(renderer, o, verts, arc, color);
+    RSGL_drawPolygonFOutlineEx(renderer, o, verts, arc);
 }
-void RSGL_drawCircleFOutline(RSGL_renderer* renderer, RSGL_circleF c, u32 thickness, RSGL_color color) {
+void RSGL_drawCircleFOutline(RSGL_renderer* renderer, RSGL_circleF c, u32 thickness) {
     float verts = ((2 * M_PI * c.d) / 10);
     verts = (verts > 360 ? 360 : verts);
 
     renderer->state.lineWidth = thickness;
-    RSGL_drawPolygonFOutlineEx(renderer, (RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts}, color);
+    RSGL_drawPolygonFOutlineEx(renderer, (RSGL_rectF){c.x, c.y, c.d, c.d}, verts, (RSGL_pointF){0, verts});
 }
-void RSGL_drawOvalFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 thickness, RSGL_color c) {
+void RSGL_drawOvalFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 thickness) {
     float verts = ((2 * M_PI * ((o.w + o.h) / 2.0f)) / 10);
     verts = (verts > 360 ? 360 : verts);
 
     renderer->state.lineWidth = thickness;
-    RSGL_drawPolygonFOutlineEx(renderer, o, verts, (RSGL_pointF){0, verts}, c);
+    RSGL_drawPolygonFOutlineEx(renderer, o, verts, (RSGL_pointF){0, verts});
 }
 
 #ifndef RSGL_NO_TEXT
@@ -1294,15 +1300,15 @@ void RSGL_renderer_setFont(RSGL_renderer* renderer, RSGL_font* font) {
     renderer->state.font = font;
 }
 
-void RSGL_drawText(RSGL_renderer* renderer, const char* text, RSGL_circle c, RSGL_color color) {
-    RSGL_drawText_pro(renderer, text, strlen(text), 0.0f, c, color);
+void RSGL_drawText(RSGL_renderer* renderer, const char* text, RSGL_circle c) {
+    RSGL_drawText_pro(renderer, text, strlen(text), 0.0f, c);
 }
 
-void RSGL_drawText_len(RSGL_renderer* renderer, const char* text, size_t len, RSGL_circle c, RSGL_color color) {
-    RSGL_drawText_pro(renderer, text, len, 0.0f, c, color);
+void RSGL_drawText_len(RSGL_renderer* renderer, const char* text, size_t len, RSGL_circle c) {
+    RSGL_drawText_pro(renderer, text, len, 0.0f, c);
 }
 
-void RSGL_drawText_pro(RSGL_renderer* renderer, const char* text, size_t len, float spacing, RSGL_circle c, RSGL_color color) {
+void RSGL_drawText_pro(RSGL_renderer* renderer, const char* text, size_t len, float spacing, RSGL_circle c) {
     if (text == NULL || renderer->state.font == NULL)
         return;
 
