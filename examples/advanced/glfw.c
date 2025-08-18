@@ -1,6 +1,5 @@
 #include <GLFW/glfw3.h>
 
-#define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
@@ -34,26 +33,27 @@ int main(void)
 
     glfwSwapInterval(1);
 
-    RSGL_init((RSGL_area){640, 480}, glfwGetProcAddress, RSGL_GL_renderer());
+	RSGL_renderer renderer = RSGL_GL_renderer();
+	RSGL_renderer_init(&renderer, RSGL_AREA(640, 480), glfwGetProcAddress);
 
-    u32 comicSans = RSGL_loadFont("COMICSANS.ttf");
+    RSGL_font* comicSans = RSGL_loadFont(&renderer, "COMICSANS.ttf");
 
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
-        RSGL_setFont(comicSans);
-        RSGL_clear(RSGL_RGB(20, 20, 60));
-        RSGL_drawText("Hello, GLFW!", RSGL_CIRCLE(100, 100, 20), RSGL_RGB(255, 255, 255));
+        RSGL_renderer_setFont(&renderer, comicSans);
+        RSGL_renderer_clear(&renderer, RSGL_RGB(20, 20, 60));
+        RSGL_drawText(&renderer, "Hello, GLFW!", RSGL_CIRCLE(100, 100, 20), RSGL_RGB(255, 255, 255));
 
-        RSGL_drawRect((RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
-        
-        RSGL_draw();
+        RSGL_drawRect(&renderer, (RSGL_rect){200, 200, 200, 200}, RSGL_RGB(255, 0, 0));
+
+        RSGL_renderer_render(&renderer);
 		glfwSwapBuffers(window);
 	}
 
     glfwDestroyWindow(window);
 
-    RSGL_free();
+    RSGL_renderer_free(&renderer);
 
     glfwTerminate();
 }

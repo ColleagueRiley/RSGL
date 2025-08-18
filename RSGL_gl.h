@@ -19,12 +19,20 @@
 #ifndef RSGL_GL_H
 #define RSGL_GL_H
 
+typedef struct RSGL_glRenderer {
+    RSGL_programInfo program;       /* Default shader program id, supports vertex color and diffuse texture*/
+    u32 defaultTex;
+
+    u32 vao, vbo, tbo, cbo; /* array object and array buffers */
+} RSGL_glRenderer;
+
 /* toggle the use of legacy OpenGL, on by default unless it fails to load */
 RSGLDEF RSGL_renderer RSGL_GL_renderer(void);
+RSGLDEF size_t RSGL_GL_size(void);
 
-RSGLDEF void RSGL_GL_flush(RSGL_renderer* renderer);
-RSGLDEF void RSGL_GL_init(RSGL_renderer* renderer, void* proc); /* init render backend */
-RSGLDEF void RSGL_GL_free(RSGL_renderer* renderer); /* free render backend */
+RSGLDEF void RSGL_GL_render(RSGL_renderer* renderer);
+RSGLDEF void RSGL_GL_initPtr(RSGL_renderer* renderer, void* proc, void* ptr); /* init render backend */
+RSGLDEF void RSGL_GL_freePtr(RSGL_renderer* renderer); /* free render backend */
 RSGLDEF void RSGL_GL_clear(RSGL_renderer* renderer, float r, float g, float b, float a);
 RSGLDEF void RSGL_GL_viewport(RSGL_renderer* renderer, i32 x, i32 y, i32 w, i32 h);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
@@ -41,19 +49,15 @@ RSGLDEF void RSGL_GL_scissorEnd(RSGL_renderer* renderer);
 RSGLDEF RSGL_programInfo RSGL_GL_createProgram(RSGL_renderer* renderer, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_GL_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program);
 RSGLDEF void RSGL_GL_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len);
-#ifndef RSGL_NO_TEXT
-/* RFont */
-RFont_texture RFont_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight);
-b8 RFont_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newWidth, u32 newHeight);
-void RFont_GL_bitmap_to_atlas(RSGL_renderer* renderer, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h);
-#endif /* RSGL_NO_TEXT */
+RSGLDEF RSGL_texture RSGL_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight);
+RSGLDEF b8 RSGL_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newWidth, u32 newHeight);
+RSGLDEF void RSGL_GL_bitmap_to_atlas(RSGL_renderer* renderer, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h);
 
 #ifdef RSGL_USE_COMPUTE
 RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_renderer* renderer, const char* CShaderCode);
 RSGLDEF void RSGL_GL_dispatchComputeProgram(RSGL_renderer* renderer, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
 RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8 format);
 #endif
-
 #endif
 
 #ifdef RSGL_IMPLEMENTATION
@@ -236,19 +240,16 @@ extern int RSGL_loadGLModern(RSGLloadfunc proc);
 #endif
 
 #define RSGL_MULTILINE_STR(...) #__VA_ARGS__
-
-typedef struct RSGL_glRenderer {
-    RSGL_programInfo program;       /* Default shader program id, supports vertex color and diffuse texture*/
-    u32 defaultTex;
-
-    u32 vao, vbo, tbo, cbo; /* array object and array buffers */
-} RSGL_glRenderer;
+size_t RSGL_GL_size(void) {
+	return sizeof(RSGL_glRenderer);
+}
 
 RSGL_renderer RSGL_GL_renderer() {
     RSGL_renderer renderer;
-    renderer.flush = RSGL_GL_flush;
-    renderer.init = RSGL_GL_init;
-    renderer.free = RSGL_GL_free;
+    renderer.render = RSGL_GL_render;
+    renderer.size = RSGL_GL_size;
+    renderer.initPtr = RSGL_GL_initPtr;
+    renderer.freePtr = RSGL_GL_freePtr;
     renderer.clear = RSGL_GL_clear;
     renderer.viewport = RSGL_GL_viewport;
     renderer.createTexture = RSGL_GL_createTexture;
@@ -259,15 +260,9 @@ RSGL_renderer RSGL_GL_renderer() {
     renderer.createProgram = RSGL_GL_createProgram;
     renderer.deleteProgram = RSGL_GL_deleteProgram;
     renderer.setShaderValue = RSGL_GL_setShaderValue;
-#ifndef RSGL_NO_TEXT
-    renderer.createAtlas = RFont_GL_create_atlas;
-    renderer.resizeAtlas = RFont_GL_resize_atlas;
-    renderer.bitmapToAtlas = RFont_GL_bitmap_to_atlas;
-#else
-    renderer.createAtlas = NULL;
-    renderer.resizeAtlas = NULL;
-    renderer.bitmapToAtlas = NULL;
-#endif /* RSGL_NO_TEXT */
+    renderer.createAtlas = RSGL_GL_create_atlas;
+    renderer.resizeAtlas = RSGL_GL_resize_atlas;
+    renderer.bitmapToAtlas = RSGL_GL_bitmap_to_atlas;
 
 #ifdef RSGL_USE_COMPUTE
 	renderer.createComputeProgram = RSGL_GL_createComputeProgram;
@@ -289,9 +284,8 @@ void RSGL_GL_clear(RSGL_renderer* renderer, float r, float g, float b, float a) 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void RSGL_GL_init(RSGL_renderer* renderer, void* proc) {
-	renderer->internal = (void*)RSGL_MALLOC(sizeof(RSGL_glRenderer));
-
+void RSGL_GL_initPtr(RSGL_renderer* renderer, void* proc, void* ptr) {
+	renderer->internal = ptr;
     #ifdef RSGL_MODERN_OPENGL
     #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
@@ -461,7 +455,7 @@ RSGL_MULTILINE_STR(
     #endif
 }
 
-void RSGL_GL_free(RSGL_renderer* renderer) {
+void RSGL_GL_freePtr(RSGL_renderer* renderer) {
     #ifdef RSGL_MODERN_OPENGL
     /* Unbind everything */
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -490,11 +484,9 @@ void RSGL_GL_free(RSGL_renderer* renderer) {
 
     glDeleteTextures(1, (u32*)&((RSGL_glRenderer*)renderer->internal)->defaultTex); /* Unload default texture */
     #endif
-
-	RSGL_FREE(renderer->internal);
 }
 
-void RSGL_GL_flush(RSGL_renderer* renderer) {
+void RSGL_GL_render(RSGL_renderer* renderer) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -636,14 +628,14 @@ void RSGL_GL_flush(RSGL_renderer* renderer) {
 }
 
 void RSGL_GL_scissorStart(RSGL_renderer* renderer, RSGL_rectF scissor) {
-    RSGL_renderer_flush(renderer);
+    RSGL_renderer_render(renderer);
     glEnable(GL_SCISSOR_TEST);
 
     glScissor(scissor.x, renderer->state.currentArea.h - (scissor.y + scissor.h), scissor.w, scissor.h);
 }
 
 void RSGL_GL_scissorEnd(RSGL_renderer* renderer) {
-    RSGL_renderer_flush(renderer);
+    RSGL_renderer_render(renderer);
     glDisable(GL_SCISSOR_TEST);
 }
 
@@ -867,8 +859,7 @@ void RSGL_GL_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, flo
 #define GL_UNPACK_SKIP_ROWS 0x0CF3
 #endif
 
-#ifndef RSGL_NO_TEXT
-RFont_texture RFont_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight) {
+RSGL_texture RSGL_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight) {
  #if defined(RFONT_DEBUG) && !defined(RFONT_RENDER_LEGACY)
    glEnable(GL_DEBUG_OUTPUT);
    #endif
@@ -901,7 +892,7 @@ RFont_texture RFont_GL_create_atlas(RSGL_renderer* renderer, u32 atlasWidth, u32
    return id;
 }
 
-b8 RFont_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newWidth, u32 newHeight) {
+b8 RSGL_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newWidth, u32 newHeight) {
     GLuint newAtlas;
     glGenTextures(1, &newAtlas);
     glBindTexture(GL_TEXTURE_2D, newAtlas);
@@ -932,38 +923,37 @@ b8 RFont_GL_resize_atlas(RSGL_renderer* renderer, RFont_texture* atlas, u32 newW
     return 1;
 }
 
-void RFont_push_pixel_values(RSGL_renderer* renderer, GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
-void RFont_push_pixel_values(RSGL_renderer* renderer, GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
+void RSGL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
+void RSGL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
 }
 
-void RFont_GL_bitmap_to_atlas(RSGL_renderer* renderer, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
-   glEnable(GL_TEXTURE_2D);
+void RSGL_GL_bitmap_to_atlas(RSGL_renderer* renderer, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h) {
+	glEnable(GL_TEXTURE_2D);
 
 	GLint alignment, rowLength, skipPixels, skipRows;
-   glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 
-   #if !defined(RFONT_RENDER_LEGACY)
-   glActiveTexture(GL_TEXTURE0 + atlas - 1);
-   #endif
+#if !defined(RFONT_RENDER_LEGACY)
+	glActiveTexture(GL_TEXTURE0 + atlas - 1);
+#endif
 
 	glBindTexture(GL_TEXTURE_2D, atlas);
 
-	RFont_push_pixel_values(1, w, 0, 0);
+	RSGL_push_pixel_values(1, w, 0, 0);
 
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, w, h, GL_RED, GL_UNSIGNED_BYTE, bitmap);
 
-	RFont_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
+	RSGL_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
 
-   glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
-#endif /* RSGL_NO_TEXT */
 
 #ifdef RSGL_USE_COMPUTE
 
@@ -1113,7 +1103,7 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
         return 1;
     #endif
 
-    #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
+#if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
     glDeleteVertexArraysSRC(1, &vao);
     #endif
 

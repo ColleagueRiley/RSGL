@@ -1,3 +1,4 @@
+#define RGFW_OPENGL
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
@@ -7,40 +8,30 @@
 #include "RSGL_gl.h"
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("name", (RGFW_rect){500, 500, 500, 500}, RGFW_windowCenter);
+	RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
+	hints->major = 3;
+	hints->minor = 3;
+	RGFW_setGlobalHints_OpenGL(hints);
 
-	RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress, RSGL_GL_renderer());
-    
-    RSGL_font* font = RSGL_loadFont("Super Easy.ttf");
-    RSGL_setFont(font);
-    
-    u32 fps = 0;
-    u32 frameCount = 0;
-    double startTime = RGFW_getTime(); 
+	RGFW_window* win = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
+
+	RSGL_renderer renderer = RSGL_GL_renderer();
+	RSGL_renderer_init(&renderer, RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+
+    RSGL_font* font = RSGL_loadFont(&renderer, "Super Easy.ttf");
+    RSGL_renderer_setFont(&renderer, font);
 
     for (; RGFW_window_shouldClose(win) == false;) {
-        RGFW_window_checkEvent(win);
+		RGFW_pollEvents();
 
-        if (win->event.type == RGFW_quit)
-            break;
+		RSGL_renderer_clear(&renderer, RSGL_RGB(255, 255, 255));
 
-        RSGL_clear(RSGL_RGB(255, 255, 255));
+        RSGL_drawText(&renderer, "Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20), RSGL_RGB(255, 0, 0));
 
-        RSGL_drawText("Text example\nnewlines too", RSGL_CIRCLE(200, 200, 20), RSGL_RGB(255, 0, 0));
-        
-        char data[256];
-        snprintf(data, sizeof(data), "FPS : %i\nOpenGL %s", fps, "modern (3.3+)");
-
-        RSGL_drawText(data, RSGL_CIRCLE(0, 40, 40), RSGL_RGB(255, 0, 0));
-        RSGL_draw();
-		RGFW_window_swapBuffers(win);
-        
-		fps = RGFW_checkFPS(startTime, frameCount, 0);
-        frameCount++;
+        RSGL_renderer_render(&renderer);
+		RGFW_window_swapBuffers_OpenGL(win);
     }
-    
-    RSGL_freeFont(font);
 
-	RSGL_free();
+	RSGL_renderer_free(&renderer);
 	RGFW_window_close(win);
 }

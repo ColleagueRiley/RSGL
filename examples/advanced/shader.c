@@ -1,3 +1,4 @@
+#define RGFW_OPENGL
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
@@ -45,8 +46,8 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
 
     precision mediump float;
     vec2 pitch  = vec2(50., 50.);
-    
-    void main() {    
+
+    void main() {
         vec2 uv = gl_FragCoord.xy / u_resolution.xy;
         vec3 color = 0.5 + 0.5 * cos(u_time + uv.xyx + vec3(0, 2, 4));
 
@@ -60,39 +61,48 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
 );
 
 int main(void) {
-    RGFW_window* window = RGFW_createWindow("RSGL Shader example", RGFW_RECT(0, 0, 750, 500), RGFW_windowCenter);
-    
-	RSGL_init(RSGL_AREA(window->r.w, window->r.h), RGFW_getProcAddress, RSGL_GL_renderer());
+	RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
+	hints->major = 3;
+	hints->minor = 3;
+	RGFW_setGlobalHints_OpenGL(hints);
 
-    RSGL_programInfo program = RSGL_renderCreateProgram(MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
+	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
+
+	RSGL_renderer renderer = RSGL_GL_renderer();
+	RSGL_renderer_init(&renderer, RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+
+
+	RSGL_programInfo program = RSGL_renderer_createProgram(&renderer, MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 
     RGFW_window_showMouse(window, 0);
 
     while (RGFW_window_shouldClose(window) == false) {
-        while (RGFW_window_checkEvent(window)) {
-			if (window->event.type == RGFW_quit) break;
-		}
+		RGFW_pollEvents();
 
-        RSGL_clear(RSGL_RGB(20, 20, 20));
-        RSGL_setProgram(0);
-        RSGL_drawRect(RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 0, 0));
+        RSGL_renderer_clear(&renderer, RSGL_RGB(20, 20, 20));
+        RSGL_renderer_setProgram(&renderer, 0);
+        RSGL_drawRect(&renderer, RSGL_RECT(100, 200, 200, 200), RSGL_RGB(255, 0, 0));
 
-        RSGL_setProgram(program.program);
-        RSGL_drawCircle(RSGL_CIRCLE(0, 0, 60), RSGL_RGB(255, 0, 0));
+        RSGL_renderer_setProgram(&renderer, program.program);
+        RSGL_drawCircle(&renderer, RSGL_CIRCLE(0, 0, 60), RSGL_RGB(255, 0, 0));
 
-        RSGL_mat4 matrix =  RSGL_ortho(RSGL_loadIdentity().m, 0, window->r.w, window->r.h, 0, 0, 1.0);
-        RSGL_renderSetShaderValue(program.program, "mat", matrix.m, 16);
+        RSGL_mat4 matrix =  RSGL_ortho(RSGL_loadIdentity().m, 0, window->w, window->h, 0, 0, 1.0);
+        RSGL_renderer_setShaderValue(&renderer, program.program, "mat", matrix.m, 16);
 
-        RSGL_renderSetShaderValue(program.program, "u_time", (float[1]){RGFW_getTime()}, 1);
-        RSGL_renderSetShaderValue(program.program, "u_resolution", (float[2]){(float)window->r.w, (float)window->r.h}, 2);
-        RSGL_renderSetShaderValue(program.program, "u_mouse", (float[3]){(float)window->event.point.x, (float)window->event.point.y, 0}, 2);
-        RSGL_renderSetShaderValue(program.program, "pos", (float[2]){(float)window->event.point.x, (float)window->event.point.y}, 2);
+        RSGL_renderer_setShaderValue(&renderer, program.program, "u_time", (float[1]){time(NULL) / 1000}, 1);
+        RSGL_renderer_setShaderValue(&renderer, program.program, "u_resolution", (float[2]){(float)window->w, (float)window->h}, 2);
 
-        RSGL_draw();
-		RGFW_window_swapBuffers(window);
+		i32 x, y;
+		RGFW_window_getMouse(window, &x, &y);
+
+		RSGL_renderer_setShaderValue(&renderer, program.program, "u_mouse", (float[3]){(float)x, (float)y, 0}, 2);
+        RSGL_renderer_setShaderValue(&renderer, program.program, "pos", (float[2]){(float)x, (float)y}, 2);
+
+        RSGL_renderer_render(&renderer);
+		RGFW_window_swapBuffers_OpenGL(window);
 	}
 
-    RSGL_renderDeleteProgram(program);
-    RSGL_free();
+    RSGL_renderer_deleteProgram(&renderer, program);
+    RSGL_renderer_free(&renderer);
 	RGFW_window_close(window);
 }
