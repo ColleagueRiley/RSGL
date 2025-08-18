@@ -62,6 +62,9 @@ RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8
 
 #ifdef RSGL_IMPLEMENTATION
 
+/* prevent winapi conflicts (opengl includes windows.h for some reason) */
+#define OEMRESOURCE
+
 #ifndef __APPLE__
 #include <GL/gl.h>
 #else
