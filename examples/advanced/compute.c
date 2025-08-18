@@ -7,6 +7,8 @@
 #include "RSGL.h"
 #include "RSGL_gl.h"
 
+#include <time.h>
+
 /*
  	Example showing off basic compute shader use
 
