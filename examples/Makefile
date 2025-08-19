@@ -73,7 +73,8 @@ EXAMPLE_OUTPUTS = \
 	advanced/shader \
 	basics/shapes  \
 	basics/camera	\
-	advanced/compute
+	advanced/compute \
+	basics/stack
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS)
 
