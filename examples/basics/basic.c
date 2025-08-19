@@ -12,25 +12,22 @@ int main() {
 	hints->minor = 3;
 	RGFW_setGlobalHints_OpenGL(hints);
 
-	RGFW_window window;
-	RGFW_createWindowPtr("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL, &window);
+	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-	RSGL_renderer renderer = RSGL_GL_renderer();
-	RSGL_glRenderer ptr;
-	RSGL_renderer_initPtr(&renderer, RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL, &ptr);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
 
-	while (RGFW_window_shouldClose(&window) == RGFW_FALSE) {
+	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
 		RGFW_pollEvents();
 
-		RSGL_renderer_clear(&renderer, RSGL_RGB(255, 255, 255));
+		RSGL_renderer_clear(renderer, RSGL_RGB(255, 255, 255));
 
-		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
-		RSGL_drawRect(&renderer, RSGL_RECT(200, 200, 200, 200));
-		RSGL_renderer_render(&renderer);
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
+		RSGL_drawRect(renderer, RSGL_RECT(200, 200, 200, 200));
+		RSGL_renderer_render(renderer);
 
-		RGFW_window_swapBuffers_OpenGL(&window);
+		RGFW_window_swapBuffers_OpenGL(window);
 	}
 
-	RSGL_renderer_freePtr(&renderer);
-	RGFW_window_closePtr(&window);
+	RSGL_renderer_free(renderer);
+	RGFW_window_close(window);
 }

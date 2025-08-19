@@ -70,43 +70,41 @@ int main(void) {
 
 	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-	RSGL_renderer renderer = RSGL_GL_renderer();
-	RSGL_renderer_init(&renderer, RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
 
-
-	RSGL_programInfo program = RSGL_renderer_createProgram(&renderer, MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
+	RSGL_programInfo program = RSGL_renderer_createProgram(renderer, MY_VShaderCode, MY_FShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 
     RGFW_window_showMouse(window, 0);
 
     while (RGFW_window_shouldClose(window) == false) {
 		RGFW_pollEvents();
 
-        RSGL_renderer_clear(&renderer, RSGL_RGB(20, 20, 20));
-        RSGL_renderer_setProgram(&renderer, 0);
+        RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 20));
+        RSGL_renderer_setProgram(renderer, 0);
 
-		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
-        RSGL_drawRect(&renderer, RSGL_RECT(100, 200, 200, 200));
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
+        RSGL_drawRect(renderer, RSGL_RECT(100, 200, 200, 200));
 
-        RSGL_renderer_setProgram(&renderer, program.program);
-        RSGL_drawCircle(&renderer, RSGL_CIRCLE(0, 0, 60));
+        RSGL_renderer_setProgram(renderer, program.program);
+        RSGL_drawCircle(renderer, RSGL_CIRCLE(0, 0, 60));
 
         RSGL_mat4 matrix =  RSGL_ortho(RSGL_loadIdentity().m, 0, window->w, window->h, 0, 0, 1.0);
-        RSGL_renderer_setShaderValue(&renderer, program.program, "mat", matrix.m, 16);
+        RSGL_renderer_setShaderValue(renderer, program.program, "mat", matrix.m, 16);
 
-        RSGL_renderer_setShaderValue(&renderer, program.program, "u_time", (float[1]){time(NULL) / 1000}, 1);
-        RSGL_renderer_setShaderValue(&renderer, program.program, "u_resolution", (float[2]){(float)window->w, (float)window->h}, 2);
+        RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float[1]){time(NULL) / 1000}, 1);
+        RSGL_renderer_setShaderValue(renderer, program.program, "u_resolution", (float[2]){(float)window->w, (float)window->h}, 2);
 
 		i32 x, y;
 		RGFW_window_getMouse(window, &x, &y);
 
-		RSGL_renderer_setShaderValue(&renderer, program.program, "u_mouse", (float[3]){(float)x, (float)y, 0}, 2);
-        RSGL_renderer_setShaderValue(&renderer, program.program, "pos", (float[2]){(float)x, (float)y}, 2);
+		RSGL_renderer_setShaderValue(renderer, program.program, "u_mouse", (float[3]){(float)x, (float)y, 0}, 2);
+        RSGL_renderer_setShaderValue(renderer, program.program, "pos", (float[2]){(float)x, (float)y}, 2);
 
-        RSGL_renderer_render(&renderer);
+        RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(window);
 	}
 
-    RSGL_renderer_deleteProgram(&renderer, program);
-    RSGL_renderer_free(&renderer);
+    RSGL_renderer_deleteProgram(renderer, program);
+    RSGL_renderer_free(renderer);
 	RGFW_window_close(window);
 }

@@ -27,8 +27,7 @@ int main(void) {
 
 	RGFW_window* win = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-	RSGL_renderer renderer = RSGL_GL_renderer();
-	RSGL_renderer_init(&renderer, RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
 
 	RSGL_camera camera = {.fov = 60};
     RGFW_window_holdMouse(win);
@@ -87,22 +86,22 @@ int main(void) {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        RSGL_renderer_clear(&renderer, RSGL_RGB(80, 80, 110));
+        RSGL_renderer_clear(renderer, RSGL_RGB(80, 80, 110));
 
-        RSGL_renderer_setMatrix(&renderer, RSGL_renderer_getCameraMatrix(&renderer, camera));
+        RSGL_renderer_setMatrix(renderer, RSGL_renderer_getCameraMatrix(renderer, camera));
 
-		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
-		RSGL_drawCube(&renderer, RSGL_CUBE(49, 20, 5, 200, 200, 0.5));
-		RSGL_drawTriangle3D(&renderer, RSGL_createTriangle3D(25.0f, 480.0f, 0.0,
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
+		RSGL_drawCube(renderer, RSGL_CUBE(49, 20, 5, 200, 200, 0.5));
+		RSGL_drawTriangle3D(renderer, RSGL_createTriangle3D(25.0f, 480.0f, 0.0,
 															250, 480, 3.0f,
 															800, 480.0f, 0.0f));
 
-        RSGL_renderer_resetMatrix(&renderer);
+        RSGL_renderer_resetMatrix(renderer);
 
-        RSGL_renderer_render(&renderer);
+        RSGL_renderer_render(renderer);
         RGFW_window_swapBuffers_OpenGL(win);
     }
 
-    RSGL_renderer_free(&renderer);
+    RSGL_renderer_free(renderer);
     RGFW_window_close(win);
 }

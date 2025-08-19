@@ -33,30 +33,29 @@ int main(void)
 
     glfwSwapInterval(1);
 
-	RSGL_renderer renderer = RSGL_GL_renderer();
-	RSGL_renderer_init(&renderer, RSGL_AREA(640, 480), glfwGetProcAddress);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), glfwGetProcAddress);
 
-    RSGL_font* comicSans = RSGL_loadFont(&renderer, "COMICSANS.ttf");
+    RSGL_font* comicSans = RSGL_loadFont(renderer, "COMICSANS.ttf");
 
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
-        RSGL_renderer_setFont(&renderer, comicSans);
-        RSGL_renderer_clear(&renderer, RSGL_RGB(20, 20, 60));
+        RSGL_renderer_setFont(renderer, comicSans);
+        RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 60));
 
-		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 255,  255));
-        RSGL_drawText(&renderer, "Hello, GLFW!", RSGL_CIRCLE(100, 100, 20));
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 255,  255));
+        RSGL_drawText(renderer, "Hello, GLFW!", RSGL_CIRCLE(100, 100, 20));
 
-		RSGL_renderer_setColor(&renderer, RSGL_RGB(255, 0, 0));
-        RSGL_drawRect(&renderer, (RSGL_rect){200, 200, 200, 200});
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
+        RSGL_drawRect(renderer, (RSGL_rect){200, 200, 200, 200});
 
-        RSGL_renderer_render(&renderer);
+        RSGL_renderer_render(renderer);
 		glfwSwapBuffers(window);
 	}
 
     glfwDestroyWindow(window);
 
-    RSGL_renderer_free(&renderer);
+    RSGL_renderer_free(renderer);
 
     glfwTerminate();
 }

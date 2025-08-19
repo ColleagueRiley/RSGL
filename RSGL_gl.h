@@ -26,9 +26,11 @@ typedef struct RSGL_glRenderer {
     u32 vao, vbo, tbo, cbo; /* array object and array buffers */
 } RSGL_glRenderer;
 
-/* toggle the use of legacy OpenGL, on by default unless it fails to load */
-RSGLDEF RSGL_renderer RSGL_GL_renderer(void);
+RSGLDEF RSGL_rendererProc RSGL_GL_rendererProc(void);
 RSGLDEF size_t RSGL_GL_size(void);
+
+RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(RSGL_area r, void* loader);
+RSGLDEF void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, void* ptr, RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_GL_render(RSGL_renderer* renderer);
 RSGLDEF void RSGL_GL_initPtr(RSGL_renderer* renderer, void* proc, void* ptr); /* init render backend */
@@ -61,6 +63,10 @@ RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8
 #endif
 
 #ifdef RSGL_IMPLEMENTATION
+
+RSGL_renderer* RSGL_GL_renderer_init(RSGL_area r, void* loader) { return RSGL_renderer_init(RSGL_GL_rendererProc(), r, loader); }
+void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, void* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL_rendererProc(), r, loader, ptr, renderer); }
+
 
 /* prevent winapi conflicts (opengl includes windows.h for some reason) */
 #define OEMRESOURCE
@@ -247,36 +253,36 @@ size_t RSGL_GL_size(void) {
 	return sizeof(RSGL_glRenderer);
 }
 
-RSGL_renderer RSGL_GL_renderer() {
-    RSGL_renderer renderer;
-    renderer.render = RSGL_GL_render;
-    renderer.size = RSGL_GL_size;
-    renderer.initPtr = RSGL_GL_initPtr;
-    renderer.freePtr = RSGL_GL_freePtr;
-    renderer.clear = RSGL_GL_clear;
-    renderer.viewport = RSGL_GL_viewport;
-    renderer.createTexture = RSGL_GL_createTexture;
-    renderer.updateTexture = RSGL_GL_updateTexture;
-    renderer.deleteTexture = RSGL_GL_deleteTexture;
-    renderer.scissorStart = RSGL_GL_scissorStart;
-    renderer.scissorEnd =  RSGL_GL_scissorEnd;
-    renderer.createProgram = RSGL_GL_createProgram;
-    renderer.deleteProgram = RSGL_GL_deleteProgram;
-    renderer.setShaderValue = RSGL_GL_setShaderValue;
-    renderer.createAtlas = RSGL_GL_create_atlas;
-    renderer.resizeAtlas = RSGL_GL_resize_atlas;
-    renderer.bitmapToAtlas = RSGL_GL_bitmap_to_atlas;
+RSGL_rendererProc RSGL_GL_rendererProc() {
+    RSGL_rendererProc proc;
+    proc.render = RSGL_GL_render;
+    proc.size = RSGL_GL_size;
+    proc.initPtr = RSGL_GL_initPtr;
+    proc.freePtr = RSGL_GL_freePtr;
+    proc.clear = RSGL_GL_clear;
+    proc.viewport = RSGL_GL_viewport;
+    proc.createTexture = RSGL_GL_createTexture;
+    proc.updateTexture = RSGL_GL_updateTexture;
+    proc.deleteTexture = RSGL_GL_deleteTexture;
+    proc.scissorStart = RSGL_GL_scissorStart;
+    proc.scissorEnd =  RSGL_GL_scissorEnd;
+    proc.createProgram = RSGL_GL_createProgram;
+    proc.deleteProgram = RSGL_GL_deleteProgram;
+    proc.setShaderValue = RSGL_GL_setShaderValue;
+    proc.createAtlas = RSGL_GL_create_atlas;
+    proc.resizeAtlas = RSGL_GL_resize_atlas;
+    proc.bitmapToAtlas = RSGL_GL_bitmap_to_atlas;
 
 #ifdef RSGL_USE_COMPUTE
-	renderer.createComputeProgram = RSGL_GL_createComputeProgram;
-	renderer.dispatchComputeProgram = RSGL_GL_dispatchComputeProgram;
-	renderer.bindComputeTexture = RSGL_GL_bindComputeTexture;
+	proc.createComputeProgram = RSGL_GL_createComputeProgram;
+	proc.dispatchComputeProgram = RSGL_GL_dispatchComputeProgram;
+	proc.bindComputeTexture = RSGL_GL_bindComputeTexture;
 #else
-	renderer.createComputeProgram = NULL;
-	renderer.dispatchComputeProgram = NULL;
-	renderer.bindComputeTexture = NULL;
+	proc.createComputeProgram = NULL;
+	proc.dispatchComputeProgram = NULL;
+	proc.bindComputeTexture = NULL;
 #endif
-    return renderer;
+    return proc;
 }
 
 void RSGL_GL_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
@@ -288,7 +294,7 @@ void RSGL_GL_clear(RSGL_renderer* renderer, float r, float g, float b, float a) 
 }
 
 void RSGL_GL_initPtr(RSGL_renderer* renderer, void* proc, void* ptr) {
-	renderer->internal = ptr;
+	renderer->ctx = ptr;
     #ifdef RSGL_MODERN_OPENGL
     #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
@@ -407,51 +413,51 @@ RSGL_MULTILINE_STR(
 #endif
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-	glGenVertexArrays(1, &((RSGL_glRenderer*)renderer->internal)->vao);
-	glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
+	glGenVertexArrays(1, &((RSGL_glRenderer*)renderer->ctx)->vao);
+	glBindVertexArray(((RSGL_glRenderer*)renderer->ctx)->vao);
     #endif
 
-	glGenBuffers(1, &((RSGL_glRenderer*)renderer->internal)->vbo);
-	glGenBuffers(1, &((RSGL_glRenderer*)renderer->internal)->tbo);
-	glGenBuffers(1, &((RSGL_glRenderer*)renderer->internal)->cbo);
+	glGenBuffers(1, &((RSGL_glRenderer*)renderer->ctx)->vbo);
+	glGenBuffers(1, &((RSGL_glRenderer*)renderer->ctx)->tbo);
+	glGenBuffers(1, &((RSGL_glRenderer*)renderer->ctx)->cbo);
 
-    ((RSGL_glRenderer*)renderer->internal)->program = RSGL_renderer_createProgram(renderer, defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
+    ((RSGL_glRenderer*)renderer->ctx)->program = RSGL_renderer_createProgram(renderer, defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
 
     /* Init default vertex arrays buffers */
     /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-    glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
+    glBindVertexArray(((RSGL_glRenderer*)renderer->ctx)->vao);
     #endif
 
     /* Quads - Vertex buffers binding and attributes enable */
     /* Vertex position buffer (shader-location = 0) */
-    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->vbo);
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 3 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
 
     /* Vertex texcoord buffer (shader-location = 1) */
-    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->tbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->tbo);
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 2 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
 
     /* Vertex color buffer (shader-location = 3) */
-    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->cbo);
+    glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->cbo);
     glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
     /* Unbind the current VAO */
-    if (((RSGL_glRenderer*)renderer->internal)->vao)
+    if (((RSGL_glRenderer*)renderer->ctx)->vao)
         glBindVertexArray(0);
     #endif
 
     /* load default texture */
     u8 white[4] = {255, 255, 255, 255};
-    ((RSGL_glRenderer*)renderer->internal)->defaultTex = RSGL_renderer_createTexture(renderer,white, RSGL_AREA(1, 1), 4);
+    ((RSGL_glRenderer*)renderer->ctx)->defaultTex = RSGL_renderer_createTexture(renderer,white, RSGL_AREA(1, 1), 4);
 
     #else
     RSGL_UNUSED(proc);
@@ -466,7 +472,7 @@ void RSGL_GL_freePtr(RSGL_renderer* renderer) {
 
     /* Unload all vertex buffers data */
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-    glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
+    glBindVertexArray(((RSGL_glRenderer*)renderer->ctx)->vao);
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glDisableVertexAttribArray(2);
@@ -475,17 +481,17 @@ void RSGL_GL_freePtr(RSGL_renderer* renderer) {
     #endif
 
     /* Delete VBOs from GPU (VRAM) */
-    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->internal)->vbo);
-    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->internal)->tbo);
-    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->internal)->cbo);
+    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->ctx)->vbo);
+    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->ctx)->tbo);
+    glDeleteBuffers(1, &((RSGL_glRenderer*)renderer->ctx)->cbo);
 
     #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-    glDeleteVertexArrays(1, &((RSGL_glRenderer*)renderer->internal)->vao);
+    glDeleteVertexArrays(1, &((RSGL_glRenderer*)renderer->ctx)->vao);
     #endif
 
-    RSGL_renderer_deleteProgram(renderer, ((RSGL_glRenderer*)renderer->internal)->program);
+    RSGL_renderer_deleteProgram(renderer, ((RSGL_glRenderer*)renderer->ctx)->program);
 
-    glDeleteTextures(1, (u32*)&((RSGL_glRenderer*)renderer->internal)->defaultTex); /* Unload default texture */
+    glDeleteTextures(1, (u32*)&((RSGL_glRenderer*)renderer->ctx)->defaultTex); /* Unload default texture */
     #endif
 }
 
@@ -496,19 +502,19 @@ void RSGL_GL_render(RSGL_renderer* renderer) {
     #ifdef RSGL_MODERN_OPENGL
     if (renderer->info.vert_len > 0) {
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-        glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
+        glBindVertexArray(((RSGL_glRenderer*)renderer->ctx)->vao);
         #endif
 
         /* Vertex positions buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->info.vert_len * 3 * sizeof(float), renderer->info.verts);
 
         /* Texture coordinates buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->tbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->tbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->info.vert_len * 2 * sizeof(float), renderer->info.texCoords);
 
         /* Colors buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->cbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->cbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, renderer->info.vert_len * 4 * sizeof(float), renderer->info.colors);
 
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
@@ -519,24 +525,24 @@ void RSGL_GL_render(RSGL_renderer* renderer) {
         if (renderer->state.program)
             glUseProgram(renderer->state.program);
         else
-            glUseProgram(((RSGL_glRenderer*)renderer->internal)->program.program);
+            glUseProgram(((RSGL_glRenderer*)renderer->ctx)->program.program);
 
         #if !defined(RSGL_OPENGL_21) && !defined(RSGL_OPENGL_ES2)
-        glBindVertexArray(((RSGL_glRenderer*)renderer->internal)->vao);
+        glBindVertexArray(((RSGL_glRenderer*)renderer->ctx)->vao);
         #endif
 
         /* Bind vertex attrib: position (shader-location = 0) */
-        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->vbo);
         glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
         glEnableVertexAttribArray(0);
 
         /* Bind vertex attrib: texcoord (shader-location = 1) */
-        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->tbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->tbo);
         glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
         glEnableVertexAttribArray(1);
 
         /* Bind vertex attrib: color (shader-location = 3) */
-        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->internal)->cbo);
+        glBindBuffer(GL_ARRAY_BUFFER, ((RSGL_glRenderer*)renderer->ctx)->cbo);
         glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
         glEnableVertexAttribArray(2);
 
@@ -556,7 +562,7 @@ void RSGL_GL_render(RSGL_renderer* renderer) {
 
             /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
             if (renderer->info.batches[i].tex == 0)
-                renderer->info.batches[i].tex = ((RSGL_glRenderer*)renderer->internal)->defaultTex;
+                renderer->info.batches[i].tex = ((RSGL_glRenderer*)renderer->ctx)->defaultTex;
 
             glBindTexture(GL_TEXTURE_2D, renderer->info.batches[i].tex);
             glLineWidth(renderer->info.batches[i].lineWidth > 0 ? renderer->info.batches[i].lineWidth : 0.1f);
@@ -564,23 +570,23 @@ void RSGL_GL_render(RSGL_renderer* renderer) {
             if (renderer->state.program)
                 glUseProgram(renderer->state.program);
             else {
-                glUseProgram(((RSGL_glRenderer*)renderer->internal)->program.program);
+                glUseProgram(((RSGL_glRenderer*)renderer->ctx)->program.program);
 
-                int loc = glGetUniformLocation(((RSGL_glRenderer*)renderer->internal)->program.program, "mat");
+                int loc = glGetUniformLocation(((RSGL_glRenderer*)renderer->ctx)->program.program, "mat");
                 glUniformMatrix4fv(loc, 1, GL_FALSE, renderer->info.batches[i].matrix.m);
            }
 
             glDrawArrays(mode, renderer->info.batches[i].start, renderer->info.batches[i].len);
         }
 
-        if (!((RSGL_glRenderer*)renderer->internal)->vao) {
+        if (!((RSGL_glRenderer*)renderer->ctx)->vao) {
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
 
         glBindTexture(GL_TEXTURE_2D, 0);    /* Unbind textures */
 
-        if (((RSGL_glRenderer*)renderer->internal)->vao)
+        if (((RSGL_glRenderer*)renderer->ctx)->vao)
             glBindVertexArray(0); /* Unbind VAO */
 
         glUseProgram(0);    /* Unbind shader program */

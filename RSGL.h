@@ -258,15 +258,32 @@ typedef struct RSGL_color {
 #define RSGL_RGB_TO_HEX(r, g, b, a) (RSGL_COLOR_TO_HEX(RSGL_RGBA(r, g, b, a)))
 #define RSGL_RGBA_TO_HEX(r, g, b) (RSGL_COLOR_TO_HEX(RSGL_RGB(r, g, b, a)))
 
-#ifndef RSGL_NO_TEXT
-#define RFONT_MALLOC RSGL_MALLOC
-#define RFONT_FREE RSGL_FREE
-#define RFont_area RSGL_area
-#define RFont_texture RSGL_texture
-#include "RFont.h"
 
+#define RFONT_RENDERER_H
+#define RFont_texture RSGL_texture
+
+typedef struct RFont_renderer_proc {
+	size_t (*size)(void); /*!< get the size of the renderer context */
+	void (*initPtr)(void* ctx); /* any initalizations the renderer needs to do */
+	RFont_texture (*create_atlas)(void* ctx, u32 atlasWidth, u32 atlasHeight); /* create a bitmap texture based on the given size */
+	void (*free_atlas)(void* ctx, RFont_texture atlas);
+	u8 (*resize_atlas)(void* ctx, RFont_texture* atlas, u32 atlasWidth, u32 atlasHeight); /* resize atlas based on given size, returns 1 if successful */
+	void (*bitmap_to_atlas)(void* ctx, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h); /* add the given bitmap to the texture based on the given coords and size data */
+	void (*render)(void* ctx, RFont_texture atlas, float* verts, float* tcoords, size_t nverts); /* render the text, using the vertices, atlas texture, and texture coords given. */
+	void (*set_framebuffer)(void* ctx, u32 weight, u32 height); /*!< set the frame buffer size (for ortho, for example) */
+	void (*set_color)(void* ctx, float r, float g, float b, float a); /*!< set the current rendering color */
+	void (*freePtr)(void* ctx); /* free any memory the renderer might need to free */
+} RFont_renderer_proc;
+
+typedef struct RFont_renderer {
+	void* ctx; /*!< source renderer data */
+	RFont_renderer_proc proc;
+} RFont_renderer;
+
+
+
+typedef struct RFont_font RFont_font;
 typedef RFont_font RSGL_font;
-#endif
 
 /*
 *********************
@@ -350,15 +367,9 @@ typedef struct RSGL_renderState {
 	RSGL_font* font;
 } RSGL_renderState;
 
-typedef struct RSGL_renderer {
-	RSGL_RENDER_INFO info;
-	RSGL_renderState state;
-	void* userPtr;
+struct RSGL_renderer;
 
-	RFont_renderer rfont;
-
-	void* internal; /* pointer for the renderer backend to store any internal data it wants/needs  */
-
+typedef struct RSGL_rendererProc {
 	size_t (*size)(void); /* get the size of the renderer's internal struct */
 	void (*initPtr)(struct RSGL_renderer* renderer, void* proc, void* ptr); /* init render backend */
 	void (*freePtr)(struct RSGL_renderer* renderer); /* free render backend */
@@ -379,19 +390,29 @@ typedef struct RSGL_renderer {
 	RSGL_programInfo (*createComputeProgram)(struct RSGL_renderer* renderer, const char* CShaderCode);
 	void (*dispatchComputeProgram)(struct RSGL_renderer* renderer, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
 	void (*bindComputeTexture)(struct RSGL_renderer* renderer, u32 texture, u8 format);
+} RSGL_rendererProc;
+
+typedef struct RSGL_renderer {
+	RSGL_RENDER_INFO info;
+	RSGL_renderState state;
+	RSGL_rendererProc proc;
+	RFont_renderer rfont;
+	void* userPtr;
+	void* ctx; /* pointer for the renderer backend to store any internal data it wants/needs  */
 } RSGL_renderer;
 
 RSGLDEF void RSGL_renderer_getRenderState(RSGL_renderer* renderer, RSGL_renderState* state);
 
 RSGLDEF size_t RSGL_renderer_size(RSGL_renderer* renderer);
 
-RSGLDEF void RSGL_renderer_initPtr(RSGL_renderer* renderer,
+RSGLDEF void RSGL_renderer_initPtr(RSGL_rendererProc proc,
                         RSGL_area r, /* graphics context size */
                         void* loader, /* opengl prozc address ex. wglProcAddress */
-						void* ptr /* pointer to allocate backend data */
-					   );
+						void* ptr, /* pointer to allocate backend data */
+					    RSGL_renderer* renderer
+					);
 
-RSGLDEF void RSGL_renderer_init(RSGL_renderer* renderer, RSGL_area r, void* loader);
+RSGLDEF RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, RSGL_area r, void* loader);
 RSGLDEF void RSGL_renderer_updateSize(RSGL_renderer* renderer, RSGL_area r);
 RSGLDEF void RSGL_renderer_render(RSGL_renderer* renderer); /* draw current batch */
 RSGLDEF void RSGL_renderer_freePtr(RSGL_renderer* renderer);
@@ -600,6 +621,10 @@ RSGLDEF RSGL_area RSGL_renderer_textLineArea(RSGL_renderer* renderer, const char
 
 #ifndef RSGL_NO_TEXT
 #define RFONT_IMPLEMENTATION
+#define RFONT_MALLOC RSGL_MALLOC
+#define RFONT_FREE RSGL_FREE
+#define RFont_area RSGL_area
+
 #include "RFont.h"
 #endif /* RSGL_NO_TEXT */
 
@@ -706,16 +731,17 @@ void RSGL_RFont_render_text(RSGL_renderer* renderer, RFont_texture atlas, float*
 #endif
 
 void RSGL_renderer_render(RSGL_renderer* renderer) {
-	if (renderer->render)
-		renderer->render(renderer);
+	if (renderer->proc.render)
+		renderer->proc.render(renderer);
 }
 
 size_t RSGL_renderer_size(RSGL_renderer* renderer) {
-	if (renderer->size) return renderer->size();
+	if (renderer->proc.size) return renderer->proc.size();
 	return 0;
 }
 
-void RSGL_renderer_initPtr(RSGL_renderer* renderer, RSGL_area r, void* proc, void* data) {
+void RSGL_renderer_initPtr(RSGL_rendererProc proc, RSGL_area r, void* loader, void* data, RSGL_renderer* renderer) {
+	renderer->proc = proc;
     RSGL_renderer_clearArgs(renderer);
     renderer->state.color = RSGL_RGBA(0, 0, 0, 255);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, r.w, r.h));
@@ -724,11 +750,11 @@ void RSGL_renderer_initPtr(RSGL_renderer* renderer, RSGL_area r, void* proc, voi
     renderer->state.currentArea = r;
 
 #ifndef RSGL_NO_TEXT
-	renderer->rfont.create_atlas = (RFont_texture (*)(void* ctx, u32 atlasWidth, u32 atlasHeight))renderer->createAtlas;
-	renderer->rfont.free_atlas = (void (*)(void*, RSGL_texture))renderer->deleteTexture;
-	renderer->rfont.resize_atlas = (b8 (*)(void*, RFont_texture*, u32, u32))renderer->resizeAtlas;
-	renderer->rfont.bitmap_to_atlas = (void (*)(void*, RFont_texture, u8*, float, float, float, float))renderer->bitmapToAtlas;
-	renderer->rfont.render = (void (*)(void*, RFont_texture, float*, float*, size_t))RSGL_RFont_render_text;
+	renderer->rfont.proc.create_atlas = (RFont_texture (*)(void* ctx, u32 atlasWidth, u32 atlasHeight))renderer->proc.createAtlas;
+	renderer->rfont.proc.free_atlas = (void (*)(void*, RSGL_texture))renderer->proc.deleteTexture;
+	renderer->rfont.proc.resize_atlas = (b8 (*)(void*, RFont_texture*, u32, u32))renderer->proc.resizeAtlas;
+	renderer->rfont.proc.bitmap_to_atlas = (void (*)(void*, RFont_texture, u8*, float, float, float, float))renderer->proc.bitmapToAtlas;
+	renderer->rfont.proc.render = (void (*)(void*, RFont_texture, float*, float*, size_t))RSGL_RFont_render_text;
 	renderer->rfont.ctx = renderer;
 #endif
 
@@ -739,20 +765,22 @@ void RSGL_renderer_initPtr(RSGL_renderer* renderer, RSGL_area r, void* proc, voi
     renderer->info.texCoords = (float*)RSGL_MALLOC(sizeof(float) * RSGL_MAX_VERTS * 2);
     renderer->info.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
 
-	if (renderer->initPtr)
-		renderer->initPtr(renderer, proc, data);
+	if (renderer->proc.initPtr)
+		renderer->proc.initPtr(renderer, loader, data);
 }
 
 
-void RSGL_renderer_init(RSGL_renderer* renderer, RSGL_area r, void* proc) {
-	void* data = RSGL_MALLOC(renderer->size());
-	RSGL_renderer_initPtr(renderer, r, proc, data);
+RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, RSGL_area r, void* loader) {
+	RSGL_renderer* renderer = (RSGL_renderer*)RSGL_MALLOC(sizeof(RSGL_renderer));
+	void* data = RSGL_MALLOC(proc.size());
+	RSGL_renderer_initPtr(proc, r, loader, data, renderer);
+	return renderer;
 }
 
 void RSGL_renderer_freePtr(RSGL_renderer* renderer) {
     if (renderer->info.verts != NULL) {
-		if (renderer->freePtr)
-			renderer->freePtr(renderer);
+		if (renderer->proc.freePtr)
+			renderer->proc.freePtr(renderer);
 
         RSGL_FREE(renderer->info.verts);
         RSGL_FREE(renderer->info.colors);
@@ -764,44 +792,45 @@ void RSGL_renderer_freePtr(RSGL_renderer* renderer) {
 
 void RSGL_renderer_free(RSGL_renderer* renderer) {
 	RSGL_renderer_freePtr(renderer);
-	if (renderer->internal)
-		RSGL_FREE(renderer->internal);
+	if (renderer->ctx)
+		RSGL_FREE(renderer->ctx);
+	RSGL_FREE(renderer);
 }
 
 void RSGL_renderer_clear(RSGL_renderer* renderer, RSGL_color color) {
-	if (renderer->clear)
-		renderer->clear(renderer, ((float)color.r) / 255.0f, ((float)color.g) / 255.0f, ((float)color.b) / 255.0f, ((float)color.a) / 255.0f);
+	if (renderer->proc.clear)
+		renderer->proc.clear(renderer, ((float)color.r) / 255.0f, ((float)color.g) / 255.0f, ((float)color.b) / 255.0f, ((float)color.a) / 255.0f);
 }
-void RSGL_renderer_viewport(RSGL_renderer* renderer, RSGL_rect rect) { renderer->viewport(renderer, rect.x, rect.y, rect.w, rect.h); }
+void RSGL_renderer_viewport(RSGL_renderer* renderer, RSGL_rect rect) { renderer->proc.viewport(renderer, rect.x, rect.y, rect.w, rect.h); }
 RSGL_texture RSGL_renderer_createTexture(RSGL_renderer* renderer, u8* bitmap, RSGL_area memsize,  u8 channels) {
     RSGL_texture tex = 0;
-	if (renderer->createTexture) tex = renderer->createTexture(renderer, bitmap,  memsize, channels);
+	if (renderer->proc.createTexture) tex = renderer->proc.createTexture(renderer, bitmap,  memsize, channels);
 	return tex;
 }
 void RSGL_renderer_updateTexture(RSGL_renderer* renderer, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
-    return renderer->updateTexture(renderer, texture, bitmap, memsize, channels);
+    return renderer->proc.updateTexture(renderer, texture, bitmap, memsize, channels);
 }
-void RSGL_renderer_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex) { renderer->deleteTexture(renderer, tex); }
-void RSGL_renderer_scissorStart(RSGL_renderer* renderer, RSGL_rectF scissor) { renderer->scissorStart(renderer, scissor); }
-void RSGL_renderer_scissorEnd(RSGL_renderer* renderer) { renderer->scissorEnd(renderer); }
+void RSGL_renderer_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex) { renderer->proc.deleteTexture(renderer, tex); }
+void RSGL_renderer_scissorStart(RSGL_renderer* renderer, RSGL_rectF scissor) { renderer->proc.scissorStart(renderer, scissor); }
+void RSGL_renderer_scissorEnd(RSGL_renderer* renderer) { renderer->proc.scissorEnd(renderer); }
 RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
-    return renderer->createProgram(renderer, VShaderCode, FShaderCode, posName, texName, colorName);
+    return renderer->proc.createProgram(renderer, VShaderCode, FShaderCode, posName, texName, colorName);
 }
-void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program) { return renderer->deleteProgram(renderer, program); }
+void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program) { return renderer->proc.deleteProgram(renderer, program); }
 void RSGL_renderer_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len) {
-    return renderer->setShaderValue(renderer, program, var, value, len);
+    return renderer->proc.setShaderValue(renderer, program, var, value, len);
 }
 
 RSGL_programInfo RSGL_renderer_createComputeProgram(RSGL_renderer* renderer, const char* CShaderCode) {
-	return renderer->createComputeProgram(renderer, CShaderCode);
+	return renderer->proc.createComputeProgram(renderer, CShaderCode);
 }
 
 void RSGL_renderer_dispatchComputeProgram(RSGL_renderer* renderer, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z) {
-	renderer->dispatchComputeProgram(renderer, program, groups_x, groups_y, groups_z);
+	renderer->proc.dispatchComputeProgram(renderer, program, groups_x, groups_y, groups_z);
 }
 
 void RSGL_renderer_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8 format) {
-	renderer->bindComputeTexture(renderer, texture, format);
+	renderer->proc.bindComputeTexture(renderer, texture, format);
 }
 
 void RSGL_renderer_updateSize(RSGL_renderer* renderer, RSGL_area r) {
