@@ -387,6 +387,10 @@ void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
 }
 
 void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_INFO* info) {
+	if (program.program == 0) {
+		program = ctx->program;
+	}
+
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -409,10 +413,7 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_
         glBindVertexArray(0);
 
         /* Set current shader */
-        if (program.program)
-            glUseProgram(program.program);
-        else
-            glUseProgram(ctx->program.program);
+        glUseProgram(program.program);
 
 		glBindVertexArray(ctx->vao);
 
@@ -432,8 +433,9 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_
         glEnableVertexAttribArray(2);
 
         glActiveTexture(GL_TEXTURE0);
+		int loc = glGetUniformLocation(program.program, "mat");
 
-        u32 i;
+		u32 i;
         for (i = 0; i < info->len; i++) {
             GLenum mode = info->batches[i].type;
 
@@ -452,8 +454,7 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_
             glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
             glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
 
-			int loc = glGetUniformLocation(ctx->program.program, "mat");
-			if (loc) {
+			if (loc >= 0) {
 				glUniformMatrix4fv(loc, 1, GL_FALSE, info->batches[i].matrix.m);
 			}
 

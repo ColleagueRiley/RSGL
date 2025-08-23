@@ -807,6 +807,10 @@ void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color) {
 	renderer->state.color = color;
 }
 void RSGL_renderer_setProgram(RSGL_renderer* renderer, const RSGL_programInfo* program) {
+	if (program == NULL) {
+		renderer->state.program.program = 0;
+		return;
+	}
 	renderer->state.program = *program;
 }
 

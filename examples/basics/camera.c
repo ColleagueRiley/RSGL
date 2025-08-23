@@ -26,6 +26,7 @@ int main(void) {
 	RGFW_setGlobalHints_OpenGL(hints);
 
 	RGFW_window* win = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
+    RGFW_window_setExitKey(win, RGFW_escape);
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
 
