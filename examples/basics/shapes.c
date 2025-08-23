@@ -10,6 +10,8 @@
 #undef __linux__
 #endif
 
+#define RSGL_DEBUG
+//#define RSGL_RENDER_LEGACY
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"

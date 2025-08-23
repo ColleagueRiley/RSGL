@@ -17,7 +17,7 @@ int main(void) {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
 
-	RSGL_font* font = RSGL_loadFont(renderer, "Super Easy.ttf");
+	RSGL_font* font = RSGL_loadFont(renderer, "Super Easy.ttf", 20, 500, 500);
     RSGL_renderer_setFont(renderer, font);
 
     for (; RGFW_window_shouldClose(win) == false;) {

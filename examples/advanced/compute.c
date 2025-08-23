@@ -54,14 +54,14 @@ int main(void) {
 	while (RGFW_window_shouldClose(window) == false) {
 		RGFW_pollEvents();
 
-		RSGL_renderer_setProgram(renderer, program.program);
+		RSGL_renderer_setProgram(renderer, &program);
 		RSGL_renderer_bindComputeTexture(renderer, texture, 4);
 		RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float[1]){time(NULL) / 1000}, 1);
 		RSGL_renderer_setShaderValue(renderer, program.program, "u_screen_size", (float[2]){20, 20}, 2);
 		RSGL_renderer_dispatchComputeProgram(renderer, program, 20, 20, 1);
 
 		RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 20));
-		RSGL_renderer_setProgram(renderer, 0);
+		RSGL_renderer_setProgram(renderer, NULL);
 		RSGL_renderer_setTexture(renderer, texture);
 
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));

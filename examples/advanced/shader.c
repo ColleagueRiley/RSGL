@@ -80,12 +80,12 @@ int main(void) {
 		RGFW_pollEvents();
 
         RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 20));
-        RSGL_renderer_setProgram(renderer, 0);
+        RSGL_renderer_setProgram(renderer, NULL);
 
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
         RSGL_drawRect(renderer, RSGL_RECT(100, 200, 200, 200));
 
-        RSGL_renderer_setProgram(renderer, program.program);
+        RSGL_renderer_setProgram(renderer, &program);
         RSGL_drawCircle(renderer, RSGL_CIRCLE(0, 0, 60));
 
         RSGL_mat4 matrix =  RSGL_ortho(RSGL_loadIdentity().m, 0, window->w, window->h, 0, 0, 1.0);

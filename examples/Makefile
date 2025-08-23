@@ -81,11 +81,11 @@ all: xdg-shell.c $(EXAMPLE_OUTPUTS)
 examples: $(EXAMPLE_OUTPUTS)
 
 
-advanced/glfw: advanced/glfw.c ../RSGL.h
-	$(CC) $(CFLAGS) $(WARNIGNS) -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
+advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
+	$(CC) $(CFLAGS) $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
-$(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h
-	$(CC) $(WARNINGS) -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
+$(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h ../renderers/*.h
+	$(CC) $(WARNINGS) -I../renderers/ -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \

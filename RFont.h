@@ -184,23 +184,11 @@ you want to change anything
 */
 
 #ifndef RFont_texture
-typedef u32 RFont_texture;
+typedef size_t RFont_texture;
 #endif
 
 #ifndef RFONT_MAX_GLYPHS
 #define RFONT_MAX_GLYPHS 256
-#endif
-
-#ifndef RFONT_ATLAS_WIDTH_DEFAULT
-#define RFONT_ATLAS_WIDTH_DEFAULT 6000
-#endif
-
-#ifndef RFONT_ATLAS_RESIZE_LEN
-#define RFONT_ATLAS_RESIZE_LEN 3000
-#endif
-
-#ifndef RFONT_ATLAS_HEIGHT_DEFAULT
-#define RFONT_ATLAS_HEIGHT_DEFAULT 400
 #endif
 
 #ifndef RFONT_INIT_TEXT_SIZE
@@ -221,14 +209,12 @@ typedef u32 RFont_texture;
 
 #ifndef RFONT_RENDERER_H
 #define RFONT_RENDERER_H
-
 typedef struct RFont_renderer_proc {
 	size_t (*size)(void); /*!< get the size of the renderer context */
 	void (*initPtr)(void* ctx); /* any initalizations the renderer needs to do */
 	RFont_texture (*create_atlas)(void* ctx, u32 atlasWidth, u32 atlasHeight); /* create a bitmap texture based on the given size */
 	void (*free_atlas)(void* ctx, RFont_texture atlas);
-	b8 (*resize_atlas)(void* ctx, RFont_texture* atlas, u32 atlasWidth, u32 atlasHeight); /* resize atlas based on given size, returns 1 if successful */
-	void (*bitmap_to_atlas)(void* ctx, RFont_texture atlas, u8* bitmap, float x, float y, float w, float h); /* add the given bitmap to the texture based on the given coords and size data */
+	void (*bitmap_to_atlas)(void* ctx, RFont_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y); /* add the given bitmap to the texture based on the given coords and size data */
 	void (*render)(void* ctx, RFont_texture atlas, float* verts, float* tcoords, size_t nverts); /* render the text, using the vertices, atlas texture, and texture coords given. */
 	void (*set_framebuffer)(void* ctx, u32 weight, u32 height); /*!< set the frame buffer size (for ortho, for example) */
 	void (*set_color)(void* ctx, float r, float g, float b, float a); /*!< set the current rendering color */
@@ -260,14 +246,10 @@ RFONT_API void RFont_renderer_freePtr(RFont_renderer* renderer);
 
 #define RFONT_GET_FONT_WIDTH(fontHeight) RFONT_MAX_GLYPHS * fontHeight
 
-#ifndef RFont_area
-typedef struct { u32 w, h; } RFont_area;
-#endif
-
 typedef struct {
    u32 codepoint; /* the character (for checking) */
    size_t size; /* the size of the glyph */
-   i32 x, x2;  /* coords of the character on the texture */
+   i32 x, x2, y, y2;  /* coords of the character on the texture */
    RFont_font* font; /* the font that the glyph belongs to */
 
    /* source glyph data */
@@ -278,22 +260,22 @@ typedef struct {
 typedef struct RFont_src RFont_src;
 
 struct RFont_font {
-   RFont_src* src; /* source stb font info */
-   b8 free_font_memory;
-   float fheight; /* font height from stb */
-   float descent; /* font descent */
-   float numOfLongHorMetrics;
-   float space_adv;
+	RFont_src* src; /* source stb font info */
+	float fheight; /* font height from stb */
+	float descent; /* font descent */
+	float numOfLongHorMetrics;
+	float space_adv;
+	u32 maxHeight;
 
-   RFont_glyph glyphs[RFONT_MAX_GLYPHS]; /* glyphs */
-   size_t glyph_len;
+	RFont_glyph glyphs[RFONT_MAX_GLYPHS]; /* glyphs */
+	size_t glyph_len;
 
-   RFont_texture atlas; /* atlas texture */
-   size_t atlasWidth, atlasHeight;
-   float atlasX; /* the current x position inside the atlas */
+	RFont_texture atlas; /* atlas texture */
+	size_t atlasWidth, atlasHeight;
+	float atlasX, atlasY; /* the current position inside the atlas */
 
-   float verts[RFONT_INIT_VERTS];
-   float tcoords[RFONT_INIT_VERTS];
+	float verts[RFONT_INIT_VERTS];
+	float tcoords[RFONT_INIT_VERTS];
 };
 
 
@@ -308,17 +290,11 @@ RFONT_API char* RFont_codepoint_to_utf8(u32 codepoint);
 /**
  * @brief Init font stucture with a TTF file path.
  * @param font_name The TTF file path.
- * @return The `RFont_font` created using the TTF file data.
-*/
-RFONT_API RFont_font* RFont_font_init(RFont_renderer* renderer, const char* font_name);
-/**
- * @brief Init font stucture with a TTF file path.
- * @param font_name The TTF file path.
  * @param atlasWidth The width of the atlas texture.
  * @param atlasHeight The height of the atlas texture. (This should == the max text size)
  * @return The `RFont_font` created using the TTF file data.
 */
-RFONT_API RFont_font* RFont_font_init_ex(RFont_renderer* renderer, const char* font_name, size_t atlasWidth, size_t atlasHeight);
+RFONT_API RFont_font* RFont_font_init(RFont_renderer* renderer, const char* font_name, u32 maxHeight, size_t atlasWidth, size_t atlasHeight);
 /**
  * @brief Init a given font stucture with a TTF file path.
  * @param font_name The TTF file path.
@@ -327,39 +303,28 @@ RFONT_API RFont_font* RFont_font_init_ex(RFont_renderer* renderer, const char* f
  * @pram ptr Pointer to the given font structure
  * @return returns the same pointer or NULL if the font failed to load
 */
-RFONT_API RFont_font* RFont_font_init_ptr(RFont_renderer* renderer, const char* font_name, size_t atlasWidth, size_t atlasHeight, RFont_font* font);
+RFONT_API RFont_font* RFont_font_init_ptr(RFont_renderer* renderer, const char* font_name, u32 maxHeight, size_t atlasWidth, size_t atlasHeight, RFont_font* font);
 
 #endif
-
-
-/**
- * @brief Init font stucture with raw TTF data.
- * @param font_data The raw TTF data.
- * @param auto_free If the memory should be automatically freed by `RFont_font_free`.
- * @return The `RFont_font` created from the data.
-*/
-RFONT_API RFont_font* RFont_font_init_data(RFont_renderer* renderer, u8* font_data, b8 auto_free);
 
 /**
  * @brief Init font stucture with raw TTF data.
  * @param font_data The raw TTF data.
  * @param atlasWidth The width of the atlas texture.
  * @param atlasHeight The height of the atlas texture. (This should == the max text size)
- * @param auto_free If the memory should be automatically freed by `RFont_font_free`.
  * @return The `RFont_font` created from the data.
 */
-RFONT_API RFont_font* RFont_font_init_data_ex(RFont_renderer* renderer, u8* font_data, b8 auto_free, size_t atlasWidth, size_t atlasHeight);
+RFONT_API RFont_font* RFont_font_init_data(RFont_renderer* renderer, u8* font_data, u32 maxHeight, size_t atlasWidth, size_t atlasHeight);
 
 /**
  * @brief Init a given font stucture with raw TTF data.
  * @param font_data The raw TTF data.
  * @param atlasWidth The width of the atlas texture.
  * @param atlasHeight The height of the atlas texture. (This should == the max text size)
- * @param auto_free If the memory should be automatically freed by `RFont_font_free`.
  * @return The `RFont_font` created from the data.
  * @return returns the same pointer or NULL if the font failed to load
 */
-RFONT_API RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, b8 auto_free, size_t atlasWidth, size_t atlasHeight, RFont_font* ptr);
+RFONT_API RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u32 maxHeight, size_t atlasWidth, size_t atlasHeight, RFont_font* ptr);
 
 /**
  * @brief Free data from the font stucture, including the stucture itself
@@ -428,9 +393,10 @@ RFONT_API void RFont_font_add_string_len(RFont_renderer* renderer, RFont_font* f
  * @param font The font stucture to use for drawing
  * @param text The string to draw
  * @param size The size of the text
- * @return The area of the text based on the size
+ * @param [OUTPUT] the output width
+ * @param [OUTPUT] the output height
 */
-RFONT_API RFont_area RFont_text_area(RFont_renderer* renderer, RFont_font* font, const char* text, u32 size);
+RFONT_API void RFont_text_area(RFont_renderer* renderer, RFont_font* font, const char* text, u32 size, u32* w, u32* h);
 
 /**
  * @brief Get the area of the text based on the size using the font, using a given length.
@@ -438,9 +404,10 @@ RFONT_API RFont_area RFont_text_area(RFont_renderer* renderer, RFont_font* font,
  * @param text The string to draw
  * @param size The size of the text
  * @param spacing The spacing of the text
- * @return The area of the text based on the size
+ * @param [OUTPUT] the output width
+ * @param [OUTPUT] the output height
 */
-RFONT_API RFont_area RFont_text_area_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float spacing, u32 size);
+RFONT_API void RFont_text_area_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float spacing, u32 size, u32* w, u32* h);
 
 /**
  * @brief Get the area of the text based on the size using the font, using a given length.
@@ -450,9 +417,10 @@ RFONT_API RFont_area RFont_text_area_spacing(RFont_renderer* renderer, RFont_fon
  * @param size The size of the text
  * @param stopNL the number of \n s until it stops (0 = don't stop until the end)
  * @param spacing The spacing of the text
- * @return The area of the text based on the size
+ * @param [OUTPUT] the output width
+ * @param [OUTPUT] the output height
 */
-RFONT_API RFont_area RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing);
+RFONT_API void RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing, u32* w, u32* h);
 
 /**
  * @brief Draw a text string using the font.
@@ -461,9 +429,8 @@ RFONT_API RFont_area RFont_text_area_len(RFont_renderer* renderer, RFont_font* f
  * @param x The x position of the text
  * @param y The y position of the text
  * @param size The size of the text
- * @return The area of the text based on the size
 */
-RFONT_API RFont_area RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size);
+RFONT_API void RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size);
 
 /**
  * @brief Draw a text string using the font and a given spacing.
@@ -473,9 +440,8 @@ RFONT_API RFont_area RFont_draw_text(RFont_renderer* renderer, RFont_font* font,
  * @param y The y position of the text
  * @param size The size of the text
  * @param spacing The spacing of the text
- * @return The area of the text based on the size
 */
-RFONT_API RFont_area RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing);
+RFONT_API void RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing);
 
 /**
  * @brief Draw a text string using the font using a given length and a given spacing.
@@ -486,9 +452,8 @@ RFONT_API RFont_area RFont_draw_text_spacing(RFont_renderer* renderer, RFont_fon
  * @param y The y position of the text
  * @param size The size of the text
  * @param spacing The spacing of the text
- * @return The area of the text based on the size
 */
-RFONT_API RFont_area RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing);
+RFONT_API void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing);
 
 #endif /* RFONT_H */
 
@@ -636,63 +601,52 @@ char* RFont_read_file(const char* font_name) {
     return ttf_buffer;
 }
 
-RFont_font* RFont_font_init(RFont_renderer* renderer, const char* font_name) {
-   return RFont_font_init_ex(renderer, font_name, RFONT_ATLAS_WIDTH_DEFAULT, RFONT_ATLAS_HEIGHT_DEFAULT);
-}
-
-RFont_font* RFont_font_init_ex(RFont_renderer* renderer, const char* font_name, size_t atlasWidth, size_t atlasHeight) {
+RFont_font* RFont_font_init(RFont_renderer* renderer, const char* font_name, u32 maxHeight, size_t atlasWidth, size_t atlasHeight) {
     char* ttf_buffer = RFont_read_file(font_name);
-    RFont_font* font = RFont_font_init_data_ex(renderer, (u8*)ttf_buffer, 1, atlasWidth, atlasHeight);
+    RFont_font* font = RFont_font_init_data(renderer, (u8*)ttf_buffer, maxHeight, atlasWidth, atlasHeight);
     return font;
 }
 
-RFont_font* RFont_font_init_ptr(RFont_renderer* renderer, const char* font_name, size_t atlasWidth, size_t atlasHeight, RFont_font* ptr) {
+RFont_font* RFont_font_init_ptr(RFont_renderer* renderer, const char* font_name, u32 maxHeight, size_t atlasWidth, size_t atlasHeight, RFont_font* ptr) {
     char* ttf_buffer = RFont_read_file(font_name);
-    RFont_font* font = RFont_font_init_data_ptr(renderer, (u8*)ttf_buffer, 1, atlasWidth, atlasHeight, ptr);
+    RFont_font* font = RFont_font_init_data_ptr(renderer, (u8*)ttf_buffer, maxHeight, atlasWidth, atlasHeight, ptr);
     return font;
 }
 #endif
 
-RFont_font* RFont_font_init_data(RFont_renderer* renderer, u8* font_data, b8 auto_free) {
-   return RFont_font_init_data_ex(renderer, font_data, auto_free, RFONT_ATLAS_WIDTH_DEFAULT, RFONT_ATLAS_HEIGHT_DEFAULT);
-}
-
-RFont_font* RFont_font_init_data_ex(RFont_renderer* renderer, u8* font_data, b8 auto_free, size_t atlasWidth, size_t atlasHeight) {
+RFont_font* RFont_font_init_data(RFont_renderer* renderer, u8* font_data, u32 maxHeight, size_t atlasWidth, size_t atlasHeight) {
     RFont_font* font = (RFont_font*)RFONT_MALLOC(sizeof(RFont_font));
-    return RFont_font_init_data_ptr(renderer, font_data, auto_free, atlasWidth, atlasHeight, font);
+    return RFont_font_init_data_ptr(renderer, font_data, maxHeight, atlasWidth, atlasHeight, font);
 }
 
-RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, b8 auto_free, size_t atlasWidth, size_t atlasHeight, RFont_font* font) {
-   font->src = (RFont_src*)RFONT_MALLOC(sizeof(RFont_src));
-   font->atlasWidth = atlasWidth;
-   font->atlasHeight = atlasHeight;
+RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u32 maxHeight, size_t atlasWidth, size_t atlasHeight, RFont_font* font) {
+	font->src = (RFont_src*)RFONT_MALLOC(sizeof(RFont_src));
+	font->atlasWidth = atlasWidth;
+	font->atlasHeight = atlasHeight;
+	font->maxHeight = maxHeight;
 
-   rstbtt_InitFont(&font->src->info, font_data, 0);
+	rstbtt_InitFont(&font->src->info, font_data, 0);
 
-   font->fheight = RFONT_SHORT(font->src->info.data, font->src->info.hhea + 4) - RFONT_SHORT(font->src->info.data, font->src->info.hhea + 6);
-   font->descent = RFONT_SHORT(font->src->info.data, font->src->info.hhea + 6);
+	font->fheight = RFONT_SHORT(font->src->info.data, font->src->info.hhea + 4) - RFONT_SHORT(font->src->info.data, font->src->info.hhea + 6);
+	font->descent = RFONT_SHORT(font->src->info.data, font->src->info.hhea + 6);
 
-   font->numOfLongHorMetrics = RFONT_USHORT(font->src->info.data, font->src->info.hhea + 34);
-   font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
+	font->numOfLongHorMetrics = RFONT_USHORT(font->src->info.data, font->src->info.hhea + 34);
+	font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
 
-   font->atlas = renderer->proc.create_atlas(renderer->ctx, (u32)atlasWidth, (u32)atlasHeight);
-   font->atlasX = 0;
-   font->glyph_len = 0;
-
-   font->free_font_memory = auto_free;
-
-   return font;
+	font->atlas = renderer->proc.create_atlas(renderer->ctx, (u32)atlasWidth, (u32)atlasHeight);
+	font->atlasX = 0;
+	font->atlasY = 0;
+	font->glyph_len = 0;
+	return font;
 }
 
 void RFont_font_free_ptr(RFont_renderer* renderer, RFont_font* font) {
    renderer->proc.free_atlas(renderer->ctx, font->atlas);
-   if (font->free_font_memory)
-      RFONT_FREE(font->src->info.data);
-
    RFONT_FREE(font->src);
 }
 
 void RFont_font_free(RFont_renderer* renderer, RFont_font* font) {
+    RFONT_FREE(font->src->info.data);
     RFont_font_free_ptr(renderer, font);
     RFONT_FREE(font);
 }
@@ -774,87 +728,82 @@ RFont_glyph RFont_font_add_codepoint(RFont_renderer* renderer, RFont_font* font,
 }
 
 RFont_glyph RFont_font_add_codepoint_ex(RFont_renderer* renderer, RFont_font* font, u32 codepoint, size_t size, b8 fallback) {
-   RFont_glyph* glyph;
-   RFont_glyph glyphNull;
+	RFont_glyph* glyph;
+	RFont_glyph glyphNull;
 
-   u8* bitmap;
-   float scale;
+	u8* bitmap;
+	float scale;
 
-   i32 x0, y0, x1, y1, w = 0, h = 0, advanceX = 0;
-   u32 i;
-   for (i = 0; i < font->glyph_len; i++)
-      if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == size)
-         return font->glyphs[i];
+	i32 x0, y0, x1, y1, w = 0, h = 0, advanceX = 0;
+	u32 i;
+	for (i = 0; i < font->glyph_len; i++)
+		if (font->glyphs[i].codepoint == codepoint && font->glyphs[i].size == size)
+			return font->glyphs[i];
 
-   RFONT_MEMSET(&glyphNull, 0, sizeof(glyphNull));
-   if (i < sizeof(font->glyphs)) {
-       glyph = &font->glyphs[i];
-   } else {
-       return glyphNull;
-   }
+	RFONT_MEMSET(&glyphNull, 0, sizeof(glyphNull));
+	if (i < sizeof(font->glyphs)) {
+		glyph = &font->glyphs[i];
+	} else {
+		return glyphNull;
+	}
 
-   glyph->src = rstbtt_FindGlyphIndex(&font->src->info, (int)codepoint);
+	glyph->src = rstbtt_FindGlyphIndex(&font->src->info, (int)codepoint);
 
-   if ((glyph->src == 0 && codepoint) && fallback && RFont_glyph_fallback) {
-      RFont_glyph fallbackGlyph = RFont_glyph_fallback(renderer, font, codepoint, size);
-      if (fallbackGlyph.codepoint != 0 && fallbackGlyph.size != 0) {
-         return fallbackGlyph;
-      }
-   }
+	if ((glyph->src == 0 && codepoint) && fallback && RFont_glyph_fallback) {
+		RFont_glyph fallbackGlyph = RFont_glyph_fallback(renderer, font, codepoint, size);
+		if (fallbackGlyph.codepoint != 0 && fallbackGlyph.size != 0) {
+			return fallbackGlyph;
+		}
+	}
 
-   if (glyph->src == 0 && codepoint) return RFont_font_add_codepoint_ex(renderer, font, 0, size, fallback);
-   font->glyph_len++;
+	if (glyph->src == 0 && codepoint) return RFont_font_add_codepoint_ex(renderer, font, 0, size, fallback);
+	font->glyph_len++;
 
-   if (codepoint && rstbtt_GetGlyphBox(&font->src->info, glyph->src, &x0, &y0, &x1, &y1) == 0) {
-      return glyphNull;
-   }
+	if (codepoint && rstbtt_GetGlyphBox(&font->src->info, glyph->src, &x0, &y0, &x1, &y1) == 0) {
+		return glyphNull;
+	}
 
-   scale = ((float)size) / font->fheight;
-   bitmap =  rstbtt_GetGlyphBitmapSubpixel(&font->src->info, 0, scale, 0.0f, 0.0f, glyph->src, &w, &h, 0, 0);
-   glyph->w = (float)w;
-   glyph->h = (float)h;
+	scale = ((float)size) / font->fheight;
+	bitmap =  rstbtt_GetGlyphBitmapSubpixel(&font->src->info, 0, scale, 0.0f, 0.0f, glyph->src, &w, &h, 0, 0);
+	glyph->w = (float)w;
+	glyph->h = (float)h;
 
-   if (codepoint) {
-	   glyph->x1 = (float)floor((float)x0 * scale);
-	   glyph->y1 = (float)floor((float)-y1 * scale);
-   } else glyph->y1 = (float)-((float)h * 0.75f);
+	if (codepoint) {
+		glyph->x1 = (float)floor((float)x0 * scale);
+		glyph->y1 = (float)floor((float)-y1 * scale);
+	} else glyph->y1 = (float)-((float)h * 0.75f);
 
-   glyph->codepoint = codepoint;
-   glyph->size = size;
-   glyph->x = (i32)font->atlasX;
-   glyph->x2 = (i32)(font->atlasX + glyph->w);
-   glyph->font = font;
+	glyph->codepoint = codepoint;
+	glyph->size = size;
+	glyph->font = font;
 
-   while (font->atlasX + glyph->w >= font->atlasWidth) {
-      if (renderer->proc.resize_atlas(renderer->ctx, &font->atlas, (u32)(font->atlasWidth + RFONT_ATLAS_RESIZE_LEN), (u32)font->atlasHeight)) {
-         font->atlasWidth = font->atlasWidth + RFONT_ATLAS_RESIZE_LEN;
-      }
-   }
+	renderer->proc.bitmap_to_atlas(renderer->ctx, font->atlas, (u32)font->atlasWidth, (u32)font->atlasHeight, font->maxHeight, bitmap, glyph->w, glyph->h, &font->atlasX, &font->atlasY);
+	RFONT_FREE(bitmap);
+	glyph->x = (i32)(font->atlasX - glyph->w);
+	glyph->x2 = (i32)(font->atlasX);
 
-   renderer->proc.bitmap_to_atlas(renderer->ctx, font->atlas, bitmap, font->atlasX, 0, glyph->w, glyph->h);
-   font->atlasX += glyph->w;
+	glyph->y = (i32)(font->atlasY);
+	glyph->y2 = (i32)((font->atlasY) + glyph->h);
 
-   RFONT_FREE(bitmap);
+	if (glyph->src < font->numOfLongHorMetrics)
+		advanceX = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * glyph->src);
+	else
+		advanceX = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
 
-   if (glyph->src < font->numOfLongHorMetrics)
-      advanceX = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * glyph->src);
-   else
-      advanceX = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
+	glyph->advance = (u32)((float)advanceX * scale);
 
-   glyph->advance = (u32)((float)advanceX * scale);
-
-   return *glyph;
+	return *glyph;
 }
 
-RFont_area RFont_text_area(RFont_renderer* renderer, RFont_font* font, const char* text, u32 size) {
-   return RFont_text_area_len(renderer, font, text, 0, size, 0, 0.0f);
+void RFont_text_area(RFont_renderer* renderer, RFont_font* font, const char* text, u32 size, u32* w, u32* h) {
+   RFont_text_area_len(renderer, font, text, 0, size, 0, 0.0f, w, h);
 }
 
-RFont_area RFont_text_area_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float spacing, u32 size) {
-   return RFont_text_area_len(renderer, font, text, 0, size, 0, spacing);
+void RFont_text_area_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float spacing, u32 size, u32* w, u32* h) {
+   RFont_text_area_len(renderer, font, text, 0, size, 0, spacing, w, h);
 }
 
-RFont_area RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing) {
+void RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing, u32* w, u32* h) {
    float x = 0;
    size_t y = 1;
 
@@ -867,10 +816,10 @@ RFont_area RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {
       if (*str == '\n') {
          if (y == stopNL) {
-            RFont_area area;
-            area.w = (u32)x; area.h = (u32)y * size;
-            return area;
-         }
+            if (w) *w = (u32)x;
+			if (h) *h = (u32)y * size;
+			return;
+		 }
 
          y++;
          x = 0;
@@ -890,20 +839,16 @@ RFont_area RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const
       x += (float)glyph.advance + spacing;
    }
 
-    {
-        RFont_area area;
-        area.w = (u32)x;
-        area.h = (u32)(y * size);
-        return area;
-    }
+	if (w) *w = (u32)x;
+	if(h) *h = (u32)(y * size);
 }
 
-RFont_area RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size) {
-   return RFont_draw_text_len(renderer, font, text, 0, x, y, size, 0.0f);
+void RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size) {
+   RFont_draw_text_len(renderer, font, text, 0, x, y, size, 0.0f);
 }
 
-RFont_area RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing) {
-   return RFont_draw_text_len(renderer, font, text, 0, x, y, size, spacing);
+void RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing) {
+   RFont_draw_text_len(renderer, font, text, 0, x, y, size, spacing);
 }
 
 char* RFont_codepoint_to_utf8(u32 codepoint) {
@@ -933,7 +878,7 @@ char* RFont_codepoint_to_utf8(u32 codepoint) {
    return utf8;
 }
 
-RFont_area RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
+void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
    float* verts = font->verts;
    float* tcoords = font->tcoords;
 
@@ -951,6 +896,8 @@ RFont_area RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const
    float space_adv = (scale * font->space_adv) / 2;
 
    float descent_offset =  (-font->descent * scale);
+
+   RFONT_UNUSED(startY);
 
    y = (y + (float)size - descent_offset);
 
@@ -1009,24 +956,24 @@ RFont_area RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const
       /* texture coords */
 
       tcoords[tIndex] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
-      tcoords[tIndex + 1] = 0;
+      tcoords[tIndex + 1] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
 
       /*  */
       tcoords[tIndex + 2] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
-      tcoords[tIndex + 3] = RFONT_GET_TEXPOSY(glyph.h, font->atlasHeight);
+      tcoords[tIndex + 3] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
       /*  */
       tcoords[tIndex + 4] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
-      tcoords[tIndex + 5] = RFONT_GET_TEXPOSY(glyph.h, font->atlasHeight);
+      tcoords[tIndex + 5] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
       /*  */
       /*  */
       tcoords[tIndex + 6] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
-      tcoords[tIndex + 7] = 0;
+      tcoords[tIndex + 7] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
       /*  */
       tcoords[tIndex + 8] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
-      tcoords[tIndex + 9] = 0;
+      tcoords[tIndex + 9] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
       /*  */
       tcoords[tIndex + 10] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
-      tcoords[tIndex + 11] = RFONT_GET_TEXPOSY(glyph.h, font->atlasHeight);
+      tcoords[tIndex + 11] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
 
       x += glyph.advance + spacing;
       i += 18;
@@ -1035,12 +982,6 @@ RFont_area RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const
 
 	if (i && renderer->proc.render)
       renderer->proc.render(renderer->ctx, font->atlas, verts, tcoords, i / 3);
-    {
-       RFont_area area;
-       area.w = (u32)(x - startX);
-       area.h = (u32)(y - startY) + (u32)(-font->descent * scale);
-       return area;
-    }
 }
 
 /*

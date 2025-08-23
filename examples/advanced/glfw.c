@@ -35,7 +35,7 @@ int main(void)
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), glfwGetProcAddress);
 
-    RSGL_font* comicSans = RSGL_loadFont(renderer, "COMICSANS.ttf");
+    RSGL_font* comicSans = RSGL_loadFont(renderer, "COMICSANS.ttf", 20, 500, 500);
 
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
