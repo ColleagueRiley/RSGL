@@ -762,11 +762,11 @@ RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atla
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	u8* data = (u8*)calloc(atlasWidth * atlasHeight * 4, sizeof(u8));
-
+	u8* data = (u8*)RSGL_MALLOC(atlasWidth * atlasHeight * 4);
+	RSGL_MEMSET(data, 0, atlasWidth * atlasHeight * 4);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
-	free(data);
+	RSGL_FREE(data);
 
 	glBindTexture(GL_TEXTURE_2D, id);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
@@ -788,7 +788,9 @@ void RSGL_GL_bitmap_to_atlas(RSGL_glRenderer* ctx, RFont_texture atlas, u32 atla
 	glBindTexture(GL_TEXTURE_2D, 0);
 	GLint alignment, rowLength, skipPixels, skipRows;
 	RSGL_UNUSED(ctx); RSGL_UNUSED(atlasHeight);
-	if ((*x + w) >= atlasWidth) {
+	if (((*x) + w) >= atlasWidth) {
+
+	printf("%f\n", *x);
 		*x = 0;
 		*y += (float)maxHeight;
 	}

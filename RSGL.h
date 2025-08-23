@@ -807,11 +807,11 @@ void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color) {
 	renderer->state.color = color;
 }
 void RSGL_renderer_setProgram(RSGL_renderer* renderer, const RSGL_programInfo* program) {
-	if (program == NULL) {
+	RSGL_renderer_render(renderer);
+	if (program == NULL)
 		renderer->state.program.program = 0;
-		return;
-	}
-	renderer->state.program = *program;
+	else
+		renderer->state.program = *program;
 }
 
 void RSGL_renderer_setGradient(RSGL_renderer* renderer, float gradient[], size_t len) {
@@ -1271,7 +1271,7 @@ void RSGL_drawOvalFOutline(RSGL_renderer* renderer, RSGL_rectF o, u32 thickness)
 #ifndef RSGL_NO_TEXT
 RSGL_font* RSGL_loadFont(RSGL_renderer* renderer, const char* font, size_t maxHeight, size_t atlasWidth, size_t atlasHeight) {
 	RSGL_font* ptr = (RSGL_font*)RSGL_MALLOC(sizeof(RSGL_font));
-	RSGL_loadFontPtr(renderer, font, atlasWidth, maxHeight, atlasHeight, ptr);
+	RSGL_loadFontPtr(renderer, font, maxHeight, atlasWidth, atlasHeight, ptr);
 	return ptr;
 }
 
