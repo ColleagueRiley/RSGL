@@ -66,10 +66,6 @@ void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, RSGL_glRenderer* ptr, R
 #include <OpenGL/gl.h>
 #endif
 
-#ifndef RSGL_RENDER_LEGACY
-#define RSGL_MODERN_OPENGL
-#endif
-
 #if defined(_WIN32)
 typedef char GLchar;
 typedef int	 GLsizei;
@@ -85,7 +81,7 @@ typedef uintptr_t GLsizeiptr;
 #define GL_TEXTURE0 0x84C0
 #endif
 
-#if !defined(RSGL_NO_GL_LOADER) && defined(RSGL_MODERN_OPENGL)
+#ifndef RSGL_NO_GL_LOADER
 
 typedef void (*RSGL_gl_proc)(void); // function pointer equivalent of void*
 #define RSGL_PROC_DEF(proc, name) name##SRC = (name##PROC)(RSGL_gl_proc)proc(#name)
@@ -263,7 +259,6 @@ void RSGL_GL_clear(RSGL_glRenderer* ctx, float r, float g, float b, float a) {
 }
 
 void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
-#ifdef RSGL_MODERN_OPENGL
     #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
         #ifdef RSGL_DEBUG
@@ -353,14 +348,9 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
     /* load default texture */
     u8 white[4] = {255, 255, 255, 255};
     ctx->defaultTex = RSGL_GL_createTexture(ctx, white, RSGL_AREA(1, 1), 4);
-
-    #else
-    RSGL_UNUSED(proc);
-    #endif
 }
 
 void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
-    #ifdef RSGL_MODERN_OPENGL
     /* Unbind everything */
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -383,7 +373,6 @@ void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
     RSGL_GL_deleteProgram(ctx, ctx->program);
 
     glDeleteTextures(1, (u32*)&ctx->defaultTex); /* Unload default texture */
-    #endif
 }
 
 void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_INFO* info) {
@@ -394,7 +383,6 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    #ifdef RSGL_MODERN_OPENGL
     if (info->vert_len > 0) {
         glBindVertexArray(ctx->vao);
 
@@ -471,44 +459,6 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_
         if (ctx->vao)
             glBindVertexArray(0); /* Unbind VAO */
     }
-	#else
-    {
-        size_t i, j;
-        size_t tIndex = 0, cIndex = 0, vIndex = 0;
-        for (i = 0; i < info->len; i++) {
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
-            glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
-
-            u32 mode = info->batches[i].type;
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-            //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            //glDisable(GL_BLEND);
-
-            //glDisable(GL_DEPTH_TEST);
-             //   glDepthMask(GL_FALSE);
-
-            //glEnable(GL_DEPTH_TEST);
-            //glDepthMask(GL_TRUE);
-
-            glBegin(mode);
-
-            for (j = info->batches[i].start; j < info->batches[i].len; j++) {
-                glTexCoord2f(info->texCoords[tIndex], info->texCoords[tIndex + 1]);
-                glColor4f(info->colors[cIndex], info->colors[cIndex + 1], info->colors[cIndex + 2], info->colors[cIndex + 3]);
-                glVertex3f(info->verts[vIndex], info->verts[vIndex + 1],  info->verts[vIndex + 2]);
-
-                tIndex += 2;
-                vIndex += 3;
-                cIndex += 4;
-            }
-
-            glEnd();
-            // glEnable(GL_DEPTH_TEST);
-        }
-    }
-    #endif
 
     info->len = 0;
     info->vert_len = 0;
@@ -574,8 +524,6 @@ void RSGL_GL_updateTexture(RSGL_glRenderer* ctx, RSGL_texture texture, u8* bitma
     glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
-#ifdef RSGL_MODERN_OPENGL
 
 #ifndef GL_DEBUG_TYPE_ERROR
 #define GL_DEBUG_TYPE_ERROR               0x824C
@@ -705,21 +653,6 @@ void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, char* var, float 
 
     glUseProgram(0);
 }
-#else
-RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
-    RSGL_UNUSED(VShaderCode); RSGL_UNUSED(FShaderCode); RSGL_UNUSED(posName); RSGL_UNUSED(texName); RSGL_UNUSED(colorName);
-    RSGL_programInfo program = {0};
-    return program;
-}
-
-void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, RSGL_programInfo program) {
-    RSGL_UNUSED(program); RSGL_UNUSED(ctx);
-}
-
-void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, char* var, float value[], u8 len) {
-    RSGL_UNUSED(program); RSGL_UNUSED(var); RSGL_UNUSED(value); RSGL_UNUSED(len);
-}
-#endif
 
 #ifndef GL_PERSPECTIVE_CORRECTION_HINT
 #define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
@@ -744,7 +677,7 @@ void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, char* var, float 
 #endif
 
 RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atlasHeight) {
-#if defined(RSGL_DEBUG) && !defined(RSGL_RENDER_LEGACY)
+#if defined(RSGL_DEBUG)
 	glEnable(GL_DEBUG_OUTPUT);
 #endif
 
@@ -789,8 +722,6 @@ void RSGL_GL_bitmap_to_atlas(RSGL_glRenderer* ctx, RFont_texture atlas, u32 atla
 	GLint alignment, rowLength, skipPixels, skipRows;
 	RSGL_UNUSED(ctx); RSGL_UNUSED(atlasHeight);
 	if (((*x) + w) >= atlasWidth) {
-
-	printf("%f\n", *x);
 		*x = 0;
 		*y += (float)maxHeight;
 	}
@@ -877,8 +808,6 @@ void RSGL_GL_bindComputeTexture(RSGL_glRenderer* ctx, u32 texture, u8 format) {
 
 #endif
 
-#ifdef RSGL_MODERN_OPENGL
-
 #ifndef RSGL_NO_GL_LOADER
 int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glShaderSource);
@@ -962,5 +891,4 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
 }
 #endif
 
-#endif /* RSGL_MODERN_OPENGL */
 #endif /* RSGL_IMPLEMENTATION */

@@ -74,7 +74,8 @@ EXAMPLE_OUTPUTS = \
 	basics/shapes  \
 	basics/camera	\
 	advanced/compute \
-	basics/stack
+	basics/stack \
+	basics/gl11
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS)
 

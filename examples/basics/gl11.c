@@ -1,0 +1,98 @@
+#define RSGL_IMPLEMENTATION
+#include "RSGL.h"
+#include "RSGL_gl.h"
+#include "RSGL_gl1.h"
+
+#define RGFW_OPENGL
+#define RGFW_IMPLEMENTATION
+#include "examples/deps/RGFW.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#include <time.h>
+
+/* TODO: add more facts */
+char* facts[] = {
+	"testing",
+	"The hedgehog in the logo is nammed 'Lonic';\na joke name combining 'Linux' and 'Sonic'.",
+	"Postal 3 sucks",
+	"RSGL has been rewritten several times",
+	"RSGL was originally created in 2020",
+	"RSGLmake was a custom build system that can build RSGL projects",
+	"RSGL was originally written in C++, BLEH!"
+};
+
+const size_t factCount = (sizeof(facts) / sizeof(char*));
+
+void rollDie(RSGL_renderer* renderer, i32* index, i32* value) {
+	if (value) *value = -(*value);
+	*index = rand() % factCount;
+	RSGL_renderer_setColor(renderer, RSGL_RGB(rand() % 255, rand() % 255, rand() % 255));
+}
+
+int main() {
+	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
+
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL1_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+
+    int w, h, c;
+    u8* logo = stbi_load("logo.png", &w, &h, &c, 4);
+    u32 texture = RSGL_renderer_createTexture(renderer, logo, RSGL_AREA(w, h), c);
+    free(logo);
+
+	srand(time(0));
+
+	RSGL_rect rect = RSGL_RECT(225, 225, 100, 100);
+	RSGL_point vec = RSGL_POINT(2, 3);
+	RSGL_renderer_setColor(renderer, RSGL_RGB(rand() % 255, rand() % 255, rand() % 255));
+
+	RSGL_area framebufferSize = RSGL_AREA(500, 500);
+
+	RSGL_font* font = RSGL_loadFont(renderer, "Super Easy.ttf", 20, 500, 500);
+    RSGL_renderer_setFont(renderer, font);
+
+	i32 factIndex = 0;
+	rollDie(renderer, &factIndex, NULL);
+
+	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
+		RGFW_pollEvents();
+
+		RGFW_window_getSize(window, (i32*)&framebufferSize.w, (i32*)&framebufferSize.h);
+		RSGL_renderer_updateSize(renderer, framebufferSize);
+
+		RSGL_renderer_clear(renderer, RSGL_RGB(10, 50, 100));
+
+        RSGL_renderer_setTexture(renderer, texture);
+
+		RSGL_drawRect(renderer, rect);
+
+		rect.w = (0.1f * ((float)framebufferSize.w + (float)framebufferSize.h));
+		rect.h = rect.w;
+
+		if (RGFW_isKeyPressed(RGFW_space)) {
+			rect.x = (framebufferSize.w / 2) - rect.h;
+			rect.y = (framebufferSize.h / 2) - rect.h;
+		}
+
+		if (rect.x >= (framebufferSize.w - rect.w) || rect.x <= 0)
+			rollDie(renderer, &factIndex, &vec.x);
+		else if (rect.y >= (framebufferSize.h - rect.h) || rect.y <= 0)
+			rollDie(renderer, &factIndex, &vec.y);
+
+		rect.x += vec.x;
+		rect.y += vec.y;
+
+		RSGL_color prev = renderer->state.color;
+		RSGL_renderer_setColor(renderer, RSGL_RGB(100, 100, 100));
+
+		RSGL_drawText(renderer, facts[0], RSGL_CIRCLE(0, framebufferSize.h - 50, 20));
+		RSGL_renderer_setColor(renderer, prev);
+
+		RSGL_renderer_render(renderer);
+		RGFW_window_swapBuffers_OpenGL(window);
+	}
+
+	RSGL_renderer_free(renderer);
+	RGFW_window_close(window);
+}

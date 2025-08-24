@@ -1299,8 +1299,9 @@ void RSGL_drawText_len(RSGL_renderer* renderer, const char* text, size_t len, RS
 }
 
 void RSGL_drawText_pro(RSGL_renderer* renderer, const char* text, size_t len, float spacing, RSGL_circle c) {
-    if (text == NULL || renderer->state.font == NULL)
+    if (text == NULL || renderer->state.font == NULL) {
         return;
+	}
 
     RFont_draw_text_len(&renderer->rfont, renderer->state.font, text, len, c.x, c.y, c.d, spacing);
 }
