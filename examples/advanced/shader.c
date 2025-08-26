@@ -91,14 +91,14 @@ int main(void) {
         RSGL_mat4 matrix =  RSGL_ortho(RSGL_loadIdentity().m, 0, window->w, window->h, 0, 0, 1.0);
         RSGL_renderer_setShaderValue(renderer, program.program, "mat", matrix.m, 16);
 
-        RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float[1]){time(NULL) / 1000}, 1);
-        RSGL_renderer_setShaderValue(renderer, program.program, "u_resolution", (float[2]){(float)window->w, (float)window->h}, 2);
+        RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
+        RSGL_renderer_setShaderValue(renderer, program.program, "u_resolution", (float*)(const float[2]){(float)window->w, (float)window->h}, 2);
 
 		i32 x, y;
 		RGFW_window_getMouse(window, &x, &y);
 
-		RSGL_renderer_setShaderValue(renderer, program.program, "u_mouse", (float[3]){(float)x, (float)y, 0}, 2);
-        RSGL_renderer_setShaderValue(renderer, program.program, "pos", (float[2]){(float)x, (float)y}, 2);
+		RSGL_renderer_setShaderValue(renderer, program.program, "u_mouse", (float*)(const float[3]){(float)x, (float)y, 0}, 2);
+        RSGL_renderer_setShaderValue(renderer, program.program, "pos", (float*)(const float[2]){(float)x, (float)y}, 2);
 
         RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(window);

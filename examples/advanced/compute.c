@@ -56,8 +56,8 @@ int main(void) {
 
 		RSGL_renderer_setProgram(renderer, &program);
 		RSGL_renderer_bindComputeTexture(renderer, texture, 4);
-		RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float[1]){time(NULL) / 1000}, 1);
-		RSGL_renderer_setShaderValue(renderer, program.program, "u_screen_size", (float[2]){20, 20}, 2);
+		RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
+		RSGL_renderer_setShaderValue(renderer, program.program, "u_screen_size", (float*)(const float[2]){20.0f, 20.0f}, 2);
 		RSGL_renderer_dispatchComputeProgram(renderer, program, 20, 20, 1);
 
 		RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 20));
