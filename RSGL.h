@@ -679,6 +679,7 @@ RSGL_GRAPHICS_CONTEXT
 
 #ifndef RSGL_NO_TEXT
 #define RFONT_IMPLEMENTATION
+#define RFONT_INT_DEFINED
 #include "RFont.h"
 
 void RSGL_RFont_render_text(RSGL_renderer* renderer, RFont_texture atlas, float* verts, float* tcoords, size_t nverts) {
