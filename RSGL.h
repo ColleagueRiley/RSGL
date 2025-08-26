@@ -152,7 +152,7 @@ typedef struct RSGL_point {
 
 #ifndef RSGL_area
 typedef struct RSGL_area {
-    u32 w, h;
+    i32 w, h;
 } RSGL_area;
 #endif
 #define RSGL_AREA(w, h) (RSGL_area){w, h}
@@ -1310,14 +1310,14 @@ RSGL_area RSGL_renderer_textArea(RSGL_renderer* renderer, const char* text, u32 
 	RSGL_area area = RSGL_AREA(0, 0);
 
 	if (renderer->state.font == NULL)
-		RFont_text_area_len(&renderer->rfont, renderer->state.font, text, textEnd, fontSize, 0, 0.0, &area.w, &area.h);
+		RFont_text_area_len(&renderer->rfont, renderer->state.font, text, textEnd, fontSize, 0, 0.0, (u32*)&area.w, (u32*)&area.h);
 
 	return area;
 }
 
 RSGL_area RSGL_renderer_textLineArea(RSGL_renderer* renderer, const char* text, u32 fontSize, size_t textEnd, size_t line) {
 	RSGL_area area = RSGL_AREA(0, 0);
-	RFont_text_area_len(&renderer->rfont, renderer->state.font, text, textEnd, fontSize, line, 0.0, &area.w, &area.h);
+	RFont_text_area_len(&renderer->rfont, renderer->state.font, text, textEnd, fontSize, line, 0.0, (u32*)&area.w, (u32*)&area.h);
 	return area;
 }
 
