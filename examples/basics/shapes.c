@@ -20,7 +20,7 @@
 int main(void) {
     RGFW_window* win = RGFW_createWindow("RSGL shapes example", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL);
     bool fill = true;
 
     RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);

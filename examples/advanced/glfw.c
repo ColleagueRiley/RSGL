@@ -33,7 +33,7 @@ int main(void)
 
     glfwSwapInterval(1);
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), glfwGetProcAddress);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)glfwGetProcAddress);
 
     RSGL_font* comicSans = RSGL_loadFont(renderer, "COMICSANS.ttf", 20, 500, 500);
 

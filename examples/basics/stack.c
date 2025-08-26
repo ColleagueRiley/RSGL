@@ -17,7 +17,7 @@ int main() {
 
 	RSGL_glRenderer ptr;
 	RSGL_renderer renderer;
-	RSGL_renderer_initPtr(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL, &ptr, &renderer);
+	RSGL_renderer_initPtr(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL, &ptr, &renderer);
 
 
 	while (RGFW_window_shouldClose(&window) == RGFW_FALSE) {

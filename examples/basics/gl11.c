@@ -32,7 +32,7 @@ void rollDie(RSGL_renderer* renderer, i32* index, i32* value) {
 int main() {
 	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL1_rendererProc(), RSGL_AREA(500, 500), RGFW_getProcAddress_OpenGL);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL1_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL);
 
     int w, h, c;
     u8* logo = stbi_load("logo.png", &w, &h, &c, 4);
