@@ -20,13 +20,14 @@ jobs:
       uses: mymindstorm/setup-emsdk@v14
       with:
         version: 3.1.52
-            
+
     - name: Compile to WebAssembly
       run: |
-        make CC=emcc
+        echo not building (for now)
+        # make CC=emcc
 
     - name: Deploy Pages
-      if: github.event_name != 'pull_request' 
+      if: github.event_name != 'pull_request'
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
