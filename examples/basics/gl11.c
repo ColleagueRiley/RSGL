@@ -12,7 +12,7 @@
 #include <time.h>
 
 /* TODO: add more facts */
-char* facts[] = {
+const char* facts[] = {
 	"The hedgehog in the logo is nammed 'Lonic';\na joke name combining 'Linux' and 'Sonic'.",
 	"Postal 3 sucks",
 	"RSGL has been rewritten several times",
