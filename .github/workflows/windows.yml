@@ -52,4 +52,4 @@ jobs:
     - name: Setup Environment
       run: |
         cd examples
-        make
+        make CC=g++
