@@ -709,8 +709,8 @@ RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atla
    return id;
 }
 
-void RSGL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
-void RSGL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
+void RSGL_GL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
+void RSGL_GL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
     glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
@@ -736,11 +736,11 @@ void RSGL_GL_bitmap_to_atlas(RSGL_glRenderer* ctx, RFont_texture atlas, u32 atla
 	glActiveTexture(GL_TEXTURE0 + (u32)atlas - 1);
 	glBindTexture(GL_TEXTURE_2D, (u32)atlas);
 
-	RSGL_push_pixel_values(1, (i32)w, 0, 0);
+	RSGL_GL_push_pixel_values(1, (i32)w, 0, 0);
 
 	glTexSubImage2D(GL_TEXTURE_2D, 0, (i32)(*x), (i32)*y, (i32)w, (i32)h, GL_RED, GL_UNSIGNED_BYTE, bitmap);
 
-	RSGL_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
+	RSGL_GL_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	*x += w;

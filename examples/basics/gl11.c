@@ -1,6 +1,5 @@
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
-#include "RSGL_gl.h"
 #include "RSGL_gl1.h"
 
 #define RGFW_OPENGL
@@ -14,7 +13,6 @@
 
 /* TODO: add more facts */
 char* facts[] = {
-	"testing",
 	"The hedgehog in the logo is nammed 'Lonic';\na joke name combining 'Linux' and 'Sonic'.",
 	"Postal 3 sucks",
 	"RSGL has been rewritten several times",
@@ -61,8 +59,6 @@ int main() {
 		RGFW_window_getSize(window, (i32*)&framebufferSize.w, (i32*)&framebufferSize.h);
 		RSGL_renderer_updateSize(renderer, framebufferSize);
 
-		RSGL_renderer_clear(renderer, RSGL_RGB(10, 50, 100));
-
         RSGL_renderer_setTexture(renderer, texture);
 
 		RSGL_drawRect(renderer, rect);
@@ -83,10 +79,13 @@ int main() {
 		rect.x += vec.x;
 		rect.y += vec.y;
 
+		RSGL_renderer_clear(renderer, RSGL_RGB(10, 50, 100));
+
 		RSGL_color prev = renderer->state.color;
 		RSGL_renderer_setColor(renderer, RSGL_RGB(100, 100, 100));
 
-		RSGL_drawText(renderer, facts[0], RSGL_CIRCLE(0, framebufferSize.h - 50, 20));
+		RSGL_drawText(renderer, facts[factIndex], RSGL_CIRCLE(0, framebufferSize.h - 50, 20));
+
 		RSGL_renderer_setColor(renderer, prev);
 
 		RSGL_renderer_render(renderer);

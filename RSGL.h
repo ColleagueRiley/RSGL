@@ -682,11 +682,10 @@ RSGL_GRAPHICS_CONTEXT
 #include "RFont.h"
 
 void RSGL_RFont_render_text(RSGL_renderer* renderer, RFont_texture atlas, float* verts, float* tcoords, size_t nverts) {
-    RSGL_renderState save = renderer->state;
-    RSGL_renderer_setRotate(renderer, RSGL_POINT3D(0, 0, 0));
-    RSGL_renderer_setTexture(renderer, atlas);
+    RSGL_texture save = renderer->state.texture;
+	RSGL_renderer_setTexture(renderer, atlas);
     RSGL_basicDraw(renderer, RSGL_TRIANGLES, verts, tcoords, nverts);
-    renderer->state = save;
+    RSGL_renderer_setTexture(renderer, save);
 }
 #endif
 

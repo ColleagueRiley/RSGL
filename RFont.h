@@ -62,7 +62,7 @@ int main () {
 
    RFont_renderer renderer = ...;
    RFont_renderer_init(&renderer);
-   RFont_font* font = RFont_font_init(&renderer, "font.ttf");
+   RFont_font* font = RFont_font_init(&renderer, "font.ttf", 20, 500, 500);
 
    i32 w = ...;
    i32 h = ...;
@@ -191,16 +191,8 @@ typedef size_t RFont_texture;
 #define RFONT_MAX_GLYPHS 256
 #endif
 
-#ifndef RFONT_INIT_TEXT_SIZE
-#define RFONT_INIT_TEXT_SIZE 500
-#endif
-
 #ifndef RFONT_INIT_VERTS
 #define RFONT_INIT_VERTS 20 * RFONT_MAX_GLYPHS
-#endif
-
-#ifndef RFONT_TEXTFORMAT_MAX_SIZE
-   #define RFONT_TEXTFORMAT_MAX_SIZE 923
 #endif
 
 #ifndef RFONT_UNUSED
