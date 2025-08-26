@@ -23,7 +23,7 @@ jobs:
 
     - name: Compile to WebAssembly
       run: |
-        echo not building (for now)
+        echo "not building (for now)"
         # make CC=emcc
 
     - name: Deploy Pages
