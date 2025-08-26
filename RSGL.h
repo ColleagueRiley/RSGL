@@ -351,7 +351,7 @@ typedef struct RSGL_rendererProc {
 	void (*scissorEnd)(void* ctx);
 	RSGL_programInfo (*createProgram)(void* ctx, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 	void (*deleteProgram)(void* ctx, RSGL_programInfo program);
-	void (*setShaderValue)(void* ctx, u32 program, char* var, float value[], u8 len);
+	void (*setShaderValue)(void* ctx, u32 program, const char* var, const float value[], u8 len);
 	RSGL_texture (*createAtlas)(void* ctx,u32 atlasWidth, u32 atlasHeight);
 	void (*bitmapToAtlas)(void* ctx, RSGL_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y);
 	RSGL_programInfo (*createComputeProgram)(void* ctx, const char* CShaderCode);
@@ -416,7 +416,7 @@ RSGLDEF void RSGL_renderer_scissorEnd(RSGL_renderer* renderer);
 /* custom shader program */
 RSGLDEF RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program);
-RSGLDEF void RSGL_renderer_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len);
+RSGLDEF void RSGL_renderer_setShaderValue(RSGL_renderer* renderer, u32 program, const char* var, const float value[], u8 len);
 
 RSGLDEF void RSGL_renderer_setMatrix(RSGL_renderer* renderer, RSGL_mat4 matrix);
 RSGLDEF void RSGL_renderer_resetMatrix(RSGL_renderer* renderer);
@@ -775,7 +775,7 @@ RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, const char
     return renderer->proc.createProgram(renderer->ctx, VShaderCode, FShaderCode, posName, texName, colorName);
 }
 void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, RSGL_programInfo program) { return renderer->proc.deleteProgram(renderer->ctx, program); }
-void RSGL_renderer_setShaderValue(RSGL_renderer* renderer, u32 program, char* var, float value[], u8 len) {
+void RSGL_renderer_setShaderValue(RSGL_renderer* renderer, u32 program, const char* var, const float value[], u8 len) {
     return renderer->proc.setShaderValue(renderer->ctx, program, var, value, len);
 }
 

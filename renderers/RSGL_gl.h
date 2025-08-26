@@ -41,7 +41,7 @@ RSGLDEF void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx);
 /* program loading */
 RSGLDEF RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
 RSGLDEF void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, RSGL_programInfo program);
-RSGLDEF void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, char* var, float value[], u8 len);
+RSGLDEF void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, const char* var, const float value[], u8 len);
 RSGLDEF RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atlasHeight);
 RSGLDEF void RSGL_GL_bitmap_to_atlas(RSGL_glRenderer* ctx, RFont_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y);
 #ifdef RSGL_USE_COMPUTE
@@ -234,7 +234,7 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
     proc.scissorEnd =  (void (*)(void*))RSGL_GL_scissorEnd;
     proc.createProgram = (RSGL_programInfo (*)(void*, const char*, const char*, const char*, const char*, const char*))RSGL_GL_createProgram;
     proc.deleteProgram = (void (*)(void*, RSGL_programInfo))RSGL_GL_deleteProgram;
-    proc.setShaderValue = (void (*)(void*, u32, char*, float[], u8))RSGL_GL_setShaderValue;
+    proc.setShaderValue = (void (*)(void*, u32, const char*, const float[], u8))RSGL_GL_setShaderValue;
     proc.createAtlas = (RSGL_texture (*)(void*, u32, u32))RSGL_GL_create_atlas;
     proc.bitmapToAtlas = (void(*)(void*, RSGL_texture, u32, u32, u32, u8*, float, float, float*, float*))RSGL_GL_bitmap_to_atlas;
 
@@ -638,7 +638,7 @@ void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, RSGL_programInfo program) {
     glDeleteProgram(program.program);
 }
 
-void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, char* var, float value[], u8 len) {
+void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, const char* var, const float value[], u8 len) {
     glUseProgram(program);
     int loc = glGetUniformLocation(program, var);
 
