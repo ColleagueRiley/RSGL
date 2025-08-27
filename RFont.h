@@ -623,8 +623,7 @@ RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u3
 	font->descent = RFONT_SHORT(font->src->info.data, font->src->info.hhea + 6);
 
 	font->numOfLongHorMetrics = RFONT_USHORT(font->src->info.data, font->src->info.hhea + 34);
-	font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
-
+	font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(' '));
 	font->atlas = renderer->proc.create_atlas(renderer->ctx, (u32)atlasWidth, (u32)atlasHeight);
 	font->atlasX = 0;
 	font->atlasY = 0;
