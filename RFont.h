@@ -612,6 +612,7 @@ RFont_font* RFont_font_init_data(RFont_renderer* renderer, u8* font_data, u32 ma
 }
 
 RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u32 maxHeight, size_t atlasWidth, size_t atlasHeight, RFont_font* font) {
+	i32 space_codepoint = 0;
 	font->src = (RFont_src*)RFONT_MALLOC(sizeof(RFont_src));
 	font->atlasWidth = atlasWidth;
 	font->atlasHeight = atlasHeight;
@@ -623,7 +624,14 @@ RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u3
 	font->descent = RFONT_SHORT(font->src->info.data, font->src->info.hhea + 6);
 
 	font->numOfLongHorMetrics = RFONT_USHORT(font->src->info.data, font->src->info.hhea + 34);
-	font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(' '));
+
+
+	space_codepoint = rstbtt_FindGlyphIndex(&font->src->info, (int)' ');
+	if (' ' < font->numOfLongHorMetrics)
+		font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * space_codepoint);
+	else
+		font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
+
 	font->atlas = renderer->proc.create_atlas(renderer->ctx, (u32)atlasWidth, (u32)atlasHeight);
 	font->atlasX = 0;
 	font->atlasY = 0;
@@ -795,40 +803,40 @@ void RFont_text_area_spacing(RFont_renderer* renderer, RFont_font* font, const c
 }
 
 void RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, u32 size, size_t stopNL, float spacing, u32* w, u32* h) {
-   float x = 0;
-   size_t y = 1;
+	float x = 0;
+	size_t y = 1;
 
-   char* str;
+	char* str;
 
-   float scale = (((float)size) / font->fheight);
-   float space_adv = (scale * font->space_adv) / 2;
-   RFont_glyph glyph;
+	float scale = (((float)size) / font->fheight);
+	float space_adv = (scale * font->space_adv);
+	RFont_glyph glyph;
 
-   for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {
-      if (*str == '\n') {
-         if (y == stopNL) {
-            if (w) *w = (u32)x;
-			if (h) *h = (u32)y * size;
-			return;
-		 }
+	for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {
+		if (*str == '\n') {
+			if (y == stopNL) {
+				if (w) *w = (u32)x;
+				if (h) *h = (u32)y * size;
+				return;
+			}
 
-         y++;
-         x = 0;
-         continue;
-      }
+			y++;
+			x = 0;
+			continue;
+		}
 
-      if (*str == ' ' || *str == '\t') {
-         x += space_adv + spacing;
-         continue;
-      }
+		if (*str == ' ' || *str == '\t') {
+			x += space_adv + spacing;
+			continue;
+		}
 
-      glyph = RFont_font_add_char(renderer, font,  *str, size);
+		glyph = RFont_font_add_char(renderer, font,  *str, size);
 
-      if (glyph.codepoint == 0 && glyph.size == 0)
-         continue;
+		if (glyph.codepoint == 0 && glyph.size == 0)
+			continue;
 
-      x += (float)glyph.advance + spacing;
-   }
+		x += (float)glyph.advance + spacing;
+	}
 
 	if (w) *w = (u32)x;
 	if(h) *h = (u32)(y * size);
@@ -884,7 +892,7 @@ void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char*
    float realX, realY;
 
    float scale = (((float)size) / font->fheight);
-   float space_adv = (scale * font->space_adv) / 2;
+   float space_adv = (scale * font->space_adv);
 
    float descent_offset =  (-font->descent * scale);
 
