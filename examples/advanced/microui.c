@@ -1,10 +1,12 @@
 #undef _WIN32_WINNT
 #include <stdio.h>
 
+// #define RGFW_DEBUG
 #define RGFW_OPENGL
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+// #define RSGL_DEBUG
 #define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
@@ -19,8 +21,7 @@ int main() {
   RGFW_window* window = RGFW_createWindow("", RGFW_RECT(0, 0, width, height), RGFW_windowCenter | RGFW_windowScaleToMonitor);
   r_init(window);
 
-  RSGL_font* font = RSGL_loadFont("Super Easy.ttf");
-  u32 atlas_texture_id = RSGL_renderCreateTexture(atlas_texture, RSGL_AREA(ATLAS_WIDTH, ATLAS_HEIGHT), 4);
+  u32 atlas_texture_id = RSGL_renderCreateTexture(atlas_texture, RSGL_AREA(ATLAS_WIDTH, ATLAS_HEIGHT), 1);
 
   /* init microui */
   mu_Context *ctx = rh_init();
@@ -67,7 +68,7 @@ int main() {
     mu_Command *cmd = NULL;
     while (mu_next_command(ctx, &cmd)) {
       switch (cmd->type) {
-        case MU_COMMAND_TEXT: r_draw_text(font, cmd->text.str, cmd->text.pos, cmd->text.color); break;
+        case MU_COMMAND_TEXT: r_draw_text(atlas_texture_id, cmd->text.str, cmd->text.pos, cmd->text.color); break;
         case MU_COMMAND_RECT: r_draw_rect(cmd->rect.rect, cmd->rect.color, 0); break;
         case MU_COMMAND_ICON: r_draw_icon(atlas_texture_id, cmd->icon.id, cmd->icon.rect, cmd->icon.color); break;
         case MU_COMMAND_CLIP: r_set_clip_rect(cmd->clip.rect); break;
@@ -81,7 +82,6 @@ int main() {
 
   /* free memory */
   RSGL_renderDeleteTexture(atlas_texture_id);
-  RSGL_freeFont(font);
   RSGL_free();
 
   RGFW_window_close(window);
