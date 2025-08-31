@@ -88,13 +88,17 @@ typedef int	 GLsizei;
 typedef ptrdiff_t GLintptr;
 typedef uintptr_t GLsizeiptr;
 
-#define GL_VERTEX_SHADER   0x8B31
-#define GL_FRAGMENT_SHADER 0x8B30
+#define GL_VERTEX_SHADER        0x8B31
+#define GL_FRAGMENT_SHADER      0x8B30
 #define GL_ARRAY_BUFFER         0x8892
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
-#define GL_STATIC_DRAW  0x88E4
-#define GL_DYNAMIC_DRAW 0x88E8
-#define GL_TEXTURE0 0x84C0
+#define GL_STATIC_DRAW          0x88E4
+#define GL_DYNAMIC_DRAW         0x88E8
+#define GL_TEXTURE0             0x84C0
+#define GL_FRAMEBUFFER          0x8D40
+#define GL_COLOR_ATTACHMENT0    0x8CE0
+#define GL_DEPTH_ATTACHMENT     0x8D00
+#define GL_STENCIL_ATTACHMENT   0x8D20
 #endif
 
 #if !defined(RSGL_NO_GL_LOADER) && defined(RSGL_MODERN_OPENGL)
