@@ -116,7 +116,7 @@ void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, float r, float g, float b, float a) {
 }
 
 void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const void* data, size_t* buffer) {
-	RSGL_gl1Buffer* node = RSGL_MALLOC(sizeof(RSGL_gl1Buffer));
+	RSGL_gl1Buffer* node = (RSGL_gl1Buffer*)RSGL_MALLOC(sizeof(RSGL_gl1Buffer));
 	node->next = NULL;
 	node->data = RSGL_MALLOC(size);
 
