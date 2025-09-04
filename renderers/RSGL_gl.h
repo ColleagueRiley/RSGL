@@ -13,8 +13,8 @@
 typedef struct RSGL_glRenderer {
     RSGL_programInfo program;       /* Default shader program id, supports vertex color and diffuse texture*/
     u32 defaultTex;
-
-    u32 vao, vbo, tbo, cbo; /* array object and array buffers */
+	u32 vao;
+	size_t vbo, tbo, cbo; /* array object and array buffers */
 } RSGL_glRenderer;
 
 RSGLDEF RSGL_rendererProc RSGL_GL_rendererProc(void);
@@ -22,12 +22,14 @@ RSGLDEF size_t RSGL_GL_size(void);
 
 RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(RSGL_area r, void* loader);
 RSGLDEF void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
-
-RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_INFO* info);
+RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* info);
 RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
 RSGLDEF void RSGL_GL_clear(RSGL_glRenderer* ctx, float r, float g, float b, float a);
 RSGLDEF void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h);
+RSGLDEF void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer);
+RSGLDEF void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
+RSGLDEF void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
 RSGLDEF RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, u8* bitmap, RSGL_area memsize,  u8 channels);
 /* updates an existing texture wiht a new bitmap */
@@ -221,7 +223,9 @@ size_t RSGL_GL_size(void) {
 
 RSGL_rendererProc RSGL_GL_rendererProc() {
 	RSGL_rendererProc proc;
-	proc.render = (void (*)(void*, RSGL_programInfo, RSGL_RENDER_INFO*))RSGL_GL_render;
+	RSGL_MEMSET(&proc, 0, sizeof(proc));
+
+	proc.render = (void (*)(void*, RSGL_programInfo, const RSGL_renderBuffers*))RSGL_GL_render;
     proc.size = (size_t (*)(void))RSGL_GL_size;
     proc.initPtr = (void (*)(void*, void*))RSGL_GL_initPtr;
     proc.freePtr = (void (*)(void*))RSGL_GL_freePtr;
@@ -237,6 +241,9 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
     proc.setShaderValue = (void (*)(void*, u32, const char*, const float[], u8))RSGL_GL_setShaderValue;
     proc.createAtlas = (RSGL_texture (*)(void*, u32, u32))RSGL_GL_create_atlas;
     proc.bitmapToAtlas = (void(*)(void*, RSGL_texture, u32, u32, u32, u8*, float, float, float*, float*))RSGL_GL_bitmap_to_atlas;
+	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL_createBuffer;
+	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
+	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL_deleteBuffer;
 
 #ifdef RSGL_USE_COMPUTE
 	proc.createComputeProgram = (RSGL_programInfo (*)(void*, const char*))RSGL_GL_createComputeProgram;
@@ -247,7 +254,7 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	proc.dispatchComputeProgram = NULL;
 	proc.bindComputeTexture = NULL;
 #endif
-    return proc;
+	return proc;
 }
 
 void RSGL_GL_deleteTexture(RSGL_glRenderer* ctx, RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
@@ -256,6 +263,26 @@ void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h) { glView
 void RSGL_GL_clear(RSGL_glRenderer* ctx, float r, float g, float b, float a) {
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer) {
+	glGenBuffers(1, (u32*)buffer);
+
+	GLenum usage = GL_STATIC_DRAW;
+	if (data == NULL)
+		usage = GL_DYNAMIC_DRAW;
+
+	glBindBuffer(GL_ARRAY_BUFFER, *(u32*)buffer);
+	glBufferData(GL_ARRAY_BUFFER, size, data, usage);
+}
+
+void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, size_t buffer, const void* data, size_t start, size_t end) {
+	glBindBuffer(GL_ARRAY_BUFFER, *(u32*)&buffer);
+	glBufferSubData(GL_ARRAY_BUFFER, start, end, data);
+}
+
+void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer) {
+	glDeleteBuffers(1, (u32*)&buffer);
 }
 
 void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
@@ -312,38 +339,14 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
 	glGenVertexArrays(1, &ctx->vao);
 	glBindVertexArray(ctx->vao);
 
-	glGenBuffers(1, &ctx->vbo);
-	glGenBuffers(1, &ctx->tbo);
-	glGenBuffers(1, &ctx->cbo);
-
     ctx->program = RSGL_GL_createProgram(ctx, defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
     /* Init default vertex arrays buffers */
     /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
 
     glBindVertexArray(ctx->vao);
 
-    /* Quads - Vertex buffers binding and attributes enable */
-    /* Vertex position buffer (shader-location = 0) */
-    glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo);
-    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 3 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
-
-    /* Vertex texcoord buffer (shader-location = 1) */
-    glBindBuffer(GL_ARRAY_BUFFER, ctx->tbo);
-    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 2 * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
-
-    /* Vertex color buffer (shader-location = 3) */
-    glBindBuffer(GL_ARRAY_BUFFER, ctx->cbo);
-    glBufferData(GL_ARRAY_BUFFER, RSGL_MAX_VERTS * 4 * sizeof(float), NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
-
-    /* Unbind the current VAO */
-    if (ctx->vao)
-        glBindVertexArray(0);
+	/* Unbind the current VAO */
+    glBindVertexArray(0);
 
     /* load default texture */
     u8 white[4] = {255, 255, 255, 255};
@@ -364,104 +367,58 @@ void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
     glBindVertexArray(0);
 
     /* Delete VBOs from GPU (VRAM) */
-    glDeleteBuffers(1, &ctx->vbo);
-    glDeleteBuffers(1, &ctx->tbo);
-    glDeleteBuffers(1, &ctx->cbo);
-
-    glDeleteVertexArrays(1, &ctx->vao);
+    glDeleteVertexArrays(0, &ctx->vao);
 
     RSGL_GL_deleteProgram(ctx, ctx->program);
 
     glDeleteTextures(1, (u32*)&ctx->defaultTex); /* Unload default texture */
 }
 
-void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, RSGL_RENDER_INFO* info) {
-	if (program.program == 0) {
-		program = ctx->program;
-	}
+void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* buffers) {
+	if (program.program == 0) program = ctx->program;
 
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    if (info->vert_len > 0) {
-        glBindVertexArray(ctx->vao);
+    glBindVertexArray(ctx->vao);
 
-        /* Vertex positions buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, info->vert_len * 3 * sizeof(float), info->verts);
+	/* Vertex positions buffer */
+	glBindBuffer(GL_ARRAY_BUFFER, buffers->vertex);
+	glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
 
-        /* Texture coordinates buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, ctx->tbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, info->vert_len * 2 * sizeof(float), info->texCoords);
+	/* Texture coordinates buffer */
+	glBindBuffer(GL_ARRAY_BUFFER, buffers->texture);
+	glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
 
-        /* Colors buffer */
-        glBindBuffer(GL_ARRAY_BUFFER, ctx->cbo);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, info->vert_len * 4 * sizeof(float), info->colors);
+	/* Colors buffer */
+	glBindBuffer(GL_ARRAY_BUFFER, buffers->color);
+	glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, 0, 0, 0);
 
-        glBindVertexArray(0);
+	/* Set current shader */
+	glUseProgram(program.program);
 
-        /* Set current shader */
-        glUseProgram(program.program);
+	int loc = glGetUniformLocation(program.program, "mat");
+	u32 i;
+	for (i = 0; i < buffers->batchCount; i++) {
+		GLenum mode = buffers->batches[i].type;
+		glBindTexture(GL_TEXTURE_2D, (buffers->batches[i].tex == 0) ? (ctx->defaultTex) : (buffers->batches[i].tex));
+		glLineWidth(buffers->batches[i].lineWidth > 0 ? buffers->batches[i].lineWidth : 0.1f);
+		if (loc >= 0) {
+			glUniformMatrix4fv(loc, 1, GL_FALSE, buffers->batches[i].matrix.m);
+		}
 
-		glBindVertexArray(ctx->vao);
+		glDrawArrays(mode, buffers->batches[i].start, buffers->batches[i].len);
+	}
 
-        /* Bind vertex attrib: position (shader-location = 0) */
-        glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
-        glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);    /* Unbind textures */
 
-        /* Bind vertex attrib: texcoord (shader-location = 1) */
-        glBindBuffer(GL_ARRAY_BUFFER, ctx->tbo);
-        glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
-        glEnableVertexAttribArray(1);
-
-        /* Bind vertex attrib: color (shader-location = 3) */
-        glBindBuffer(GL_ARRAY_BUFFER, ctx->cbo);
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_TRUE, 0, 0);
-        glEnableVertexAttribArray(2);
-
-        glActiveTexture(GL_TEXTURE0);
-		int loc = glGetUniformLocation(program.program, "mat");
-
-		u32 i;
-        for (i = 0; i < info->len; i++) {
-            GLenum mode = info->batches[i].type;
-
-            if (mode > 0x0100) {
-                mode -= 0x0100;
-            }
-
-            if (mode > 0x0010) {
-                mode -= 0x0010;
-            }
-
-            /* Bind current draw call texture, activated as GL_TEXTURE0 and Bound to sampler2D texture0 by default */
-            if (info->batches[i].tex == 0)
-                info->batches[i].tex = ctx->defaultTex;
-
-            glBindTexture(GL_TEXTURE_2D, info->batches[i].tex);
-            glLineWidth(info->batches[i].lineWidth > 0 ? info->batches[i].lineWidth : 0.1f);
-
-			if (loc >= 0) {
-				glUniformMatrix4fv(loc, 1, GL_FALSE, info->batches[i].matrix.m);
-			}
-
-			glDrawArrays(mode, info->batches[i].start, info->batches[i].len);
-        }
-
-        if (!ctx->vao) {
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        }
-
-        glBindTexture(GL_TEXTURE_2D, 0);    /* Unbind textures */
-
-        if (ctx->vao)
-            glBindVertexArray(0); /* Unbind VAO */
-    }
-
-    info->len = 0;
-    info->vert_len = 0;
+	if (ctx->vao)
+		glBindVertexArray(0); /* Unbind VAO */
 }
 
 void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, RSGL_rectF scissor, i32 renderer_height) {

@@ -306,16 +306,23 @@ typedef struct RSGL_BATCH {
     RSGL_mat4 matrix;
 } RSGL_BATCH; /* batch data type for rendering */
 
-typedef struct RSGL_RENDER_INFO {
-    RSGL_BATCH batches[RSGL_MAX_BATCHES];
-    float verts[RSGL_MAX_VERTS * 2];
-    float texCoords[RSGL_MAX_VERTS * 4];
-    float colors[RSGL_MAX_VERTS * 2];
+typedef struct RSGL_renderData {
+	float* verts;
+	float* texCoords;
+	float* colors;
+    size_t len; /* number of verts */
 
-    size_t len; /* number of batches*/
-    size_t vert_len; /* number of verts */
-    RSGL_mat4 matrix;
-} RSGL_RENDER_INFO; /* render data */
+	RSGL_bool loaded; /* if the data is loaded into vram */
+} RSGL_renderData;
+
+typedef struct RSGL_renderBuffers {
+	size_t vertex, color, texture;
+	size_t len;
+	size_t maxVerts;
+
+	RSGL_BATCH batches[RSGL_MAX_BATCHES];
+    size_t batchCount;
+} RSGL_renderBuffers;
 
 typedef struct RSGL_renderState {
     float* gradient; /* does not allocate any memory */
@@ -328,6 +335,7 @@ typedef struct RSGL_renderState {
     RSGL_area currentArea; /* size of current surface */
     RSGL_point3D rotate;
 	RSGL_programInfo program;
+	RSGL_renderBuffers* buffers;
 
     RSGL_point3D center;
     float lineWidth;
@@ -341,7 +349,7 @@ typedef struct RSGL_rendererProc {
 	size_t (*size)(void); /* get the size of the renderer's internal struct */
 	void (*initPtr)(void* ctx, void* proc); /* init render backend */
 	void (*freePtr)(void* ctx); /* free render backend */
-	void (*render)(void* ctx, RSGL_programInfo program, RSGL_RENDER_INFO* info);
+	void (*render)(void* ctx, RSGL_programInfo program, const RSGL_renderBuffers* info);
 	void (*clear)(void* ctx, float r, float g, float b, float a);
 	void (*viewport)(void* ctx, i32 x, i32 y, i32 w, i32 h);
 	RSGL_texture (*createTexture)(void* ctx, u8* bitmap, RSGL_area memsize,  u8 channels);
@@ -357,15 +365,23 @@ typedef struct RSGL_rendererProc {
 	RSGL_programInfo (*createComputeProgram)(void* ctx, const char* CShaderCode);
 	void (*dispatchComputeProgram)(void* ctx, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
 	void (*bindComputeTexture)(void* ctx, u32 texture, u8 format);
+	void (*createBuffer)(void* ctx, size_t size, const void* data, size_t* buffer);
+	void (*updateBuffer)(void* ctx, size_t buffer, void* data, size_t start, size_t len);
+	void (*deleteBuffer)(void* ctx, size_t buffer);
 } RSGL_rendererProc;
 
 typedef struct RSGL_renderer {
-	RSGL_RENDER_INFO info;
+	RSGL_renderData data;
 	RSGL_renderState state;
 	RSGL_rendererProc proc;
 	RFont_renderer rfont;
 	void* userPtr;
 	void* ctx; /* pointer for the renderer backend to store any internal data it wants/needs  */
+
+    float verts[RSGL_MAX_VERTS * 3];
+    float texCoords[RSGL_MAX_VERTS * 2];
+    float colors[RSGL_MAX_VERTS * 4];
+	RSGL_renderBuffers buffers;
 } RSGL_renderer;
 
 RSGLDEF void RSGL_renderer_getRenderState(RSGL_renderer* renderer, RSGL_renderState* state);
@@ -381,8 +397,18 @@ RSGLDEF void RSGL_renderer_initPtr(RSGL_rendererProc proc,
 
 RSGLDEF RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, RSGL_area r, void* loader);
 RSGLDEF void RSGL_renderer_updateSize(RSGL_renderer* renderer, RSGL_area r);
-RSGLDEF void RSGL_renderer_render(RSGL_renderer* renderer); /* draw current batch */
 RSGLDEF void RSGL_renderer_freePtr(RSGL_renderer* renderer);
+
+RSGLDEF void RSGL_renderer_createBuffer(RSGL_renderer* renderer, size_t size, const void* data, size_t* buffer);
+RSGLDEF void RSGL_renderer_updateBuffer(RSGL_renderer* renderer, size_t buffer, void* data, size_t start, size_t len);
+RSGLDEF void RSGL_renderer_deleteBuffer(RSGL_renderer* renderer, size_t buffer);
+
+RSGLDEF void RSGL_renderer_createRenderBuffers(RSGL_renderer* renderer, size_t size, RSGL_renderBuffers* buffers);
+RSGLDEF void RSGL_renderer_deleteRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffers* buffers);
+
+RSGLDEF void RSGL_renderer_render(RSGL_renderer* renderer); /* draw current batch */
+RSGLDEF void RSGL_renderer_updateRenderBuffers(RSGL_renderer* renderer);
+RSGLDEF void RSGL_renderer_renderBuffers(RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_renderer_free(RSGL_renderer* renderer);
 
@@ -390,6 +416,7 @@ RSGLDEF void RSGL_renderer_setRotate(RSGL_renderer* renderer, RSGL_point3D rotat
 RSGLDEF void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture texture); /* apply texture to drawing */
 RSGLDEF void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color); /* apply color to drawing */
 RSGLDEF void RSGL_renderer_setProgram(RSGL_renderer* renderer, const RSGL_programInfo* program); /* use shader program for drawing */
+RSGLDEF void RSGL_renderer_setRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffers* buffers);
 RSGLDEF void RSGL_renderer_setGradient(RSGL_renderer* renderer,
                                 float* gradient, /* array of gradients */
                                 size_t len /* length of array */
@@ -617,35 +644,37 @@ RSGL_mat4 RSGL_renderer_initDrawMatrix(RSGL_renderer* renderer, RSGL_point3D cen
 }
 
 void RSGL_basicDraw(RSGL_renderer* renderer, u32 type, float* points, float* texPoints, size_t len) {
-    if (renderer->info.len + 1 >= RSGL_MAX_BATCHES || renderer->info.vert_len + len >= RSGL_MAX_VERTS) {
+	renderer->data.loaded = RSGL_FALSE;
+
+	if (renderer->state.buffers->batchCount + 1 >= RSGL_MAX_BATCHES || renderer->data.len + len >= renderer->state.buffers->maxVerts) {
         RSGL_renderer_render(renderer);
     }
 
-    RSGL_BATCH* batch = NULL;
+	RSGL_BATCH* batch = NULL;
 	RSGL_color c = renderer->state.color;
 
     if (
-        renderer->info.len == 0 ||
-        renderer->info.batches[renderer->info.len - 1].tex != renderer->state.texture  ||
-        renderer->info.batches[renderer->info.len - 1].lineWidth != renderer->state.lineWidth ||
-        renderer->info.batches[renderer->info.len - 1].type != type ||
-        renderer->info.batches[renderer->info.len - 1].type == RSGL_TRIANGLE_FAN ||
+        renderer->state.buffers->batchCount == 0 ||
+        renderer->state.buffers->batches[renderer->state.buffers->batchCount - 1].tex != renderer->state.texture  ||
+        renderer->state.buffers->batches[renderer->state.buffers->batchCount - 1].lineWidth != renderer->state.lineWidth ||
+        renderer->state.buffers->batches[renderer->state.buffers->batchCount - 1].type != type ||
+        renderer->state.buffers->batches[renderer->state.buffers->batchCount - 1].type == RSGL_TRIANGLE_FAN ||
         renderer->state.forceBatch
     ) {
         renderer->state.forceBatch = RSGL_FALSE;
-        renderer->info.len += 1;
+        renderer->state.buffers->batchCount += 1;
 
-        batch = &renderer->info.batches[renderer->info.len - 1];
-        batch->start = renderer->info.vert_len;
+        batch = &renderer->state.buffers->batches[renderer->state.buffers->batchCount - 1];
+		batch->start = renderer->data.len;
         batch->len = 0;
         batch->type = type;
         batch->tex = renderer->state.texture;
         batch->lineWidth = renderer->state.lineWidth;
 
-        batch->matrix = renderer->info.matrix;
+        batch->matrix = renderer->state.matrix;
         batch->matrix = RSGL_mat4Multiply(batch->matrix.m, renderer->state.customMatrix.m);
     } else {
-        batch = &renderer->info.batches[renderer->info.len - 1];
+        batch = &renderer->state.buffers->batches[renderer->state.buffers->batchCount - 1];
     }
 
     if (batch == NULL)
@@ -653,22 +682,22 @@ void RSGL_basicDraw(RSGL_renderer* renderer, u32 type, float* points, float* tex
 
     batch->len += len;
 
-    RSGL_MEMCPY(&renderer->info.verts[renderer->info.vert_len * 3], points, len * sizeof(float) * 3);
-    RSGL_MEMCPY(&renderer->info.texCoords[renderer->info.vert_len * 2], texPoints, len * sizeof(float) * 2);
+    RSGL_MEMCPY(&renderer->data.verts[renderer->data.len * 3], points, len * sizeof(float) * 3);
+    RSGL_MEMCPY(&renderer->data.texCoords[renderer->data.len * 2], texPoints, len * sizeof(float) * 2);
 
     float color[4] = {c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f};
 
     if (renderer->state.gradient_len && renderer->state.gradient && (i64)(len - 1) > 0) {
-        RSGL_MEMCPY(&renderer->info.colors[renderer->info.vert_len * 4], color, sizeof(float) * 4);
-        RSGL_MEMCPY(&renderer->info.colors[renderer->info.vert_len * 4 + 4], renderer->state.gradient, (len - 1) * sizeof(float) * 4);
+        RSGL_MEMCPY(&renderer->data.colors[renderer->data.len * 4], color, sizeof(float) * 4);
+        RSGL_MEMCPY(&renderer->data.colors[renderer->data.len * 4 + 4], renderer->state.gradient, (len - 1) * sizeof(float) * 4);
     }
     else {
         size_t i;
         for (i = 0; i < len * 4; i += 4)
-            RSGL_MEMCPY(&renderer->info.colors[(renderer->info.vert_len * 4) + i], color, sizeof(float) * 4);
+            RSGL_MEMCPY(&renderer->data.colors[(renderer->data.len * 4) + i], color, sizeof(float) * 4);
     }
 
-    renderer->info.vert_len += len;
+    renderer->data.len += len;
 }
 
 /*
@@ -690,9 +719,59 @@ void RSGL_RFont_render_text(RSGL_renderer* renderer, RFont_texture atlas, float*
 }
 #endif
 
+void RSGL_renderer_createBuffer(RSGL_renderer* renderer, size_t size, const void* data, size_t* buffer) {
+	if (renderer->proc.createBuffer) {
+		renderer->proc.createBuffer(renderer->ctx, size, data, buffer);
+	}
+}
+
+void RSGL_renderer_deleteRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffers* buffers) {
+	RSGL_renderer_deleteBuffer(renderer, buffers->vertex);
+	RSGL_renderer_deleteBuffer(renderer, buffers->color);
+	RSGL_renderer_deleteBuffer(renderer, buffers->texture);
+}
+
+void RSGL_renderer_createRenderBuffers(RSGL_renderer* renderer, size_t size, RSGL_renderBuffers* buffers) {
+	buffers->maxVerts = size;
+	renderer->proc.createBuffer(renderer->ctx, size * 3 * sizeof(float), NULL, &buffers->vertex);
+	renderer->proc.createBuffer(renderer->ctx, size * 4 * sizeof(float), NULL, &buffers->color);
+	renderer->proc.createBuffer(renderer->ctx, size * 2 * sizeof(float), NULL, &buffers->texture);
+}
+
+void RSGL_renderer_updateBuffer(RSGL_renderer* renderer, size_t buffer, void* data, size_t start, size_t len) {
+	if (renderer->proc.updateBuffer)
+		renderer->proc.updateBuffer(renderer->ctx, buffer, data, start, len);
+}
+
+void RSGL_renderer_deleteBuffer(RSGL_renderer* renderer, size_t buffer) {
+	if (renderer->proc.deleteBuffer)
+		renderer->proc.deleteBuffer(renderer->ctx, buffer);
+}
+
+void RSGL_renderer_updateRenderBuffers(RSGL_renderer* renderer) {
+	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->vertex, renderer->data.verts, 0, renderer->data.len * 3 * sizeof(float));
+	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->color, renderer->data.colors, 0, renderer->data.len * 4 * sizeof(float));
+	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->texture, renderer->data.texCoords, 0, renderer->data.len * 2 * sizeof(float));
+
+	renderer->state.buffers->len = renderer->data.len;
+}
+
 void RSGL_renderer_render(RSGL_renderer* renderer) {
-	if (renderer->proc.render)
-		renderer->proc.render(renderer->ctx, renderer->state.program, &renderer->info);
+	if (renderer->data.len && renderer->state.buffers->batchCount) {
+		RSGL_renderer_updateRenderBuffers(renderer);
+		if (renderer->proc.render)
+			renderer->proc.render(renderer->ctx, renderer->state.program, renderer->state.buffers);
+	}
+
+	renderer->data.len = 0;
+    renderer->state.buffers->batchCount = 0;
+}
+
+void RSGL_renderer_renderBuffers(RSGL_renderer* renderer) {
+	if (renderer->proc.render && renderer->state.buffers->len && renderer->state.buffers->batchCount)
+		renderer->proc.render(renderer->ctx, renderer->state.program, renderer->state.buffers);
+
+	renderer->data.len = 0;
 }
 
 size_t RSGL_renderer_size(RSGL_renderer* renderer) {
@@ -709,6 +788,7 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, RSGL_area r, void* loader, vo
 
     renderer->state.customMatrix = RSGL_loadIdentity();
     renderer->state.currentArea = r;
+	renderer->state.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
 
 #ifndef RSGL_NO_TEXT
 	renderer->rfont.proc.create_atlas = (RFont_texture (*)(void* ctx, u32 atlasWidth, u32 atlasHeight))renderer->proc.createAtlas;
@@ -718,12 +798,17 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, RSGL_area r, void* loader, vo
 	renderer->rfont.ctx = renderer;
 #endif
 
-    renderer->info.len = 0;
-    renderer->info.vert_len = 0;
-	renderer->info.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
+	renderer->data.verts = renderer->verts;
+	renderer->data.texCoords = renderer->texCoords;
+	renderer->data.colors = renderer->colors;
+	renderer->data.len = 0;
 
 	if (renderer->proc.initPtr)
 		renderer->proc.initPtr(renderer->ctx, loader);
+
+	RSGL_renderer_createRenderBuffers(renderer, RSGL_MAX_VERTS, &renderer->buffers);
+    renderer->buffers.batchCount = 0;
+	renderer->state.buffers = &renderer->buffers;
 }
 
 
@@ -735,11 +820,13 @@ RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, RSGL_area r, void* loa
 }
 
 void RSGL_renderer_freePtr(RSGL_renderer* renderer) {
+	RSGL_renderer_deleteRenderBuffers(renderer, &renderer->buffers);
+
 	if (renderer->proc.freePtr)
 		renderer->proc.freePtr(renderer->ctx);
 
-	renderer->info.len = 0;
-	renderer->info.vert_len = 0;
+	renderer->state.buffers->batchCount = 0;
+	renderer->data.len = 0;
 }
 
 void RSGL_renderer_free(RSGL_renderer* renderer) {
@@ -794,7 +881,7 @@ void RSGL_renderer_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8 f
 void RSGL_renderer_updateSize(RSGL_renderer* renderer, RSGL_area r) {
     renderer->state.currentArea = r;
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, r.w, r.h));
-    renderer->info.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
+    renderer->state.matrix = RSGL_ortho(RSGL_loadIdentity().m, 0, r.w, r.h, 0, 0, 1.0);
 }
 
 void RSGL_renderer_setRotate(RSGL_renderer* renderer, RSGL_point3D rotate){
@@ -806,6 +893,14 @@ void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture texture) {
 void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color) {
 	renderer->state.color = color;
 }
+
+void RSGL_renderer_setRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffers* buffers) {
+	if (buffers == NULL)
+		renderer->state.buffers = &renderer->buffers;
+	else
+		renderer->state.buffers = buffers;
+}
+
 void RSGL_renderer_setProgram(RSGL_renderer* renderer, const RSGL_programInfo* program) {
 	RSGL_renderer_render(renderer);
 	if (program == NULL)

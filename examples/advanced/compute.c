@@ -67,7 +67,6 @@ int main(void) {
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
 		RSGL_drawRect(renderer, RSGL_RECT(100, 200, 200, 200));
 
-
 		RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(window);
 	}
