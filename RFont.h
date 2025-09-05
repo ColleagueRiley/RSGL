@@ -421,8 +421,9 @@ RFONT_API void RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, c
  * @param x The x position of the text
  * @param y The y position of the text
  * @param size The size of the text
+ * @return the number of verts rendered
 */
-RFONT_API void RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size);
+RFONT_API size_t RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size);
 
 /**
  * @brief Draw a text string using the font and a given spacing.
@@ -432,8 +433,9 @@ RFONT_API void RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const
  * @param y The y position of the text
  * @param size The size of the text
  * @param spacing The spacing of the text
+ * @return the number of verts rendered
 */
-RFONT_API void RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing);
+RFONT_API size_t RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing);
 
 /**
  * @brief Draw a text string using the font using a given length and a given spacing.
@@ -444,9 +446,9 @@ RFONT_API void RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* fon
  * @param y The y position of the text
  * @param size The size of the text
  * @param spacing The spacing of the text
+ * @return the number of verts rendered
 */
-RFONT_API void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing);
-
+RFONT_API size_t RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing);
 #endif /* RFONT_H */
 
 #ifdef RFONT_IMPLEMENTATION
@@ -842,12 +844,12 @@ void RFont_text_area_len(RFont_renderer* renderer, RFont_font* font, const char*
 	if(h) *h = (u32)(y * size);
 }
 
-void RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size) {
-   RFont_draw_text_len(renderer, font, text, 0, x, y, size, 0.0f);
+size_t RFont_draw_text(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size) {
+   return RFont_draw_text_len(renderer, font, text, 0, x, y, size, 0.0f);
 }
 
-void RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing) {
-   RFont_draw_text_len(renderer, font, text, 0, x, y, size, spacing);
+size_t RFont_draw_text_spacing(RFont_renderer* renderer, RFont_font* font, const char* text, float x, float y, u32 size, float spacing) {
+   return RFont_draw_text_len(renderer, font, text, 0, x, y, size, spacing);
 }
 
 char* RFont_codepoint_to_utf8(u32 codepoint) {
@@ -877,7 +879,7 @@ char* RFont_codepoint_to_utf8(u32 codepoint) {
    return utf8;
 }
 
-void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
+size_t RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
    float* verts = font->verts;
    float* tcoords = font->tcoords;
 
@@ -899,7 +901,6 @@ void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char*
    RFONT_UNUSED(startY);
 
    y = (y + (float)size - descent_offset);
-
    for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {
       if (*str == '\n') {
          x = startX;
@@ -914,63 +915,58 @@ void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char*
 
       glyph = RFont_font_add_char(renderer, font, *str, size);
 
-      if (glyph.codepoint == 0 && glyph.size == 0)
+	  if (glyph.codepoint == 0 && glyph.size == 0)
          continue;
-
       if (glyph.font != font) {
          RFont_draw_text_len(renderer, glyph.font, RFont_codepoint_to_utf8(glyph.codepoint), 4, x, y - (float)size + descent_offset, size, spacing);
          x += glyph.advance + spacing;
          continue;
       }
 
-      realX = x + glyph.x1;
+	  realX = x + glyph.x1;
       realY = y + glyph.y1;
 
       verts[i] = (i32)realX;
       verts[i + 1] = realY;
       verts[i + 2] = 0;
-      /*  */
+
       verts[i + 3] = (i32)realX;
       verts[i + 4] = realY + glyph.h;
       verts[i + 5] = 0;
-      /*  */
+
       verts[i + 6] = (i32)(realX + glyph.w);
       verts[i + 7] = realY + glyph.h;
       verts[i + 8] = 0;
-      /*  */
-      /*  */
+
       verts[i + 9] = (i32)(realX + glyph.w);
       verts[i + 10] = realY;
       verts[i + 11] = 0;
-      /*  */
+
       verts[i + 12] = (i32)realX;
       verts[i + 13] = realY;
       verts[i + 14] = 0;
-      /*  */
+
 
       verts[i + 15] = (i32)(realX + glyph.w);
       verts[i + 16] = realY + glyph.h;
       verts[i + 17] = 0;
 
-      /* texture coords */
 
       tcoords[tIndex] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
       tcoords[tIndex + 1] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
 
-      /*  */
       tcoords[tIndex + 2] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
       tcoords[tIndex + 3] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
-      /*  */
+
       tcoords[tIndex + 4] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
       tcoords[tIndex + 5] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
-      /*  */
-      /*  */
+
       tcoords[tIndex + 6] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
       tcoords[tIndex + 7] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
-      /*  */
+
       tcoords[tIndex + 8] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
       tcoords[tIndex + 9] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
-      /*  */
+
       tcoords[tIndex + 10] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
       tcoords[tIndex + 11] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
 
@@ -981,6 +977,8 @@ void RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char*
 
 	if (i && renderer->proc.render)
       renderer->proc.render(renderer->ctx, font->atlas, verts, tcoords, i / 3);
+
+	return (i / 3);
 }
 
 /*

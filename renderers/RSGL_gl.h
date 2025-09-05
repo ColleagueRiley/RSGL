@@ -351,6 +351,9 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
     /* load default texture */
     u8 white[4] = {255, 255, 255, 255};
     ctx->defaultTex = RSGL_GL_createTexture(ctx, white, RSGL_AREA(1, 1), 4);
+
+	glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
@@ -376,9 +379,6 @@ void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
 
 void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* buffers) {
 	if (program.program == 0) program = ctx->program;
-
-	glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glBindVertexArray(ctx->vao);
 
@@ -417,8 +417,7 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_r
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);    /* Unbind textures */
 
-	if (ctx->vao)
-		glBindVertexArray(0); /* Unbind VAO */
+	glBindVertexArray(0); /* Unbind VAO */
 }
 
 void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, RSGL_rectF scissor, i32 renderer_height) {
@@ -466,7 +465,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, u8* bitmap, RSGL_area m
 }
 
 void RSGL_GL_updateTexture(RSGL_glRenderer* ctx, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
-    glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
 
     u16 c = 0;
@@ -634,10 +633,6 @@ void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, const char* var, 
 #endif
 
 RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atlasHeight) {
-#if defined(RSGL_DEBUG)
-	glEnable(GL_DEBUG_OUTPUT);
-#endif
-
 	u32 id = 0;
 	glEnable(GL_TEXTURE_2D);
 
@@ -658,12 +653,11 @@ RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atla
 
 	RSGL_FREE(data);
 
-	glBindTexture(GL_TEXTURE_2D, id);
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-   return id;
+	return id;
 }
 
 void RSGL_GL_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
@@ -690,7 +684,6 @@ void RSGL_GL_bitmap_to_atlas(RSGL_glRenderer* ctx, RFont_texture atlas, u32 atla
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 
-	glActiveTexture(GL_TEXTURE0 + (u32)atlas - 1);
 	glBindTexture(GL_TEXTURE_2D, (u32)atlas);
 
 	RSGL_GL_push_pixel_values(1, (i32)w, 0, 0);

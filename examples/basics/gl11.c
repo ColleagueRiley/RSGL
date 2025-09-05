@@ -13,7 +13,7 @@
 
 /* TODO: add more facts */
 const char* facts[] = {
-	"The hedgehog in the logo is nammed 'Lonic';\na joke name combining 'Linux' and 'Sonic'.",
+	"The hedgehog in the logo is named 'Lonic';\na joke name combining 'Linux' and 'Sonic'.",
 	"Postal 3 sucks",
 	"RSGL has been rewritten several times",
 	"RSGL was originally created in 2020",
