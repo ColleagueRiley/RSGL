@@ -140,19 +140,19 @@ typedef struct RSGL_point {
     i32 x, y;
 } RSGL_point;
 #endif
-#define RSGL_POINT(x, y) (RSGL_point){x, y}
+#define RSGL_POINT(x, y) (RSGL_point){(i32)x, (i32)y}
 
 #ifndef RSGL_area
 typedef struct RSGL_area {
     i32 w, h;
 } RSGL_area;
 #endif
-#define RSGL_AREA(w, h) (RSGL_area){w, h}
+#define RSGL_AREA(w, h) (RSGL_area){(i32)w, (i32)h}
 
 #ifndef RSGL_pointF
 typedef struct RSGL_pointF { float x, y; } RSGL_pointF;
 #endif
-#define RSGL_POINTF(x, y) (RSGL_pointF){x, y}
+#define RSGL_POINTF(x, y) (RSGL_pointF){(float)x, (float)y}
 
 #ifndef RSGL_point3D
 typedef struct RSGL_point3D { float x, y, z; } RSGL_point3D;
