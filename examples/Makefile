@@ -9,7 +9,7 @@ CUSTOM_CFLAGS ?=
 # used for the examples
 CFLAGS =
 
-LIBS := -static -lgdi32 -lm -lopengl32 -lwinmm -ggdb
+LIBS := -static -lgdi32 -lm -lopengl32 -lwinmm -ggdb -ld3d11 -ldxgi -ldxguid -ld3dcompiler
 EXT = .exe
 LIB_EXT = .dll
 
@@ -76,7 +76,10 @@ EXAMPLE_OUTPUTS = \
 	advanced/compute \
 	basics/stack \
 	basics/buffers \
-	basics/gl11
+	advanced/rfont \
+	basics/gl11 \
+	basics/dx11 \
+
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS)
 

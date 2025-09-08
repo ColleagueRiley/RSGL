@@ -164,11 +164,10 @@ void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx) { RSGL_UNUSED(ctx); }
 
 void RSGL_GL1_render(RSGL_gl1Renderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* buffers) {
 	size_t i, j;
-	size_t tIndex = 0, cIndex = 0, vIndex = 0;
-
 	float* colors = (float*)((RSGL_gl1Buffer*)buffers->color)->data;
 	float* verts = (float*)((RSGL_gl1Buffer*)buffers->vertex)->data;
 	float* texCoords = (float*)((RSGL_gl1Buffer*)buffers->texture)->data;
+	u16* elements = (u16*)((RSGL_gl1Buffer*)buffers->elements)->data;
 
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -177,19 +176,26 @@ void RSGL_GL1_render(RSGL_gl1Renderer* ctx, RSGL_programInfo program, const RSGL
 		glBindTexture(GL_TEXTURE_2D, buffers->batches[i].tex);
 		glLineWidth(buffers->batches[i].lineWidth > 0 ? buffers->batches[i].lineWidth : 0.1f);
 
-		u32 mode = buffers->batches[i].type;
+		u32 mode = GL_TRIANGLES;
+		switch (buffers->batches[i].type) {
+			case RSGL_TRIANGLES: mode = GL_TRIANGLES; break;
+			case RSGL_POINTS: mode = GL_POINTS; break;
+			case RSGL_LINES:  mode = GL_LINES; break;
+			default: break;
+		}
+
 		glLoadIdentity();
 		glMultMatrixf(buffers->batches[i].matrix.m);
 		glBegin(mode);
 
-		for (j = buffers->batches[i].start; j < buffers->batches[i].start + buffers->batches[i].len; j++) {
+		for (j = buffers->batches[i].elmStart ; j < buffers->batches[i].elmStart + buffers->batches[i].elmCount; j++) {
+			size_t vIndex = elements[j] * 3;
+			size_t tIndex = elements[j] * 2;
+			size_t cIndex = elements[j] * 4;
+
 			glTexCoord2f(texCoords[tIndex], texCoords[tIndex + 1]);
 			glColor4f(colors[cIndex], colors[cIndex + 1], colors[cIndex + 2], colors[cIndex + 3]);
 			glVertex3f(verts[vIndex], verts[vIndex + 1],  verts[vIndex + 2]);
-
-			tIndex += 2;
-			vIndex += 3;
-			cIndex += 4;
 		}
 
 		glEnd();

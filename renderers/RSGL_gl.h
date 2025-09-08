@@ -244,7 +244,7 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL_createBuffer;
 	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL_deleteBuffer;
-
+//	proc.setSurface = (void (*)(void*, void*))RSGL_GL_setSurface;
 #ifdef RSGL_USE_COMPUTE
 	proc.createComputeProgram = (RSGL_programInfo (*)(void*, const char*))RSGL_GL_createComputeProgram;
 	proc.dispatchComputeProgram = (void (*)(void*, RSGL_programInfo, u32, u32, u32))RSGL_GL_dispatchComputeProgram;
@@ -397,22 +397,33 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_r
 	glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, 0, 0, 0);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers->elements);
+
 	/* Set current shader */
 	glUseProgram(program.program);
 
 	int loc = glGetUniformLocation(program.program, "mat");
 	u32 i;
+
 	for (i = 0; i < buffers->batchCount; i++) {
-		GLenum mode = buffers->batches[i].type;
+		GLenum mode = GL_TRIANGLES;
 		glBindTexture(GL_TEXTURE_2D, (buffers->batches[i].tex == 0) ? (ctx->defaultTex) : (buffers->batches[i].tex));
 		glLineWidth(buffers->batches[i].lineWidth > 0 ? buffers->batches[i].lineWidth : 0.1f);
 		if (loc >= 0) {
 			glUniformMatrix4fv(loc, 1, GL_FALSE, buffers->batches[i].matrix.m);
 		}
 
-		glDrawArrays(mode, buffers->batches[i].start, buffers->batches[i].len);
+		switch (buffers->batches[i].type) {
+			case RSGL_TRIANGLES: mode = GL_TRIANGLES; break;
+			case RSGL_POINTS: mode = GL_POINTS; break;
+			case RSGL_LINES:  mode = GL_LINES; break;
+			default: break;
+		}
+
+		glDrawElements(mode, (i32)buffers->batches[i].elmCount, GL_UNSIGNED_SHORT, (void*)(buffers->batches[i].elmStart * sizeof(u16)));
 	}
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);    /* Unbind textures */

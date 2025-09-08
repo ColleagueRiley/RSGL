@@ -34,17 +34,17 @@ int main(void) {
         if ((rand() % 200) <= 5)
             fill = !fill;
 
-        RSGL_renderer_setRotate(renderer, rotate);
+		RSGL_renderer_setRotate(renderer, rotate);
 		RSGL_renderer_setColor(renderer, RSGL_RGB(0, 255, 0));
-        RSGL_drawPolygon(renderer, RSGL_RECT(20, 20, 50, 50), 8);
+		RSGL_drawPolygon(renderer, RSGL_RECT(20, 20, 50, 50), 8);
 
-        RSGL_renderer_setRotate(renderer, rotate);
+		RSGL_renderer_setRotate(renderer, rotate);
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
-        RSGL_drawRect(renderer, RSGL_RECT(200, 200, 200, 200));
+		RSGL_drawRect(renderer, RSGL_RECT(200, 200, 200, 200));
 
-        RSGL_renderer_setRotate(renderer, rotate);
+		RSGL_renderer_setRotate(renderer, rotate);
 		RSGL_renderer_setColor(renderer, RSGL_RGB(0, 0, 255));
-        RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)));
+		RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)));
 
         RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(win);

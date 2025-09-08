@@ -201,13 +201,24 @@ typedef size_t RFont_texture;
 
 #ifndef RFONT_RENDERER_H
 #define RFONT_RENDERER_H
+
+typedef struct RFont_render_data {
+	float* verts;
+	float* tcoords;
+	u16* elements;
+
+	RFont_texture atlas;
+	size_t nverts;
+	size_t nelements;
+} RFont_render_data;
+
 typedef struct RFont_renderer_proc {
 	size_t (*size)(void); /*!< get the size of the renderer context */
 	void (*initPtr)(void* ctx); /* any initalizations the renderer needs to do */
 	RFont_texture (*create_atlas)(void* ctx, u32 atlasWidth, u32 atlasHeight); /* create a bitmap texture based on the given size */
 	void (*free_atlas)(void* ctx, RFont_texture atlas);
 	void (*bitmap_to_atlas)(void* ctx, RFont_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y); /* add the given bitmap to the texture based on the given coords and size data */
-	void (*render)(void* ctx, RFont_texture atlas, float* verts, float* tcoords, size_t nverts); /* render the text, using the vertices, atlas texture, and texture coords given. */
+	void (*render)(void* ctx, const RFont_render_data* data); /* render the text, using the vertices, atlas texture, and texture coords given. */
 	void (*set_framebuffer)(void* ctx, u32 weight, u32 height); /*!< set the frame buffer size (for ortho, for example) */
 	void (*set_color)(void* ctx, float r, float g, float b, float a); /*!< set the current rendering color */
 	void (*freePtr)(void* ctx); /* free any memory the renderer might need to free */
@@ -266,8 +277,9 @@ struct RFont_font {
 	size_t atlasWidth, atlasHeight;
 	float atlasX, atlasY; /* the current position inside the atlas */
 
-	float verts[RFONT_INIT_VERTS];
-	float tcoords[RFONT_INIT_VERTS];
+	float verts[RFONT_INIT_VERTS * 3];
+	float tcoords[RFONT_INIT_VERTS * 2];
+	u16 elements[RFONT_INIT_VERTS * 6];
 };
 
 
@@ -614,6 +626,9 @@ RFont_font* RFont_font_init_data(RFont_renderer* renderer, u8* font_data, u32 ma
 }
 
 RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u32 maxHeight, size_t atlasWidth, size_t atlasHeight, RFont_font* font) {
+	u16 index = 0;
+	u16 vert_index = 0;
+
 	i32 space_codepoint = 0;
 	font->src = (RFont_src*)RFONT_MALLOC(sizeof(RFont_src));
 	font->atlasWidth = atlasWidth;
@@ -638,6 +653,17 @@ RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u3
 	font->atlasX = 0;
 	font->atlasY = 0;
 	font->glyph_len = 0;
+
+	for (index = 0; index < RFONT_INIT_VERTS; index += 6) {
+		font->elements[index + 0] = vert_index + 0;
+		font->elements[index + 1] = vert_index + 1;
+		font->elements[index + 2] = vert_index + 2;
+		font->elements[index + 3] = vert_index + 3;
+		font->elements[index + 4] = vert_index + 0;
+		font->elements[index + 5] = vert_index + 2;
+		vert_index += 4;
+	}
+
 	return font;
 }
 
@@ -880,105 +906,104 @@ char* RFont_codepoint_to_utf8(u32 codepoint) {
 }
 
 size_t RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font, const char* text, size_t len, float x, float y, u32 size, float spacing) {
-   float* verts = font->verts;
-   float* tcoords = font->tcoords;
+	RFont_render_data data;
+	float startX = x;
+	float startY = y;
 
-   float startX = x;
-   float startY = y;
+	size_t i = 0;
+	size_t tIndex = 0;
 
-   u32 i = 0;
-   u32 tIndex = 0;
+	char* str;
+	RFont_glyph glyph;
+	float realX, realY;
 
-   char* str;
-   RFont_glyph glyph;
-   float realX, realY;
+	float scale = (((float)size) / font->fheight);
+	float space_adv = (scale * font->space_adv);
 
-   float scale = (((float)size) / font->fheight);
-   float space_adv = (scale * font->space_adv);
+	float descent_offset =  (-font->descent * scale);
 
-   float descent_offset =  (-font->descent * scale);
+	data.verts = font->verts;
+	data.tcoords = font->tcoords;
+	data.elements = font->elements;
+	data.atlas = font->atlas;
+	data.nverts = 0;
+	data.nelements = 0;
 
-   RFONT_UNUSED(startY);
+	RFONT_UNUSED(startY);
 
-   y = (y + (float)size - descent_offset);
-   for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {
-      if (*str == '\n') {
-         x = startX;
-         y += (float)size;
-         continue;
-      }
+	y = (y + (float)size - descent_offset);
 
-      if (*str == ' ' || *str == '\t') {
-         x += space_adv + spacing;
-         continue;
-      }
+	for (str = (char*)text; (len == 0 || (size_t)(str - text) < len) && *str; str++) {
+		if (*str == '\n') {
+			x = startX;
+			y += (float)size;
+			continue;
+		}
 
-      glyph = RFont_font_add_char(renderer, font, *str, size);
+		if (*str == ' ' || *str == '\t') {
+			x += space_adv + spacing;
+			continue;
+		}
 
-	  if (glyph.codepoint == 0 && glyph.size == 0)
-         continue;
-      if (glyph.font != font) {
-         RFont_draw_text_len(renderer, glyph.font, RFont_codepoint_to_utf8(glyph.codepoint), 4, x, y - (float)size + descent_offset, size, spacing);
-         x += glyph.advance + spacing;
-         continue;
-      }
+		glyph = RFont_font_add_char(renderer, font, *str, size);
 
-	  realX = x + glyph.x1;
-      realY = y + glyph.y1;
+		if (glyph.codepoint == 0 && glyph.size == 0)
+			continue;
 
-      verts[i] = (i32)realX;
-      verts[i + 1] = realY;
-      verts[i + 2] = 0;
+		if (glyph.font != font) {
+			RFont_draw_text_len(renderer, glyph.font, RFont_codepoint_to_utf8(glyph.codepoint), 4, x, y - (float)size + descent_offset, size, spacing);
+			x += glyph.advance + spacing;
+			continue;
+		}
 
-      verts[i + 3] = (i32)realX;
-      verts[i + 4] = realY + glyph.h;
-      verts[i + 5] = 0;
+		realX = x + glyph.x1;
+		realY = y + glyph.y1;
 
-      verts[i + 6] = (i32)(realX + glyph.w);
-      verts[i + 7] = realY + glyph.h;
-      verts[i + 8] = 0;
+		i = data.nverts * 3;
+		tIndex = data.nverts * 2;
 
-      verts[i + 9] = (i32)(realX + glyph.w);
-      verts[i + 10] = realY;
-      verts[i + 11] = 0;
+		data.verts[i] = (i32)realX;
+		data.verts[i + 1] = realY;
+		data.verts[i + 2] = 0;
+		/*  */
+		data.verts[i + 3] = (i32)realX;
+		data.verts[i + 4] = realY + glyph.h;
+		data.verts[i + 5] = 0;
+		/*  */
+		data.verts[i + 6] = (i32)(realX + glyph.w);
+		data.verts[i + 7] = realY + glyph.h;
+		data.verts[i + 8] = 0;
+		/*  */
+		/*  */
+		data.verts[i + 9] = (i32)(realX + glyph.w);
+		data.verts[i + 10] = realY;
+		data.verts[i + 11] = 0;
 
-      verts[i + 12] = (i32)realX;
-      verts[i + 13] = realY;
-      verts[i + 14] = 0;
+		/* texture coords */
+		data.tcoords[tIndex] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
+		data.tcoords[tIndex + 1] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
 
+		/*  */
+		data.tcoords[tIndex + 2] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
+		data.tcoords[tIndex + 3] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
+		/*  */
+		data.tcoords[tIndex + 4] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
+		data.tcoords[tIndex + 5] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
+		/*  */
+		/*  */
+		data.tcoords[tIndex + 6] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
+		data.tcoords[tIndex + 7] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
 
-      verts[i + 15] = (i32)(realX + glyph.w);
-      verts[i + 16] = realY + glyph.h;
-      verts[i + 17] = 0;
+		x += glyph.advance + spacing;
 
-
-      tcoords[tIndex] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
-      tcoords[tIndex + 1] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
-
-      tcoords[tIndex + 2] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
-      tcoords[tIndex + 3] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
-
-      tcoords[tIndex + 4] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
-      tcoords[tIndex + 5] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
-
-      tcoords[tIndex + 6] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
-      tcoords[tIndex + 7] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
-
-      tcoords[tIndex + 8] = RFONT_GET_TEXPOSX(glyph.x, font->atlasWidth);
-      tcoords[tIndex + 9] = RFONT_GET_TEXPOSY(glyph.y, font->atlasWidth);
-
-      tcoords[tIndex + 10] = RFONT_GET_TEXPOSX(glyph.x2, font->atlasWidth);
-      tcoords[tIndex + 11] = RFONT_GET_TEXPOSY(glyph.y2, font->atlasHeight);
-
-      x += glyph.advance + spacing;
-      i += 18;
-      tIndex += 12;
-   }
+		data.nverts += 4;
+		data.nelements += 6;
+	}
 
 	if (i && renderer->proc.render)
-      renderer->proc.render(renderer->ctx, font->atlas, verts, tcoords, i / 3);
+		renderer->proc.render(renderer->ctx, &data);
 
-	return (i / 3);
+	return data.nelements;
 }
 
 /*
