@@ -331,8 +331,8 @@ typedef struct RSGL_projection3D {
 	RSGL_projectionType type;
 	float fov;
 	float ratio;
-	float near;
-	float far;
+	float pNear;
+	float pFar;
 } RSGL_projection3D;
 
 typedef union RSGL_projection {
@@ -1851,13 +1851,13 @@ RSGL_mat4 RSGL_projection_getMatrix(const RSGL_projection* projection) {
     RSGL_mat4 matrix = RSGL_mat4_loadIdentity();
 	switch (projection->type) {
 		case RSGL_projectionPerspective3D:
-			matrix = RSGL_mat4_perspective(matrix.m, projection->p3D.fov, projection->p3D.ratio, projection->p3D.near, projection->p3D.far);
+			matrix = RSGL_mat4_perspective(matrix.m, projection->p3D.fov, projection->p3D.ratio, projection->p3D.pNear, projection->p3D.pFar);
 			break;
 		case RSGL_projectionOrtho3D: {
 			double top = projection->p3D.fov / 2.0;
 			double right = top * projection->p3D.ratio;
 
-			matrix = RSGL_mat4_ortho(matrix.m, -right, right, -top, top, projection->p3D.near, projection->p3D.far);
+			matrix = RSGL_mat4_ortho(matrix.m, -right, right, -top, top, projection->p3D.pNear, projection->p3D.pFar);
 			break;
 		}
 		case RSGL_projectionOrtho2D:

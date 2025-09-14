@@ -2,7 +2,6 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
-#define RGFW_INT_DEFINED
 #define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"

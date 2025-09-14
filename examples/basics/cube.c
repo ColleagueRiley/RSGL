@@ -36,8 +36,8 @@ int main(void) {
 	projection.type = RSGL_projectionPerspective3D;
 	projection.p3D.fov = 40;
 	projection.p3D.ratio = 1.0; /* 500 / 500 */
-	projection.p3D.near = 0.0001;
-	projection.p3D.far = 1000;
+	projection.p3D.pNear = 0.0001;
+	projection.p3D.pFar = 1000;
 
 	RSGL_mat4 perMat = RSGL_projection_getMatrix(&projection);
 
