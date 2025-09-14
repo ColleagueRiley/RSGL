@@ -18,6 +18,7 @@
 	#define RGFW_DIRECTX
 #endif
 
+#define RGFW_INT_DEFINED
 #define RGFW_IMPLEMENTATION
 #include "examples/deps/RGFW.h"
 
