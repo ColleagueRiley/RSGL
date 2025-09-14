@@ -80,6 +80,8 @@ typedef uintptr_t GLsizeiptr;
 #define GL_STATIC_DRAW  0x88E4
 #define GL_DYNAMIC_DRAW 0x88E8
 #define GL_TEXTURE0 0x84C0
+
+#include <GL/glext.h>
 #endif
 
 #ifndef RSGL_NO_GL_LOADER

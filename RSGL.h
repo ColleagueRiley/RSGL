@@ -893,7 +893,7 @@ void RSGL_renderer_render(RSGL_renderer* renderer) {
 		matrix = RSGL_mat4_multiply(matrix.m, renderer->state.viewMatrix.m);
 
 		if (renderer->proc.render)
-			renderer->proc.render(renderer->ctx, renderer->state.program, matrix.m, (void*)renderer->state.buffers);
+			renderer->proc.render(renderer->ctx, renderer->state.program, matrix.m, renderer->state.buffers);
 	}
 
 	renderer->data.len = 0;
