@@ -58,8 +58,6 @@ void RSGL_GL1_renderer_initPtr(RSGL_area r, void* loader, RSGL_gl1Renderer* ptr,
 #if defined(_WIN32)
 typedef char GLchar;
 typedef int	 GLsizei;
-typedef ptrdiff_t GLintptr;
-typedef uintptr_t GLsizeiptr;
 
 #define GL_VERTEX_SHADER   0x8B31
 #define GL_FRAGMENT_SHADER 0x8B30
@@ -68,6 +66,8 @@ typedef uintptr_t GLsizeiptr;
 #define GL_STATIC_DRAW  0x88E4
 #define GL_DYNAMIC_DRAW 0x88E8
 #define GL_TEXTURE0 0x84C0
+
+#include <GL/glext.h>
 #endif
 
 size_t RSGL_GL1_size(void) {
