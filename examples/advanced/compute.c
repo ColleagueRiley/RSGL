@@ -62,7 +62,7 @@ int main(void) {
 
 	size_t u_time = RSGL_renderer_findShaderVariable(renderer, &program, "u_time", 6);
 	size_t u_screen_size = RSGL_renderer_findShaderVariable(renderer, &program, "u_screen_size", 13);
-
+	RSGL_UNUSED(u_time);
 
 	while (RGFW_window_shouldClose(window) == false) {
 		RGFW_pollEvents();

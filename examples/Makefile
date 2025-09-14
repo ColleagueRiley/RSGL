@@ -63,7 +63,7 @@ else ifeq ($(CC),emcc)
 	detected_OS = web
 
 	LIBS += -DRSGL_GL_NO_LEGACY
-else ifeq (,$(filter $(CC), g++ clang++))
+else ifeq (,$(filter $(CC), g++ clang++ x86_64-w64-mingw32-g++))
 	LIBS += -std=c99
 endif
 

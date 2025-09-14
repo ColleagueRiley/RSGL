@@ -88,6 +88,11 @@ int main(void) {
 	size_t u_mouse = RSGL_renderer_findShaderVariable(renderer, &program, "u_mouse", 7);
 	size_t pos = RSGL_renderer_findShaderVariable(renderer, &program, "pos", 3);
 
+	RSGL_UNUSED(u_time);
+	RSGL_UNUSED(u_resolution);
+	RSGL_UNUSED(u_mouse);
+	RSGL_UNUSED(pos);
+
     while (RGFW_window_shouldClose(window) == false) {
 		RGFW_pollEvents();
 
@@ -102,7 +107,7 @@ int main(void) {
 		RSGL_renderer_setProgram(renderer, &program);
         RSGL_drawCircle(renderer, RSGL_CIRCLE(0, 0, 60));
 
-        RSGL_renderer_updateShaderVariable(renderer, &program, u_time, (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
+		RSGL_renderer_updateShaderVariable(renderer, &program, u_time, (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
         RSGL_renderer_updateShaderVariable(renderer, &program, u_resolution, (float*)(const float[2]){(float)window->w, (float)window->h}, 2);
 
 		i32 x, y;
