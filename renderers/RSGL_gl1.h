@@ -210,7 +210,7 @@ GLuint RSGL_GL1_textureDataTypeToNative(RSGL_textureDataType type) {
 	return GL_UNSIGNED_BYTE;
 }
 
-GLuint RSGL_GL_textureFilterToNative(RSGL_textureFilter filter) {
+GLuint RSGL_GL1_textureFilterToNative(RSGL_textureFilter filter) {
     switch (filter) {
 		case RSGL_filterNearest:  return GL_NEAREST;
 		case RSGL_filterLinear: return GL_LINEAR;
@@ -228,8 +228,8 @@ RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, const RSGL_textureBlo
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL_textureFilterToNative(blob->magFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL1_textureFilterToNative(blob->minFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL1_textureFilterToNative(blob->magFilter));
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
 
