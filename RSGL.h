@@ -1027,14 +1027,22 @@ void RSGL_renderer_scissorEnd(RSGL_renderer* renderer) {
 }
 RSGL_programBlob RSGL_renderer_defaultBlob(RSGL_renderer* renderer) {
 	RSGL_programBlob blob;
-	if (renderer->proc.defaultBlob)
+	RSGL_MEMSET(&blob, 0, sizeof(blob));
+
+	if (renderer->proc.defaultBlob) {
 		blob = renderer->proc.defaultBlob();
+	}
+
 	return blob;
 }
 RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, RSGL_programBlob* blob) {
 	RSGL_programInfo info;
-	if (renderer->proc.createProgram)
+	RSGL_MEMSET(&info, 0, sizeof(info));
+
+	if (renderer->proc.createProgram) {
 		info = renderer->proc.createProgram(renderer->ctx, blob);
+	}
+
 	return info;
 }
 void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, const RSGL_programInfo* program) { return renderer->proc.deleteProgram(renderer->ctx, program); }
