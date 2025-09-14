@@ -23,7 +23,7 @@ ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-min
 	detected_OS := $(shell uname 2>/dev/null || echo Unknown)
 
 	ifeq ($(detected_OS),Darwin)        # Mac OS X
-		LIBS := -lm -framework IOKit -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
+		LIBS := -D GL_SILENCE_DEPRECATION -lm -framework IOKit -framework Foundation -framework AppKit -framework OpenGL -framework CoreVideo
 		EXT =
 		OS_DIR = /
 		LIB_EXT = .dylib
