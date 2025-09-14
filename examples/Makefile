@@ -72,7 +72,7 @@ EXAMPLE_OUTPUTS = \
 	basics/textures  \
 	advanced/shader \
 	basics/shapes  \
-	basics/camera	\
+	basics/cube \
 	advanced/compute \
 	basics/stack \
 	basics/buffers \

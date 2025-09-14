@@ -27,10 +27,11 @@ int main(void) {
 
 		RSGL_renderer_clear(renderer, RSGL_RGB(125, 25, 75));
 
+		RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, w, h));
 		RFont_renderer_set_framebuffer(&renderer->rfont, (u32)w, (u32)h);
 
 		RFont_renderer_set_color(&renderer->rfont, 1.0f, 1.0f, 1.0f, 1.0f);
-		RFont_draw_text(&renderer->rfont, font, "Something about a fast lazy.", 0, 10, 60);
+		RFont_draw_text(&renderer->rfont, font, "Something about a fast lazy hedgehog.", 0, 10, 60);
 
 		RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(win);

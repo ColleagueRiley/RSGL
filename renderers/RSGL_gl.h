@@ -11,10 +11,7 @@
 #define RSGL_GL_H
 
 typedef struct RSGL_glRenderer {
-    RSGL_programInfo program;       /* Default shader program id, supports vertex color and diffuse texture*/
-    u32 defaultTex;
 	u32 vao;
-	size_t vbo, tbo, cbo; /* array object and array buffers */
 } RSGL_glRenderer;
 
 RSGLDEF RSGL_rendererProc RSGL_GL_rendererProc(void);
@@ -22,7 +19,7 @@ RSGLDEF size_t RSGL_GL_size(void);
 
 RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(RSGL_area r, void* loader);
 RSGLDEF void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
-RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* info);
+RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* info);
 RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
 RSGLDEF void RSGL_GL_clear(RSGL_glRenderer* ctx, float r, float g, float b, float a);
@@ -30,10 +27,11 @@ RSGLDEF void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h);
 RSGLDEF void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer);
 RSGLDEF void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
 RSGLDEF void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer);
+RSGLDEF RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
-RSGLDEF RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, u8* bitmap, RSGL_area memsize,  u8 channels);
+RSGLDEF RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob* blob);
 /* updates an existing texture wiht a new bitmap */
-RSGLDEF void RSGL_GL_updateTexture(RSGL_glRenderer* ctx, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
+RSGLDEF void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob);
 /* delete a texture */
 RSGLDEF void RSGL_GL_deleteTexture(RSGL_glRenderer* ctx, RSGL_texture tex);
 /* starts scissoring */
@@ -41,9 +39,10 @@ RSGLDEF void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, RSGL_rectF scissor, i32 
 /* stops scissoring */
 RSGLDEF void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx);
 /* program loading */
-RSGLDEF RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
-RSGLDEF void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, RSGL_programInfo program);
-RSGLDEF void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, const char* var, const float value[], u8 len);
+RSGLDEF RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* blob);
+RSGLDEF void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, const RSGL_programInfo* program);
+RSGLDEF size_t RSGL_GL_findShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo*  program, const char* var, const size_t len);
+RSGLDEF void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, size_t var, const float value[], u8 len);
 RSGLDEF RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atlasHeight);
 RSGLDEF void RSGL_GL_bitmap_to_atlas(RSGL_glRenderer* ctx, RFont_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y);
 #ifdef RSGL_USE_COMPUTE
@@ -225,29 +224,31 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	RSGL_rendererProc proc;
 	RSGL_MEMSET(&proc, 0, sizeof(proc));
 
-	proc.render = (void (*)(void*, RSGL_programInfo, const RSGL_renderBuffers*))RSGL_GL_render;
+	proc.render = (void (*)(void*, const RSGL_programInfo*, const float*, const RSGL_renderBuffers*))RSGL_GL_render;
     proc.size = (size_t (*)(void))RSGL_GL_size;
     proc.initPtr = (void (*)(void*, void*))RSGL_GL_initPtr;
     proc.freePtr = (void (*)(void*))RSGL_GL_freePtr;
     proc.clear = (void (*)(void*, float, float, float, float))RSGL_GL_clear;
     proc.viewport = (void (*)(void*, i32, i32, i32, i32))RSGL_GL_viewport;
-    proc.createTexture = (RSGL_texture (*)(void*, u8*, RSGL_area,  u8))RSGL_GL_createTexture;
-    proc.updateTexture = (void (*)(void*, RSGL_texture, u8*, RSGL_area, u8))RSGL_GL_updateTexture;
+    proc.createTexture = (RSGL_texture (*)(void*, const RSGL_textureBlob* blob))RSGL_GL_createTexture;
+    proc.copyToTexture = (void (*)(void*, RSGL_texture, size_t, size_t, const RSGL_textureBlob* blob))RSGL_GL_copyToTexture;
     proc.deleteTexture = (void (*)(void*, RSGL_texture))RSGL_GL_deleteTexture;
     proc.scissorStart = (void (*)(void*, RSGL_rectF, i32))RSGL_GL_scissorStart;
     proc.scissorEnd =  (void (*)(void*))RSGL_GL_scissorEnd;
-    proc.createProgram = (RSGL_programInfo (*)(void*, const char*, const char*, const char*, const char*, const char*))RSGL_GL_createProgram;
-    proc.deleteProgram = (void (*)(void*, RSGL_programInfo))RSGL_GL_deleteProgram;
-    proc.setShaderValue = (void (*)(void*, u32, const char*, const float[], u8))RSGL_GL_setShaderValue;
+    proc.createProgram = (RSGL_programInfo (*)(void*, RSGL_programBlob* blob))RSGL_GL_createProgram;
+    proc.deleteProgram = (void (*)(void*, const RSGL_programInfo*))RSGL_GL_deleteProgram;
+	proc.findShaderVariable = (size_t (*)(void*, const RSGL_programInfo*, const char*, size_t))RSGL_GL_findShaderVariable;
+	proc.updateShaderVariable = (void (*)(void*, const RSGL_programInfo*, size_t, const float[], u8))RSGL_GL_updateShaderVariable;
     proc.createAtlas = (RSGL_texture (*)(void*, u32, u32))RSGL_GL_create_atlas;
     proc.bitmapToAtlas = (void(*)(void*, RSGL_texture, u32, u32, u32, u8*, float, float, float*, float*))RSGL_GL_bitmap_to_atlas;
 	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL_createBuffer;
 	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL_deleteBuffer;
+	proc.defaultBlob = (RSGL_programBlob (*)(void))RSGL_GL_defaultBlob;
 //	proc.setSurface = (void (*)(void*, void*))RSGL_GL_setSurface;
 #ifdef RSGL_USE_COMPUTE
 	proc.createComputeProgram = (RSGL_programInfo (*)(void*, const char*))RSGL_GL_createComputeProgram;
-	proc.dispatchComputeProgram = (void (*)(void*, RSGL_programInfo, u32, u32, u32))RSGL_GL_dispatchComputeProgram;
+	proc.dispatchComputeProgram = (void (*)(void*, const RSGL_programInfo*, u32, u32, u32))RSGL_GL_dispatchComputeProgram;
 	proc.bindComputeTexture = (void (*)(void*, u32, u8))RSGL_GL_bindComputeTexture;
 #else
 	proc.createComputeProgram = NULL;
@@ -285,30 +286,7 @@ void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer) {
 	glDeleteBuffers(1, (u32*)&buffer);
 }
 
-void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
-    #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
-    if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
-        #ifdef RSGL_DEBUG
-        printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
-        #endif
-        return;
-    }
-    #else
-    RSGL_UNUSED(proc);
-    #endif
-
-#ifdef RSGL_DEBUG
-    #ifndef GL_SHADING_LANGUAGE_VERSION
-        #define GL_SHADING_LANGUAGE_VERSION 0x8B8C
-    #endif
-
-
-    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
-    printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-    printf("Vendor: %s\n", glGetString(GL_VENDOR));
-    printf("Renderer: %s\n", glGetString(GL_RENDERER));
-#endif
-
+RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
     static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
         \x23version 330                     \n
         in vec3 vertexPosition;            \n
@@ -316,12 +294,13 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
         in vec4 vertexColor;               \n
         out vec2 fragTexCoord;             \n
         out vec4 fragColor;                \n
-        uniform mat4 mat; \n
+        uniform mat4 model; \n
+        uniform mat4 pv; \n
 
         void main() {
             fragTexCoord = vertexTexCoord;
             fragColor = vertexColor;
-            gl_Position = mat * vec4(vertexPosition, 1.0);
+            gl_Position = pv * model * vec4(vertexPosition, 1.0);
         }
     );
 
@@ -336,51 +315,39 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
 			}
 		);
 
+	RSGL_programBlob blob;
+	blob.vertex = defaultVShaderCode;
+	blob.vertexLen = sizeof(defaultVShaderCode);
+	blob.fragment = defaultFShaderCode;
+	blob.fragmentLen = sizeof(defaultFShaderCode );
+
+	return blob;
+}
+
+void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
+    #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
+    if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
+        #ifdef RSGL_DEBUG
+        printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
+        #endif
+        return;
+    }
+    #else
+    RSGL_UNUSED(proc);
+    #endif
+
 	glGenVertexArrays(1, &ctx->vao);
-	glBindVertexArray(ctx->vao);
-
-    ctx->program = RSGL_GL_createProgram(ctx, defaultVShaderCode, defaultFShaderCode, "vertexPosition", "vertexTexCoord", "vertexColor");
-    /* Init default vertex arrays buffers */
-    /* Initialize CPU (RAM) vertex buffers (position, texcoord, color data and indexes) */
-
-    glBindVertexArray(ctx->vao);
-
-	/* Unbind the current VAO */
-    glBindVertexArray(0);
-
-    /* load default texture */
-    u8 white[4] = {255, 255, 255, 255};
-    ctx->defaultTex = RSGL_GL_createTexture(ctx, white, RSGL_AREA(1, 1), 4);
 
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
-    /* Unbind everything */
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    /* Unload all vertex buffers data */
-    glBindVertexArray(ctx->vao);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
-    glDisableVertexAttribArray(3);
-    glBindVertexArray(0);
-
-    /* Delete VBOs from GPU (VRAM) */
     glDeleteVertexArrays(0, &ctx->vao);
-
-    RSGL_GL_deleteProgram(ctx, ctx->program);
-
-    glDeleteTextures(1, (u32*)&ctx->defaultTex); /* Unload default texture */
 }
 
-void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* buffers) {
-	if (program.program == 0) program = ctx->program;
-
-    glBindVertexArray(ctx->vao);
+void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers) {
+	glBindVertexArray(ctx->vao);
 
 	/* Vertex positions buffer */
 	glBindBuffer(GL_ARRAY_BUFFER, buffers->vertex);
@@ -399,19 +366,17 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, RSGL_programInfo program, const RSGL_r
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers->elements);
 
+
 	/* Set current shader */
-	glUseProgram(program.program);
+	glUseProgram(program->program);
+    glUniformMatrix4fv(program->perspectiveView, 1, GL_FALSE, matrix);
 
-	int loc = glGetUniformLocation(program.program, "mat");
 	u32 i;
-
 	for (i = 0; i < buffers->batchCount; i++) {
 		GLenum mode = GL_TRIANGLES;
-		glBindTexture(GL_TEXTURE_2D, (buffers->batches[i].tex == 0) ? (ctx->defaultTex) : (buffers->batches[i].tex));
-		glLineWidth(buffers->batches[i].lineWidth > 0 ? buffers->batches[i].lineWidth : 0.1f);
-		if (loc >= 0) {
-			glUniformMatrix4fv(loc, 1, GL_FALSE, buffers->batches[i].matrix.m);
-		}
+		glBindTexture(GL_TEXTURE_2D, buffers->batches[i].tex);
+		glLineWidth(buffers->batches[i].lineWidth);
+        glUniformMatrix4fv(program->model, 1, GL_FALSE, buffers->batches[i].matrix.m);
 
 		switch (buffers->batches[i].type) {
 			case RSGL_TRIANGLES: mode = GL_TRIANGLES; break;
@@ -440,12 +405,41 @@ void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx) {
     glDisable(GL_SCISSOR_TEST);
 }
 
-#ifndef GL_RG
-#define GL_RG                             0x8227
-#endif
+GLuint RSGL_GL_textureFormatToNative(RSGL_textureFormat format) {
+	switch (format) {
+		case RSGL_formatRGB: return GL_RGB;
+		case RSGL_formatBGR: return GL_BGR;
+		case RSGL_formatRGBA: return GL_RGBA;
+		case RSGL_formatBGRA: return GL_BGRA;
+		case RSGL_formatRed: return GL_RED;
+		default: break;
+	}
+
+	return GL_RGBA;
+}
+
+GLuint RSGL_GL_textureDataTypeToNative(RSGL_textureDataType type) {
+    switch (type) {
+		case RSGL_textureDataInt: return GL_UNSIGNED_BYTE;
+		case RSGL_textureDataFloat: return GL_FLOAT;
+        default: break;
+    }
+
+	return GL_UNSIGNED_BYTE;
+}
+
+GLuint RSGL_GL_textureFilterToNative(RSGL_textureFilter filter) {
+    switch (filter) {
+		case RSGL_filterNearest:  return GL_NEAREST;
+		case RSGL_filterLinear: return GL_LINEAR;
+        default: break;
+    }
+
+	return GL_LINEAR;
+}
 
 /* textures / images */
-RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, u8* bitmap, RSGL_area memsize, u8 channels) {
+RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob* blob) {
     unsigned int id = 0;
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -453,42 +447,30 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, u8* bitmap, RSGL_area m
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL_textureFilterToNative(blob->magFilter));
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
 
-    unsigned int c = 0;
+	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
+	u32 textureFormat = RSGL_GL_textureFormatToNative(blob->textureFormat);
+	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
+	glTexImage2D(GL_TEXTURE_2D, 0, dataFormat, blob->width, blob->height, 0, textureFormat, dataType, blob->data);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return id;
 }
 
-void RSGL_GL_updateTexture(RSGL_glRenderer* ctx, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
+void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob) {
 	glBindTexture(GL_TEXTURE_2D, texture);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
 
-    u16 c = 0;
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
+	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
+	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, (i32)blob->width, (i32)blob->height, dataFormat, dataType, blob->data);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -555,13 +537,13 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 }
 #endif
 
-RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
+RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* blob) {
 	RSGL_programInfo program;
 	u32 vShader, fShader;
 
 	/* compile vertex shader */
 	vShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vShader, 1, &VShaderCode, NULL);
+	glShaderSource(vShader, 1, &blob->vertex, NULL);
 	glCompileShader(vShader);
 
 #ifdef RSGL_DEBUG
@@ -570,7 +552,7 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShader
 
 	/* compile fragment shader */
 	fShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fShader, 1, &FShaderCode, NULL);
+	glShaderSource(fShader, 1, &blob->fragment, NULL);
 	glCompileShader(fShader);
 
 #ifdef RSGL_DEBUG
@@ -582,11 +564,6 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShader
 
 	glAttachShader(program.program, vShader);
 	glAttachShader(program.program, fShader);
-
-	glBindAttribLocation(program.program, 0, posName);
-	glBindAttribLocation(program.program, 1, texName);
-	glBindAttribLocation(program.program, 2, colorName);
-
 	glLinkProgram(program.program);
 
 #ifdef RSGL_DEBUG
@@ -596,20 +573,32 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, const char* VShader
 	glDeleteShader(vShader);
 	glDeleteShader(fShader);
 
+	glUseProgram(program.program);
+	program.perspectiveView = glGetUniformLocation(program.program, "pv");
+	program.model = glGetUniformLocation(program.program, "model");
+	glUseProgram(0);
+
 	program.type = RSGL_shaderTypeStandard;
 	return program;
 }
 
-void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, RSGL_programInfo program) {
+void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, const RSGL_programInfo* program) {
     glUseProgram(0);
-    glDeleteProgram(program.program);
+    glDeleteProgram(program->program);
 }
 
-void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, const char* var, const float value[], u8 len) {
-    glUseProgram(program);
-    int loc = glGetUniformLocation(program, var);
+size_t RSGL_GL_findShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const char* var, const size_t len) {
+	glUseProgram(program->program);
+    int loc = glGetUniformLocation(program->program, var);
+    glUseProgram(0);
+	return loc;
+}
 
-    switch (len) {
+void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, size_t var, const float value[], u8 len) {
+	glUseProgram(program->program);
+    int loc = (int)var;
+
+	switch (len) {
         case 1: glUniform1f(loc, value[0]); break;
         case 2: glUniform2f(loc, value[0], value[1]); break;
         case 3: glUniform3f(loc, value[0], value[1], value[2]); break;
@@ -644,25 +633,25 @@ void RSGL_GL_setShaderValue(RSGL_glRenderer* ctx, u32 program, const char* var, 
 #endif
 
 RSGL_texture RSGL_GL_create_atlas(RSGL_glRenderer* ctx, u32 atlasWidth, u32 atlasHeight) {
-	u32 id = 0;
+	u8* data = (u8*)RSGL_MALLOC(atlasWidth * atlasHeight * 4);
+	RSGL_MEMSET(data, 0, atlasWidth * atlasHeight * 4);
+
+	RSGL_textureBlob blob;
+	blob.data = data;
+	blob.width = atlasWidth;
+	blob.height = atlasWidth;
+	blob.dataType = RSGL_textureDataInt;
+	blob.dataFormat = RSGL_formatRGBA;
+	blob.textureFormat = RSGL_formatRGBA;
+
+	u32 id = RSGL_GL_createTexture(ctx, &blob);
+	RSGL_FREE(data);
+
 	glEnable(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glGenTextures(1, &id);
-
 	glBindTexture(GL_TEXTURE_2D, id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	u8* data = (u8*)RSGL_MALLOC(atlasWidth * atlasHeight * 4);
-	RSGL_MEMSET(data, 0, atlasWidth * atlasHeight * 4);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
-	RSGL_FREE(data);
 
 	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
@@ -837,17 +826,6 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
         glUniformMatrix4fvSRC == NULL
     )
         return 1;
-
-    #if !defined(RSGL_OPENGL_21)
-    GLuint vao;
-    glGenVertexArraysSRC(1, &vao);
-
-    if (vao == 0)
-        return 1;
-    #endif
-
-    glDeleteVertexArraysSRC(1, &vao);
-
     return 0;
 }
 #endif

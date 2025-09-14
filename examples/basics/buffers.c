@@ -23,11 +23,10 @@ int main() {
 	RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
 	i32 batch = RSGL_drawRect(renderer, RSGL_RECT(100, 100, 20, 20));
 	RSGL_renderer_updateRenderBuffers(renderer);
-
 	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
 		RGFW_pollEvents();
 
-		buffers.batches[batch].matrix = RSGL_translate(buffers.batches[batch].matrix.m, 1, 0, 0);
+		buffers.batches[batch].matrix = RSGL_mat4_translate(buffers.batches[batch].matrix.m, 1, 0, 0);
 
 		RSGL_renderer_clear(renderer, RSGL_RGB(10, 50, 99));
 

@@ -11,6 +11,7 @@ int main() {
 	RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
 	hints->major = 3;
 	hints->minor = 3;
+	hints->profile = RGFW_glCompatibility;
 	RGFW_setGlobalHints_OpenGL(hints);
 
 	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
@@ -35,6 +36,7 @@ int main() {
 		RGFW_window_swapBuffers_OpenGL(window);
 	}
 
-	RSGL_renderer_free(renderer);
+	RSGL_renderer_free(renderer_opengl);
+	RSGL_renderer_free(renderer_opengl11);
 	RGFW_window_close(window);
 }

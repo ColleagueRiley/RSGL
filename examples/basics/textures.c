@@ -30,10 +30,26 @@ int main(void) {
 
     int w, h, c;
     u8* logo = stbi_load("logo.png", &w, &h, &c, 4);
-    u32 texture = RSGL_renderer_createTexture(renderer, logo, RSGL_AREA(w, h), c);
+
+	RSGL_textureBlob blob;
+	blob.data = logo;
+	blob.width = w;
+	blob.height = h;
+	blob.dataType = RSGL_textureDataInt;
+	blob.dataFormat = (c == 4) ? RSGL_formatRGBA : RSGL_formatRGB;
+	blob.textureFormat = blob.dataFormat;
+    u32 texture = RSGL_renderer_createTexture(renderer, &blob);
+
     free(logo);
 
-    u32 iconTex = RSGL_renderer_createTexture(renderer, icon, RSGL_AREA(3, 3), 4);
+	RSGL_textureBlob blob2;
+	blob2.data = icon;
+	blob2.width = 3;
+	blob2.height = 3;
+	blob2.dataType = RSGL_textureDataInt;
+	blob2.dataFormat = RSGL_formatRGBA;
+	blob2.textureFormat = blob2.dataFormat;
+    u32 iconTex = RSGL_renderer_createTexture(renderer, &blob2);
 
 	while (RGFW_window_shouldClose(win) == false) {
 		RGFW_pollEvents();

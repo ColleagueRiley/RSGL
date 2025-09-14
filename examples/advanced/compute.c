@@ -47,18 +47,30 @@ int main(void) {
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500),(void*) RGFW_getProcAddress_OpenGL);
 
 	RSGL_programInfo program = RSGL_renderer_createComputeProgram(renderer, ComputeShader);
-	u32 texture = RSGL_renderer_createTexture(renderer, NULL, RSGL_AREA(200, 200), 4);
+
+	RSGL_textureBlob blob;
+	blob.data = NULL;
+	blob.width = 200;
+	blob.height = 200;
+	blob.dataType = RSGL_textureDataInt;
+	blob.dataFormat = RSGL_formatRGBA;
+	blob.textureFormat = blob.dataFormat;
+    u32 texture = RSGL_renderer_createTexture(renderer, &blob);
 
 	RGFW_window_showMouse(window, 0);
+
+	size_t u_time = RSGL_renderer_findShaderVariable(renderer, &program, "u_time", 6);
+	size_t u_screen_size = RSGL_renderer_findShaderVariable(renderer, &program, "u_screen_size", 13);
+
 
 	while (RGFW_window_shouldClose(window) == false) {
 		RGFW_pollEvents();
 
 		RSGL_renderer_setProgram(renderer, &program);
 		RSGL_renderer_bindComputeTexture(renderer, texture, 4);
-		RSGL_renderer_setShaderValue(renderer, program.program, "u_time", (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
-		RSGL_renderer_setShaderValue(renderer, program.program, "u_screen_size", (float*)(const float[2]){20.0f, 20.0f}, 2);
-		RSGL_renderer_dispatchComputeProgram(renderer, program, 20, 20, 1);
+		RSGL_renderer_updateShaderVariable(renderer, &program, u_time, (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
+		RSGL_renderer_updateShaderVariable(renderer, &program, u_screen_size, (float*)(const float[2]){20.0f, 20.0f}, 2);
+		RSGL_renderer_dispatchComputeProgram(renderer, &program, 20, 20, 1);
 
 		RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 20));
 		RSGL_renderer_setProgram(renderer, NULL);
@@ -71,7 +83,7 @@ int main(void) {
 		RGFW_window_swapBuffers_OpenGL(window);
 	}
 
-	RSGL_renderer_deleteProgram(renderer, program);
+	RSGL_renderer_deleteProgram(renderer, &program);
 	RSGL_renderer_deleteTexture(renderer, texture);
 	RSGL_renderer_free(renderer);
 	RGFW_window_close(window);

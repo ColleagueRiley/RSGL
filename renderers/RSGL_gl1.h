@@ -10,16 +10,7 @@
 #ifndef RSGL_GL1_H
 #define RSGL_GL1_H
 
-typedef struct RSGL_gl1Buffer {
-	void* data;
-	struct RSGL_gl1Buffer* next;
-	struct RSGL_gl1Buffer* prev;
-} RSGL_gl1Buffer;
-
-typedef struct RSGL_gl1Renderer {
-	RSGL_gl1Buffer* head;
-	RSGL_gl1Buffer* cur;
-} RSGL_gl1Renderer;
+typedef struct RSGL_gl1Renderer { u32 vao; } RSGL_gl1Renderer;
 
 RSGLDEF RSGL_rendererProc RSGL_GL1_rendererProc(void);
 RSGLDEF size_t RSGL_GL1_size(void);
@@ -27,7 +18,7 @@ RSGLDEF size_t RSGL_GL1_size(void);
 RSGLDEF RSGL_renderer* RSGL_GL1_renderer_init(RSGL_area r, void* loader);
 RSGLDEF void RSGL_GL1_renderer_initPtr(RSGL_area r, void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer);
 
-RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* buffers);
+RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers);
 RSGLDEF void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx); /* free render backend */
 RSGLDEF void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, float r, float g, float b, float a);
@@ -36,9 +27,8 @@ RSGLDEF void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const voi
 RSGLDEF void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
 RSGLDEF void RSGL_GL1_deleteBuffer(RSGL_gl1Renderer* ctx, size_t buffer);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
-RSGLDEF RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, u8* bitmap, RSGL_area memsize,  u8 channels);
-/* updates an existing texture wiht a new bitmap */
-RSGLDEF void RSGL_GL1_updateTexture(RSGL_gl1Renderer* ctx, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
+RSGLDEF RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, const RSGL_textureBlob* blob);
+RSGLDEF void RSGL_GL1_copyToTexture(RSGL_gl1Renderer* ctx, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob);
 /* delete a texture */
 RSGLDEF void RSGL_GL1_deleteTexture(RSGL_gl1Renderer* ctx, RSGL_texture tex);
 /* starts scissoring */
@@ -88,14 +78,14 @@ RSGL_rendererProc RSGL_GL1_rendererProc() {
 	RSGL_rendererProc proc;
 	RSGL_MEMSET(&proc, 0, sizeof(proc));
 
-	proc.render = (void (*)(void*, RSGL_programInfo, const RSGL_renderBuffers*))RSGL_GL1_render;
+	proc.render = (void (*)(void*, const RSGL_programInfo*, const float*, const RSGL_renderBuffers*))RSGL_GL1_render;
     proc.size = (size_t (*)(void))RSGL_GL1_size;
     proc.initPtr = (void (*)(void*, void*))RSGL_GL1_initPtr;
     proc.freePtr = (void (*)(void*))RSGL_GL1_freePtr;
     proc.clear = (void (*)(void*, float, float, float, float))RSGL_GL1_clear;
     proc.viewport = (void (*)(void*, i32, i32, i32, i32))RSGL_GL1_viewport;
-    proc.createTexture = (RSGL_texture (*)(void*, u8*, RSGL_area,  u8))RSGL_GL1_createTexture;
-    proc.updateTexture = (void (*)(void*, RSGL_texture, u8*, RSGL_area, u8))RSGL_GL1_updateTexture;
+    proc.createTexture = (RSGL_texture (*)(void*, const RSGL_textureBlob*))RSGL_GL1_createTexture;
+    proc.copyToTexture = (void (*)(void*, RSGL_texture, size_t, size_t, const RSGL_textureBlob* blob))RSGL_GL1_copyToTexture;
     proc.deleteTexture = (void (*)(void*, RSGL_texture))RSGL_GL1_deleteTexture;
     proc.scissorStart = (void (*)(void*, RSGL_rectF, i32))RSGL_GL1_scissorStart;
     proc.scissorEnd =  (void (*)(void*))RSGL_GL1_scissorEnd;
@@ -116,65 +106,46 @@ void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, float r, float g, float b, float a) {
 }
 
 void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const void* data, size_t* buffer) {
-	RSGL_gl1Buffer* node = (RSGL_gl1Buffer*)RSGL_MALLOC(sizeof(RSGL_gl1Buffer));
-	node->next = NULL;
-	node->data = RSGL_MALLOC(size);
-
-	if (ctx->head == NULL) {
-		ctx->head = node;
-		ctx->cur = node;
-	} else {
-		ctx->cur->next = node;
-		node->prev = ctx->cur;
-		ctx->cur = node;
-	}
+	void* rawBuffer = RSGL_MALLOC(size);
 
 	if (data)
-		RSGL_GL1_updateBuffer(ctx, (size_t)node, data, 0, size);
+		RSGL_GL1_updateBuffer(ctx, (size_t)rawBuffer, data, 0, size);
 
-	if (buffer) *buffer = (size_t)node;
+	if (buffer) *buffer = (size_t)rawBuffer;
 }
 
 void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, size_t buffer, const void* data, size_t start, size_t end) {
-	RSGL_MEMCPY(&((u8*)((RSGL_gl1Buffer*)buffer)->data)[start], data, end - start);
+	RSGL_MEMCPY(&((u8*)buffer)[start], data, end - start);
 }
 
 void RSGL_GL1_deleteBuffer(RSGL_gl1Renderer* ctx, size_t buffer) {
-	RSGL_gl1Buffer* node = (RSGL_gl1Buffer*)buffer;
-	if (node->prev)
-		node->prev->next = node->next;
-	else {
-		ctx->head = node->next;
-	}
-
-	if (ctx->cur == node)
-		ctx->cur = node->next;
-
-	RSGL_FREE(node->data);
-	RSGL_FREE(node);
+	RSGL_FREE((void*)buffer);
 }
 
 void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc) {
-	RSGL_UNUSED(proc);
-	ctx->head = NULL;
-	ctx->cur = NULL;
+	RSGL_UNUSED(proc); RSGL_UNUSED(ctx);
+	glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx) { RSGL_UNUSED(ctx); }
 
-void RSGL_GL1_render(RSGL_gl1Renderer* ctx, RSGL_programInfo program, const RSGL_renderBuffers* buffers) {
+void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers) {
 	size_t i, j;
-	float* colors = (float*)((RSGL_gl1Buffer*)buffers->color)->data;
-	float* verts = (float*)((RSGL_gl1Buffer*)buffers->vertex)->data;
-	float* texCoords = (float*)((RSGL_gl1Buffer*)buffers->texture)->data;
-	u16* elements = (u16*)((RSGL_gl1Buffer*)buffers->elements)->data;
 
-	glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	float* colors = (float*)buffers->color;
+	float* verts = (float*)buffers->vertex;
+	float* texCoords = (float*)buffers->texture;
+	u16* elements = (u16*)buffers->elements;
+
+	glPushMatrix();
+	glLoadIdentity();
+	glMultMatrixf(matrix);
+
 	for (i = 0; i < buffers->batchCount; i++) {
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, buffers->batches[i].tex);
-		glLineWidth(buffers->batches[i].lineWidth > 0 ? buffers->batches[i].lineWidth : 0.1f);
+		glLineWidth(buffers->batches[i].lineWidth);
 
 		u32 mode = GL_TRIANGLES;
 		switch (buffers->batches[i].type) {
@@ -184,22 +155,24 @@ void RSGL_GL1_render(RSGL_gl1Renderer* ctx, RSGL_programInfo program, const RSGL
 			default: break;
 		}
 
-		glLoadIdentity();
+		glPushMatrix();
 		glMultMatrixf(buffers->batches[i].matrix.m);
 		glBegin(mode);
 
-		for (j = buffers->batches[i].elmStart ; j < buffers->batches[i].elmStart + buffers->batches[i].elmCount; j++) {
+		for (j = buffers->batches[i].elmStart; j < buffers->batches[i].elmStart + buffers->batches[i].elmCount; j++) {
 			size_t vIndex = elements[j] * 3;
 			size_t tIndex = elements[j] * 2;
 			size_t cIndex = elements[j] * 4;
-
 			glTexCoord2f(texCoords[tIndex], texCoords[tIndex + 1]);
 			glColor4f(colors[cIndex], colors[cIndex + 1], colors[cIndex + 2], colors[cIndex + 3]);
 			glVertex3f(verts[vIndex], verts[vIndex + 1],  verts[vIndex + 2]);
 		}
 
 		glEnd();
+		glPopMatrix();
 	}
+
+	glPopMatrix();
 }
 
 void RSGL_GL1_scissorStart(RSGL_gl1Renderer* ctx, RSGL_rectF scissor, i32 renderer_height) {
@@ -215,8 +188,39 @@ void RSGL_GL1_scissorEnd(RSGL_gl1Renderer* ctx) {
 #define GL_RG                             0x8227
 #endif
 
-/* textures / images */
-RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, u8* bitmap, RSGL_area memsize, u8 channels) {
+GLuint RSGL_GL1_textureFormatToNative(RSGL_textureFormat format) {
+	switch (format) {
+		case RSGL_formatRGB: return GL_RGB;
+		case RSGL_formatBGR: return GL_BGR;
+		case RSGL_formatRGBA: return GL_RGBA;
+		case RSGL_formatBGRA: return GL_BGRA;
+		case RSGL_formatRed: return GL_RED;
+		default: break;
+	}
+	return GL_RGBA;
+}
+
+GLuint RSGL_GL1_textureDataTypeToNative(RSGL_textureDataType type) {
+    switch (type) {
+		case RSGL_textureDataInt: return GL_UNSIGNED_BYTE;
+		case RSGL_textureDataFloat: return GL_FLOAT;
+        default: break;
+    }
+
+	return GL_UNSIGNED_BYTE;
+}
+
+GLuint RSGL_GL_textureFilterToNative(RSGL_textureFilter filter) {
+    switch (filter) {
+		case RSGL_filterNearest:  return GL_NEAREST;
+		case RSGL_filterLinear: return GL_LINEAR;
+        default: break;
+    }
+
+	return GL_LINEAR;
+}
+
+RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, const RSGL_textureBlob* blob) {
     unsigned int id = 0;
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -224,42 +228,30 @@ RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, u8* bitmap, RSGL_area
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL_textureFilterToNative(blob->magFilter));
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
 
-    unsigned int c = 0;
+	u32 dataFormat = RSGL_GL1_textureFormatToNative(blob->dataFormat);
+	u32 textureFormat = RSGL_GL1_textureFormatToNative(blob->textureFormat);
+	u32 dataType = RSGL_GL1_textureDataTypeToNative(blob->dataType);
 
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
+	glTexImage2D(GL_TEXTURE_2D, 0, dataFormat, blob->width, blob->height, 0, textureFormat, dataType, blob->data);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return id;
 }
 
-void RSGL_GL1_updateTexture(RSGL_gl1Renderer* ctx, RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels) {
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, memsize.w);
+void RSGL_GL1_copyToTexture(RSGL_gl1Renderer* ctx, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob) {
+	glBindTexture(GL_TEXTURE_2D, texture);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
 
-    u16 c = 0;
-    switch (channels) {
-        case 1: c = GL_RED; break;
-        case 2: c = GL_RG; break;
-        case 3: c = GL_RGB; break;
-        case 4: c = GL_RGBA; break;
-        default: break;
-    }
+	u32 dataFormat = RSGL_GL1_textureFormatToNative(blob->dataFormat);
+	u32 dataType = RSGL_GL1_textureDataTypeToNative(blob->dataType);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, c, memsize.w, memsize.h, 0, c, GL_UNSIGNED_BYTE, bitmap);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, (i32)blob->width, (i32)blob->height, dataFormat, dataType, blob->data);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
