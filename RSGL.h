@@ -305,7 +305,7 @@ RSGLDEF RSGL_mat4 RSGL_mat4_rotate(float matrix[16], float angle, float x, float
 RSGLDEF RSGL_mat4 RSGL_mat4_translate(float matrix[16], float x, float y, float z);
 RSGLDEF RSGL_mat4 RSGL_mat4_perspective(float matrix[16], float fovY, float aspect, float zNear, float zFar);
 RSGLDEF RSGL_mat4 RSGL_mat4_ortho(float matrix[16], float left, float right, float bottom, float top, float znear, float zfar);
-RSGLDEF RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], double eyeX, double eyeY, double eyeZ, double targetX, double targetY, double targetZ, double upX, double upY, double upZ);
+RSGLDEF RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ, float upX, float upY, float upZ);
 
 RSGLDEF RSGL_mat4 RSGL_mat4_multiply(float left[16], float right[16]);
 
@@ -1896,7 +1896,7 @@ RSGL_Matrix
 */
 
 
-RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], double eyeX, double eyeY, double eyeZ, double targetX, double targetY, double targetZ, double upX, double upY, double upZ)  {
+RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ, float upX, float upY, float upZ)  {
 	float matLookAt[16];
 
     float length = 0.0f;

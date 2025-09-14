@@ -70,8 +70,6 @@ void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, RSGL_glRenderer* ptr, R
 #if defined(_WIN32)
 typedef char GLchar;
 typedef int	 GLsizei;
-typedef ptrdiff_t GLintptr;
-typedef uintptr_t GLsizeiptr;
 
 #define GL_VERTEX_SHADER   0x8B31
 #define GL_FRAGMENT_SHADER 0x8B30
