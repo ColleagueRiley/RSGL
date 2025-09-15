@@ -23,18 +23,12 @@ RSGLDEF void RSGL_GL_init(void* proc, RSGL_RENDER_INFO* info); /* init render ba
 RSGLDEF void RSGL_GL_free(void); /* free render backend */
 RSGLDEF void RSGL_GL_clear(float r, float g, float b, float a);
 RSGLDEF void RSGL_GL_viewport(i32 x, i32 y, i32 w, i32 h);
-/* sets the active framebuffer. 0 will unset and use the default*/
-RSGLDEF void RSGL_GL_setFramebuffer(u32 id);
-/* create a framebuffer, this must be freed later using RSGL_deleteFramebuffer or opengl*/
-RSGLDEF RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_area memsize);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
 RSGLDEF RSGL_texture RSGL_GL_createTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
 /* updates an existing texture wiht a new bitmap */
 RSGLDEF void RSGL_GL_updateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
 /* delete a texture */
 RSGLDEF void RSGL_GL_deleteTexture(RSGL_texture tex);
-/* delete a framebuffer */
-RSGLDEF void RSGL_GL_deleteFramebuffer(RSGL_framebuffer fbo);
 /* starts scissoring */
 RSGLDEF void RSGL_GL_scissorStart(RSGL_rectF scissor);
 /* stops scissoring */
@@ -90,17 +84,13 @@ typedef int	 GLsizei;
 typedef ptrdiff_t GLintptr;
 typedef uintptr_t GLsizeiptr;
 
-#define GL_VERTEX_SHADER        0x8B31
-#define GL_FRAGMENT_SHADER      0x8B30
+#define GL_VERTEX_SHADER   0x8B31
+#define GL_FRAGMENT_SHADER 0x8B30
 #define GL_ARRAY_BUFFER         0x8892
 #define GL_ELEMENT_ARRAY_BUFFER 0x8893
-#define GL_STATIC_DRAW          0x88E4
-#define GL_DYNAMIC_DRAW         0x88E8
-#define GL_TEXTURE0             0x84C0
-#define GL_FRAMEBUFFER          0x8D40
-#define GL_COLOR_ATTACHMENT0    0x8CE0
-#define GL_DEPTH_ATTACHMENT     0x8D00
-#define GL_STENCIL_ATTACHMENT   0x8D20
+#define GL_STATIC_DRAW  0x88E4
+#define GL_DYNAMIC_DRAW 0x88E8
+#define GL_TEXTURE0 0x84C0
 #endif
 
 #if !defined(RSGL_NO_GL_LOADER) && defined(RSGL_MODERN_OPENGL)
@@ -119,10 +109,6 @@ typedef void (*glAttachShaderPROC) (GLuint program, GLuint shader);
 typedef void (*glBindAttribLocationPROC) (GLuint program, GLuint index, const GLchar *name);
 typedef void (*glLinkProgramPROC) (GLuint program);
 typedef void (*glBindBufferPROC) (GLenum target, GLuint buffer);
-typedef void (*glBindFramebufferPROC) (GLenum target, GLuint framebuffer);
-typedef void (*glGenFramebuffersPROC) (GLsizei n, GLuint *ids);
-typedef void (*glDeleteFramebuffersPROC) (GLsizei n, GLuint *framebuffers);
-typedef void (*glFramebufferTexture2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef void (*glBufferDataPROC) (GLenum target, GLsizeiptr size, const void *data, GLenum usage);
 typedef void (*glEnableVertexAttribArrayPROC) (GLuint index);
 typedef void (*glVertexAttribPointerPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
@@ -158,10 +144,6 @@ glAttachShaderPROC glAttachShaderSRC = NULL;
 glBindAttribLocationPROC glBindAttribLocationSRC = NULL;
 glLinkProgramPROC glLinkProgramSRC = NULL;
 glBindBufferPROC glBindBufferSRC = NULL;
-glBindFramebufferPROC glBindFramebufferSRC = NULL;
-glGenFramebuffersPROC glGenFramebuffersSRC = NULL;
-glDeleteFramebuffersPROC glDeleteFramebuffersSRC = NULL;
-glFramebufferTexture2DPROC glFramebufferTexture2DSRC = NULL;
 glBufferDataPROC glBufferDataSRC = NULL;
 glEnableVertexAttribArrayPROC glEnableVertexAttribArraySRC = NULL;
 glVertexAttribPointerPROC glVertexAttribPointerSRC = NULL;
@@ -224,10 +206,6 @@ glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 #define glBindAttribLocation glBindAttribLocationSRC
 #define glLinkProgram glLinkProgramSRC
 #define glBindBuffer glBindBufferSRC
-#define glBindFramebuffer glBindFramebufferSRC
-#define glGenFramebuffers glGenFramebuffersSRC
-#define glDeleteFramebuffers glDeleteFramebuffersSRC
-#define glFramebufferTexture2D glFramebufferTexture2DSRC
 #define glBufferData glBufferDataSRC
 #define glEnableVertexAttribArray glEnableVertexAttribArraySRC
 #define glVertexAttribPointer glVertexAttribPointerSRC
@@ -276,12 +254,9 @@ RSGL_renderer RSGL_GL_renderer() {
     renderer.free = RSGL_GL_free;
     renderer.clear = RSGL_GL_clear;
     renderer.viewport = RSGL_GL_viewport;
-    renderer.setFramebuffer = RSGL_GL_setFramebuffer;
-    renderer.createFramebuffer = RSGL_GL_createFramebuffer;
     renderer.createTexture = RSGL_GL_createTexture;
     renderer.updateTexture = RSGL_GL_updateTexture;
     renderer.deleteTexture = RSGL_GL_deleteTexture;
-    renderer.deleteFramebuffer = RSGL_GL_deleteFramebuffer;
     renderer.scissorStart = RSGL_GL_scissorStart;
     renderer.scissorEnd =  RSGL_GL_scissorEnd;
     renderer.createProgram = RSGL_GL_createProgram;
@@ -299,30 +274,6 @@ RSGL_renderer RSGL_GL_renderer() {
 	renderer.bindComputeTexture = RSGL_GL_bindComputeTexture;
 #endif
     return renderer;
-}
-
-void RSGL_GL_setFramebuffer(u32 id) {
-    glBindFramebuffer(GL_FRAMEBUFFER, id);
-}
-void RSGL_GL_attachFramebuffer(u32 id, RSGL_texture tex, u8 attachType, u8 mipLevel) {
-    RSGL_GL_setFramebuffer(id);
-
-    if (attachType < 8)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachType, GL_TEXTURE_2D, tex, mipLevel);
-
-    if (attachType == 100)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex, mipLevel);
-
-    if (attachType == 200)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, tex, mipLevel);
-
-    RSGL_GL_setFramebuffer(0);
-}
-void RSGL_GL_deleteFramebuffer(RSGL_framebuffer fbo) {
-    if (fbo.texture > 0)
-        RSGL_GL_deleteTexture(fbo.texture);
-
-    glDeleteFramebuffers(1, &fbo.id);
 }
 
 void RSGL_GL_deleteTexture(RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
@@ -699,27 +650,6 @@ void RSGL_GL_scissorEnd(void) {
 #endif
 
 /* textures / images */
-RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_area memsize) {
-    RSGL_framebuffer result;
-
-    glGenFramebuffers(1, &result.id);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    if (result.id > 0) {
-        u8 transparent[4 * memsize.w * memsize.h];
-        for (u32 i = 0; i < (4 * memsize.w * memsize.h); ++i) {
-            transparent[i] = 0;
-        }
-        result.texture = RSGL_renderCreateTexture(transparent, memsize, 4);
-
-        RSGL_GL_attachFramebuffer(result.id, result.texture, 0, 0); // also binds
-
-        RSGL_GL_setFramebuffer(0);
-    }
-
-    return result;
-}
-
 RSGL_texture RSGL_GL_createTexture(u8* bitmap, RSGL_area memsize, u8 channels) {
     unsigned int id = 0;
 
@@ -1107,10 +1037,6 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glBindAttribLocation);
     RSGL_PROC_DEF(proc, glLinkProgram);
     RSGL_PROC_DEF(proc, glBindBuffer);
-    RSGL_PROC_DEF(proc, glBindFramebuffer);
-    RSGL_PROC_DEF(proc, glGenFramebuffers);
-    RSGL_PROC_DEF(proc, glDeleteFramebuffers);
-    RSGL_PROC_DEF(proc, glFramebufferTexture2D);
     RSGL_PROC_DEF(proc, glBufferData);
     RSGL_PROC_DEF(proc, glEnableVertexAttribArray);
     RSGL_PROC_DEF(proc, glVertexAttribPointer);
@@ -1158,10 +1084,6 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
         glBindAttribLocationSRC == NULL ||
         glLinkProgramSRC == NULL ||
         glBindBufferSRC == NULL ||
-        glBindFramebufferSRC == NULL ||
-        glGenFramebuffersSRC == NULL ||
-        glDeleteFramebuffersSRC == NULL ||
-        glFramebufferTexture2DSRC == NULL ||
         glBufferDataSRC == NULL ||
         glVertexAttribPointerSRC == NULL ||
         glDisableVertexAttribArraySRC == NULL ||

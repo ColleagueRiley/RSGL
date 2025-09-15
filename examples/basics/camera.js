@@ -9778,10 +9778,6 @@ var ASM_CONSTS = {
 
 
 
-
-
-
-
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10779,8 +10775,6 @@ var wasmImports = {
   /** @export */
   glBindBuffer: _glBindBuffer,
   /** @export */
-  glBindFramebuffer: _glBindFramebuffer,
-  /** @export */
   glBindTexture: _glBindTexture,
   /** @export */
   glBindVertexArray: _glBindVertexArray,
@@ -10805,8 +10799,6 @@ var wasmImports = {
   /** @export */
   glDeleteBuffers: _glDeleteBuffers,
   /** @export */
-  glDeleteFramebuffers: _glDeleteFramebuffers,
-  /** @export */
   glDeleteProgram: _glDeleteProgram,
   /** @export */
   glDeleteShader: _glDeleteShader,
@@ -10821,11 +10813,7 @@ var wasmImports = {
   /** @export */
   glEnableVertexAttribArray: _glEnableVertexAttribArray,
   /** @export */
-  glFramebufferTexture2D: _glFramebufferTexture2D,
-  /** @export */
   glGenBuffers: _glGenBuffers,
-  /** @export */
-  glGenFramebuffers: _glGenFramebuffers,
   /** @export */
   glGenTextures: _glGenTextures,
   /** @export */
