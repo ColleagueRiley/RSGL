@@ -21,7 +21,7 @@ int main() {
     RSGL_renderer_viewport(renderer_opengl11, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer_opengl11, 500, 500);
 
-	RSGL_renderer* renderer_opengl = RSGL_renderer_init(RSGL_GL_rendererProc(), RGFW_getProcAddress_OpenGL);
+	RSGL_renderer* renderer_opengl = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
 
     RSGL_renderer_viewport(renderer_opengl, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer_opengl, 500, 500);
