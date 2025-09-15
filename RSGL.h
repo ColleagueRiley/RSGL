@@ -143,6 +143,10 @@ typedef struct RSGL_textureBlob {
 #define RSGL_texture size_t
 #endif
 
+#ifndef RSGL_framebuffer
+#define RSGL_framebuffer size_t
+#endif
+
 /*
 *******
 RSGL shapes
@@ -389,6 +393,9 @@ typedef struct RSGL_rendererProc {
 	void (*createBuffer)(void* ctx, size_t size, const void* data, size_t* buffer);
 	void (*updateBuffer)(void* ctx, size_t buffer, void* data, size_t start, size_t len);
 	void (*deleteBuffer)(void* ctx, size_t buffer);
+	RSGL_framebuffer (*createFramebuffer)(void* ctx, size_t width, size_t height);
+	void (*attachFramebuffer)(void* ctx, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel);
+	void (*deleteFramebuffer)(void* ctx, RSGL_framebuffer fbo);
 } RSGL_rendererProc;
 
 typedef struct RSGL_renderer {
@@ -463,6 +470,9 @@ RSGLDEF RSGL_texture RSGL_renderer_createTexture(RSGL_renderer* renderer, const 
 RSGLDEF void RSGL_renderer_copyToTexture(RSGL_renderer* renderer, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob);
 /* delete a texture */
 RSGLDEF void RSGL_renderer_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex);
+RSGLDEF RSGL_framebuffer RSGL_renderer_createFramebuffer(RSGL_renderer* renderer, size_t width, size_t height);
+RSGLDEF void RSGL_renderer_attachFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel);
+RSGLDEF void RSGL_renderer_deleteFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer fbo);
 /* starts scissoring */
 RSGLDEF void RSGL_renderer_scissorStart(RSGL_renderer* renderer, RSGL_rect scissor, i32 height);
 /* stops scissoring */
@@ -866,6 +876,24 @@ void RSGL_renderer_scissorStart(RSGL_renderer* renderer, RSGL_rect scissor, i32 
     RSGL_renderer_render(renderer);
 	renderer->proc.scissorStart(renderer->ctx, scissor.x, scissor.y, scissor.w, scissor.h, height);
 }
+
+RSGL_framebuffer RSGL_renderer_createFramebuffer(RSGL_renderer* renderer, size_t width, size_t height) {
+	RSGL_framebuffer framebuffer = 0;
+	if (renderer->proc.createFramebuffer)
+		framebuffer = renderer->proc.createFramebuffer(renderer->ctx, width, height);
+	return framebuffer;
+}
+
+void RSGL_renderer_attachFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel) {
+	if (renderer->proc.attachFramebuffer)
+		renderer->proc.attachFramebuffer(renderer->ctx, fbo, tex, attachType, mipLevel);
+}
+
+void RSGL_renderer_deleteFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer fbo) {
+	if (renderer->proc.deleteFramebuffer)
+		renderer->proc.deleteFramebuffer(renderer->ctx, fbo);
+}
+
 void RSGL_renderer_scissorEnd(RSGL_renderer* renderer) {
     RSGL_renderer_render(renderer);
 	renderer->proc.scissorEnd(renderer->ctx);

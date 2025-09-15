@@ -43,6 +43,11 @@ RSGLDEF RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_progra
 RSGLDEF void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, const RSGL_programInfo* program);
 RSGLDEF size_t RSGL_GL_findShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo*  program, const char* var, const size_t len);
 RSGLDEF void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, size_t var, const float value[], u8 len);
+
+RSGLDEF RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_glRenderer* renderer, size_t width, size_t height);
+RSGLDEF void RSGL_GL_attachFramebuffer(RSGL_glRenderer* renderer, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel);
+RSGLDEF void RSGL_GL_deleteFramebuffer(RSGL_glRenderer* renderer, RSGL_framebuffer fbo);
+
 #ifdef RSGL_USE_COMPUTE
 RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_glRenderer* ctx, const char* CShaderCode);
 RSGLDEF void RSGL_GL_dispatchComputeProgram(RSGL_glRenderer* ctx, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
@@ -76,6 +81,13 @@ typedef int	 GLsizei;
 #define GL_STATIC_DRAW  0x88E4
 #define GL_DYNAMIC_DRAW 0x88E8
 #define GL_TEXTURE0 0x84C0
+#define GL_STATIC_DRAW          0x88E4
+#define GL_DYNAMIC_DRAW         0x88E8
+#define GL_TEXTURE0             0x84C0
+#define GL_FRAMEBUFFER          0x8D40
+#define GL_COLOR_ATTACHMENT0    0x8CE0
+#define GL_DEPTH_ATTACHMENT     0x8D00
+#define GL_STENCIL_ATTACHMENT   0x8D20
 
 #include <GL/glext.h>
 #endif
@@ -154,6 +166,11 @@ glUniform2fPROC glUniform2fSRC = NULL;
 glUniform3fPROC glUniform3fSRC = NULL;
 glUniform4fPROC glUniform4fSRC = NULL;
 
+typedef void (*glBindFramebufferPROC) (GLenum target, GLuint framebuffer);
+typedef void (*glGenFramebuffersPROC) (GLsizei n, GLuint *ids);
+typedef void (*glDeleteFramebuffersPROC) (GLsizei n, GLuint *framebuffers);
+typedef void (*glFramebufferTexture2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+
 #ifdef RSGL_USE_COMPUTE
 typedef void (*glDispatchComputePROC)(GLuint x, GLuint y, GLuint z);
 glDispatchComputePROC glDispatchComputeSRC = NULL;
@@ -169,6 +186,11 @@ glBindImageTexturePROC glBindImageTextureSRC = NULL;
 glGenVertexArraysPROC glGenVertexArraysSRC = NULL;
 glBindVertexArrayPROC glBindVertexArraySRC = NULL;
 glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
+
+glBindFramebufferPROC glBindFramebufferSRC = NULL;
+glGenFramebuffersPROC glGenFramebuffersSRC = NULL;
+glDeleteFramebuffersPROC glDeleteFramebuffersSRC = NULL;
+glFramebufferTexture2DPROC glFramebufferTexture2DSRC = NULL;
 
 #define glUniform1f glUniform1fSRC
 #define glUniform2f glUniform2fSRC
@@ -203,6 +225,10 @@ glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 #define glBindVertexArray glBindVertexArraySRC
 #define glGetUniformLocation glGetUniformLocationSRC
 #define glUniformMatrix4fv glUniformMatrix4fvSRC
+#define glBindFramebuffer glBindFramebufferSRC
+#define glGenFramebuffers glGenFramebuffersSRC
+#define glDeleteFramebuffers glDeleteFramebuffersSRC
+#define glFramebufferTexture2D glFramebufferTexture2DSRC
 
 #ifdef RSGL_USE_COMPUTE
 #define glMemoryBarrier glMemoryBarrierSRC
@@ -622,6 +648,31 @@ void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* 
     glUseProgram(0);
 }
 
+RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_glRenderer* ctx, size_t width, size_t height) {
+    RSGL_framebuffer result;
+    glGenFramebuffers(1, (u32*)&result);
+    return result;
+}
+
+void RSGL_GL_attachFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+    if (attachType < 8)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachType, GL_TEXTURE_2D, tex, mipLevel);
+
+    if (attachType == 100)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex, mipLevel);
+
+    if (attachType == 200)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, tex, mipLevel);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void RSGL_GL_deleteFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo) {
+    glDeleteFramebuffers(1, (u32*)&fbo);
+}
+
 #ifdef RSGL_USE_COMPUTE
 
 #ifndef GL_RG8
@@ -719,7 +770,11 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glUniform2f);
     RSGL_PROC_DEF(proc, glUniform3f);
     RSGL_PROC_DEF(proc, glUniform4f);
-    #ifdef RSGL_USE_COMPUTE
+    RSGL_PROC_DEF(proc, glBindFramebuffer);
+    RSGL_PROC_DEF(proc, glGenFramebuffers);
+    RSGL_PROC_DEF(proc, glDeleteFramebuffers);
+    RSGL_PROC_DEF(proc, glFramebufferTexture2D);
+   #ifdef RSGL_USE_COMPUTE
     RSGL_PROC_DEF(proc, glDispatchCompute);
 	 RSGL_PROC_DEF(proc, glMemoryBarrier);
 	 RSGL_PROC_DEF(proc, glBindImageTexture);
@@ -749,7 +804,11 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
         glGetProgramInfoLogSRC == NULL ||
         glGenBuffersSRC == NULL ||
         glGetUniformLocationSRC == NULL ||
-        glUniformMatrix4fvSRC == NULL
+        glUniformMatrix4fvSRC == NULL ||
+		glBindFramebufferSRC == NULL ||
+		glGenFramebuffersSRC == NULL ||
+		glDeleteFramebuffersSRC == NULL ||
+		glFramebufferTexture2DSRC == NULL
     )
         return 1;
     return 0;
