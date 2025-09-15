@@ -1,3 +1,5 @@
+#define RSGL_RFONT
+#define RFONT_IMPLEMENTATION
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl1.h"
@@ -55,8 +57,10 @@ int main() {
 
 	RSGL_area framebufferSize = RSGL_AREA(500, 500);
 
-	RSGL_font* font = RSGL_loadFont(renderer, "Super Easy.ttf", 20, 500, 500);
-    RSGL_renderer_setFont(renderer, font);
+	RFont_renderer renderer_rfont;
+	RFont_RSGL_renderer_initPtr(renderer, &renderer_rfont);
+
+    RFont_font* font = RFont_font_init(&renderer_rfont, "COMICSANS.ttf", 60, 500, 500);
 
 	i32 factIndex = 0;
 	rollDie(renderer, &factIndex, NULL);
@@ -92,13 +96,15 @@ int main() {
 		RSGL_color prev = renderer->state.color;
 		RSGL_renderer_setColor(renderer, RSGL_RGB(100, 100, 100));
 
-		RSGL_drawText(renderer, facts[factIndex], RSGL_CIRCLE(0, framebufferSize.h - 50, 20));
+		RFont_draw_text(&renderer_rfont, font,  facts[factIndex], 0, framebufferSize.h - 50, 20);
 
 		RSGL_renderer_setColor(renderer, prev);
 
 		RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(window);
 	}
+
+    RFont_font_free(&renderer_rfont, font);
 
 	RSGL_renderer_free(renderer);
 	RGFW_window_close(window);

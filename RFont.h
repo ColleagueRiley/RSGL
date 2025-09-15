@@ -489,7 +489,8 @@ RFont_renderer* RFont_renderer_init(RFont_renderer_proc proc) {
 void RFont_renderer_initPtr(RFont_renderer_proc proc, void* ptr, RFont_renderer* renderer) {
 	renderer->ctx = ptr;
 	renderer->proc = proc;
-	renderer->proc.initPtr(renderer->ctx);
+	if (renderer->proc.initPtr)
+		renderer->proc.initPtr(renderer->ctx);
 }
 
 void RFont_renderer_set_framebuffer(RFont_renderer* renderer, u32 w, u32 h) {
@@ -507,7 +508,8 @@ void RFont_renderer_free(RFont_renderer* renderer) {
 }
 
 void RFont_renderer_freePtr(RFont_renderer* renderer) {
-	renderer->proc.freePtr(renderer->ctx);
+	if (renderer->proc.freePtr)
+		renderer->proc.freePtr(renderer->ctx);
 }
 
 #define RFONT_CHAR(p, index)     (((char*)p)[index])
@@ -2554,7 +2556,7 @@ RFONT_API void rstbtt__rasterize_sorted_edges(rstbtt__bitmap *result, rstbtt__ed
             k = scanline[i] + sum;
             k = (float) fabs(k)*255 + 0.5f;
             m = (int) k;
-            if (m > 255) m = 255;
+            if (m >= 255) m = 255;
             result->pixels[j*result->stride + i] = (unsigned char) m;
          }
       }

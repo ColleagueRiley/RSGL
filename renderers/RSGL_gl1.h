@@ -10,7 +10,7 @@
 #ifndef RSGL_GL1_H
 #define RSGL_GL1_H
 
-typedef struct RSGL_gl1Renderer { u32 vao; } RSGL_gl1Renderer;
+typedef struct RSGL_gl1Renderer { } RSGL_gl1Renderer;
 
 RSGLDEF RSGL_rendererProc RSGL_GL1_rendererProc(void);
 RSGLDEF size_t RSGL_GL1_size(void);
@@ -35,9 +35,6 @@ RSGLDEF void RSGL_GL1_deleteTexture(RSGL_gl1Renderer* ctx, RSGL_texture tex);
 RSGLDEF void RSGL_GL1_scissorStart(RSGL_gl1Renderer* ctx, RSGL_rectF scissor, i32 renderer_height);
 /* stops scissoring */
 RSGLDEF void RSGL_GL1_scissorEnd(RSGL_gl1Renderer* ctx);
-
-RSGLDEF RSGL_texture RSGL_GL1_create_atlas(RSGL_gl1Renderer* ctx, u32 atlasWidth, u32 atlasHeight);
-RSGLDEF void RSGL_GL1_bitmap_to_atlas(RSGL_gl1Renderer* ctx, RFont_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y);
 #endif
 
 #ifdef RSGL_IMPLEMENTATION
@@ -89,8 +86,6 @@ RSGL_rendererProc RSGL_GL1_rendererProc() {
     proc.deleteTexture = (void (*)(void*, RSGL_texture))RSGL_GL1_deleteTexture;
     proc.scissorStart = (void (*)(void*, RSGL_rectF, i32))RSGL_GL1_scissorStart;
     proc.scissorEnd =  (void (*)(void*))RSGL_GL1_scissorEnd;
-    proc.createAtlas = (RSGL_texture (*)(void*, u32, u32))RSGL_GL1_create_atlas;
-    proc.bitmapToAtlas = (void(*)(void*, RSGL_texture, u32, u32, u32, u8*, float, float, float*, float*))RSGL_GL1_bitmap_to_atlas;
 	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL1_createBuffer;
 	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL1_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL1_deleteBuffer;
@@ -141,7 +136,8 @@ void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, con
 	glPushMatrix();
 	glLoadIdentity();
 	glMultMatrixf(matrix);
-
+	glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	for (i = 0; i < buffers->batchCount; i++) {
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, buffers->batches[i].tex);
@@ -184,10 +180,6 @@ void RSGL_GL1_scissorEnd(RSGL_gl1Renderer* ctx) {
     glDisable(GL_SCISSOR_TEST);
 }
 
-#ifndef GL_RG
-#define GL_RG                             0x8227
-#endif
-
 GLuint RSGL_GL1_textureFormatToNative(RSGL_textureFormat format) {
 	switch (format) {
 		case RSGL_formatRGB: return GL_RGB;
@@ -195,6 +187,8 @@ GLuint RSGL_GL1_textureFormatToNative(RSGL_textureFormat format) {
 		case RSGL_formatRGBA: return GL_RGBA;
 		case RSGL_formatBGRA: return GL_BGRA;
 		case RSGL_formatRed: return GL_RED;
+		case RSGL_formatGrayscale: return GL_RED;
+		case RSGL_formatGrayscaleAlpha: return GL_RED;
 		default: break;
 	}
 	return GL_RGBA;
@@ -237,8 +231,15 @@ RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, const RSGL_textureBlo
 	u32 textureFormat = RSGL_GL1_textureFormatToNative(blob->textureFormat);
 	u32 dataType = RSGL_GL1_textureDataTypeToNative(blob->dataType);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, dataFormat, blob->width, blob->height, 0, textureFormat, dataType, blob->data);
+	if (blob->textureFormat == RSGL_formatGrayscale) {
+		GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+	} else 	if (blob->textureFormat == RSGL_formatGrayscaleAlpha) {
+		GLint swizzleRgbaParams[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+	}
 
+	glTexImage2D(GL_TEXTURE_2D, 0, dataFormat, blob->width, blob->height, 0, textureFormat, dataType, blob->data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return id;
@@ -251,95 +252,16 @@ void RSGL_GL1_copyToTexture(RSGL_gl1Renderer* ctx, RSGL_texture texture, size_t 
 	u32 dataFormat = RSGL_GL1_textureFormatToNative(blob->dataFormat);
 	u32 dataType = RSGL_GL1_textureDataTypeToNative(blob->dataType);
 
-	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, (i32)blob->width, (i32)blob->height, dataFormat, dataType, blob->data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-#ifndef GL_PERSPECTIVE_CORRECTION_HINT
-#define GL_PERSPECTIVE_CORRECTION_HINT		0x0C50
-#endif
-
-#ifndef GL_TEXTURE_SWIZZLE_RGBA
-#define GL_TEXTURE_SWIZZLE_RGBA           0x8E46
-#endif
-
-#ifndef GL_TEXTURE0
-#define GL_TEXTURE0				0x84C0
-#endif
-
-#ifndef GL_CLAMP_TO_EDGE
-#define GL_CLAMP_TO_EDGE			0x812F
-#endif
-
-#ifndef GL_UNPACK_ROW_LENGTH
-#define GL_UNPACK_ROW_LENGTH 0x0CF2
-#define GL_UNPACK_SKIP_PIXELS 0x0CF4
-#define GL_UNPACK_SKIP_ROWS 0x0CF3
-#endif
-
-RSGL_texture RSGL_GL1_create_atlas(RSGL_gl1Renderer* ctx, u32 atlasWidth, u32 atlasHeight) {
-	u32 id = 0;
-	glEnable(GL_TEXTURE_2D);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glGenTextures(1, &id);
-
-	glBindTexture(GL_TEXTURE_2D, id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	u8* data = (u8*)RSGL_MALLOC(atlasWidth * atlasHeight * 4);
-	RSGL_MEMSET(data, 0, atlasWidth * atlasHeight * 4);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, atlasWidth, atlasHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-
-	RSGL_FREE(data);
-
-	glBindTexture(GL_TEXTURE_2D, id);
-	static GLint swizzleRgbaParams[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
-	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	return id;
-}
-
-void RSGL_GL1_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows);
-void RSGL_GL1_push_pixel_values(GLint alignment, GLint rowLength, GLint skipPixels, GLint skipRows) {
-    glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, rowLength);
-	glPixelStorei(GL_UNPACK_SKIP_PIXELS, skipPixels);
-	glPixelStorei(GL_UNPACK_SKIP_ROWS, skipRows);
-}
-
-void RSGL_GL1_bitmap_to_atlas(RSGL_gl1Renderer* ctx, RFont_texture atlas, u32 atlasWidth, u32 atlasHeight, u32 maxHeight, u8* bitmap, float w, float h, float* x, float* y) {
-	glBindTexture(GL_TEXTURE_2D, 0);
-	GLint alignment, rowLength, skipPixels, skipRows;
-	RSGL_UNUSED(ctx); RSGL_UNUSED(atlasHeight);
-	if (((*x) + w) >= atlasWidth) {
-		*x = 0;
-		*y += (float)maxHeight;
+	if (blob->textureFormat == RSGL_formatGrayscale) {
+		GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
+	} else 	if (blob->textureFormat == RSGL_formatGrayscaleAlpha) {
+		GLint swizzleRgbaParams[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
+		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 	}
 
-	glEnable(GL_TEXTURE_2D);
-
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &rowLength);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-
-	glBindTexture(GL_TEXTURE_2D, (u32)atlas);
-
-	RSGL_GL1_push_pixel_values(1, (i32)w, 0, 0);
-
-	glTexSubImage2D(GL_TEXTURE_2D, 0, (i32)(*x), (i32)*y, (i32)w, (i32)h, GL_RED, GL_UNSIGNED_BYTE, bitmap);
-
-	RSGL_GL1_push_pixel_values(alignment, rowLength, skipPixels, skipRows);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-	*x += w;
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, (i32)blob->width, (i32)blob->height, dataFormat, dataType, blob->data);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 #endif /* RSGL_IMPLEMENTATION */

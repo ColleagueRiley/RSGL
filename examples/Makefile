@@ -69,15 +69,14 @@ endif
 
 EXAMPLE_OUTPUTS = \
 	basics/basic \
-	basics/text \
 	basics/textures  \
+	basics/rfont \
 	advanced/shader \
 	basics/shapes  \
 	basics/cube \
 	advanced/compute \
 	basics/stack \
 	basics/buffers \
-	advanced/rfont \
 	basics/gl11 \
 
 
