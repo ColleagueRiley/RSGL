@@ -31,7 +31,7 @@ int main(void) {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
-	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+	RSGL_renderer_updateSize(renderer, 500, 500);
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -50,9 +50,9 @@ int main(void) {
 	RSGL_MEMSET(&view, 0, sizeof(view));
 
 	view.type = RSGL_viewType3D;
-	view.view3D.up = RSGL_POINT3D(0, 10, 0);
-	view.view3D.target = RSGL_POINT3D(0, 0, 10);
-	view.view3D.pos = RSGL_POINT3D(-1, 0, 1);
+	view.view3D.up = RSGL_VEC3D(0, 10, 0);
+	view.view3D.target = RSGL_VEC3D(0, 0, 10);
+	view.view3D.pos = RSGL_VEC3D(-1, 0, 1);
 
 	RSGL_mat4 viewMat = RSGL_view_getMatrix(&view);
 	RSGL_renderer_setViewMatrix(renderer, viewMat);

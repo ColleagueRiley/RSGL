@@ -47,7 +47,7 @@ int main(void) {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*) RGFW_getProcAddress_OpenGL);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
-	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+	RSGL_renderer_updateSize(renderer, 500, 500);
 
 	RSGL_programInfo program = RSGL_renderer_createComputeProgram(renderer, ComputeShader);
 

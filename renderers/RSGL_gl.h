@@ -35,7 +35,7 @@ RSGLDEF void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, s
 /* delete a texture */
 RSGLDEF void RSGL_GL_deleteTexture(RSGL_glRenderer* ctx, RSGL_texture tex);
 /* starts scissoring */
-RSGLDEF void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, RSGL_rectF scissor, i32 renderer_height);
+RSGLDEF void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, float x, float y, float w, float h, float renderer_height);
 /* stops scissoring */
 RSGLDEF void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx);
 /* program loading */
@@ -235,7 +235,7 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
     proc.createTexture = (RSGL_texture (*)(void*, const RSGL_textureBlob* blob))RSGL_GL_createTexture;
     proc.copyToTexture = (void (*)(void*, RSGL_texture, size_t, size_t, const RSGL_textureBlob* blob))RSGL_GL_copyToTexture;
     proc.deleteTexture = (void (*)(void*, RSGL_texture))RSGL_GL_deleteTexture;
-    proc.scissorStart = (void (*)(void*, RSGL_rectF, i32))RSGL_GL_scissorStart;
+    proc.scissorStart = (void (*)(void*, float, float, float, float, float))RSGL_GL_scissorStart;
     proc.scissorEnd =  (void (*)(void*))RSGL_GL_scissorEnd;
     proc.createProgram = (RSGL_programInfo (*)(void*, RSGL_programBlob* blob))RSGL_GL_createProgram;
     proc.deleteProgram = (void (*)(void*, const RSGL_programInfo*))RSGL_GL_deleteProgram;
@@ -391,9 +391,9 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const
 	glBindVertexArray(0);
 }
 
-void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, RSGL_rectF scissor, i32 renderer_height) {
+void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, float x, float y, float w, float h, float renderer_height) {
     glEnable(GL_SCISSOR_TEST);
-    glScissor(scissor.x, renderer_height - (scissor.y + scissor.h), scissor.w, scissor.h);
+    glScissor(x, renderer_height - (y + h), w, h);
 }
 
 void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx) {

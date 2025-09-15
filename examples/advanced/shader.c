@@ -73,7 +73,7 @@ int main(void) {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
-	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+	RSGL_renderer_updateSize(renderer, 500, 500);
 
 	RSGL_programBlob blob;
 	blob.vertex = MY_VShaderCode;
@@ -107,7 +107,7 @@ int main(void) {
         RSGL_renderer_render(renderer);
 
 		RSGL_renderer_setProgram(renderer, &program);
-        RSGL_drawCircle(renderer, RSGL_CIRCLE(0, 0, 60));
+        RSGL_drawOval(renderer, RSGL_RECT(0, 0, 60, 60));
 
 		RSGL_renderer_updateShaderVariable(renderer, &program, u_time, (float*)(const float[1]){(float)(time(NULL) / 1000)}, 1);
         RSGL_renderer_updateShaderVariable(renderer, &program, u_resolution, (float*)(const float[2]){(float)window->w, (float)window->h}, 2);

@@ -35,7 +35,7 @@ int main(void)
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)glfwGetProcAddress);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
-	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+	RSGL_renderer_updateSize(renderer, 500, 500);
 
     RSGL_font* comicSans = RSGL_loadFont(renderer, "COMICSANS.ttf", 20, 500, 500);
 

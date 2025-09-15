@@ -26,7 +26,7 @@ const char* facts[] = {
 
 const size_t factCount = (sizeof(facts) / sizeof(char*));
 
-void rollDie(RSGL_renderer* renderer, i32* index, i32* value) {
+void rollDie(RSGL_renderer* renderer, i32* index, float* value) {
 	if (value) *value = -(*value);
 	*index = rand() % factCount;
 	RSGL_renderer_setColor(renderer, RSGL_RGB(rand() % 255, rand() % 255, rand() % 255));
@@ -37,7 +37,7 @@ int main() {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL1_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
-	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+	RSGL_renderer_updateSize(renderer, 500, 500);
 
     int w, h, c;
     u8* logo = stbi_load("logo.png", &w, &h, &c, 4);
@@ -54,10 +54,11 @@ int main() {
 	srand(time(0));
 
 	RSGL_rect rect = RSGL_RECT(225, 225, 100, 100);
-	RSGL_point vec = RSGL_POINT(2, 3);
+	RSGL_vec2D vec = RSGL_VEC2D(2, 3);
 	RSGL_renderer_setColor(renderer, RSGL_RGB(rand() % 255, rand() % 255, rand() % 255));
 
-	RSGL_area framebufferSize = RSGL_AREA(500, 500);
+	i32 framebufferWidth;
+	i32 framebufferHeight;
 
 	RFont_renderer renderer_rfont;
 	RFont_RSGL_renderer_initPtr(renderer, &renderer_rfont);
@@ -70,24 +71,24 @@ int main() {
 	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
 		RGFW_pollEvents();
 
-		RGFW_window_getSize(window, (i32*)&framebufferSize.w, (i32*)&framebufferSize.h);
-		RSGL_renderer_updateSize(renderer, framebufferSize);
+		RGFW_window_getSize(window, &framebufferWidth, &framebufferHeight);
+		RSGL_renderer_updateSize(renderer, framebufferWidth, framebufferHeight);
 
         RSGL_renderer_setTexture(renderer, texture);
 
 		RSGL_drawRect(renderer, rect);
 
-		rect.w = (0.1f * ((float)framebufferSize.w + (float)framebufferSize.h));
+		rect.w = (0.1f * ((float)framebufferWidth + (float)framebufferHeight));
 		rect.h = rect.w;
 
 		if (RGFW_isKeyPressed(RGFW_space)) {
-			rect.x = (framebufferSize.w / 2) - rect.h;
-			rect.y = (framebufferSize.h / 2) - rect.h;
+			rect.x = (framebufferWidth / 2) - rect.h;
+			rect.y = (framebufferHeight / 2) - rect.h;
 		}
 
-		if (rect.x >= (framebufferSize.w - rect.w) || rect.x <= 0)
+		if (rect.x >= (framebufferWidth - rect.w) || rect.x <= 0)
 			rollDie(renderer, &factIndex, &vec.x);
-		else if (rect.y >= (framebufferSize.h - rect.h) || rect.y <= 0)
+		else if (rect.y >= (framebufferHeight - rect.h) || rect.y <= 0)
 			rollDie(renderer, &factIndex, &vec.y);
 
 		rect.x += vec.x;
@@ -98,7 +99,7 @@ int main() {
 		RSGL_color prev = renderer->state.color;
 		RSGL_renderer_setColor(renderer, RSGL_RGB(100, 100, 100));
 
-		RFont_draw_text(&renderer_rfont, font,  facts[factIndex], 0, framebufferSize.h - 50, 20);
+		RFont_draw_text(&renderer_rfont, font,  facts[factIndex], 0, framebufferHeight - 50, 20);
 
 		RSGL_renderer_setColor(renderer, prev);
 

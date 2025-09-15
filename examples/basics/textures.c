@@ -27,9 +27,9 @@ int main(void) {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
-	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+	RSGL_renderer_updateSize(renderer, 500, 500);
 
-	RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
+	RSGL_vec3D rotate = RSGL_VEC3D(0, 0, 0);
 
     int w, h, c;
     u8* logo = stbi_load("logo.png", &w, &h, &c, 4);
@@ -74,7 +74,7 @@ int main(void) {
 
         RSGL_renderer_setTexture(renderer, texture);
 		RSGL_renderer_setRotate(renderer, rotate);
-        RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_POINT(0, 500), RSGL_POINT(200, 500), RSGL_POINT(100, 250)));
+		RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_VEC3D(0, 500, 0), RSGL_VEC3D(200, 500, 0), RSGL_VEC3D(100, 250, 0)));
 
 		RSGL_renderer_render(renderer);
         RGFW_window_swapBuffers_OpenGL(win);
