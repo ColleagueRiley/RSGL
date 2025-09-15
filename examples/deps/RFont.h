@@ -471,14 +471,16 @@ RFONT_API size_t RFont_draw_text_len(RFont_renderer* renderer, RFont_font* font,
 #endif
 
 size_t RFont_renderer_size(RFont_renderer* renderer) {
-	return renderer->proc.size();
+	size_t size = 0;
+	if (renderer->proc.size)
+		renderer->proc.size();
+	return size;
 }
 
 RFont_renderer* RFont_renderer_init(RFont_renderer_proc proc) {
 	RFont_renderer* renderer = (RFont_renderer*)RFONT_MALLOC(sizeof(RFont_renderer));
 	void* ptr = NULL;
-	size_t size = 0;
-	if (proc.size) size = proc.size();
+	size_t size = RFont_renderer_size(renderer);
 
 	if (size) ptr = RFONT_MALLOC(size);
 
@@ -494,11 +496,13 @@ void RFont_renderer_initPtr(RFont_renderer_proc proc, void* ptr, RFont_renderer*
 }
 
 void RFont_renderer_set_framebuffer(RFont_renderer* renderer, u32 w, u32 h) {
-	renderer->proc.set_framebuffer(renderer->ctx, w, h);
+	if (renderer->proc.set_framebuffer)
+		renderer->proc.set_framebuffer(renderer->ctx, w, h);
 }
 
 void RFont_renderer_set_color(RFont_renderer* renderer, float r, float g, float b, float a) {
-	renderer->proc.set_color(renderer->ctx, r, g, b, a);
+	if (renderer->proc.set_color)
+		renderer->proc.set_color(renderer->ctx, r, g, b, a);
 }
 
 void RFont_renderer_free(RFont_renderer* renderer) {
@@ -651,7 +655,9 @@ RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u3
 	else
 		font->space_adv = RFONT_SHORT(font->src->info.data, font->src->info.hmtx + 4 * (i32)(font->numOfLongHorMetrics - 1));
 
-	font->atlas = renderer->proc.create_atlas(renderer->ctx, (u32)atlasWidth, (u32)atlasHeight);
+	if (renderer->proc.create_atlas)
+		font->atlas = renderer->proc.create_atlas(renderer->ctx, (u32)atlasWidth, (u32)atlasHeight);
+
 	font->atlasX = 0;
 	font->atlasY = 0;
 	font->glyph_len = 0;
@@ -670,8 +676,9 @@ RFont_font* RFont_font_init_data_ptr(RFont_renderer* renderer, u8* font_data, u3
 }
 
 void RFont_font_free_ptr(RFont_renderer* renderer, RFont_font* font) {
-   renderer->proc.free_atlas(renderer->ctx, font->atlas);
-   RFONT_FREE(font->src);
+	if (renderer->proc.free_atlas)
+		renderer->proc.free_atlas(renderer->ctx, font->atlas);
+	RFONT_FREE(font->src);
 }
 
 void RFont_font_free(RFont_renderer* renderer, RFont_font* font) {
@@ -806,7 +813,9 @@ RFont_glyph RFont_font_add_codepoint_ex(RFont_renderer* renderer, RFont_font* fo
 	glyph->size = size;
 	glyph->font = font;
 
-	renderer->proc.bitmap_to_atlas(renderer->ctx, font->atlas, (u32)font->atlasWidth, (u32)font->atlasHeight, font->maxHeight, bitmap, glyph->w, glyph->h, &font->atlasX, &font->atlasY);
+	if (renderer->proc.bitmap_to_atlas)
+		renderer->proc.bitmap_to_atlas(renderer->ctx, font->atlas, (u32)font->atlasWidth, (u32)font->atlasHeight, font->maxHeight, bitmap, glyph->w, glyph->h, &font->atlasX, &font->atlasY);
+
 	RFONT_FREE(bitmap);
 	glyph->x = (i32)(font->atlasX - glyph->w);
 	glyph->x2 = (i32)(font->atlasX);
@@ -2556,7 +2565,7 @@ RFONT_API void rstbtt__rasterize_sorted_edges(rstbtt__bitmap *result, rstbtt__ed
             k = scanline[i] + sum;
             k = (float) fabs(k)*255 + 0.5f;
             m = (int) k;
-            if (m >= 255) m = 255;
+            if (m > 255) m = 255;
             result->pixels[j*result->stride + i] = (unsigned char) m;
          }
       }

@@ -210,6 +210,10 @@ glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
 #define glBindImageTexture glBindImageTextureSRC
 #endif
 
+#ifndef GL_TEXTURE_SWIZZLE_RGBA
+	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
+#endif
+
 extern int RSGL_loadGLModern(RSGLloadfunc proc);
 #endif
 
