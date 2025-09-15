@@ -25,8 +25,11 @@ int main(void) {
 	RGFW_window* win = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL);
-    RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
+    RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
+	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+
+	RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
 
     int w, h, c;
     u8* logo = stbi_load("logo.png", &w, &h, &c, 4);

@@ -29,8 +29,11 @@ int main(void) {
 	RGFW_window* win = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL | RGFW_windowNoResize);
     RGFW_window_setExitKey(win, RGFW_escape);
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL);
-    glEnable(GL_DEPTH_TEST);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
+    RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
+	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
+
+	glEnable(GL_DEPTH_TEST);
 
 	RSGL_projection projection;
 	projection.type = RSGL_projectionPerspective3D;

@@ -18,8 +18,9 @@ int main() {
 
 	RSGL_glRenderer ptr;
 	RSGL_renderer renderer;
-	RSGL_renderer_initPtr(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL, &ptr, &renderer);
-
+	RSGL_renderer_initPtr(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL, &ptr, &renderer);
+    RSGL_renderer_viewport(&renderer, RSGL_RECT(0, 0, 500, 500));
+	RSGL_renderer_updateSize(&renderer, RSGL_AREA(500, 500));
 
 	while (RGFW_window_shouldClose(&window) == RGFW_FALSE) {
 		RGFW_pollEvents();

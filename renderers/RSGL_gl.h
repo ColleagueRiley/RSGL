@@ -17,8 +17,8 @@ typedef struct RSGL_glRenderer {
 RSGLDEF RSGL_rendererProc RSGL_GL_rendererProc(void);
 RSGLDEF size_t RSGL_GL_size(void);
 
-RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(RSGL_area r, void* loader);
-RSGLDEF void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
+RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(void* loader);
+RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
 RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* info);
 RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
@@ -52,8 +52,8 @@ RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_glRenderer* ctx, u32 texture, u8 fo
 
 #ifdef RSGL_IMPLEMENTATION
 
-RSGL_renderer* RSGL_GL_renderer_init(RSGL_area r, void* loader) { return RSGL_renderer_init(RSGL_GL_rendererProc(), r, loader); }
-void RSGL_GL_renderer_initPtr(RSGL_area r, void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL_rendererProc(), r, loader, ptr, renderer); }
+RSGL_renderer* RSGL_GL_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL_rendererProc(), loader); }
+void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL_rendererProc(), loader, ptr, renderer); }
 
 
 /* prevent winapi conflicts (opengl includes windows.h for some reason) */

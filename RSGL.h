@@ -478,13 +478,12 @@ RSGLDEF void RSGL_renderer_getRenderState(RSGL_renderer* renderer, RSGL_renderSt
 RSGLDEF size_t RSGL_renderer_size(RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_renderer_initPtr(RSGL_rendererProc proc,
-                        RSGL_area area, /* graphics context size */
                         void* loader, /* opengl prozc address ex. wglProcAddress */
 						void* ptr, /* pointer to allocate backend data */
 					    RSGL_renderer* renderer
 					);
 
-RSGLDEF RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, RSGL_area area, void* loader);
+RSGLDEF RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, void* loader);
 RSGLDEF void RSGL_renderer_updateSize(RSGL_renderer* renderer, RSGL_area area);
 RSGLDEF void RSGL_renderer_freePtr(RSGL_renderer* renderer);
 
@@ -868,12 +867,11 @@ size_t RSGL_renderer_size(RSGL_renderer* renderer) {
 	return 0;
 }
 
-void RSGL_renderer_initPtr(RSGL_rendererProc proc, RSGL_area area, void* loader, void* data, RSGL_renderer* renderer) {
+void RSGL_renderer_initPtr(RSGL_rendererProc proc, void* loader, void* data, RSGL_renderer* renderer) {
 	renderer->ctx = data;
 	renderer->proc = proc;
     RSGL_renderer_clearArgs(renderer);
     renderer->state.color = RSGL_RGBA(0, 0, 0, 255);
-    RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, area.w, area.h));
 
     renderer->state.modelMatrix = RSGL_mat4_loadIdentity();
 	renderer->data.verts = renderer->verts;
@@ -907,15 +905,14 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, RSGL_area area, void* loader,
 
 	RSGL_renderer_setModelMatrix(renderer, RSGL_mat4_loadIdentity());
 	RSGL_renderer_resetViewMatrix(renderer);
-	RSGL_renderer_updateSize(renderer, area);
 	RSGL_renderer_setPerspectiveMatrix(renderer, RSGL_mat4_loadIdentity());
 }
 
 
-RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, RSGL_area area, void* loader) {
+RSGL_renderer* RSGL_renderer_init(RSGL_rendererProc proc, void* loader) {
 	RSGL_renderer* renderer = (RSGL_renderer*)RSGL_MALLOC(sizeof(RSGL_renderer));
 	void* data = RSGL_MALLOC(proc.size());
-	RSGL_renderer_initPtr(proc, area, loader, data, renderer);
+	RSGL_renderer_initPtr(proc, loader, data, renderer);
 	return renderer;
 }
 

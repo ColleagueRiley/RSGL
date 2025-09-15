@@ -19,7 +19,9 @@ int main(void) {
 
 	RGFW_window* win = RGFW_createWindow("window", 0, 0, 800, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), RSGL_AREA(500, 500), (void*)RGFW_getProcAddress_OpenGL);
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
+    RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
+	RSGL_renderer_updateSize(renderer, RSGL_AREA(500, 500));
 
 	RFont_renderer* renderer_rfont = RFont_RSGL_renderer_init(renderer);
     RFont_font* font = RFont_font_init(renderer_rfont, "COMICSANS.ttf", 60, 500, 500);

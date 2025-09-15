@@ -2,6 +2,10 @@
 #include "RSGL.h"
 #endif
 
+#ifndef GL_TEXTURE_SWIZZLE_RGBA
+	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
+#endif
+
 #ifndef RSGL_GL1_H
 #define RSGL_GL1_H
 
@@ -10,8 +14,8 @@ typedef struct RSGL_gl1Renderer { } RSGL_gl1Renderer;
 RSGLDEF RSGL_rendererProc RSGL_GL1_rendererProc(void);
 RSGLDEF size_t RSGL_GL1_size(void);
 
-RSGLDEF RSGL_renderer* RSGL_GL1_renderer_init(RSGL_area r, void* loader);
-RSGLDEF void RSGL_GL1_renderer_initPtr(RSGL_area r, void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer);
+RSGLDEF RSGL_renderer* RSGL_GL1_renderer_init(void* loader);
+RSGLDEF void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers);
 RSGLDEF void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc); /* init render backend */
@@ -34,8 +38,8 @@ RSGLDEF void RSGL_GL1_scissorEnd(RSGL_gl1Renderer* ctx);
 
 #ifdef RSGL_IMPLEMENTATION
 
-RSGL_renderer* RSGL_GL1_renderer_init(RSGL_area r, void* loader) { return RSGL_renderer_init(RSGL_GL1_rendererProc(), r, loader); }
-void RSGL_GL1_renderer_initPtr(RSGL_area r, void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL1_rendererProc(), r, loader, ptr, renderer); }
+RSGL_renderer* RSGL_GL1_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL1_rendererProc(), loader); }
+void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL1_rendererProc(), loader, ptr, renderer); }
 
 
 /* prevent winapi conflicts (opengl includes windows.h for some reason) */
@@ -60,10 +64,6 @@ typedef int	 GLsizei;
 #define GL_TEXTURE0 0x84C0
 
 #include <GL/glext.h>
-#endif
-
-#ifndef GL_TEXTURE_SWIZZLE_RGBA
-	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
 #endif
 
 size_t RSGL_GL1_size(void) {
