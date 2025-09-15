@@ -134,10 +134,6 @@ typedef bool RSGL_bool;
 #define RSGL_TRUE (RSGL_bool)1
 #define RSGL_FALSE (RSGL_bool)0
 
-#ifndef RSGL_framebuffer
-typedef struct RSGL_framebuffer { u32 id, texture; } RSGL_framebuffer;
-#endif
-
 #ifndef RSGL_texture
 #define RSGL_texture size_t
 #endif
@@ -315,12 +311,9 @@ typedef struct RSGL_renderer {
     void (* free)(void); /* free render backend */
     void (* clear)(float r, float g, float b, float a);
     void (* viewport)(i32 x, i32 y, i32 w, i32 h);
-    void (* setFramebuffer)(u32 id);
-    RSGL_framebuffer (* createFramebuffer)(RSGL_area memsize);
     RSGL_texture (* createTexture)(u8* bitmap, RSGL_area memsize,  u8 channels);
     void (* updateTexture)(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
     void (* deleteTexture)(RSGL_texture tex);
-    void (* deleteFramebuffer)(RSGL_framebuffer fbo);
     void (* scissorStart)(RSGL_rectF scissor);
     void (* scissorEnd)(void);
     RSGL_programInfo (*createProgram)(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName);
@@ -416,16 +409,12 @@ RSGLDEF void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info); /* init render
 RSGLDEF void RSGL_renderFree(void); /* free render backend */
 RSGLDEF void RSGL_renderClear(float r, float g, float b, float a);
 RSGLDEF void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h);
-/* create a framebuffer, this must be freed later using RSGL_deleteFramebuffer or opengl*/
-RSGLDEF RSGL_framebuffer RSGL_renderCreateFramebuffer(RSGL_area memsize);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
 RSGLDEF RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels);
 /* updates an existing texture wiht a new bitmap */
 RSGLDEF void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsize, u8 channels);
 /* delete a texture */
 RSGLDEF void RSGL_renderDeleteTexture(RSGL_texture tex);
-/* delete a framebuffer */
-RSGLDEF void RSGL_renderDeleteFramebuffer(RSGL_framebuffer fbo);
 /* starts scissoring */
 RSGLDEF void RSGL_renderScissorStart(RSGL_rectF scissor);
 /* stops scissoring */
@@ -710,16 +699,12 @@ RSGL_GRAPHICS_CONTEXT
 
 RSGL_renderer RSGL_currentRenderer;
 void RSGL_setRenderer(RSGL_renderer renderer) { RSGL_currentRenderer = renderer; }
-void RSGL_setFramebuffer(u32 id) { RSGL_currentRenderer.setFramebuffer(id); }
 
 void RSGL_renderBatch(RSGL_RENDER_INFO* info) {  RSGL_currentRenderer.batch(info); }
 void RSGL_renderInit(void* proc, RSGL_RENDER_INFO* info) { RSGL_currentRenderer.init(proc, info); }
 void RSGL_renderFree(void) { RSGL_currentRenderer.free(); }
 void RSGL_renderClear(float r, float g, float b, float a) { RSGL_currentRenderer.clear(r, g, b, a); }
 void RSGL_renderViewport(i32 x, i32 y, i32 w, i32 h) { RSGL_currentRenderer.viewport(x, y, w, h); }
-RSGL_framebuffer RSGL_renderCreateFramebuffer(RSGL_area memsize) { 
-    return RSGL_currentRenderer.createFramebuffer(memsize); 
-}
 RSGL_texture RSGL_renderCreateTexture(u8* bitmap, RSGL_area memsize,  u8 channels) { 
     return RSGL_currentRenderer.createTexture(bitmap,  memsize, channels); 
 }
@@ -727,7 +712,6 @@ void RSGL_renderUpdateTexture(RSGL_texture texture, u8* bitmap, RSGL_area memsiz
     return RSGL_currentRenderer.updateTexture(texture, bitmap, memsize, channels);
 }
 void RSGL_renderDeleteTexture(RSGL_texture tex) { RSGL_currentRenderer.deleteTexture(tex); }
-void RSGL_renderDeleteFramebuffer(RSGL_framebuffer fbo) { RSGL_currentRenderer.deleteFramebuffer(fbo); }
 void RSGL_renderScissorStart(RSGL_rectF scissor) { RSGL_currentRenderer.scissorStart(scissor); }
 void RSGL_renderScissorEnd(void) { RSGL_currentRenderer.scissorEnd(); }
 RSGL_programInfo RSGL_renderCreateProgram(const char* VShaderCode, const char* FShaderCode, const char* posName, const char* texName, const char* colorName) {
