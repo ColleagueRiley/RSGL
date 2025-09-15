@@ -1090,7 +1090,7 @@ RFont_RSGL integration
 #endif
 
 struct RFont_renderer* RFont_RSGL_renderer_init(struct RSGL_renderer* ptr) {
-	RFont_renderer* renderer = RFONT_MALLOC(sizeof(RFont_renderer));
+	RFont_renderer* renderer = (RFont_renderer*)RFONT_MALLOC(sizeof(RFont_renderer));
 	RFont_renderer_initPtr(RFont_RSGL_renderer_proc(), ptr, renderer);
 	return renderer;
 }
