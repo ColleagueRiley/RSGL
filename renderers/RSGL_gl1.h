@@ -2,11 +2,6 @@
 #include "RSGL.h"
 #endif
 
-// WebGL doesn't support compute shaders iirc so yeah
-#if defined(__EMSCRIPTEN__) && defined(RSGL_USE_COMPUTE)
-#undef RSGL_USE_COMPUTE
-#endif
-
 #ifndef RSGL_GL1_H
 #define RSGL_GL1_H
 
@@ -65,6 +60,10 @@ typedef int	 GLsizei;
 #define GL_TEXTURE0 0x84C0
 
 #include <GL/glext.h>
+#endif
+
+#ifndef GL_TEXTURE_SWIZZLE_RGBA
+	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
 #endif
 
 size_t RSGL_GL1_size(void) {

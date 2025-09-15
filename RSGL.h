@@ -1079,6 +1079,13 @@ RFont_RSGL integration
 #ifdef RSGL_RFONT
 
 #ifndef RFONT_H
+
+#ifdef RSGL_INT_DEFINED
+	#ifndef RFONT_INT_DEFINED
+		#define RFONT_INT_DEFINED
+	#endif
+#endif
+
 #include "RFont.h"
 #endif
 
