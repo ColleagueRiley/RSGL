@@ -76,7 +76,7 @@ int main(void) {
 		RSGL_renderer_setTextureSource(renderer, texture, RSGL_RECT(0.25, 0.28, 0.50, 0.30));
 		RSGL_drawOval(renderer, RSGL_RECT(200, 20, 50, 50));
 		{
-			RSGL_vec3D points[3] = {RSGL_VEC3D(400, 100, 0), RSGL_VEC3D(500, 100, 0), RSGL_VEC3D(450, 50, 0)}
+			RSGL_vec3D points[3] = {RSGL_VEC3D(400, 100, 0), RSGL_VEC3D(500, 100, 0), RSGL_VEC3D(450, 50, 0)};
 			RSGL_drawTriangle(renderer, points);
 		}
 		RSGL_drawRect(renderer, RSGL_RECT(300, 20, 50, 50));
