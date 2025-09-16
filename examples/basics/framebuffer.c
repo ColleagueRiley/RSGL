@@ -24,7 +24,7 @@ int main(void) {
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer, 500, 500);
 
-	u8* data = RSGL_MALLOC(500 * 500 * 4);
+	u8* data = (u8*)RSGL_MALLOC(500 * 500 * 4);
 	u8 color[4] = {0, 0, 0, 255};
 	for (size_t i = 0; i < 500 * 500 * 4; i += 4) {
 		RSGL_MEMCPY(&data[i], color, sizeof(color));
