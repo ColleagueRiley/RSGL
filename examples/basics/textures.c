@@ -80,7 +80,9 @@ int main(void) {
 
         RSGL_renderer_setTexture(renderer, texture);
 		RSGL_renderer_setRotate(renderer, rotate);
-		RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_VEC3D(0, 500, 0), RSGL_VEC3D(200, 500, 0), RSGL_VEC3D(100, 250, 0)));
+
+		RSGL_vec3D points[3] = {RSGL_VEC3D(0, 500, 0), RSGL_VEC3D(200, 500, 0), RSGL_VEC3D(100, 250, 0)};
+		RSGL_drawTriangle(renderer, points);
 
 		RSGL_renderer_render(renderer);
         RGFW_window_swapBuffers_OpenGL(win);

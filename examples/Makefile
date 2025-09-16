@@ -80,9 +80,14 @@ EXAMPLE_OUTPUTS = \
 	basics/gl11 \
 	basics/framebuffer \
 
+
 all: xdg-shell.c $(EXAMPLE_OUTPUTS)
 
 examples: $(EXAMPLE_OUTPUTS)
+
+
+microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
+	$(CC) $(CFLAGS) -g3 $(WARNIGNS) microui_demo/microui.c -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 
 
 advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
