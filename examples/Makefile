@@ -78,7 +78,7 @@ EXAMPLE_OUTPUTS = \
 	basics/stack \
 	basics/buffers \
 	basics/gl11 \
-
+	basics/framebuffer \
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS)
 

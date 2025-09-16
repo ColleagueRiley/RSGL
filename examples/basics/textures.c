@@ -72,6 +72,12 @@ int main(void) {
         RSGL_renderer_setTexture(renderer, iconTex);
 		RSGL_drawPolygon(renderer, RSGL_RECT(20, 20, 50, 50), 8);
 
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 255, 255));
+		RSGL_renderer_setTextureSource(renderer, texture, RSGL_RECT(0.25, 0.28, 0.50, 0.30));
+		RSGL_drawOval(renderer, RSGL_RECT(200, 20, 50, 50));
+		RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_VEC3D(400, 100, 0), RSGL_VEC3D(500, 100, 0), RSGL_VEC3D(450, 50, 0)));
+		RSGL_drawRect(renderer, RSGL_RECT(300, 20, 50, 50));
+
         RSGL_renderer_setTexture(renderer, texture);
 		RSGL_renderer_setRotate(renderer, rotate);
 		RSGL_drawTriangle(renderer, RSGL_TRIANGLE(RSGL_VEC3D(0, 500, 0), RSGL_VEC3D(200, 500, 0), RSGL_VEC3D(100, 250, 0)));

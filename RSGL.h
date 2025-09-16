@@ -351,6 +351,7 @@ typedef struct RSGL_renderBuffers {
 typedef struct RSGL_renderState {
     float* gradient; /* does not allocate any memory */
 
+	RSGL_rect source;
     RSGL_texture texture;
     u32 gradient_len;
 
@@ -447,6 +448,7 @@ RSGLDEF void RSGL_renderer_free(RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_renderer_setRotate(RSGL_renderer* renderer, RSGL_vec3D rotate); /* apply rotation to drawing */
 RSGLDEF void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture texture); /* apply texture to drawing */
+RSGLDEF void RSGL_renderer_setTextureSource(RSGL_renderer* renderer, RSGL_texture texture, RSGL_rect rect); /* apply texture to drawing (limited to the given rect) */
 RSGLDEF void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color); /* apply color to drawing */
 RSGLDEF void RSGL_renderer_setProgram(RSGL_renderer* renderer, RSGL_programInfo* program); /* use shader program for drawing */
 RSGLDEF void RSGL_renderer_setRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffers* buffers);
@@ -960,7 +962,15 @@ void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture texture) {
 		renderer->state.texture = renderer->defaultTexture;
 	else
 		renderer->state.texture = texture;
+
+	renderer->state.source = RSGL_RECT(0, 0, 1, 1);
 }
+
+void RSGL_renderer_setTextureSource(RSGL_renderer* renderer, RSGL_texture texture, RSGL_rect rect) {
+	RSGL_renderer_setTexture(renderer, texture);
+	renderer->state.source = rect;
+}
+
 void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color) {
 	renderer->state.color = color;
 }
@@ -1125,7 +1135,7 @@ i32 RSGL_drawPoint(RSGL_renderer* renderer, RSGL_vec2D p) {
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, RSGL_VEC3D(p.x, p.y, 0.0f));
 
     float points[] = {RSGL_GET_MATRIX_POINT((float)p.x, (float)p.y, 0.0f)};
-    float texPoints[] = { 0.0f, 0.0f };
+    float texPoints[] = { renderer->state.source.x, renderer->state.source.y };
 	u16 elements[] = { 0 };
 
 	RSGL_rawVerts data;
@@ -1141,10 +1151,10 @@ i32 RSGL_drawPoint(RSGL_renderer* renderer, RSGL_vec2D p) {
 
 i32 RSGL_drawRect(RSGL_renderer* renderer, RSGL_rect r) {
     float texPoints[] = {
-                                0.0f, 0.0f,
-                                0.0f, 1.0f,
-                                1.0f, 0.0f,
-                                1.0f, 1.0f,
+                                renderer->state.source.x, renderer->state.source.y,
+                                renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+                                renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+                                renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
                             };
 
     RSGL_vec3D center = (RSGL_vec3D){r.x + (r.w / 2.0f), r.y + (r.h / 2.0f), 0.0f};
@@ -1202,11 +1212,17 @@ i32 RSGL_drawPolygonEx(RSGL_renderer* renderer, RSGL_rect o, u32 sides, RSGL_vec
     size_t tIndex = 0;
 	size_t iIndex = 0;
 
+	float texCenterX =  (0.5 * (renderer->state.source.w));
+	float texCenterY = (0.5 * (renderer->state.source.h));
+
+	RSGL_UNUSED(texCenterX);
+	RSGL_UNUSED(texCenterY);
+
 	{
         RSGL_vec2D p = {center.x, center.y};
 
-        texcoords[tIndex] = 0.5;
-        texcoords[tIndex + 1] = 0.5;
+        texcoords[tIndex] = (renderer->state.source.x) + texCenterX;
+        texcoords[tIndex + 1] = (renderer->state.source.y) + texCenterY;
         float temp[3] = { RSGL_GET_MATRIX_POINT(p.x, p.y, 0.0) };
         memcpy(verts + vIndex, temp, 3 * sizeof(float));
 
@@ -1217,12 +1233,12 @@ i32 RSGL_drawPolygonEx(RSGL_renderer* renderer, RSGL_rect o, u32 sides, RSGL_vec
 
     u32 i;
     for (i = 0; i < sides + 1; i++) {
-		RSGL_vec2D p = {RSGL_SIN(angle * DEG2RAD), RSGL_COS(angle * DEG2RAD)};
+		RSGL_vec2D p = {RSGL_COS(angle * DEG2RAD), RSGL_SIN(angle * DEG2RAD)};
 
-        texcoords[tIndex] = (p.x + 1.0f) * 0.5;
-        texcoords[tIndex + 1] = (p.y + 1.0f) * 0.5;
+        texcoords[tIndex] = ((p.x + 1.0f) * texCenterX) + (renderer->state.source.x) ;
+        texcoords[tIndex + 1] = ((p.y + 1.0f) * texCenterY) + (renderer->state.source.y);
 
-        float temp[3] = { RSGL_GET_MATRIX_POINT(o.x + o.w + (p.x * o.w), o.y + o.h + (p.y * o.h), 0.0) };
+		float temp[3] = { RSGL_GET_MATRIX_POINT(o.x + o.w + (p.x * o.w), o.y + o.h + (p.y * o.h), 0.0) };
         memcpy(&verts[vIndex], temp, 3 * sizeof(float));
 
 		elements[iIndex + 0] = i;
@@ -1277,7 +1293,7 @@ i32 RSGL_drawPoint3D(RSGL_renderer* renderer, RSGL_vec3D p) {
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, p);
 
     float points[] = {RSGL_GET_MATRIX_POINT((float)p.x, (float)p.y, (float)p.z)};
-    float texPoints[] = { 0.0f, 0.0f };
+    float texPoints[] = { renderer->state.source.x, renderer->state.source.y };
 	u16 elements[] = { 0, };
 
 	RSGL_rawVerts data;
@@ -1298,8 +1314,8 @@ i32 RSGL_drawLine3D(RSGL_renderer* renderer, RSGL_vec3D p1, RSGL_vec3D p2, u32 t
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, center);
 
     float points[] = {RSGL_GET_MATRIX_POINT(p1.x, p1.y, p1.z), RSGL_GET_MATRIX_POINT(p2.x, p2.y, p2.z)};
-    float texPoints[] = {0, 0.0f,          0, 0.0f};
-	u16 elements[] = { 0, 1,    2, 3 };
+    float texPoints[] = { renderer->state.source.x, renderer->state.source.y,  renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h};
+	u16 elements[] = { 0, 1 };
 
 	RSGL_rawVerts data;
 	data.type = RSGL_LINES;
@@ -1323,9 +1339,9 @@ i32 RSGL_drawTriangle(RSGL_renderer* renderer, RSGL_vec3D t[3]) {
     };
 
 	float texPoints[] = {
-                0.0f, 1.0f,
-                1.0f, 1.0f,
-                ((float)(points[6] - points[0]) / points[3] < 1) ? (float)(points[6] - points[0]) / points[3] : 0, 0.0f,
+                renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+                renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
+				((float)(t[2].x - t[0].x)/t[1].x < 1) ? (renderer->state.source.x + (float)(t[2].x - t[0].x) / t[1].x) : renderer->state.source.x, renderer->state.source.y,
     };
 
 	u16 elements[] = {
@@ -1344,24 +1360,36 @@ i32 RSGL_drawTriangle(RSGL_renderer* renderer, RSGL_vec3D t[3]) {
 }
 
 i32 RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube) {
-    float texPoints[] = {
-        0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-        1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+	float texPoints[] = {
+		renderer->state.source.x, renderer->state.source.y,
+		renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
 
-        0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-        1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+		renderer->state.source.x, renderer->state.source.y,
+		renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
 
-        0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-        1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+		renderer->state.source.x, renderer->state.source.y,
+		renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
 
-        0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-        1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+		renderer->state.source.x, renderer->state.source.y,
+		renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
 
-        0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-        1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+		renderer->state.source.x, renderer->state.source.y,
+		renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
 
-        0.0f, 0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-        1.0f, 1.0f,  1.0f, 0.0f,  0.0f, 1.0f
+		renderer->state.source.x, renderer->state.source.y,
+		renderer->state.source.x, renderer->state.source.y + renderer->state.source.h,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y,
+		renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h,
     };
 
     RSGL_vec3D center = {
@@ -1447,13 +1475,9 @@ i32 RSGL_drawLine(RSGL_renderer* renderer, RSGL_vec2D p1, RSGL_vec2D p2, u32 thi
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, center);
 
     float points[] = {RSGL_GET_MATRIX_POINT(p1.x, p1.y, 0.0f), RSGL_GET_MATRIX_POINT(p2.x, p2.y, 0.0f)};
-    float texPoints[] = {0, 0.0f,          0, 0.0f};
+    float texPoints[] = { renderer->state.source.x, renderer->state.source.y,  renderer->state.source.x + renderer->state.source.w, renderer->state.source.y + renderer->state.source.h};
 
-
-	u16 elements[] = {
-		0, 1,
-		2, 3,
-	};
+	u16 elements[] = { 0, 1 };
 
 	RSGL_rawVerts data;
 	data.type = RSGL_LINES;
