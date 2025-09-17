@@ -1,3 +1,4 @@
+#define RSGL_RFONT
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
@@ -10,6 +11,9 @@
 
 #include "microui.h"
 #include "atlas.inl"
+
+#define RFONT_IMPLEMENTATION
+#include "RFont.h"
 
 static  char logbuf[64000];
 static   int logbuf_updated = 0;
@@ -201,7 +205,7 @@ static void style_window(mu_Context *ctx) {
 }
 
 
-static void process_frame(RSGL_renderer* renderer, mu_Context *ctx, RSGL_texture atlasTexture, i32 width) {
+static void process_frame(RSGL_renderer* renderer, RFont_renderer* renderer_rfont, mu_Context *ctx, RSGL_texture atlasTexture, i32 width) {
 	mu_begin(ctx);
 	style_window(ctx);
 	log_window(ctx);
@@ -212,20 +216,8 @@ static void process_frame(RSGL_renderer* renderer, mu_Context *ctx, RSGL_texture
 	while (mu_next_command(ctx, &cmd)) {
 		switch (cmd->type) {
 			case MU_COMMAND_TEXT: {
-				mu_Rect dst = { cmd->text.pos.x, cmd->text.pos.y, 0, 0 };
-				for (const char *p = cmd->text.str; *p; p++) {
-					if ((*p & 0xc0) == 0x80) { continue; }
-					int chr = mu_min((unsigned char) *p, 127);
-					mu_Rect src = atlas[ATLAS_FONT + chr];
-					dst.w = src.w;
-					dst.h = src.h;
-
-					RSGL_renderer_setTextureSource(renderer, atlasTexture, RSGL_RECT(src.x / ATLAS_WIDTH, src.y / ATLAS_HEIGHT, src.w / ATLAS_WIDTH, src.h / ATLAS_HEIGHT));
-					RSGL_renderer_setColor(renderer, RSGL_RGBA(cmd->text.color.r, cmd->text.color.g, cmd->text.color.b, cmd->text.color.a));
-					RSGL_drawRect(renderer, RSGL_RECT(dst.x, dst.y, dst.w, dst.h));
-
-					dst.x += dst.w;
-				}
+				RSGL_renderer_setColor(renderer, RSGL_RGBA(cmd->text.color.r, cmd->text.color.g, cmd->text.color.b, cmd->text.color.a));
+				RFont_draw_text(renderer_rfont, cmd->text.font, cmd->text.str, cmd->text.pos.x, cmd->text.pos.y, 18);
 				break;
 			}
 			case MU_COMMAND_RECT: {
@@ -238,10 +230,12 @@ static void process_frame(RSGL_renderer* renderer, mu_Context *ctx, RSGL_texture
 			}
 			case MU_COMMAND_ICON: {
 				mu_Rect src = atlas[cmd->icon.id];
+				int x = cmd->rect.rect.x + (cmd->rect.rect.w - src.w) / 2;
+				int y = cmd->rect.rect.y + (cmd->rect.rect.h - src.h) / 2;
 
 				RSGL_renderer_setTextureSource(renderer, atlasTexture, RSGL_RECT(src.x / ATLAS_WIDTH, src.y / ATLAS_HEIGHT, src.w / ATLAS_WIDTH, src.h / ATLAS_HEIGHT));
 				RSGL_renderer_setColor(renderer, RSGL_RGBA(cmd->icon.color.r, cmd->icon.color.g, cmd->icon.color.b, cmd->icon.color.a));
-				RSGL_drawRect(renderer, RSGL_RECT(cmd->icon.rect.x, cmd->icon.rect.y, cmd->icon.rect.w, cmd->icon.rect.h));
+				RSGL_drawRect(renderer, RSGL_RECT(x, y, src.w, src.h));
 				break;
 			}
 			case MU_COMMAND_CLIP:
@@ -269,18 +263,15 @@ static const char key_map[256] = {
   [ RGFW_backSpace    & 0xff ] = MU_KEY_BACKSPACE,
 };
 
-RSGL_renderer* stackRenderer;
+RFont_renderer* stackRenderer;
 
 static int text_width(mu_Font font, const char *text, int len) {
 	RGFW_UNUSED(font);
-	if (len == -1) { len = strlen(text); }
-	int res = 0;
-	for (const char *p = text; *p && len--; p++) {
-		if ((*p & 0xc0) == 0x80) { continue; }
-		int chr = mu_min((unsigned char) *p, 127);
-		res += atlas[ATLAS_FONT + chr].w;
-	}
-	return res;
+	if (len == -1) { len = 0; }
+
+	i32 w, h;
+	RFont_text_area_len(stackRenderer, font, text, len, 18, 0, 0.0f, &w, &h);
+	return w;
 }
 
 static int text_height(mu_Font font) {
@@ -301,7 +292,6 @@ int main(int argc, char **argv) {
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
 
-	stackRenderer = renderer;
 	RSGL_renderer_updateSize(renderer, width, height);
 	RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, (i32)((float)width * pixelRatio), (i32)((float)height * pixelRatio)));
 
@@ -317,11 +307,17 @@ int main(int argc, char **argv) {
 
 	RGFW_window_setExitKey(window, RGFW_escape);
 
+	RFont_renderer* renderer_rfont = RFont_RSGL_renderer_init(renderer);
+    RFont_font* font = RFont_font_init(renderer_rfont, "COMICSANS.ttf", 60, 500, 500);
+
+	stackRenderer = renderer_rfont;
+
 	/* init microui */
 	mu_Context *ctx = (mu_Context*)malloc(sizeof(mu_Context));
 	mu_init(ctx);
 	ctx->text_width = text_width;
 	ctx->text_height = text_height;
+	ctx->style->font = font;
 
 	/* main loop */
 	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
@@ -376,13 +372,15 @@ int main(int argc, char **argv) {
 		RSGL_renderer_clear(renderer, RSGL_RGB(bg[0], bg[1], bg[2]));
 
 		/* process frame */
-		process_frame(renderer, ctx, atlasTexture, width);
+		process_frame(renderer, renderer_rfont, ctx, atlasTexture, width);
 
 		RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(window);
 	}
 
 	RSGL_renderer_deleteTexture(renderer, atlasTexture);
+    RFont_font_free(renderer_rfont, font);
+	RFont_RSGL_renderer_free(renderer_rfont);
 
 	RSGL_renderer_free(renderer);
 	RGFW_window_close(window);

@@ -81,9 +81,13 @@ EXAMPLE_OUTPUTS = \
 	basics/framebuffer \
 
 
-all: xdg-shell.c $(EXAMPLE_OUTPUTS)
+EXAMPLE_OUTPUTS_CUSTOM = \
+	microui_demo/microui_demo \
 
-examples: $(EXAMPLE_OUTPUTS)
+
+all: xdg-shell.c $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
+
+examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
 
 microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
