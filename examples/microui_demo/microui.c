@@ -442,7 +442,7 @@ int mu_next_command(mu_Context *ctx, mu_Command **cmd) {
   }
   while ((char*) *cmd != ctx->command_list.items + ctx->command_list.idx) {
     if ((*cmd)->type != MU_COMMAND_JUMP) { return 1; }
-    *cmd = (*cmd)->jump.dst;
+    *cmd = (mu_Command*) (*cmd)->jump.dst;
   }
   return 0;
 }
