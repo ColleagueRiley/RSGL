@@ -368,15 +368,23 @@ typedef struct RSGL_renderState {
 	RSGL_mat4 perspectiveMatrix;
 	RSGL_bool forceBatch;
 	RSGL_bool overflow;
+	RSGL_framebuffer framebuffer;
 } RSGL_renderState;
+
+typedef struct RSGL_renderPass {
+	RSGL_programInfo* program;
+	float* matrix;
+	RSGL_renderBuffers* buffers;
+	RSGL_framebuffer framebuffer;
+} RSGL_renderPass;
 
 typedef struct RSGL_rendererProc {
 	size_t (*size)(void); /* get the size of the renderer's internal struct */
 	RSGL_programBlob (*defaultBlob)(void);
 	void (*initPtr)(void* ctx, void* proc); /* init render backend */
 	void (*freePtr)(void* ctx); /* free render backend */
-	void (*render)(void* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* info);
-	void (*clear)(void* ctx, float r, float g, float b, float a);
+	void (*render)(void* ctx, const RSGL_renderPass* pass);
+	void (*clear)(void* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a);
 	void (*viewport)(void* ctx, i32 x, i32 y, i32 w, i32 h);
 	void (*setSurface)(void* ctx, void* surface);
 	RSGL_texture (*createTexture)(void* ctx, const RSGL_textureBlob* blob);
@@ -451,6 +459,7 @@ RSGLDEF void RSGL_renderer_setTexture(RSGL_renderer* renderer, RSGL_texture text
 RSGLDEF void RSGL_renderer_setTextureSource(RSGL_renderer* renderer, RSGL_texture texture, RSGL_rect rect); /* apply texture to drawing (limited to the given rect) */
 RSGLDEF void RSGL_renderer_setColor(RSGL_renderer* renderer, RSGL_color color); /* apply color to drawing */
 RSGLDEF void RSGL_renderer_setProgram(RSGL_renderer* renderer, RSGL_programInfo* program); /* use shader program for drawing */
+RSGLDEF void RSGL_renderer_setFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer framebuffer);
 RSGLDEF void RSGL_renderer_setRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffers* buffers);
 RSGLDEF void RSGL_renderer_setGradient(RSGL_renderer* renderer,
                                 float* gradient, /* array of gradients */
@@ -762,31 +771,32 @@ void RSGL_renderer_updateRenderBuffers(RSGL_renderer* renderer) {
 	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->elements, renderer->data.elements, 0, renderer->data.elements_count * sizeof(u16));
 }
 
+void RSGL_renderer_renderBuffers(RSGL_renderer* renderer) {
+	RSGL_mat4 matrix = RSGL_mat4_multiply(renderer->defaultPerspectiveMatrix.m, renderer->state.perspectiveMatrix.m);
+	matrix = RSGL_mat4_multiply(matrix.m, renderer->state.viewMatrix.m);
+
+
+	RSGL_renderPass pass;
+	pass.program = renderer->state.program;
+	pass.matrix = matrix.m;
+	pass.buffers = renderer->state.buffers;
+	pass.framebuffer = renderer->state.framebuffer;
+
+	if (renderer->proc.render)
+		renderer->proc.render(renderer->ctx, &pass);
+
+	renderer->data.len = 0;
+	renderer->data.elements_count = 0;
+}
+
 void RSGL_renderer_render(RSGL_renderer* renderer) {
 	if (renderer->data.len && renderer->state.buffers->batchCount) {
 		RSGL_renderer_updateRenderBuffers(renderer);
-
-		RSGL_mat4 matrix = RSGL_mat4_multiply(renderer->defaultPerspectiveMatrix.m, renderer->state.perspectiveMatrix.m);
-		matrix = RSGL_mat4_multiply(matrix.m, renderer->state.viewMatrix.m);
-
-		if (renderer->proc.render)
-			renderer->proc.render(renderer->ctx, renderer->state.program, matrix.m, renderer->state.buffers);
 	}
 
-	renderer->data.len = 0;
-	renderer->data.elements_count = 0;
+	RSGL_renderer_renderBuffers(renderer);
+
 	renderer->state.buffers->batchCount = 0;
-}
-
-void RSGL_renderer_renderBuffers(RSGL_renderer* renderer) {
-	if (renderer->proc.render && renderer->state.buffers->batchCount) {
-		RSGL_mat4 matrix = RSGL_mat4_multiply(renderer->defaultPerspectiveMatrix.m, renderer->state.perspectiveMatrix.m);
-		matrix = RSGL_mat4_multiply(matrix.m, renderer->state.viewMatrix.m);
-		renderer->proc.render(renderer->ctx, renderer->state.program, matrix.m, renderer->state.buffers);
-	}
-
-	renderer->data.elements_count = 0;
-	renderer->data.len = 0;
 }
 
 size_t RSGL_renderer_size(RSGL_renderer* renderer) {
@@ -809,6 +819,8 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, void* loader, void* data, RSG
 
 	if (renderer->proc.initPtr)
 		renderer->proc.initPtr(renderer->ctx, loader);
+
+	RSGL_renderer_setFramebuffer(renderer, 0);
 
 	RSGL_programBlob pBlob = RSGL_renderer_defaultBlob(renderer);
 	renderer->defaultProgram = RSGL_renderer_createProgram(renderer, &pBlob);
@@ -862,7 +874,7 @@ void RSGL_renderer_free(RSGL_renderer* renderer) {
 
 void RSGL_renderer_clear(RSGL_renderer* renderer, RSGL_color color) {
 	if (renderer->proc.clear)
-		renderer->proc.clear(renderer->ctx, ((float)color.r) / 255.0f, ((float)color.g) / 255.0f, ((float)color.b) / 255.0f, ((float)color.a) / 255.0f);
+		renderer->proc.clear(renderer->ctx, renderer->state.framebuffer, ((float)color.r) / 255.0f, ((float)color.g) / 255.0f, ((float)color.b) / 255.0f, ((float)color.a) / 255.0f);
 }
 void RSGL_renderer_viewport(RSGL_renderer* renderer, RSGL_rect rect) { renderer->proc.viewport(renderer->ctx, rect.x, rect.y, rect.w, rect.h); }
 RSGL_texture RSGL_renderer_createTexture(RSGL_renderer* renderer, const RSGL_textureBlob* blob) {
@@ -875,14 +887,14 @@ void RSGL_renderer_copyToTexture(RSGL_renderer* renderer, RSGL_texture texture, 
 }
 void RSGL_renderer_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex) { renderer->proc.deleteTexture(renderer->ctx, tex); }
 void RSGL_renderer_scissorStart(RSGL_renderer* renderer, RSGL_rect scissor, i32 height) {
-    RSGL_renderer_render(renderer);
 	renderer->proc.scissorStart(renderer->ctx, scissor.x, scissor.y, scissor.w, scissor.h, height);
 }
 
 RSGL_framebuffer RSGL_renderer_createFramebuffer(RSGL_renderer* renderer, size_t width, size_t height) {
 	RSGL_framebuffer framebuffer = 0;
-	if (renderer->proc.createFramebuffer)
+	if (renderer->proc.createFramebuffer) {
 		framebuffer = renderer->proc.createFramebuffer(renderer->ctx, width, height);
+	}
 	return framebuffer;
 }
 
@@ -897,7 +909,6 @@ void RSGL_renderer_deleteFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer f
 }
 
 void RSGL_renderer_scissorEnd(RSGL_renderer* renderer) {
-    RSGL_renderer_render(renderer);
 	renderer->proc.scissorEnd(renderer->ctx);
 }
 RSGL_programBlob RSGL_renderer_defaultBlob(RSGL_renderer* renderer) {
@@ -989,6 +1000,10 @@ void RSGL_renderer_setProgram(RSGL_renderer* renderer, RSGL_programInfo* program
 		renderer->state.program = program;
 }
 
+void RSGL_renderer_setFramebuffer(RSGL_renderer* renderer, RSGL_framebuffer framebuffer) {
+	renderer->state.framebuffer = framebuffer;
+}
+
 void RSGL_renderer_setGradient(RSGL_renderer* renderer, float gradient[], size_t len) {
     renderer->state.gradient_len = len;
     renderer->state.gradient = gradient;
@@ -1004,7 +1019,8 @@ RSGL_mat4 RSGL_renderer_initDrawMatrix(RSGL_renderer* renderer, RSGL_vec3D cente
         if (renderer->state.center.x != -1 && renderer->state.center.y != -1 &&  renderer->state.center.z != -1)
             center = renderer->state.center;
 
-        matrix = RSGL_mat4_translate(matrix.m, center.x, center.y, center.z);
+		printf("%f %f %f\n", center.x, center.y, center.z);
+		matrix = RSGL_mat4_translate(matrix.m, center.x, center.y, center.z);
         matrix = RSGL_mat4_rotate(matrix.m, renderer->state.rotate.z,  0, 0, 1);
         matrix = RSGL_mat4_rotate(matrix.m, renderer->state.rotate.y, 0, 1, 0);
         matrix = RSGL_mat4_rotate(matrix.m, renderer->state.rotate.x, 1, 0, 0);
@@ -1395,7 +1411,7 @@ i32 RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube) {
     RSGL_vec3D center = {
         cube.x + (cube.w / 2.0f),
         cube.y + (cube.h / 2.0f),
-        cube.z + (cube.l / 2.0f)
+        cube.z
     };
 
     RSGL_mat4 matrix = RSGL_renderer_initDrawMatrix(renderer, center);

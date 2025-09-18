@@ -17,10 +17,10 @@ RSGLDEF size_t RSGL_GL1_size(void);
 RSGLDEF RSGL_renderer* RSGL_GL1_renderer_init(void* loader);
 RSGLDEF void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer);
 
-RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers);
+RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_renderPass* pass);
 RSGLDEF void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx); /* free render backend */
-RSGLDEF void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, float r, float g, float b, float a);
+RSGLDEF void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a);
 RSGLDEF void RSGL_GL1_viewport(RSGL_gl1Renderer* ctx, i32 x, i32 y, i32 w, i32 h);
 RSGLDEF void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const void* data, size_t* buffer);
 RSGLDEF void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
@@ -74,11 +74,11 @@ RSGL_rendererProc RSGL_GL1_rendererProc() {
 	RSGL_rendererProc proc;
 	RSGL_MEMSET(&proc, 0, sizeof(proc));
 
-	proc.render = (void (*)(void*, const RSGL_programInfo*, const float*, const RSGL_renderBuffers*))RSGL_GL1_render;
+	proc.render = (void (*)(void*, const RSGL_renderPass* pass))RSGL_GL1_render;
     proc.size = (size_t (*)(void))RSGL_GL1_size;
     proc.initPtr = (void (*)(void*, void*))RSGL_GL1_initPtr;
     proc.freePtr = (void (*)(void*))RSGL_GL1_freePtr;
-    proc.clear = (void (*)(void*, float, float, float, float))RSGL_GL1_clear;
+    proc.clear = (void (*)(void*, RSGL_framebuffer, float, float, float, float))RSGL_GL1_clear;
     proc.viewport = (void (*)(void*, i32, i32, i32, i32))RSGL_GL1_viewport;
     proc.createTexture = (RSGL_texture (*)(void*, const RSGL_textureBlob*))RSGL_GL1_createTexture;
     proc.copyToTexture = (void (*)(void*, RSGL_texture, size_t, size_t, const RSGL_textureBlob* blob))RSGL_GL1_copyToTexture;
@@ -94,7 +94,7 @@ RSGL_rendererProc RSGL_GL1_rendererProc() {
 void RSGL_GL1_deleteTexture(RSGL_gl1Renderer* ctx, RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
 void RSGL_GL1_viewport(RSGL_gl1Renderer* ctx, i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
 
-void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, float r, float g, float b, float a) {
+void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a) {
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
@@ -124,26 +124,26 @@ void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc) {
 
 void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx) { RSGL_UNUSED(ctx); }
 
-void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers) {
+void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_renderPass* pass) {
 	size_t i, j;
 
-	float* colors = (float*)buffers->color;
-	float* verts = (float*)buffers->vertex;
-	float* texCoords = (float*)buffers->texture;
-	u16* elements = (u16*)buffers->elements;
+	float* colors = (float*)pass->buffers->color;
+	float* verts = (float*)pass->buffers->vertex;
+	float* texCoords = (float*)pass->buffers->texture;
+	u16* elements = (u16*)pass->buffers->elements;
 
 	glPushMatrix();
 	glLoadIdentity();
-	glMultMatrixf(matrix);
+	glMultMatrixf(pass->matrix);
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	for (i = 0; i < buffers->batchCount; i++) {
+	for (i = 0; i < pass->buffers->batchCount; i++) {
 		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, buffers->batches[i].tex);
-		glLineWidth(buffers->batches[i].lineWidth);
+		glBindTexture(GL_TEXTURE_2D, pass->buffers->batches[i].tex);
+		glLineWidth(pass->buffers->batches[i].lineWidth);
 
 		u32 mode = GL_TRIANGLES;
-		switch (buffers->batches[i].type) {
+		switch (pass->buffers->batches[i].type) {
 			case RSGL_TRIANGLES: mode = GL_TRIANGLES; break;
 			case RSGL_POINTS: mode = GL_POINTS; break;
 			case RSGL_LINES:  mode = GL_LINES; break;
@@ -151,10 +151,10 @@ void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_programInfo* program, con
 		}
 
 		glPushMatrix();
-		glMultMatrixf(buffers->batches[i].matrix.m);
+		glMultMatrixf(pass->buffers->batches[i].matrix.m);
 		glBegin(mode);
 
-		for (j = buffers->batches[i].elmStart; j < buffers->batches[i].elmStart + buffers->batches[i].elmCount; j++) {
+		for (j = pass->buffers->batches[i].elmStart; j < pass->buffers->batches[i].elmStart + pass->buffers->batches[i].elmCount; j++) {
 			size_t vIndex = elements[j] * 3;
 			size_t tIndex = elements[j] * 2;
 			size_t cIndex = elements[j] * 4;

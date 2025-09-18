@@ -40,13 +40,13 @@ int main(void) {
 	while (RGFW_window_shouldClose(win) == RGFW_FALSE) {
 		RGFW_pollEvents();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		RSGL_renderer_setFramebuffer(renderer, framebuffer);
         RSGL_renderer_clear(renderer, RSGL_RGB(255, 255, 255));
 		RSGL_renderer_setColor(renderer, RSGL_RGB(0, 255, 0));
 		RSGL_drawRect(renderer, RSGL_RECT(20, 300, 40, 40));
         RSGL_renderer_render(renderer);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		RSGL_renderer_setFramebuffer(renderer, 0);
 		RSGL_renderer_clear(renderer, RSGL_RGB(0, 0, 255));
 		RSGL_renderer_setTexture(renderer, tex);
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 255, 255));

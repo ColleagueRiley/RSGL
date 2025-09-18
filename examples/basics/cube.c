@@ -57,7 +57,7 @@ int main(void) {
 	RSGL_mat4 viewMat = RSGL_view_getMatrix(&view);
 	RSGL_renderer_setViewMatrix(renderer, viewMat);
 
-    //RSGL_point3D rotate = RSGL_POINT3D(0, 0, 0);
+    RSGL_vec3D rotate = RSGL_VEC3D(0, 0, 0);
 
 	while (RGFW_window_shouldClose(win) == 0) {
 		RGFW_pollEvents();
@@ -66,8 +66,8 @@ int main(void) {
 
         RSGL_renderer_clear(renderer, RSGL_RGB(80, 80, 110));
 
-		// RSGL_renderer_setRotate(renderer, rotate);
-		// rotate.z += 0.01;
+		RSGL_renderer_setRotate(renderer, rotate);
+		rotate.y += 0.01;
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
 		RSGL_drawCube(renderer, RSGL_CUBE(0, 300, 1, 200, 200, 1));
 

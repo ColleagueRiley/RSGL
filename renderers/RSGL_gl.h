@@ -19,10 +19,10 @@ RSGLDEF size_t RSGL_GL_size(void);
 
 RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(void* loader);
 RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
-RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* info);
+RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass);
 RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
-RSGLDEF void RSGL_GL_clear(RSGL_glRenderer* ctx, float r, float g, float b, float a);
+RSGLDEF void RSGL_GL_clear(RSGL_glRenderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a);
 RSGLDEF void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h);
 RSGLDEF void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer);
 RSGLDEF void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
@@ -252,11 +252,11 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	RSGL_rendererProc proc;
 	RSGL_MEMSET(&proc, 0, sizeof(proc));
 
-	proc.render = (void (*)(void*, const RSGL_programInfo*, const float*, const RSGL_renderBuffers*))RSGL_GL_render;
+	proc.render = (void (*)(void*, const RSGL_renderPass* pass))RSGL_GL_render;
     proc.size = (size_t (*)(void))RSGL_GL_size;
     proc.initPtr = (void (*)(void*, void*))RSGL_GL_initPtr;
     proc.freePtr = (void (*)(void*))RSGL_GL_freePtr;
-    proc.clear = (void (*)(void*, float, float, float, float))RSGL_GL_clear;
+    proc.clear = (void (*)(void*, RSGL_framebuffer, float, float, float, float))RSGL_GL_clear;
     proc.viewport = (void (*)(void*, i32, i32, i32, i32))RSGL_GL_viewport;
     proc.createTexture = (RSGL_texture (*)(void*, const RSGL_textureBlob* blob))RSGL_GL_createTexture;
     proc.copyToTexture = (void (*)(void*, RSGL_texture, size_t, size_t, const RSGL_textureBlob* blob))RSGL_GL_copyToTexture;
@@ -271,6 +271,11 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL_deleteBuffer;
 	proc.defaultBlob = (RSGL_programBlob (*)(void))RSGL_GL_defaultBlob;
+	proc.createFramebuffer = (RSGL_framebuffer (*)(void*, size_t, size_t))RSGL_GL_createFramebuffer;
+	proc.attachFramebuffer = (void (*)(void*, RSGL_framebuffer, RSGL_texture, u8, u8))RSGL_GL_attachFramebuffer;
+	proc.deleteFramebuffer = (void (*)(void*, RSGL_framebuffer))RSGL_GL_deleteFramebuffer;
+
+
 //	proc.setSurface = (void (*)(void*, void*))RSGL_GL_setSurface;
 #ifdef RSGL_USE_COMPUTE
 	proc.createComputeProgram = (RSGL_programInfo (*)(void*, const char*))RSGL_GL_createComputeProgram;
@@ -287,9 +292,13 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 void RSGL_GL_deleteTexture(RSGL_glRenderer* ctx, RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
 void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
 
-void RSGL_GL_clear(RSGL_glRenderer* ctx, float r, float g, float b, float a) {
+void RSGL_GL_clear(RSGL_glRenderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a) {
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer) {
@@ -372,41 +381,43 @@ void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
     glDeleteVertexArrays(0, &ctx->vao);
 }
 
-void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const float* matrix, const RSGL_renderBuffers* buffers) {
+void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass) {
+	glBindFramebuffer(GL_FRAMEBUFFER, pass->framebuffer);
+
 	glBindVertexArray(ctx->vao);
 
-	glBindBuffer(GL_ARRAY_BUFFER, buffers->vertex);
+	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->vertex);
 	glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, buffers->texture);
+	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->texture);
 	glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, buffers->color);
+	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->color);
 	glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, 0, 0, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers->elements);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pass->buffers->elements);
 
-	glUseProgram(program->program);
-	glUniformMatrix4fv(program->perspectiveView, 1, GL_FALSE, matrix);
+	glUseProgram(pass->program->program);
+	glUniformMatrix4fv(pass->program->perspectiveView, 1, GL_FALSE, pass->matrix);
 
 	u32 i;
-	for (i = 0; i < buffers->batchCount; i++) {
+	for (i = 0; i < pass->buffers->batchCount; i++) {
 		GLenum mode = GL_TRIANGLES;
-		glBindTexture(GL_TEXTURE_2D, buffers->batches[i].tex);
-		glLineWidth(buffers->batches[i].lineWidth);
-        glUniformMatrix4fv(program->model, 1, GL_FALSE, buffers->batches[i].matrix.m);
+		glBindTexture(GL_TEXTURE_2D, pass->buffers->batches[i].tex);
+		glLineWidth(pass->buffers->batches[i].lineWidth);
+        glUniformMatrix4fv(pass->program->model, 1, GL_FALSE, pass->buffers->batches[i].matrix.m);
 
-		switch (buffers->batches[i].type) {
+		switch (pass->buffers->batches[i].type) {
 			case RSGL_TRIANGLES: mode = GL_TRIANGLES; break;
 			case RSGL_POINTS: mode = GL_POINTS; break;
 			case RSGL_LINES:  mode = GL_LINES; break;
 			default: break;
 		}
 
-		glDrawElements(mode, (i32)buffers->batches[i].elmCount, GL_UNSIGNED_SHORT, (void*)(buffers->batches[i].elmStart * sizeof(u16)));
+		glDrawElements(mode, (i32)pass->buffers->batches[i].elmCount, GL_UNSIGNED_SHORT, (void*)(pass->buffers->batches[i].elmStart * sizeof(u16)));
 	}
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -415,11 +426,13 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
 	glBindVertexArray(0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, float x, float y, float w, float h, float renderer_height) {
     glEnable(GL_SCISSOR_TEST);
-    glScissor(x, renderer_height - (y + h), w, h);
+
+	glScissor(x, renderer_height - (y + h), w, h);
 }
 
 void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx) {
@@ -649,13 +662,13 @@ void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* 
 }
 
 RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_glRenderer* ctx, size_t width, size_t height) {
-    RSGL_framebuffer result;
-    glGenFramebuffers(1, (u32*)&result);
-    return result;
+	u32 result = 0;
+	glGenFramebuffers(1, &result);
+    return (RSGL_framebuffer)result;
 }
 
 void RSGL_GL_attachFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel) {
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     if (attachType < 8)
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachType, GL_TEXTURE_2D, tex, mipLevel);
@@ -670,7 +683,8 @@ void RSGL_GL_attachFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo, RSGL_
 }
 
 void RSGL_GL_deleteFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo) {
-    glDeleteFramebuffers(1, (u32*)&fbo);
+	u32 value = fbo;
+    glDeleteFramebuffers(1, &value);
 }
 
 #ifdef RSGL_USE_COMPUTE
