@@ -42,7 +42,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@master
-    
+
     - name: Setup Release Version
       run: |
         echo "RELEASE_NAME=RSGL-${{ github.event.release.tag_name }}_win${{ matrix.bits }}_${{ matrix.compiler }}" >> $GITHUB_ENV
@@ -50,5 +50,6 @@ jobs:
       if: github.event_name == 'release' && github.event.action == 'published'
 
     - name: Setup Environment
-      run: | 
-        make
+      run: |
+        cd examples
+        make CC=g++

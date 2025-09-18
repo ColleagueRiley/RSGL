@@ -1,117 +1,49 @@
-#define RGFW_IMPLEMENTATION
-#include "RGFW.h"
-
-#define RSGL_INT_DEFINED
-#define RSGLDEF
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
+#include "RSGL_gl1.h"
 
-#include <stdio.h>
+#define RGFW_INT_DEFINED
+#define RGFW_OPENGL
+#define RGFW_IMPLEMENTATION
+#include "examples/deps/RGFW.h"
 
-void drawLoop(RGFW_window* w); /* I seperate the draw loop only because it's run twice */
+int main() {
+	RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
+	hints->major = 3;
+	hints->minor = 3;
+	hints->profile = RGFW_glCompatibility;
+	RGFW_setGlobalHints_OpenGL(hints);
 
-#ifndef __EMSCRIPTEN__
-static RGFW_window* win2;
-#endif
+	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
-void* loop2(void *);
+	RSGL_renderer* renderer_opengl11 = RSGL_renderer_init(RSGL_GL1_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
+    RSGL_renderer_viewport(renderer_opengl11, RSGL_RECT(0, 0, 500, 500));
+	RSGL_renderer_updateSize(renderer_opengl11, 500, 500);
 
-unsigned char icon[4 * 3 * 3] = {0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF};
-unsigned char running = 1;
+	RSGL_renderer* renderer_opengl = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
 
-float gradient[3 * 4] = {1, 0, 0, 1,      0, 1, 0, 1,       0, 0, 1, 1};
+    RSGL_renderer_viewport(renderer_opengl, RSGL_RECT(0, 0, 500, 500));
+	RSGL_renderer_updateSize(renderer_opengl, 500, 500);
 
-int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL Example Window", RGFW_RECT(500, 500, 500, 500), RGFW_windowAllowDND | RGFW_windowCenter);
-    RGFW_window_makeCurrent(win);
-    
-    if (win == NULL)
-        return 1;
-    
+	RSGL_renderer* renderer = renderer_opengl;
 
-    #ifndef __EMSCRIPTEN__
-    win2 = RGFW_createWindow("subwindow", RGFW_RECT(200, 200, 200, 200), 0);
-    #endif
+	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
+		RGFW_pollEvents();
 
-    RSGL_setClearArgs(true);
+		if (RGFW_isKeyPressed(RGFW_space))
+			renderer = (renderer == renderer_opengl) ? renderer_opengl11 : renderer_opengl;
 
-    RSGL_init(RSGL_AREA(win->r.w, win->r.h), RGFW_getProcAddress, RSGL_GL_renderer());	
-    
-    while (RGFW_window_shouldClose(win) == false) {
+		RSGL_renderer_clear(renderer, RSGL_RGB(10, 50, 100));
 
-        /* 
-            check all of the avaliable events all at once
-            this is to avoid any input lag
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
+		RSGL_drawRect(renderer, RSGL_RECT(200, 200, 200, 200));
+		RSGL_renderer_render(renderer);
 
-            this isn't required, RSGL_checkEvents can be used without a loop
+		RGFW_window_swapBuffers_OpenGL(window);
+	}
 
-            but not using this method could cause input lag
-        */
-       
-        #ifndef __EMSCRIPTEN__
-        RGFW_window_checkEvent(win2);
-        if (win2->event.type == RGFW_quit)
-            running = 0;
-        #endif
-        
-        while (RGFW_window_checkEvent(win))  {
-            if (win->event.type == RGFW_quit) {
-                running = 0;
-                break;
-            }
-        }
-
-        RGFW_window_makeCurrent(win);
-
-        RSGL_updateSize(RSGL_AREA(win->r.w, win->r.h));
-        
-        RSGL_clear(RSGL_RGB(255, 255, 255));    
-		RSGL_setGradient(gradient, 3);
-        RSGL_drawTriangle(RSGL_TRIANGLE(RSGL_POINT(20, win->r.h - 20), RSGL_POINT(win->r.w - 20,win->r.h - 20), RSGL_POINT((win->r.w - 40) / 2, 20)), RSGL_RGB(255, 255, 0));
-		
-        RSGL_draw();
-		RGFW_window_swapBuffers(win);
-        
-        #ifndef __EMSCRIPTEN__
-        {
-			RGFW_window_makeCurrent(win2);
-			RSGL_updateSize(RSGL_AREA(win2->r.w, win2->r.h));
-			RSGL_clear(RSGL_RGB(255, 255, 255));
-            
-            float points[] = {
-                                        20, win2->r.h - 20, 0.0f, 
-                                        win2->r.w - 20, win2->r.h - 20,  1.0f, 
-                                        (win2->r.w - 20) / 2, 20, 1.0f
-                                      };
-            
-            float texPoints[] = {   
-                        0.0f, 1.0f, 
-                        1.0f, 1.0f,
-                        ((float)(points[6] - points[0])/points[3]< 1) ? (float)(points[6] - points[0]) / points[3] : 0, 0.0f,
-            };
-
-            RSGL_setGradient(gradient, 3);
-
-            RSGL_basicDraw(RSGL_TRIANGLES, (float*)points, (float*)texPoints, RSGL_RGB(255, 255, 0), 3);
-
-
-            if (running == false)
-                break;
-
-            RSGL_draw();
-			RGFW_window_swapBuffers(win2);
-        }
-        #endif
-    }
-
-	RSGL_free();
-
-    #ifndef __EMSCRIPTEN__
-	RGFW_window_close(win2);
-    #endif
-
-    RGFW_window_close(win);
-    
-    return 0;
+	RSGL_renderer_free(renderer_opengl);
+	RSGL_renderer_free(renderer_opengl11);
+	RGFW_window_close(window);
 }
