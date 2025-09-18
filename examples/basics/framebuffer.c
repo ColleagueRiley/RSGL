@@ -24,40 +24,33 @@ int main(void) {
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer, 500, 500);
 
-	u8* data = (u8*)RSGL_MALLOC(500 * 500 * 4);
-	u8 color[4] = {0, 0, 0, 255};
-	for (size_t i = 0; i < 500 * 500 * 4; i += 4) {
-		RSGL_MEMCPY(&data[i], color, sizeof(color));
-	}
 
 	RSGL_textureBlob blob;
-	blob.data = data;
-	blob.width = 500;
-	blob.height = 500;
+	blob.data = NULL;
+	blob.width = 300;
+	blob.height = 300;
 	blob.dataType = RSGL_textureDataInt;
 	blob.dataFormat = RSGL_formatRGBA;
 	blob.textureFormat = blob.dataFormat;
     u32 tex = RSGL_renderer_createTexture(renderer, &blob);
 
-	RSGL_FREE(data);
-
-	RSGL_framebuffer framebuffer = RSGL_renderer_createFramebuffer(renderer, 500, 500);
+	RSGL_framebuffer framebuffer = RSGL_renderer_createFramebuffer(renderer, 300, 300);
 	RSGL_renderer_attachFramebuffer(renderer, framebuffer, tex, 0, 0);
 
 	while (RGFW_window_shouldClose(win) == RGFW_FALSE) {
 		RGFW_pollEvents();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        RSGL_renderer_clear(renderer, RSGL_RGB(20, 60, 40));
-		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
-		RSGL_drawRect(renderer, RSGL_RECT(0, 0, 100, 100));
+        RSGL_renderer_clear(renderer, RSGL_RGB(255, 255, 255));
+		RSGL_renderer_setColor(renderer, RSGL_RGB(0, 255, 0));
+		RSGL_drawRect(renderer, RSGL_RECT(20, 300, 40, 40));
         RSGL_renderer_render(renderer);
-		glFinish();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-//		RSGL_renderer_clear(renderer, RSGL_RGB(255, 255, 255));
+		RSGL_renderer_clear(renderer, RSGL_RGB(0, 0, 255));
 		RSGL_renderer_setTexture(renderer, tex);
-		RSGL_drawRect(renderer, RSGL_RECT(0, 0, 500, 500));
+		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 255, 255));
+		RSGL_drawRect(renderer, RSGL_RECT(200, 200, 250, 250));
 
         RSGL_renderer_render(renderer);
 		RGFW_window_swapBuffers_OpenGL(win);
