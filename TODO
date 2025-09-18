@@ -1,8 +1,12 @@
 This list is not ordered in any special way
 
-- review `RSGL_drawArgs` / the RSGL state machine
+- fix texture format and settings
+	- format, 8 bit 16 bit 32 bit
+	- format, RGB BGR, monochrome
+	- mag/min filter (liner, nearest, etc)
+	- texture wrap
+	- swizzle
+- function to copy sub image to texture
 
-- EBO support for `RSGL_GL.h` (if it's worth it)
-- `RSGL_DX.h` for DirectX 
-- fix `RSGL_rsoft.h`
-- `RSGL_ogl` for libogc (Wii and Gamecube)
+- add software rendering example
+
