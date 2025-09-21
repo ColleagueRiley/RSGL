@@ -219,6 +219,8 @@ RSGLDEF RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], float eyeX, float eyeY, flo
 
 RSGLDEF RSGL_mat4 RSGL_mat4_multiply(float left[16], float right[16]);
 
+RSGLDEF RSGL_vec3D RSGL_mat4_multiplyPoint(RSGL_mat4 matrix, RSGL_vec3D point);
+
 /*
 *******
 RSGL_perspective
@@ -1019,7 +1021,6 @@ RSGL_mat4 RSGL_renderer_initDrawMatrix(RSGL_renderer* renderer, RSGL_vec3D cente
         if (renderer->state.center.x != -1 && renderer->state.center.y != -1 &&  renderer->state.center.z != -1)
             center = renderer->state.center;
 
-		printf("%f %f %f\n", center.x, center.y, center.z);
 		matrix = RSGL_mat4_translate(matrix.m, center.x, center.y, center.z);
         matrix = RSGL_mat4_rotate(matrix.m, renderer->state.rotate.z,  0, 0, 1);
         matrix = RSGL_mat4_rotate(matrix.m, renderer->state.rotate.y, 0, 1, 0);
@@ -1829,6 +1830,10 @@ RSGL_mat4 RSGL_mat4_perspective(float matrix[16], float fovY, float aspect, floa
     };
 
 	return RSGL_mat4_multiply(matrix, perspective);
+}
+
+RSGL_vec3D RSGL_mat4_multiplyPoint(RSGL_mat4 matrix, RSGL_vec3D point) {
+	return (RSGL_vec3D){RSGL_GET_MATRIX_POINT(point.x, point.y, point.z)};
 }
 
 RSGL_mat4 RSGL_mat4_multiply(float left[16], float right[16]) {
