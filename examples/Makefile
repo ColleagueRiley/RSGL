@@ -83,6 +83,7 @@ EXAMPLE_OUTPUTS = \
 
 EXAMPLE_OUTPUTS_CUSTOM = \
 	microui_demo/microui_demo \
+	nuklear_demo/nuklear_demo \
 
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
@@ -92,7 +93,8 @@ examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
 microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
 	$(CC) $(CFLAGS) -g3 $(WARNIGNS) microui_demo/microui.c -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
-
+nuklear_demo/nuklear_demo:  nuklear_demo/nuklear_demo.c nuklear_demo/*.c ../RSGL.h ../renderers/*.h
+	$(CC) $(CFLAGS) -g3 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 
 advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
 	$(CC) $(CFLAGS) -g3 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
