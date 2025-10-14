@@ -1,6 +1,6 @@
 /*
 *
-* Copyright (c) 2021-24 ColleagueRiley ColleagueRiley@gmail.com
+* Copyright (c) 2021-25 ColleagueRiley ColleagueRiley@gmail.com
 *
 * This software is provided 'as-is', without any express or implied
 * warranty.  In no event will the authors be held liable for any damages
@@ -382,7 +382,7 @@ typedef struct RSGL_renderPass {
 
 typedef struct RSGL_rendererProc {
 	size_t (*size)(void); /* get the size of the renderer's internal struct */
-	RSGL_programBlob (*defaultBlob)(void);
+	RSGL_programBlob (*defaultBlob)(void* ctx);
 	void (*initPtr)(void* ctx, void* proc); /* init render backend */
 	void (*freePtr)(void* ctx); /* free render backend */
 	void (*render)(void* ctx, const RSGL_renderPass* pass);
@@ -918,7 +918,7 @@ RSGL_programBlob RSGL_renderer_defaultBlob(RSGL_renderer* renderer) {
 	RSGL_MEMSET(&blob, 0, sizeof(blob));
 
 	if (renderer->proc.defaultBlob) {
-		blob = renderer->proc.defaultBlob();
+		blob = renderer->proc.defaultBlob(renderer);
 	}
 
 	return blob;
