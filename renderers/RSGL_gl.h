@@ -7,6 +7,20 @@
 #undef RSGL_USE_COMPUTE
 #endif
 
+#if defined(__EMSCRIPTEN__)
+	#define RSGL_GLES2
+#endif
+
+#if defined(RSGL_GLES3) || defined(RSGL_GLES2)
+	#ifndef RSGL_NO_GL_LOADER
+		#define RSGL_NO_GL_LOADER
+	#endif
+#endif
+
+#if !defined(RSGL_GLES3) && !defined(RSGL_GLES2) && !defined(RSGL_GL2) && !defined(RSGL_GL3)
+	#define RSGL_GL3
+#endif
+
 #ifndef RSGL_GL_H
 #define RSGL_GL_H
 
@@ -70,6 +84,12 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 #include <OpenGL/gl.h>
 #endif
 
+#if defined(RSGL_GLES3)
+	#include <GLES3/gl3.h>
+#elif defined(RSGL_GLES2)
+	#include <GLES2/gl2.h>
+#endif
+
 #if defined(_WIN32)
 typedef char GLchar;
 typedef int	 GLsizei;
@@ -113,7 +133,6 @@ typedef void (*glEnableVertexAttribArrayPROC) (GLuint index);
 typedef void (*glVertexAttribPointerPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
 typedef void (*glDisableVertexAttribArrayPROC) (GLuint index);
 typedef void (*glDeleteBuffersPROC) (GLsizei n, const GLuint *buffers);
-typedef void (*glDeleteVertexArraysPROC) (GLsizei n, const GLuint *arrays);
 typedef void (*glUseProgramPROC) (GLuint program);
 typedef void (*glDetachShaderPROC) (GLuint program, GLuint shader);
 typedef void (*glDeleteShaderPROC) (GLuint shader);
@@ -123,9 +142,7 @@ typedef void (*glGetShaderivPROC)(GLuint shader, GLenum pname, GLint *params);
 typedef void (*glGetShaderInfoLogPROC)(GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
 typedef void (*glGetProgramivPROC)(GLuint program, GLenum pname, GLint *params);
 typedef void (*glGetProgramInfoLogPROC)(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef void (*glGenVertexArraysPROC)(GLsizei n, GLuint *arrays);
 typedef void (*glGenBuffersPROC)(GLsizei n, GLuint *buffers);
-typedef void (*glBindVertexArrayPROC)(GLuint array);
 typedef GLint (*glGetUniformLocationPROC)(GLuint program, const GLchar *name);
 typedef void (*glUniformMatrix4fvPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef void (*glTexImage2DPROC)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels);
@@ -134,6 +151,16 @@ typedef void (*glUniform1fPROC) (GLint location, GLfloat v0);
 typedef void (*glUniform2fPROC) (GLint location, GLfloat v0, GLfloat v1);
 typedef void (*glUniform3fPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
 typedef void (*glUniform4fPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
+	typedef void (*glGenVertexArraysPROC)(GLsizei n, GLuint *arrays);
+	typedef void (*glBindVertexArrayPROC)(GLuint array);
+	typedef void (*glDeleteVertexArraysPROC) (GLsizei n, const GLuint *arrays);
+
+	glGenVertexArraysPROC glGenVertexArraysSRC = NULL;
+	glBindVertexArrayPROC glBindVertexArraySRC = NULL;
+	glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
+#endif
 
 glShaderSourcePROC glShaderSourceSRC = NULL;
 glCreateShaderPROC glCreateShaderSRC = NULL;
@@ -183,10 +210,6 @@ glBindImageTexturePROC glBindImageTextureSRC = NULL;
 
 #endif
 
-glGenVertexArraysPROC glGenVertexArraysSRC = NULL;
-glBindVertexArrayPROC glBindVertexArraySRC = NULL;
-glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
-
 glBindFramebufferPROC glBindFramebufferSRC = NULL;
 glGenFramebuffersPROC glGenFramebuffersSRC = NULL;
 glDeleteFramebuffersPROC glDeleteFramebuffersSRC = NULL;
@@ -210,7 +233,6 @@ glFramebufferTexture2DPROC glFramebufferTexture2DSRC = NULL;
 #define glVertexAttribPointer glVertexAttribPointerSRC
 #define glDisableVertexAttribArray glDisableVertexAttribArraySRC
 #define glDeleteBuffers glDeleteBuffersSRC
-#define glDeleteVertexArrays glDeleteVertexArraysSRC
 #define glUseProgram glUseProgramSRC
 #define glDetachShader glDetachShaderSRC
 #define glDeleteShader glDeleteShaderSRC
@@ -220,15 +242,19 @@ glFramebufferTexture2DPROC glFramebufferTexture2DSRC = NULL;
 #define glGetShaderInfoLog glGetShaderInfoLogSRC
 #define glGetProgramiv glGetProgramivSRC
 #define glGetProgramInfoLog glGetProgramInfoLogSRC
-#define glGenVertexArrays glGenVertexArraysSRC
 #define glGenBuffers glGenBuffersSRC
-#define glBindVertexArray glBindVertexArraySRC
 #define glGetUniformLocation glGetUniformLocationSRC
 #define glUniformMatrix4fv glUniformMatrix4fvSRC
 #define glBindFramebuffer glBindFramebufferSRC
 #define glGenFramebuffers glGenFramebuffersSRC
 #define glDeleteFramebuffers glDeleteFramebuffersSRC
 #define glFramebufferTexture2D glFramebufferTexture2DSRC
+
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
+	#define glGenVertexArrays glGenVertexArraysSRC
+	#define glBindVertexArray glBindVertexArraySRC
+	#define glDeleteVertexArrays glDeleteVertexArraysSRC
+#endif
 
 #ifdef RSGL_USE_COMPUTE
 #define glMemoryBarrier glMemoryBarrierSRC
@@ -270,7 +296,7 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL_createBuffer;
 	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL_deleteBuffer;
-	proc.defaultBlob = (RSGL_programBlob (*)(void))RSGL_GL_defaultBlob;
+	proc.defaultBlob = (RSGL_programBlob (*)(void*))RSGL_GL_defaultBlob;
 	proc.createFramebuffer = (RSGL_framebuffer (*)(void*, size_t, size_t))RSGL_GL_createFramebuffer;
 	proc.attachFramebuffer = (void (*)(void*, RSGL_framebuffer, RSGL_texture, u8, u8))RSGL_GL_attachFramebuffer;
 	proc.deleteFramebuffer = (void (*)(void*, RSGL_framebuffer))RSGL_GL_deleteFramebuffer;
@@ -322,8 +348,10 @@ void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer) {
 }
 
 RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
-    static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
-        \x23version 330                     \n
+#ifdef RSGL_GL3
+
+	static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
+		\x23version 330                     \n
         in vec3 vertexPosition;            \n
         in vec2 vertexTexCoord;            \n
         in vec4 vertexColor;               \n
@@ -331,7 +359,6 @@ RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
         out vec4 fragColor;                \n
         uniform mat4 model; \n
         uniform mat4 pv; \n
-
         void main() {
             fragTexCoord = vertexTexCoord;
             fragColor = vertexColor;
@@ -340,7 +367,7 @@ RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
     );
 
     static const char* defaultFShaderCode = RSGL_MULTILINE_STR(
-		\x23version 330       \n
+		\x23version 330      \n
 		in vec2 fragTexCoord;
 		in vec4 fragColor;
 		out vec4 finalColor;
@@ -349,6 +376,67 @@ RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
 				finalColor = texture(texture0, fragTexCoord) * fragColor;
 			}
 		);
+
+#elif defined(RSGL_GLES3)
+
+	static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
+		\x23version 300 es                    \n
+        in vec3 vertexPosition;            \n
+        in vec2 vertexTexCoord;            \n
+        in vec4 vertexColor;               \n
+        out vec2 fragTexCoord;             \n
+        out vec4 fragColor;                \n
+        uniform mat4 model; \n
+        uniform mat4 pv; \n
+        void main() {
+            fragTexCoord = vertexTexCoord;
+            fragColor = vertexColor;
+            gl_Position = pv * model * vec4(vertexPosition, 1.0);
+        }
+    );
+
+    static const char* defaultFShaderCode = RSGL_MULTILINE_STR(
+		\x23version 300 es                     \n
+		precision mediump float;           \n
+		in vec2 fragTexCoord;
+		in vec4 fragColor;
+		out vec4 finalColor;
+		uniform sampler2D texture0;
+		void main() {
+				finalColor = texture(texture0, fragTexCoord) * fragColor;
+			}
+		);
+
+#elif defined(RSGL_GLES2) || defined(RSGL_GL2)
+
+	static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
+		\x23version 100                     \n
+        attribute vec3 vertexPosition;            \n
+        attribute vec2 vertexTexCoord;            \n
+        attribute vec4 vertexColor;               \n
+        varying vec2 fragTexCoord;             \n
+        varying vec4 fragColor;                \n
+        uniform mat4 model; \n
+        uniform mat4 pv; \n
+        void main() {
+            fragTexCoord = vertexTexCoord;
+            fragColor = vertexColor;
+            gl_Position = pv * model * vec4(vertexPosition, 1.0);
+        }
+    );
+
+    static const char* defaultFShaderCode = RSGL_MULTILINE_STR(
+		\x23version 100                      \n
+		precision mediump float;           \n
+		varying vec2 fragTexCoord; \n
+		varying	vec4 fragColor; \n
+		vec4 finalColor;
+		uniform sampler2D texture0;
+		void main() {
+				gl_FragColor= texture2D(texture0, fragTexCoord) * fragColor;
+			}
+		);
+#endif
 
 	RSGL_programBlob blob;
 	blob.vertex = defaultVShaderCode;
@@ -371,20 +459,33 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
     RSGL_UNUSED(proc);
     #endif
 
+#ifdef RSGL_DEBUG
+	printf("OpenGL Vendor: %s\n", glGetString(GL_VENDOR));
+	printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
+	printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
+	printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+#endif
+
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
 	glGenVertexArrays(1, &ctx->vao);
+#endif
 
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void RSGL_GL_freePtr(RSGL_glRenderer* ctx) {
-    glDeleteVertexArrays(0, &ctx->vao);
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
+	glDeleteVertexArrays(0, &ctx->vao);
+#endif
 }
 
 void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass) {
 	glBindFramebuffer(GL_FRAMEBUFFER, pass->framebuffer);
 
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
 	glBindVertexArray(ctx->vao);
+#endif
 
 	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->vertex);
 	glEnableVertexAttribArray(0);
@@ -425,7 +526,11 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass) {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
+
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
 	glBindVertexArray(0);
+#endif
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -774,9 +879,6 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glGetProgramiv);
     RSGL_PROC_DEF(proc, glGetProgramInfoLog);
     RSGL_PROC_DEF(proc, glGenBuffers);
-    RSGL_PROC_DEF(proc, glBindVertexArray);
-    RSGL_PROC_DEF(proc, glGenVertexArrays);
-    RSGL_PROC_DEF(proc, glDeleteVertexArrays);
     RSGL_PROC_DEF(proc, glGetUniformLocation);
     RSGL_PROC_DEF(proc, glUniformMatrix4fv);
     RSGL_PROC_DEF(proc, glActiveTexture);
@@ -788,11 +890,16 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glGenFramebuffers);
     RSGL_PROC_DEF(proc, glDeleteFramebuffers);
     RSGL_PROC_DEF(proc, glFramebufferTexture2D);
-   #ifdef RSGL_USE_COMPUTE
-    RSGL_PROC_DEF(proc, glDispatchCompute);
-	 RSGL_PROC_DEF(proc, glMemoryBarrier);
-	 RSGL_PROC_DEF(proc, glBindImageTexture);
-    #endif
+#if defined(RSGL_GLES3) || defined(RSGL_GL3)
+	RSGL_PROC_DEF(proc, glBindVertexArray);
+	RSGL_PROC_DEF(proc, glGenVertexArrays);
+	RSGL_PROC_DEF(proc, glDeleteVertexArrays);
+#endif
+#ifdef RSGL_USE_COMPUTE
+	RSGL_PROC_DEF(proc, glDispatchCompute);
+	RSGL_PROC_DEF(proc, glMemoryBarrier);
+	RSGL_PROC_DEF(proc, glBindImageTexture);
+#endif
 
     if (
         glShaderSourceSRC == NULL ||
