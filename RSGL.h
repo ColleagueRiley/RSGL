@@ -1,6 +1,6 @@
 /*
 *
-* Copyright (c) 2021-24 ColleagueRiley ColleagueRiley@gmail.com
+* Copyright (c) 2021-25 ColleagueRiley ColleagueRiley@gmail.com
 *
 * This software is provided 'as-is', without any express or implied
 * warranty.  In no event will the authors be held liable for any damages
@@ -255,44 +255,6 @@ typedef union RSGL_projection {
 
 RSGLDEF RSGL_mat4 RSGL_projection_getMatrix(const RSGL_projection* projection);
 
-
-
-/*
-*******
-RSGL_view
-*******
-*/
-
-typedef enum RSGL_viewType {
-	RSGL_viewTypeNone = 0,
-	RSGL_viewType2D,
-	RSGL_viewType3D,
-} RSGL_viewType;
-
-typedef struct RSGL_view2D {
-	RSGL_viewType type;
-	RSGL_vec3D offset;
-	RSGL_vec3D target;
-    float rotation;
-    float zoom;
-} RSGL_view2D;
-
-/* RSGL translation */
-typedef struct RSGL_view3D {
-	RSGL_viewType type;
-	RSGL_vec3D pos;
-	RSGL_vec3D target;
-    RSGL_vec3D up;
-} RSGL_view3D;
-
-typedef union RSGL_view {
-	RSGL_viewType type;
-	RSGL_view2D view2D;
-	RSGL_view3D view3D;
-} RSGL_view;
-
-RSGLDEF RSGL_mat4 RSGL_view_getMatrix(const RSGL_view* view);
-
 /*
 *********************
 RSGL renderer
@@ -342,6 +304,14 @@ typedef struct RSGL_renderData {
 	RSGL_mat4 perspective; /* perspective matrix */
 } RSGL_renderData;
 
+typedef enum RSGL_bufferType {
+	RSGL_arrayBuffer = 0,
+	RSGL_elementArrayBuffer,
+	RSGL_shaderStorageBuffer,
+	RSGL_textureBuffer,
+	RSGL_uniformBuffer
+} RSGL_bufferType;
+
 typedef struct RSGL_renderBuffers {
 	size_t vertex, color, texture, elements;
 	size_t maxVerts;
@@ -382,7 +352,7 @@ typedef struct RSGL_renderPass {
 
 typedef struct RSGL_rendererProc {
 	size_t (*size)(void); /* get the size of the renderer's internal struct */
-	RSGL_programBlob (*defaultBlob)(void);
+	RSGL_programBlob (*defaultBlob)(void* ctx);
 	void (*initPtr)(void* ctx, void* proc); /* init render backend */
 	void (*freePtr)(void* ctx); /* free render backend */
 	void (*render)(void* ctx, const RSGL_renderPass* pass);
@@ -401,8 +371,8 @@ typedef struct RSGL_rendererProc {
 	RSGL_programInfo (*createComputeProgram)(void* ctx, const char* CShaderCode);
 	void (*dispatchComputeProgram)(void* ctx, const RSGL_programInfo* program, u32 groups_x, u32 groups_y, u32 groups_z);
 	void (*bindComputeTexture)(void* ctx, u32 texture, u8 format);
-	void (*createBuffer)(void* ctx, size_t size, const void* data, size_t* buffer);
-	void (*updateBuffer)(void* ctx, size_t buffer, void* data, size_t start, size_t len);
+	void (*createBuffer)(void* ctx, RSGL_bufferType type,  size_t size, const void* data, size_t* buffer);
+	void (*updateBuffer)(void* ctx, RSGL_bufferType type, size_t buffer, void* data, size_t start, size_t len);
 	void (*deleteBuffer)(void* ctx, size_t buffer);
 	RSGL_framebuffer (*createFramebuffer)(void* ctx, size_t width, size_t height);
 	void (*attachFramebuffer)(void* ctx, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel);
@@ -443,8 +413,8 @@ RSGLDEF void RSGL_renderer_freePtr(RSGL_renderer* renderer);
 
 RSGLDEF void RSGL_renderer_setSurface(RSGL_renderer* renderer, void* surface);
 
-RSGLDEF void RSGL_renderer_createBuffer(RSGL_renderer* renderer, size_t size, const void* data, size_t* buffer);
-RSGLDEF void RSGL_renderer_updateBuffer(RSGL_renderer* renderer, size_t buffer, void* data, size_t start, size_t len);
+RSGLDEF void RSGL_renderer_createBuffer(RSGL_renderer* renderer, RSGL_bufferType type, size_t size, const void* data, size_t* buffer);
+RSGLDEF void RSGL_renderer_updateBuffer(RSGL_renderer* renderer, RSGL_bufferType type, size_t buffer, void* data, size_t start, size_t len);
 RSGLDEF void RSGL_renderer_deleteBuffer(RSGL_renderer* renderer, size_t buffer);
 
 RSGLDEF void RSGL_renderer_createRenderBuffers(RSGL_renderer* renderer, size_t size, RSGL_renderBuffers* buffers);
@@ -508,28 +478,10 @@ RSGLDEF RSGL_programInfo RSGL_renderer_createComputeProgram(RSGL_renderer* rende
 RSGLDEF void RSGL_renderer_dispatchComputeProgram(RSGL_renderer* renderer, const RSGL_programInfo* program, u32 groups_x, u32 groups_y, u32 groups_z);
 RSGLDEF void RSGL_renderer_bindComputeTexture(RSGL_renderer* renderer, u32 texture, u8 format);
 
-
-/*
- ******
- * Rfont_RSGL RFont integration *
- ******
- * */
-
-#ifdef RSGL_RFONT
-RSGLDEF struct RFont_renderer_proc RFont_RSGL_renderer_proc(void);
-
-RSGLDEF struct RFont_renderer* RFont_RSGL_renderer_init(struct RSGL_renderer* ptr);
-RSGLDEF void RFont_RSGL_renderer_initPtr(struct RSGL_renderer* ptr, struct RFont_renderer* renderer);
-RSGLDEF void RFont_RSGL_renderer_free(struct RFont_renderer* renderer);
-#endif
-
 /*
 *******
-RSGL_draw
+RSGL_draw low level
 *******
-*/
-
-/*
 RSGL_drawRawVerts is a function used internally by RSGL, but you can use it yourself
 RSGL_drawRawVerts batches a given set of points based on th data to be rendered
 */
@@ -550,6 +502,37 @@ typedef struct RSGL_rawVerts {
 } RSGL_rawVerts;
 
 RSGLDEF i32 RSGL_drawRawVerts(RSGL_renderer* renderer, const RSGL_rawVerts* data);
+
+/*
+ ******
+ * Rfont_RSGL RFont integration *
+ ******
+ * */
+
+#ifdef RSGL_RFONT
+RSGLDEF struct RFont_renderer_proc RFont_RSGL_renderer_proc(void);
+
+RSGLDEF struct RFont_renderer* RFont_RSGL_renderer_init(struct RSGL_renderer* ptr);
+RSGLDEF void RFont_RSGL_renderer_initPtr(struct RSGL_renderer* ptr, struct RFont_renderer* renderer);
+RSGLDEF void RFont_RSGL_renderer_free(struct RFont_renderer* renderer);
+#endif
+
+#endif /* ndef RSGL_H */
+
+/*
+*******
+RSGL high level API
+*******
+*/
+
+#if !defined(RSGL_NO_HIGHLEVEL) && !defined(RSGL_HIGHLEVEL_H)
+
+
+/*
+*******
+RSGL_draw primitives
+*******
+*/
 
 /* 2D shape drawing */
 /* in the function names, F means float */
@@ -592,7 +575,44 @@ RSGLDEF i32 RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_vec2D
 RSGLDEF i32 RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_vec2D arc, u32 thickness);
 
 RSGLDEF i32 RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thickness);
-#endif /* ndef RSGL_H */
+
+/*
+*******
+RSGL_view
+*******
+*/
+
+typedef enum RSGL_viewType {
+	RSGL_viewTypeNone = 0,
+	RSGL_viewType2D,
+	RSGL_viewType3D,
+} RSGL_viewType;
+
+typedef struct RSGL_view2D {
+	RSGL_viewType type;
+	RSGL_vec3D offset;
+	RSGL_vec3D target;
+    float rotation;
+    float zoom;
+} RSGL_view2D;
+
+/* RSGL translation */
+typedef struct RSGL_view3D {
+	RSGL_viewType type;
+	RSGL_vec3D pos;
+	RSGL_vec3D target;
+    RSGL_vec3D up;
+} RSGL_view3D;
+
+typedef union RSGL_view {
+	RSGL_viewType type;
+	RSGL_view2D view2D;
+	RSGL_view3D view3D;
+} RSGL_view;
+
+RSGLDEF RSGL_mat4 RSGL_view_getMatrix(const RSGL_view* view);
+
+#endif /* ndef RSGL_HIGHLEVEL_H && ndef RSGL_NO_HIGHLEVEL */
 
 #ifdef RSGL_IMPLEMENTATION
 
@@ -735,9 +755,9 @@ void RSGL_renderer_setSurface(RSGL_renderer* renderer, void* surface) {
 	renderer->proc.setSurface(renderer->ctx, surface);
 }
 
-void RSGL_renderer_createBuffer(RSGL_renderer* renderer, size_t size, const void* data, size_t* buffer) {
+void RSGL_renderer_createBuffer(RSGL_renderer* renderer, RSGL_bufferType type, size_t size, const void* data, size_t* buffer) {
 	if (renderer->proc.createBuffer) {
-		renderer->proc.createBuffer(renderer->ctx, size, data, buffer);
+		renderer->proc.createBuffer(renderer->ctx, type, size, data, buffer);
 	}
 }
 
@@ -750,15 +770,15 @@ void RSGL_renderer_deleteRenderBuffers(RSGL_renderer* renderer, RSGL_renderBuffe
 
 void RSGL_renderer_createRenderBuffers(RSGL_renderer* renderer, size_t size, RSGL_renderBuffers* buffers) {
 	buffers->maxVerts = size;
-	renderer->proc.createBuffer(renderer->ctx, size * 3 * sizeof(float), NULL, &buffers->vertex);
-	renderer->proc.createBuffer(renderer->ctx, size * 4 * sizeof(float), NULL, &buffers->color);
-	renderer->proc.createBuffer(renderer->ctx, size * 2 * sizeof(float), NULL, &buffers->texture);
-	renderer->proc.createBuffer(renderer->ctx, size * 6 * sizeof(u16), NULL, &buffers->elements);
+	renderer->proc.createBuffer(renderer->ctx, RSGL_arrayBuffer, size * 3 * sizeof(float), NULL, &buffers->vertex);
+	renderer->proc.createBuffer(renderer->ctx, RSGL_arrayBuffer, size * 4 * sizeof(float), NULL, &buffers->color);
+	renderer->proc.createBuffer(renderer->ctx, RSGL_arrayBuffer, size * 2 * sizeof(float), NULL, &buffers->texture);
+	renderer->proc.createBuffer(renderer->ctx, RSGL_elementArrayBuffer, size * 6 * sizeof(u16), NULL, &buffers->elements);
 }
 
-void RSGL_renderer_updateBuffer(RSGL_renderer* renderer, size_t buffer, void* data, size_t start, size_t len) {
+void RSGL_renderer_updateBuffer(RSGL_renderer* renderer, RSGL_bufferType type, size_t buffer, void* data, size_t start, size_t len) {
 	if (renderer->proc.updateBuffer)
-		renderer->proc.updateBuffer(renderer->ctx, buffer, data, start, len);
+		renderer->proc.updateBuffer(renderer->ctx, type, buffer, data, start, len);
 }
 
 void RSGL_renderer_deleteBuffer(RSGL_renderer* renderer, size_t buffer) {
@@ -767,10 +787,10 @@ void RSGL_renderer_deleteBuffer(RSGL_renderer* renderer, size_t buffer) {
 }
 
 void RSGL_renderer_updateRenderBuffers(RSGL_renderer* renderer) {
-	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->vertex, renderer->data.verts, 0, renderer->data.len * 3 * sizeof(float));
-	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->color, renderer->data.colors, 0, renderer->data.len * 4 * sizeof(float));
-	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->texture, renderer->data.texCoords, 0, renderer->data.len * 2 * sizeof(float));
-	RSGL_renderer_updateBuffer(renderer, renderer->state.buffers->elements, renderer->data.elements, 0, renderer->data.elements_count * sizeof(u16));
+	RSGL_renderer_updateBuffer(renderer, RSGL_arrayBuffer, renderer->state.buffers->vertex, renderer->data.verts, 0, renderer->data.len * 3 * sizeof(float));
+	RSGL_renderer_updateBuffer(renderer, RSGL_arrayBuffer, renderer->state.buffers->color, renderer->data.colors, 0, renderer->data.len * 4 * sizeof(float));
+	RSGL_renderer_updateBuffer(renderer, RSGL_arrayBuffer, renderer->state.buffers->texture, renderer->data.texCoords, 0, renderer->data.len * 2 * sizeof(float));
+	RSGL_renderer_updateBuffer(renderer, RSGL_elementArrayBuffer, renderer->state.buffers->elements, renderer->data.elements, 0, renderer->data.elements_count * sizeof(u16));
 }
 
 void RSGL_renderer_renderBuffers(RSGL_renderer* renderer) {
@@ -918,7 +938,7 @@ RSGL_programBlob RSGL_renderer_defaultBlob(RSGL_renderer* renderer) {
 	RSGL_MEMSET(&blob, 0, sizeof(blob));
 
 	if (renderer->proc.defaultBlob) {
-		blob = renderer->proc.defaultBlob();
+		blob = renderer->proc.defaultBlob(renderer);
 	}
 
 	return blob;
@@ -1141,6 +1161,8 @@ RFont_renderer_proc RFont_RSGL_renderer_proc(void) {
 }
 
 #endif
+
+#if !defined(RSGL_NO_HIGHLEVEL)
 
 /*
 ****
@@ -1677,6 +1699,8 @@ RSGL_mat4 RSGL_view_getMatrix(const RSGL_view* view) {
 
 	return matrix;
 }
+
+#endif
 
 /*
 ******
