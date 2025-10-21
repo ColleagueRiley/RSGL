@@ -598,7 +598,17 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL_textureFilterToNative(blob->magFilter));
 
-    //glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
+#ifndef RSGL_GLES2
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
+#endif
+
+#if defined(RSGL_GLES2)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#else
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+#endif
 
 	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
 	u32 textureFormat = RSGL_GL_textureFormatToNative(blob->textureFormat);
@@ -620,7 +630,10 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
 
 void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob) {
 	glBindTexture(GL_TEXTURE_2D, texture);
+
+#ifndef RSGL_GLES2
     glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
+#endif
 
 	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);

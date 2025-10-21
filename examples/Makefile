@@ -19,6 +19,8 @@ OS_DIR = \\
 WARNINGS = -Wall -Werror
 detected_OS = windows
 
+NO_GLES = 1
+
 # not using a cross compiler
 ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-mingw32-g++ /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
 	detected_OS := $(shell uname 2>/dev/null || echo Unknown)
@@ -31,6 +33,7 @@ ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-min
 		WARNINGS = -Wall
 	endif
 	ifeq ($(detected_OS),Linux)
+		NO_GLES = 0
     	LIBS := -lXrandr -lX11 -lm -lGL -ldl -lpthread
 		EXT =
 		OS_DIR = /
@@ -53,16 +56,17 @@ ifneq (,$(filter $(CC),cl /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
 	WARNINGS =
 	LIBS = /static
 else ifeq ($(CC),emcc)
+	NO_GLES = 0
 	LINK_GL1 = -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
 	LINK_GL3 = -s FULL_ES3
 	LINK_GL2 = -s FULL_ES2
-	EXPORTED_JS = -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']"
-	LIBS = -s WASM=1 -s ASYNCIFY -s USE_WEBGL2 -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 $(EXPORTED_JS)
+	# --preload-file logo.png@logo.png
+	PRELOAD = --embed-file logo.png
+	EXPORTED_JS = $(PRELOAD) -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']"
+	LIBS = -s WASM=1 -s ASYNCIFY -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 $(EXPORTED_JS)
 	EXT = .js
 	NO_GLES = 0
 	detected_OS = web
-
-	LIBS += -DRSGL_GL_NO_LEGACY
 else ifeq (,$(filter $(CC), g++ clang++ x86_64-w64-mingw32-g++))
 	LIBS += -std=c99
 endif
@@ -79,26 +83,40 @@ EXAMPLE_OUTPUTS = \
 	basics/buffers \
 	basics/gl11 \
 	basics/framebuffer \
-
+	basics/gl2 \
 
 EXAMPLE_OUTPUTS_CUSTOM = \
 	microui_demo/microui_demo \
+	basics/gles2 \
+	basics/gles3 \
 
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
 examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
+basics/gles2: basics/gles2.c ../RSGL.h ../renderers/*.h
+ifneq ($(NO_GLES), 1)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+else
+	echo no OpenGL ES
+endif
+
+basics/gles3: basics/gles3.c ../RSGL.h ../renderers/*.h
+ifneq ($(NO_GLES), 1)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+else
+	echo no OpenGL ES
+endif
 
 microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
-	$(CC) $(CFLAGS) -g3 $(WARNIGNS) microui_demo/microui.c -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
-
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) microui_demo/microui.c -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 
 advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
-	$(CC) $(CFLAGS) -g3 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h ../renderers/*.h
-	$(CC) $(WARNINGS) -g3 -I../renderers/ -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
+	$(CC) $(WARNINGS) -g2 -I../renderers/ -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
