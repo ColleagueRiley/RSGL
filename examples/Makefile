@@ -19,6 +19,8 @@ OS_DIR = \\
 WARNINGS = -Wall -Werror
 detected_OS = windows
 
+NO_GLES = 1
+
 # not using a cross compiler
 ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-mingw32-g++ /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
 	detected_OS := $(shell uname 2>/dev/null || echo Unknown)
@@ -31,6 +33,7 @@ ifeq (,$(filter $(CC),x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc x86_64-w64-min
 		WARNINGS = -Wall
 	endif
 	ifeq ($(detected_OS),Linux)
+		NO_GLES = 0
     	LIBS := -lXrandr -lX11 -lm -lGL -ldl -lpthread
 		EXT =
 		OS_DIR = /
@@ -53,6 +56,7 @@ ifneq (,$(filter $(CC),cl /opt/msvc/bin/x64/cl.exe /opt/msvc/bin/x86/cl.exe))
 	WARNINGS =
 	LIBS = /static
 else ifeq ($(CC),emcc)
+	NO_GLES = 0
 	LINK_GL1 = -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
 	LINK_GL3 = -s FULL_ES3
 	LINK_GL2 = -s FULL_ES2
@@ -80,27 +84,36 @@ EXAMPLE_OUTPUTS = \
 	basics/gl11 \
 	basics/framebuffer \
 	basics/gl2 \
-	basics/gles2 \
-	basics/gles3 \
 
 EXAMPLE_OUTPUTS_CUSTOM = \
 	microui_demo/microui_demo \
+	basics/gles2 \
+	basics/gles3 \
 
 
 all: xdg-shell.c $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
 examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
+basics/gles2: basics/gles2.c ../RSGL.h ../renderers/*.h
+ifneq ($(NO_GLES), 1)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $^ -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+else
+	echo no OpenGL ES
+endif
 
-microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
-	$(CC) $(CFLAGS) -g3 $(WARNIGNS) microui_demo/microui.c -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
-
+basics/gles3: basics/gles3.c ../RSGL.h ../renderers/*.h
+ifneq ($(NO_GLES), 1)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $^ -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+else
+	echo no OpenGL ES
+endif
 
 advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
-	$(CC) $(CFLAGS) -g3 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
 $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h ../renderers/*.h
-	$(CC) $(WARNINGS) -g3 -I../renderers/ -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
+	$(CC) $(WARNINGS) -g2 -I../renderers/ -I../ -I./deps $< $(LIBS) $(LINK_GL3) $(CFLAGS)  -o $@$(EXT)
 
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
