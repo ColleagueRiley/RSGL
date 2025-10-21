@@ -1,7 +1,10 @@
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
+
+#ifndef __EMSCRIPTEN__
 #include "RSGL_gl1.h"
+#endif
 
 #define RGFW_INT_DEFINED
 #define RGFW_OPENGL
@@ -17,8 +20,13 @@ int main() {
 
 	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
+#ifndef __EMSCRIPTEN__
 	RSGL_renderer* renderer_opengl11 = RSGL_renderer_init(RSGL_GL1_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
-    RSGL_renderer_viewport(renderer_opengl11, RSGL_RECT(0, 0, 500, 500));
+#else
+	RSGL_renderer* renderer_opengl11 = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
+#endif
+
+	RSGL_renderer_viewport(renderer_opengl11, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer_opengl11, 500, 500);
 
 	RSGL_renderer* renderer_opengl = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);

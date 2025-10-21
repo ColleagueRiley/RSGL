@@ -2,7 +2,12 @@
 #define RFONT_IMPLEMENTATION
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
+
+#ifndef __EMSCRIPTEN__
 #include "RSGL_gl1.h"
+#else
+#include "RSGL_gl.h"
+#endif
 
 #define RGFW_INT_DEFINED
 #define RGFW_OPENGL
@@ -35,8 +40,12 @@ void rollDie(RSGL_renderer* renderer, i32* index, float* value) {
 int main() {
 	RGFW_window* window = RGFW_createWindow("window", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
+#ifndef __EMSCRIPTEN__
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL1_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
-    RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
+#else
+	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
+#endif
+	RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer, 500, 500);
 
     int w, h, c;
