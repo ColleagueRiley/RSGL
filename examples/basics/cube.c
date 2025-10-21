@@ -51,7 +51,7 @@ int main(void) {
 
 	view.type = RSGL_viewType3D;
 	view.view3D.up = RSGL_VEC3D(0, 10, 0);
-	view.view3D.target = RSGL_VEC3D(0, 0, 10);
+	view.view3D.target = RSGL_VEC3D(3, 0, 10);
 	view.view3D.pos = RSGL_VEC3D(-1, 0, 1);
 
 	RSGL_mat4 viewMat = RSGL_view_getMatrix(&view);
@@ -61,15 +61,35 @@ int main(void) {
 
 	while (RGFW_window_shouldClose(win) == 0) {
 		RGFW_pollEvents();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		if (RGFW_isMouseDown(RGFW_mouseLeft)) {
+			float x, y;
+			RGFW_getMouseVector(&x, &y);
+
+			view.view3D.target.x += x;
+			view.view3D.target.y += y;
+
+			RSGL_mat4 viewMat = RSGL_view_getMatrix(&view);
+			RSGL_renderer_setViewMatrix(renderer, viewMat);
+		}
+
+		float scrollY;
+		RGFW_getMouseScroll(NULL, &scrollY);
+		if (scrollY) {
+			view.view3D.pos.z += scrollY / 10.0f;
+//			view.view3D.up.z += scrollY / 10.0f;
+
+			RSGL_mat4 viewMat = RSGL_view_getMatrix(&view);
+			RSGL_renderer_setViewMatrix(renderer, viewMat);
+		}
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         RSGL_renderer_clear(renderer, RSGL_RGB(80, 80, 110));
 
 		RSGL_renderer_setRotate(renderer, rotate);
-		rotate.y += 0.01;
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
-		RSGL_drawCube(renderer, RSGL_CUBE(0, 300, 1, 200, 200, 1));
+		RSGL_drawCube(renderer, RSGL_CUBE(0, 300, 1.0, 200, 200, 1));
 
         RSGL_renderer_render(renderer);
         RGFW_window_swapBuffers_OpenGL(win);

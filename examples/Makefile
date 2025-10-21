@@ -56,13 +56,13 @@ else ifeq ($(CC),emcc)
 	LINK_GL1 = -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
 	LINK_GL3 = -s FULL_ES3
 	LINK_GL2 = -s FULL_ES2
-	EXPORTED_JS = -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']"
-	LIBS = -s WASM=1 -s ASYNCIFY -s USE_WEBGL2 -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 $(EXPORTED_JS)
+	# --preload-file logo.png@logo.png
+	PRELOAD = --embed-file logo.png
+	EXPORTED_JS = $(PRELOAD) -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']"
+	LIBS = -s WASM=1 -s ASYNCIFY -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 $(EXPORTED_JS)
 	EXT = .js
 	NO_GLES = 0
 	detected_OS = web
-
-	LIBS += -DRSGL_GL_NO_LEGACY
 else ifeq (,$(filter $(CC), g++ clang++ x86_64-w64-mingw32-g++))
 	LIBS += -std=c99
 endif
@@ -79,7 +79,9 @@ EXAMPLE_OUTPUTS = \
 	basics/buffers \
 	basics/gl11 \
 	basics/framebuffer \
-
+	basics/gl2 \
+	basics/gles2 \
+	basics/gles3 \
 
 EXAMPLE_OUTPUTS_CUSTOM = \
 	microui_demo/microui_demo \
