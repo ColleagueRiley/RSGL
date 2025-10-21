@@ -82,7 +82,6 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 
 #ifndef __APPLE__
 #include <GL/gl.h>
-#include <GL/glext.h>
 #else
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -92,6 +91,12 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 	#include <GLES3/gl3.h>
 #elif defined(RSGL_GLES2)
 	#include <GLES2/gl2.h>
+#endif
+
+#if defined(_WIN32)
+typedef char GLchar;
+typedef int	 GLsizei;
+#include <GL/glext.h>
 #endif
 
 #ifndef RSGL_NO_GL_LOADER
@@ -313,9 +318,13 @@ GLuint RSGL_GL_bufferTypeToNative(RSGL_bufferType type) {
 	switch (type) {
 		case RSGL_arrayBuffer: return GL_ARRAY_BUFFER;
 		case RSGL_elementArrayBuffer: return GL_ELEMENT_ARRAY_BUFFER;
-		case RSGL_shaderStorageBuffer: return GL_SHADER_STORAGE_BUFFER;
-		case RSGL_textureBuffer: return GL_TEXTURE_BUFFER;
-		case RSGL_uniformBuffer: return GL_UNIFORM_BUFFER;
+		#if !defined(__APPLE__)
+			case RSGL_shaderStorageBuffer: return GL_SHADER_STORAGE_BUFFER;
+		#endif
+		#if !defined(__APPLE__) || defined(RSGL_GLES3)
+			case RSGL_textureBuffer: return GL_TEXTURE_BUFFER;
+			case RSGL_uniformBuffer: return GL_UNIFORM_BUFFER;
+		#endif
 		default: break;
 	}
 
