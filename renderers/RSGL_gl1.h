@@ -22,8 +22,8 @@ RSGLDEF void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc); /* init render
 RSGLDEF void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx); /* free render backend */
 RSGLDEF void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a);
 RSGLDEF void RSGL_GL1_viewport(RSGL_gl1Renderer* ctx, i32 x, i32 y, i32 w, i32 h);
-RSGLDEF void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const void* data, size_t* buffer);
-RSGLDEF void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
+RSGLDEF void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, RSGL_bufferType type, size_t size, const void* data, size_t* buffer);
+RSGLDEF void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, RSGL_bufferType type, size_t buffer, const void* data, size_t start, size_t end);
 RSGLDEF void RSGL_GL1_deleteBuffer(RSGL_gl1Renderer* ctx, size_t buffer);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
 RSGLDEF RSGL_texture RSGL_GL1_createTexture(RSGL_gl1Renderer* ctx, const RSGL_textureBlob* blob);
@@ -85,8 +85,8 @@ RSGL_rendererProc RSGL_GL1_rendererProc() {
     proc.deleteTexture = (void (*)(void*, RSGL_texture))RSGL_GL1_deleteTexture;
     proc.scissorStart = (void (*)(void*, float, float, float, float, float))RSGL_GL1_scissorStart;
     proc.scissorEnd =  (void (*)(void*))RSGL_GL1_scissorEnd;
-	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL1_createBuffer;
-	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL1_updateBuffer;
+	proc.createBuffer = (void (*)(void*, RSGL_bufferType, size_t, const void*, size_t*))RSGL_GL1_createBuffer;
+	proc.updateBuffer = (void (*)(void*, RSGL_bufferType, size_t, void*, size_t, size_t))RSGL_GL1_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL1_deleteBuffer;
 	return proc;
 }
@@ -99,7 +99,8 @@ void RSGL_GL1_clear(RSGL_gl1Renderer* ctx, RSGL_framebuffer framebuffer, float r
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const void* data, size_t* buffer) {
+void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, RSGL_bufferType type, size_t size, const void* data, size_t* buffer) {
+	RSGL_UNUSED(type);
 	void* rawBuffer = RSGL_MALLOC(size);
 
 	if (data)
@@ -108,7 +109,8 @@ void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, size_t size, const void* data,
 	if (buffer) *buffer = (size_t)rawBuffer;
 }
 
-void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, size_t buffer, const void* data, size_t start, size_t end) {
+void RSGL_GL1_updateBuffer(RSGL_gl1Renderer* ctx, RSGL_bufferType type, size_t buffer, const void* data, size_t start, size_t end) {
+	RSGL_UNUSED(type);
 	RSGL_MEMCPY(&((u8*)buffer)[start], data, end - start);
 }
 
