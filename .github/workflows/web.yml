@@ -23,7 +23,7 @@ jobs:
 
     - name: Compile to WebAssembly
       run: |
-        make CC=emcc
+        cd examples && make CC=emcc
 
     - name: Deploy Pages
       if: github.event_name != 'pull_request'
