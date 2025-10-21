@@ -38,8 +38,8 @@ RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render b
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
 RSGLDEF void RSGL_GL_clear(RSGL_glRenderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a);
 RSGLDEF void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h);
-RSGLDEF void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer);
-RSGLDEF void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, size_t buffer, const void* data, size_t start, size_t end);
+RSGLDEF void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t size, const void* data, size_t* buffer);
+RSGLDEF void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t buffer, const void* data, size_t start, size_t end);
 RSGLDEF void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer);
 RSGLDEF RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx);
 /* create a texture based on a given bitmap, this must be freed later using RSGL_deleteTexture or opengl*/
@@ -293,8 +293,8 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
     proc.deleteProgram = (void (*)(void*, const RSGL_programInfo*))RSGL_GL_deleteProgram;
 	proc.findShaderVariable = (size_t (*)(void*, const RSGL_programInfo*, const char*, size_t))RSGL_GL_findShaderVariable;
 	proc.updateShaderVariable = (void (*)(void*, const RSGL_programInfo*, size_t, const float[], u8))RSGL_GL_updateShaderVariable;
-	proc.createBuffer = (void (*)(void*, size_t, const void*, size_t*))RSGL_GL_createBuffer;
-	proc.updateBuffer = (void (*)(void*, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
+	proc.createBuffer = (void (*)(void*, RSGL_bufferType, size_t, const void*, size_t*))RSGL_GL_createBuffer;
+	proc.updateBuffer = (void (*)(void*, RSGL_bufferType, size_t, void*, size_t, size_t))RSGL_GL_updateBuffer;
 	proc.deleteBuffer = (void (*)(void*, size_t))RSGL_GL_deleteBuffer;
 	proc.defaultBlob = (RSGL_programBlob (*)(void*))RSGL_GL_defaultBlob;
 	proc.createFramebuffer = (RSGL_framebuffer (*)(void*, size_t, size_t))RSGL_GL_createFramebuffer;
@@ -327,20 +327,33 @@ void RSGL_GL_clear(RSGL_glRenderer* ctx, RSGL_framebuffer framebuffer, float r, 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, size_t size, const void* data, size_t* buffer) {
+GLuint RSGL_GL_bufferTypeToNative(RSGL_bufferType type) {
+	switch (type) {
+		case RSGL_arrayBuffer: return GL_ARRAY_BUFFER;
+		case RSGL_elementArrayBuffer: return GL_ELEMENT_ARRAY_BUFFER;
+		case RSGL_shaderStorageBuffer: return GL_SHADER_STORAGE_BUFFER;
+		case RSGL_textureBuffer: return GL_TEXTURE_BUFFER;
+		case RSGL_uniformBuffer: return GL_UNIFORM_BUFFER;
+		default: break;
+	}
+
+	return GL_ARRAY_BUFFER;
+}
+
+void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t size, const void* data, size_t* buffer) {
 	glGenBuffers(1, (u32*)buffer);
 
 	GLenum usage = GL_STATIC_DRAW;
 	if (data == NULL)
 		usage = GL_DYNAMIC_DRAW;
 
-	glBindBuffer(GL_ARRAY_BUFFER, *(u32*)buffer);
-	glBufferData(GL_ARRAY_BUFFER, size, data, usage);
+	glBindBuffer(RSGL_GL_bufferTypeToNative(type), *(u32*)buffer);
+	glBufferData(RSGL_GL_bufferTypeToNative(type), size, data, usage);
 }
 
-void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, size_t buffer, const void* data, size_t start, size_t end) {
-	glBindBuffer(GL_ARRAY_BUFFER, *(u32*)&buffer);
-	glBufferSubData(GL_ARRAY_BUFFER, start, end, data);
+void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t buffer, const void* data, size_t start, size_t end) {
+	glBindBuffer(RSGL_GL_bufferTypeToNative(type), *(u32*)&buffer);
+	glBufferSubData(RSGL_GL_bufferTypeToNative(type), start, end, data);
 }
 
 void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer) {
