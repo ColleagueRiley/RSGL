@@ -78,6 +78,8 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 /* prevent winapi conflicts (opengl includes windows.h for some reason) */
 #define OEMRESOURCE
 
+#define GL_GLEXT_PROTOTYPES
+
 #ifndef __APPLE__
 #include <GL/gl.h>
 #else
