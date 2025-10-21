@@ -82,6 +82,7 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 
 #ifndef __APPLE__
 #include <GL/gl.h>
+#include <GL/glext.h>
 #else
 #include <OpenGL/gl.h>
 #include <OpenGL/glext.h>
@@ -91,28 +92,6 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 	#include <GLES3/gl3.h>
 #elif defined(RSGL_GLES2)
 	#include <GLES2/gl2.h>
-#endif
-
-#if defined(_WIN32)
-typedef char GLchar;
-typedef int	 GLsizei;
-
-#define GL_VERTEX_SHADER   0x8B31
-#define GL_FRAGMENT_SHADER 0x8B30
-#define GL_ARRAY_BUFFER         0x8892
-#define GL_ELEMENT_ARRAY_BUFFER 0x8893
-#define GL_STATIC_DRAW  0x88E4
-#define GL_DYNAMIC_DRAW 0x88E8
-#define GL_TEXTURE0 0x84C0
-#define GL_STATIC_DRAW          0x88E4
-#define GL_DYNAMIC_DRAW         0x88E8
-#define GL_TEXTURE0             0x84C0
-#define GL_FRAMEBUFFER          0x8D40
-#define GL_COLOR_ATTACHMENT0    0x8CE0
-#define GL_DEPTH_ATTACHMENT     0x8D00
-#define GL_STENCIL_ATTACHMENT   0x8D20
-
-#include <GL/glext.h>
 #endif
 
 #ifndef RSGL_NO_GL_LOADER
