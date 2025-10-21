@@ -97,20 +97,20 @@ examples: $(EXAMPLE_OUTPUTS) $(EXAMPLE_OUTPUTS_CUSTOM)
 
 basics/gles2: basics/gles2.c ../RSGL.h ../renderers/*.h
 ifneq ($(NO_GLES), 1)
-	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $^ -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $< -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 else
 	echo no OpenGL ES
 endif
 
 basics/gles3: basics/gles3.c ../RSGL.h ../renderers/*.h
 ifneq ($(NO_GLES), 1)
-	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $^ -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $< -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 else
 	echo no OpenGL ES
 endif
 
 microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
-	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $^ -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $< -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
 
 advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
 	$(CC) $(CFLAGS) -g2 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
