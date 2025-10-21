@@ -109,6 +109,9 @@ else
 	echo no OpenGL ES
 endif
 
+microui_demo/microui_demo:  microui_demo/microui_demo.c microui_demo/*.c ../RSGL.h ../renderers/*.h
+	$(CC) $(CFLAGS) -g2 $(WARNIGNS) $^ -I../renderers/ -I../ -I./deps $< $(LIBS) -o $@$(EXT)
+
 advanced/glfw: advanced/glfw.c ../RSGL.h ../renderers/*.h
 	$(CC) $(CFLAGS) -g2 $(WARNIGNS) -I../renderers/ -I../ -I./deps $< $(LIBS) -lglfw -o $@$(EXT)
 
