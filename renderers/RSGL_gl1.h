@@ -104,7 +104,7 @@ void RSGL_GL1_createBuffer(RSGL_gl1Renderer* ctx, RSGL_bufferType type, size_t s
 	void* rawBuffer = RSGL_MALLOC(size);
 
 	if (data)
-		RSGL_GL1_updateBuffer(ctx, (size_t)rawBuffer, data, 0, size);
+		RSGL_GL1_updateBuffer(ctx, type, (size_t)rawBuffer, data, 0, size);
 
 	if (buffer) *buffer = (size_t)rawBuffer;
 }

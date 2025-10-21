@@ -82,6 +82,7 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 #include <GL/gl.h>
 #else
 #include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
 #endif
 
 #if defined(RSGL_GLES3)
@@ -521,8 +522,11 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass) {
 	for (i = 0; i < pass->buffers->batchCount; i++) {
 		GLenum mode = GL_TRIANGLES;
 		glBindTexture(GL_TEXTURE_2D, pass->buffers->batches[i].tex);
-		glLineWidth(pass->buffers->batches[i].lineWidth);
-        glUniformMatrix4fv(pass->program->model, 1, GL_FALSE, pass->buffers->batches[i].matrix.m);
+
+		if (pass->buffers->batches[i].lineWidth)
+			glLineWidth(pass->buffers->batches[i].lineWidth);
+
+		glUniformMatrix4fv(pass->program->model, 1, GL_FALSE, pass->buffers->batches[i].matrix.m);
 
 		switch (pass->buffers->batches[i].type) {
 			case RSGL_TRIANGLES: mode = GL_TRIANGLES; break;
@@ -604,7 +608,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL_textureFilterToNative(blob->magFilter));
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
+    //glPixelStorei(GL_UNPACK_ROW_LENGTH, blob->width);
 
 	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
 	u32 textureFormat = RSGL_GL_textureFormatToNative(blob->textureFormat);
