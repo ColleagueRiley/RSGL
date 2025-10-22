@@ -13,6 +13,7 @@
     this example is designed for Opengl 3.3 GLSL shaders
 */
 
+#ifndef __EMSCRIPTEN__
 static const char* MY_VShaderCode = RSGL_MULTILINE_STR(
     \x23version 330                     \n
     in vec3 vertexPosition;            \n
@@ -26,7 +27,6 @@ static const char* MY_VShaderCode = RSGL_MULTILINE_STR(
     uniform mat4 pv; \n
 
     uniform vec2 u_mouse;
-    uniform vec2 u_resolution;
 
     void main() {
         fragTexCoord = vertexTexCoord;
@@ -45,7 +45,6 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
     uniform float u_time;
 
     uniform vec2 pos;
-    uniform vec2 u_mouse;
 
     precision mediump float;
     vec2 pitch  = vec2(50., 50.);
@@ -62,6 +61,56 @@ static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
         }
     }
 );
+#else
+static const char* MY_VShaderCode = RSGL_MULTILINE_STR(
+	\x23version 100                      \n
+    attribute  vec3 vertexPosition;            \n
+    attribute vec2 vertexTexCoord;            \n
+    attribute vec4 vertexColor;               \n
+    varying vec2 fragTexCoord;             \n
+    varying vec4 fragColor;                \n
+    varying vec4 position;                \n
+
+    uniform mat4 model; \n
+    uniform mat4 pv; \n
+
+    uniform vec2 u_mouse;
+
+    void main() {
+        fragTexCoord = vertexTexCoord;
+        fragColor = vertexColor;
+        gl_Position = model * pv  * (vec4(vertexPosition, 1.0) + vec4(u_mouse.x, u_mouse.y, 0, 0));
+        position = gl_Position;
+    }
+);
+
+static const char* MY_FShaderCode = RSGL_MULTILINE_STR(
+	\x23version 100                      \n
+	precision mediump float;           \n
+
+    varying vec4 FragColor;
+
+    uniform vec2 u_resolution;
+    uniform float u_time;
+
+    uniform vec2 pos;
+
+    precision mediump float;
+    vec2 pitch  = vec2(50., 50.);
+
+    void main() {
+        vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+        vec3 color = 0.5 + 0.5 * cos(u_time + uv.xyx + vec3(0, 2, 4));
+
+        if (mod(gl_FragCoord.x, pitch[0]) < 1. ||
+            mod(gl_FragCoord.y, pitch[1]) < 1.) {
+            gl_FragColor = vec4(color, 1.0);
+        } else {
+            gl_FragColor = vec4(0, 0, 0, 1);
+        }
+    }
+);
+#endif
 
 int main(void) {
 	RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();

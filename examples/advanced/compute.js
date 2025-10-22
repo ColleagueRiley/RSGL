@@ -4715,7 +4715,7 @@ var _asyncify_start_unwind = createExportWrapper('asyncify_start_unwind');
 var _asyncify_stop_unwind = createExportWrapper('asyncify_stop_unwind');
 var _asyncify_start_rewind = createExportWrapper('asyncify_start_rewind');
 var _asyncify_stop_rewind = createExportWrapper('asyncify_stop_rewind');
-var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 101608;
+var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 237108;
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===

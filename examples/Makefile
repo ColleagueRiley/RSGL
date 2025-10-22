@@ -60,8 +60,7 @@ else ifeq ($(CC),emcc)
 	LINK_GL1 = -s LEGACY_GL_EMULATION -D LEGACY_GL_EMULATION -sGL_UNSAFE_OPTS=0
 	LINK_GL3 = -s FULL_ES3
 	LINK_GL2 = -s FULL_ES2
-	# --preload-file logo.png@logo.png
-	PRELOAD = --embed-file logo.png
+	PRELOAD = --embed-file logo.png --embed-file COMICSANS.ttf
 	EXPORTED_JS = $(PRELOAD) -s EXPORTED_RUNTIME_METHODS="['stringToNewUTF8']"
 	LIBS = -s WASM=1 -s ASYNCIFY -s GL_SUPPORT_EXPLICIT_SWAP_CONTROL=1 $(EXPORTED_JS)
 	EXT = .js
