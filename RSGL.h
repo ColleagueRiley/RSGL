@@ -1087,7 +1087,7 @@ void RFont_RSGL_renderer_free(struct RFont_renderer* renderer) {
 	RFONT_FREE(renderer);
 }
 
-i32 RFont_RSGL_render_text(RSGL_renderer* renderer, const RFont_render_data* src) {
+void RFont_RSGL_render_text(RSGL_renderer* renderer, const RFont_render_data* src) {
     RSGL_texture save = renderer->state.texture;
 	RSGL_renderer_setTexture(renderer, src->atlas);
 
@@ -1099,9 +1099,9 @@ i32 RFont_RSGL_render_text(RSGL_renderer* renderer, const RFont_render_data* src
 	data.elmCount = src->nelements;
 	data.vert_count = src->nverts;
 	i32 batch = RSGL_drawRawVerts(renderer, &data);
-    RSGL_renderer_setTexture(renderer, save);
+	RSGL_UNUSED(batch);
 
-	return batch;
+    RSGL_renderer_setTexture(renderer, save);
 }
 
 RFont_texture RFont_RSGL_createAtlas(RSGL_renderer* renderer, u32 atlasWidth, u32 atlasHeight) {
@@ -1110,8 +1110,8 @@ RFont_texture RFont_RSGL_createAtlas(RSGL_renderer* renderer, u32 atlasWidth, u3
 	blob.width = atlasWidth;
 	blob.height = atlasWidth;
 	blob.dataType = RSGL_textureDataInt;
-	blob.dataFormat = RSGL_formatRGBA;
-	blob.textureFormat = RSGL_formatRGBA;
+	blob.dataFormat = RSGL_formatRGBA; //RSGL_formatRGBA;
+	blob.textureFormat = RSGL_formatRGBA;//RSGL_formatRGBA;
 	RFont_texture id = RSGL_renderer_createTexture(renderer, &blob);
 	return id;
 }
@@ -1128,14 +1128,33 @@ void RFont_RSGL_bitmapToAtlas(RSGL_renderer* renderer, RFont_texture atlas, u32 
 	}
 
 	RSGL_textureBlob blob;
-	blob.data = bitmap;
 	blob.width = w;
 	blob.height = h;
 	blob.dataType = RSGL_textureDataInt;
-	blob.dataFormat = RSGL_formatGrayscaleAlpha;
+	blob.dataFormat = RSGL_formatRGBA;
 	blob.textureFormat = blob.dataFormat;
 
+	u8* newBitmap = (u8*)RSGL_MALLOC(w * h * 4);
+
+	for (size_t indexY = 0; indexY < (size_t)h; indexY++) {
+		for (size_t indexX = 0; indexX < (size_t)w; indexX++) {
+			size_t index = ((indexY * (size_t)w * 4) + indexX * 4);
+			size_t oIndex = ((indexY * (size_t)w) + indexX);
+
+			u8 value = bitmap[oIndex];
+
+			newBitmap[index + 0] = value;
+			newBitmap[index + 1] = value;
+			newBitmap[index + 2] = value;
+			newBitmap[index + 3] = value;
+		}
+	}
+
+	blob.data = newBitmap;
+
 	RSGL_renderer_copyToTexture(renderer, atlas, (size_t)(*x), (size_t)(*y), &blob);
+
+	RSGL_FREE(newBitmap);
 
 	*x += w;
 }
