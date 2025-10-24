@@ -1134,7 +1134,7 @@ void RFont_RSGL_bitmapToAtlas(RSGL_renderer* renderer, RFont_texture atlas, u32 
 	blob.dataFormat = RSGL_formatRGBA;
 	blob.textureFormat = blob.dataFormat;
 
-	u8* newBitmap = RSGL_MALLOC(w * h * 4);
+	u8* newBitmap = (u8*)RSGL_MALLOC(w * h * 4);
 
 	for (size_t indexY = 0; indexY < (size_t)h; indexY++) {
 		for (size_t indexX = 0; indexX < (size_t)w; indexX++) {
