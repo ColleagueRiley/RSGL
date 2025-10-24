@@ -595,7 +595,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
     glGenTextures(1, &id);
     glBindTexture(GL_TEXTURE_2D, id);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, RSGL_GL_textureFilterToNative(blob->minFilter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, RSGL_GL_textureFilterToNative(blob->magFilter));
 
 #ifndef RSGL_GLES2
@@ -614,6 +614,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
 	u32 textureFormat = RSGL_GL_textureFormatToNative(blob->textureFormat);
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
+#ifndef RSGL_GLES2
 	if (blob->dataFormat == RSGL_formatGrayscale) {
 		static GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
@@ -621,6 +622,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
 		static GLint swizzleRgbaParams[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 	}
+#endif
 
 	glTexImage2D(GL_TEXTURE_2D, 0, dataFormat, blob->width, blob->height, 0, textureFormat, dataType, blob->data);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -638,6 +640,7 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
 	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
+#ifndef RSGL_GLES2
 	if (blob->dataFormat == RSGL_formatGrayscale) {
 		static GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
@@ -645,6 +648,7 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
 		static GLint swizzleRgbaParams[4] = { GL_ONE, GL_ONE, GL_ONE, GL_RED };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
 	}
+#endif
 
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, (i32)blob->width, (i32)blob->height, dataFormat, dataType, blob->data);
     glBindTexture(GL_TEXTURE_2D, 0);
