@@ -120,7 +120,7 @@ $(EXAMPLE_OUTPUTS): %: %.c ../RSGL.h ../renderers/*.h
 debug: all
 	@for exe in $(EXAMPLE_OUTPUTS); do \
 		echo "Running $$exe..."; \
-		.$(OS_DIR)$$exe$(EXT); \
+		./$$exe$(EXT); \
 	done
 
 	make advanced/glfw
