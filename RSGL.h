@@ -281,6 +281,10 @@ typedef struct RSGL_programInfo {
     size_t program;
 	size_t perspectiveView;
 	size_t model;
+	size_t vertexPosition;
+	size_t vertexTexCoord;
+	size_t vertexColor;
+
 	RSGL_shaderType type;
 } RSGL_programInfo;
 

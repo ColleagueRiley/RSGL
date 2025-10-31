@@ -131,6 +131,7 @@ typedef void (*glGetProgramivPROC)(GLuint program, GLenum pname, GLint *params);
 typedef void (*glGetProgramInfoLogPROC)(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
 typedef void (*glGenBuffersPROC)(GLsizei n, GLuint *buffers);
 typedef GLint (*glGetUniformLocationPROC)(GLuint program, const GLchar *name);
+typedef GLint (*glGetAttribLocationPROC)(GLuint program, const GLchar *name);
 typedef void (*glUniformMatrix4fvPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 typedef void (*glTexImage2DPROC)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels);
 typedef void (*glActiveTexturePROC) (GLenum texture);
@@ -173,6 +174,7 @@ glGetProgramivPROC glGetProgramivSRC = NULL;
 glGetProgramInfoLogPROC glGetProgramInfoLogSRC = NULL;
 glGenBuffersPROC glGenBuffersSRC = NULL;
 glGetUniformLocationPROC glGetUniformLocationSRC = NULL;
+glGetAttribLocationPROC glGetAttribLocationSRC = NULL;
 glUniformMatrix4fvPROC glUniformMatrix4fvSRC = NULL;
 glActiveTexturePROC glActiveTextureSRC = NULL;
 glUniform1fPROC glUniform1fSRC = NULL;
@@ -231,6 +233,7 @@ glFramebufferTexture2DPROC glFramebufferTexture2DSRC = NULL;
 #define glGetProgramInfoLog glGetProgramInfoLogSRC
 #define glGenBuffers glGenBuffersSRC
 #define glGetUniformLocation glGetUniformLocationSRC
+#define glGetAttribLocation glGetAttribLocationSRC
 #define glUniformMatrix4fv glUniformMatrix4fvSRC
 #define glBindFramebuffer glBindFramebufferSRC
 #define glGenFramebuffers glGenFramebuffersSRC
@@ -451,6 +454,20 @@ RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
 	return blob;
 }
 
+/*
+print matrix array code snippet
+	for (size_t iy = 0; iy < 4; iy++) {
+		for (size_t ix = 0; ix < 4; ix++) {
+			printf("%f, ", matrix[(iy * 4) + ix]);
+		}
+		printf("\n");
+	}
+
+		printf("\n\n");
+*/
+
+
+
 void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
     #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
@@ -492,16 +509,16 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass) {
 #endif
 
 	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->vertex);
-	glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, 0);
+	glEnableVertexAttribArray(pass->program->vertexPosition);
+    glVertexAttribPointer(pass->program->vertexPosition, 3, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->texture);
-	glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, 0, 0, 0);
+	glEnableVertexAttribArray(pass->program->vertexTexCoord);
+    glVertexAttribPointer(pass->program->vertexTexCoord, 2, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, pass->buffers->color);
-	glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, 0, 0, 0);
+	glEnableVertexAttribArray(pass->program->vertexColor);
+    glVertexAttribPointer(pass->program->vertexColor, 4, GL_FLOAT, 0, 0, 0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pass->buffers->elements);
 
@@ -638,6 +655,7 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
 #endif
 
 	u32 dataFormat = RSGL_GL_textureFormatToNative(blob->dataFormat);
+
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
 #ifndef RSGL_GLES2
@@ -754,8 +772,20 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 	glDeleteShader(fShader);
 
 	glUseProgram(program.program);
+
+	program.vertexPosition = glGetAttribLocation(program.program, "vertexPosition");
+	program.vertexTexCoord = glGetAttribLocation(program.program, "vertexTexCoord");
+	program.vertexColor = glGetAttribLocation(program.program, "vertexColor");
+
 	program.perspectiveView = glGetUniformLocation(program.program, "pv");
 	program.model = glGetUniformLocation(program.program, "model");
+
+	#ifdef RSGL_DEBUG
+	if (program.perspectiveView < 0 || program.model < 0) {
+		printf("Failed to locate the shader variables\n");
+	}
+	#endif
+
 	glUseProgram(0);
 
 	program.type = RSGL_shaderTypeStandard;
@@ -765,6 +795,13 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, const RSGL_programInfo* program) {
     glUseProgram(0);
     glDeleteProgram(program->program);
+}
+
+size_t RSGL_GL_findShaderArray(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const char* var, const size_t len) {
+	glUseProgram(program->program);
+    int loc = glGetAttribLocation(program->program, var);
+    glUseProgram(0);
+	return loc;
 }
 
 size_t RSGL_GL_findShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const char* var, const size_t len) {
@@ -904,6 +941,7 @@ int RSGL_loadGLModern(RSGLloadfunc proc) {
     RSGL_PROC_DEF(proc, glGetProgramInfoLog);
     RSGL_PROC_DEF(proc, glGenBuffers);
     RSGL_PROC_DEF(proc, glGetUniformLocation);
+    RSGL_PROC_DEF(proc, glGetAttribLocation);
     RSGL_PROC_DEF(proc, glUniformMatrix4fv);
     RSGL_PROC_DEF(proc, glActiveTexture);
     RSGL_PROC_DEF(proc, glUniform1f);
