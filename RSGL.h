@@ -842,6 +842,7 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, void* loader, void* data, RSG
 	renderer->data.elements = renderer->elements;
 	renderer->data.colors = renderer->colors;
 	renderer->data.len = 0;
+	renderer->data.elements_count = 0;
 
 	if (renderer->proc.initPtr)
 		renderer->proc.initPtr(renderer->ctx, loader);
@@ -889,6 +890,7 @@ void RSGL_renderer_freePtr(RSGL_renderer* renderer) {
 
 	renderer->state.buffers->batchCount = 0;
 	renderer->data.len = 0;
+	renderer->data.elements_count = 0;
 }
 
 void RSGL_renderer_free(RSGL_renderer* renderer) {
