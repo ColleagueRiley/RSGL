@@ -953,6 +953,21 @@ RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, RSGL_progr
 	RSGL_programInfo info;
 	RSGL_MEMSET(&info, 0, sizeof(info));
 
+	if (blob->fragment == NULL || blob->vertex == NULL) {
+		RSGL_programBlob pBlob = RSGL_renderer_defaultBlob(renderer);
+		renderer->defaultProgram = RSGL_renderer_createProgram(renderer, &pBlob);
+
+		if (blob->vertex == NULL) {
+			blob->vertex = pBlob.vertex;
+			blob->vertexLen = pBlob.vertexLen;
+		}
+
+		if (blob->fragment == NULL) {
+			blob->fragment = pBlob.fragment;
+			blob->fragmentLen = pBlob.fragmentLen;
+		}
+	}
+
 	if (renderer->proc.createProgram) {
 		info = renderer->proc.createProgram(renderer->ctx, blob);
 	}
