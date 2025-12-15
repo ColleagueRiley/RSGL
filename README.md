@@ -10,6 +10,12 @@ The RSGL.h header itself does not handle rendering nor input devices itself, bot
 
 UI elements have been moved to [`RSGL_ui`](https://github.com/ColleagueRiley/RSGL_ui/), in it's own repo.
 
+---
+
+<br>
+
+[![Discord Members](https://img.shields.io/discord/829003376532258816.svg?label=Discord&logo=discord)](https://discord.gg/pXVNgVVbvh)
+
 # Build statuses
 ![Linux workflow](https://github.com/ColleagueRiley/RSGL/actions/workflows/linux.yml/badge.svg)
 ![Windows workflow windows](https://github.com/ColleagueRiley/RSGL/actions/workflows/windows.yml/badge.svg)
