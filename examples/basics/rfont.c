@@ -2,14 +2,14 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+#define RFONT_IMPLEMENTATION
+#include "RFont.h"
+
 #define RSGL_RFONT
 #define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
-
-#define RFONT_IMPLEMENTATION
-#include "RFont.h"
 
 int main(void) {
 	RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
