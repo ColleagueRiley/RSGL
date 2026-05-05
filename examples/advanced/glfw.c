@@ -11,10 +11,17 @@ static void errorCallback(int error, const char* description)
     fprintf(stderr, "Error %i: %s\n", error, description);
 }
 
+RSGL_renderer* renderer;
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+//	RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, width, height));
+	RSGL_renderer_updateSize(renderer, width, height);
+}
+
 int main(void)
 {
     glfwSetErrorCallback(errorCallback);
-
+glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
     if (!glfwInit())
         exit(EXIT_FAILURE);
 
@@ -22,31 +29,27 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "RSGL GLFW", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(500, 500, "RSGL GLFW", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
 
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
     glfwMakeContextCurrent(window);
 
     glfwSwapInterval(1);
 
-	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)glfwGetProcAddress);
+	renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)glfwGetProcAddress);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));
 	RSGL_renderer_updateSize(renderer, 500, 500);
-
-    RSGL_font* comicSans = RSGL_loadFont(renderer, "COMICSANS.ttf", 20, 500, 500);
 
     while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 
-        RSGL_renderer_setFont(renderer, comicSans);
-        RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 60));
-
-		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 255,  255));
-        RSGL_drawText(renderer, "Hello, GLFW!", RSGL_CIRCLE(100, 100, 20));
+		RSGL_renderer_clear(renderer, RSGL_RGB(20, 20, 60));
 
 		RSGL_renderer_setColor(renderer, RSGL_RGB(255, 0, 0));
         RSGL_drawRect(renderer, (RSGL_rect){200, 200, 200, 200});
