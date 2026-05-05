@@ -1,6 +1,6 @@
 /*
 *
-* Copyright (c) 2021-25 ColleagueRiley ColleagueRiley@gmail.com
+* Copyright (c) 2021-26 ColleagueRiley ColleagueRiley@gmail.com
 *
 * This software is provided 'as-is', without any express or implied
 * warranty.  In no event will the authors be held liable for any damages
