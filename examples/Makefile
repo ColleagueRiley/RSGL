@@ -76,6 +76,7 @@ EXAMPLE_OUTPUTS = \
 	basics/rfont \
 	advanced/shader \
 	basics/shapes  \
+	basics/resize \
 	basics/cube \
 	advanced/compute \
 	basics/stack \

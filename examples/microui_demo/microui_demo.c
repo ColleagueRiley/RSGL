@@ -270,14 +270,14 @@ char button_map(i32 button) {
 
 char key_map(i32 key) {
 	switch (key) {
-		case RGFW_shiftL: return MU_KEY_SHIFT;
-		case RGFW_shiftR: return MU_KEY_SHIFT;
-		case RGFW_controlL: return MU_KEY_CTRL;
-		case RGFW_controlR: return MU_KEY_CTRL;
-		case RGFW_altL: return MU_KEY_ALT;
-		case RGFW_altR: return MU_KEY_ALT;
-		case RGFW_return: return MU_KEY_RETURN;
-		case RGFW_backSpace: return MU_KEY_BACKSPACE;
+		case RGFW_keyShiftL: return MU_KEY_SHIFT;
+		case RGFW_keyShiftR: return MU_KEY_SHIFT;
+		case RGFW_keyControlL: return MU_KEY_CTRL;
+		case RGFW_keyControlR: return MU_KEY_CTRL;
+		case RGFW_keyAltL: return MU_KEY_ALT;
+		case RGFW_keyAltR: return MU_KEY_ALT;
+		case RGFW_keyReturn: return MU_KEY_RETURN;
+		case RGFW_keyBackSpace: return MU_KEY_BACKSPACE;
 		default: break;
 	}
 
@@ -307,10 +307,10 @@ int main(int argc, char **argv) {
 	/* init RGFW window */
 	RGFW_window* window = RGFW_createWindow("", 0, 0, 800, 600, RGFW_windowCenter |  RGFW_windowOpenGL);
 
-	RGFW_monitor mon = RGFW_window_getMonitor(window);
+	RGFW_monitor* mon = RGFW_window_getMonitor(window);
 	i32 width = window->w;
 	i32 height = window->h;
-	float pixelRatio = mon.pixelRatio;
+	float pixelRatio = mon->pixelRatio;
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
 
@@ -329,7 +329,7 @@ int main(int argc, char **argv) {
 	blob.textureFormat = blob.dataFormat;
 	RSGL_texture atlasTexture = RSGL_renderer_createTexture(renderer, &blob);
 
-	RGFW_window_setExitKey(window, RGFW_escape);
+	RGFW_window_setExitKey(window, RGFW_keyEscape);
 
 	RFont_renderer* renderer_rfont = RFont_RSGL_renderer_init(renderer);
     RFont_font* font = RFont_font_init(renderer_rfont, "COMICSANS.ttf", 60, 500, 500);
@@ -348,14 +348,14 @@ int main(int argc, char **argv) {
 		/* handle RGFW events */
 		RGFW_event event;
 		while (RGFW_window_checkEvent(window, &event)) {
-			if (event.type == RGFW_quit) break;
+			if (event.type == RGFW_windowClose) break;
 
 			switch (event.type) {
-				case RGFW_quit: break;
+				case RGFW_windowClose: break;
 				case RGFW_mousePosChanged: mu_input_mousemove(ctx, event.mouse.x,  event.mouse.y); break;
 
 				case RGFW_mouseScroll:
-					mu_input_scroll(ctx, event.scroll.x, event.scroll.y);
+					mu_input_scroll(ctx, event.delta.x, event.delta.y);
 					break;
 				case RGFW_mouseButtonPressed: {
 					i32 x, y;
@@ -373,9 +373,9 @@ int main(int argc, char **argv) {
 					break;
 				}
 
-				case RGFW_keyPressed: {
-					char str[2] = {(char)event.key.sym, '\0'};
-					mu_input_text(ctx, str);
+				case RGFW_keyChar: {
+					u32 str[2] = {event.keyChar.value, '\0'};
+					mu_input_text(ctx, (char*)str);
 				}
 				case RGFW_keyReleased: {
 					int c = key_map(event.key.value);
