@@ -2,6 +2,7 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+#define RFONT_INT_DEFINED
 #define RFONT_IMPLEMENTATION
 #include "RFont.h"
 
