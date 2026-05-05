@@ -39,7 +39,7 @@ int main() {
 	while (RGFW_window_shouldClose(window) == RGFW_FALSE) {
 		RGFW_pollEvents();
 
-		if (RGFW_isKeyPressed(RGFW_space))
+		if (RGFW_isKeyPressed(RGFW_keySpace))
 			renderer = (renderer == renderer_opengl) ? renderer_opengl11 : renderer_opengl;
 
 		RSGL_renderer_clear(renderer, RSGL_RGB(10, 50, 100));

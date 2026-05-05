@@ -90,7 +90,7 @@ int main() {
 		rect.w = (0.1f * ((float)framebufferWidth + (float)framebufferHeight));
 		rect.h = rect.w;
 
-		if (RGFW_isKeyPressed(RGFW_space)) {
+		if (RGFW_isKeyPressed(RGFW_keySpace)) {
 			rect.x = (framebufferWidth / 2) - rect.h;
 			rect.y = (framebufferHeight / 2) - rect.h;
 		}

@@ -4693,7 +4693,6 @@ var _free = createExportWrapper('free');
 var _RGFW_handleKeyEvent = Module['_RGFW_handleKeyEvent'] = createExportWrapper('RGFW_handleKeyEvent');
 var _RGFW_handleKeyMods = Module['_RGFW_handleKeyMods'] = createExportWrapper('RGFW_handleKeyMods');
 var _Emscripten_onDrop = Module['_Emscripten_onDrop'] = createExportWrapper('Emscripten_onDrop');
-var _RGFW_makeSetValue = Module['_RGFW_makeSetValue'] = createExportWrapper('RGFW_makeSetValue');
 var _RGFW_mkdir = Module['_RGFW_mkdir'] = createExportWrapper('RGFW_mkdir');
 var _RGFW_writeFile = Module['_RGFW_writeFile'] = createExportWrapper('RGFW_writeFile');
 var _main = Module['_main'] = createExportWrapper('main');
@@ -4715,7 +4714,7 @@ var _asyncify_start_unwind = createExportWrapper('asyncify_start_unwind');
 var _asyncify_stop_unwind = createExportWrapper('asyncify_stop_unwind');
 var _asyncify_start_rewind = createExportWrapper('asyncify_start_rewind');
 var _asyncify_stop_rewind = createExportWrapper('asyncify_stop_rewind');
-var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 237108;
+var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 237244;
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===

@@ -37,6 +37,11 @@ int main(void) {
         if ((rand() % 200) <= 5)
             fill = !fill;
 
+		i32 w, h;
+		RGFW_window_getSize(win, &w, &h);
+		RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, w, h));
+		RSGL_renderer_updateSize(renderer, (u32)w, (u32)h);
+
 		RSGL_renderer_setRotate(renderer, rotate);
 		RSGL_renderer_setColor(renderer, RSGL_RGB(0, 255, 0));
 		RSGL_drawPolygon(renderer, RSGL_RECT(20, 20, 50, 50), 8);

@@ -991,22 +991,25 @@ function dbg(text) {
 // === Body ===
 
 var ASM_CONSTS = {
-  247496: () => { Module.canvas.focus(); },  
- 247521: ($0, $1, $2, $3, $4) => { var data = Module.HEAPU8.slice($0, $0 + $1 * $2 * 4); let context = document.getElementById("canvas").getContext("2d"); let image = context.getImageData(0, 0, $1, $2); image.data.set(data); context.putImageData(image, 0, $4 - $2); },  
- 247756: () => { window.addEventListener("keydown", (event) => { var key = stringToNewUTF8(event.key); var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(key, code, 1); _free(key); _free(code); }, true); window.addEventListener("keyup", (event) => { var key = stringToNewUTF8(event.key); var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(key, code, 0); _free(key); _free(code); }, true); },  
- 248702: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var filenamesArray = []; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; Module._RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); filenamesArray.push(filename); Module._RGFW_makeSetValue(i, filename); } Module._Emscripten_onDrop(count); for (var i = 0; i < count; ++i) { _free(filenamesArray[i]); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
- 249728: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
- 249799: () => { document.getElementById('canvas').style.cursor = 'none'; },  
- 249856: () => { return window.mouseX || 0; },  
- 249887: () => { return window.mouseY || 0; },  
- 249918: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
- 250065: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
- 250118: ($0, $1) => { var ext = UTF8ToString($0, $1); var canvas = document.querySelector('canvas'); var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl'); if (!gl) return 0; var supported = gl.getSupportedExtensions(); return supported && supported.includes(ext) ? 1 : 0; },  
- 250398: () => { return window.innerWidth; },  
- 250428: () => { return window.innerHeight; },  
- 250459: () => { Module.requestFullscreen(false, true); },  
- 250498: () => { Module.exitFullscreen(false, true); },  
- 250534: ($0, $1) => { var element = document.getElementById("canvas"); if (element) element.style.opacity = $1; }
+  247624: () => { Module.canvas.focus(); },  
+ 247649: ($0, $1, $2, $3, $4) => { var data = Module.HEAPU8.slice($0, $0 + $1 * $2 * 4); let context = document.getElementById("canvas").getContext("2d"); let image = context.getImageData(0, 0, $1, $2); image.data.set(data); context.putImageData(image, 0, $4 - $2); },  
+ 247884: () => { return window.devicePixelRatio || 1; },  
+ 247923: () => { return window.innerWidth || 0; },  
+ 247956: () => { return window.innerHeight || 0; },  
+ 247990: () => { window.addEventListener("keydown", (event) => { var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); var codepoint = event.key.charCodeAt(0); if(codepoint < 0x7f && event.key.length > 1) { codepoint = 0; } Module._RGFW_handleKeyEvent(code, codepoint, 1); _free(code); }, true); window.addEventListener("keyup", (event) => { var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(code, 0, 0); _free(code); }, true); },  
+ 248945: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; Module._RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); Module._Emscripten_onDrop(filename, path.length + 1); free(filename); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
+ 249849: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
+ 249920: () => { document.getElementById('canvas').style.cursor = 'none'; },  
+ 249977: () => { return window.mouseX || 0; },  
+ 250008: () => { return window.mouseY || 0; },  
+ 250039: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
+ 250186: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
+ 250239: ($0, $1) => { var ext = UTF8ToString($0, $1); var canvas = document.querySelector('canvas'); var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl'); if (!gl) return 0; var supported = gl.getSupportedExtensions(); return supported && supported.includes(ext) ? 1 : 0; },  
+ 250519: () => { return window.innerWidth; },  
+ 250549: () => { return window.innerHeight; },  
+ 250580: () => { Module.requestFullscreen(false, true); },  
+ 250619: () => { Module.exitFullscreen(false, true); },  
+ 250655: ($0, $1) => { var element = document.getElementById("canvas"); if (element) element.style.opacity = $1; }
 };
 
 
@@ -4178,8 +4181,173 @@ var ASM_CONSTS = {
       assert(ASM_CONSTS.hasOwnProperty(code), `No EM_ASM constant found at address ${code}.  The loaded WebAssembly file is likely out of sync with the generated JavaScript.`);
       return ASM_CONSTS[code].apply(null, args);
     };
+  var _emscripten_asm_const_double = (code, sigPtr, argbuf) => {
+      return runEmAsmFunction(code, sigPtr, argbuf);
+    };
+
   var _emscripten_asm_const_int = (code, sigPtr, argbuf) => {
       return runEmAsmFunction(code, sigPtr, argbuf);
+    };
+
+  
+  var withStackSave = (f) => {
+      var stack = stackSave();
+      var ret = f();
+      stackRestore(stack);
+      return ret;
+    };
+  var JSEvents = {
+  removeAllEventListeners() {
+        while (JSEvents.eventHandlers.length) {
+          JSEvents._removeHandler(JSEvents.eventHandlers.length - 1);
+        }
+        JSEvents.deferredCalls = [];
+      },
+  inEventHandler:0,
+  deferredCalls:[],
+  deferCall(targetFunction, precedence, argsList) {
+        function arraysHaveEqualContent(arrA, arrB) {
+          if (arrA.length != arrB.length) return false;
+  
+          for (var i in arrA) {
+            if (arrA[i] != arrB[i]) return false;
+          }
+          return true;
+        }
+        // Test if the given call was already queued, and if so, don't add it again.
+        for (var i in JSEvents.deferredCalls) {
+          var call = JSEvents.deferredCalls[i];
+          if (call.targetFunction == targetFunction && arraysHaveEqualContent(call.argsList, argsList)) {
+            return;
+          }
+        }
+        JSEvents.deferredCalls.push({
+          targetFunction,
+          precedence,
+          argsList
+        });
+  
+        JSEvents.deferredCalls.sort((x,y) => x.precedence < y.precedence);
+      },
+  removeDeferredCalls(targetFunction) {
+        for (var i = 0; i < JSEvents.deferredCalls.length; ++i) {
+          if (JSEvents.deferredCalls[i].targetFunction == targetFunction) {
+            JSEvents.deferredCalls.splice(i, 1);
+            --i;
+          }
+        }
+      },
+  canPerformEventHandlerRequests() {
+        if (navigator.userActivation) {
+          // Verify against transient activation status from UserActivation API
+          // whether it is possible to perform a request here without needing to defer. See
+          // https://developer.mozilla.org/en-US/docs/Web/Security/User_activation#transient_activation
+          // and https://caniuse.com/mdn-api_useractivation
+          // At the time of writing, Firefox does not support this API: https://bugzilla.mozilla.org/show_bug.cgi?id=1791079
+          return navigator.userActivation.isActive;
+        }
+  
+        return JSEvents.inEventHandler && JSEvents.currentEventHandler.allowsDeferredCalls;
+      },
+  runDeferredCalls() {
+        if (!JSEvents.canPerformEventHandlerRequests()) {
+          return;
+        }
+        for (var i = 0; i < JSEvents.deferredCalls.length; ++i) {
+          var call = JSEvents.deferredCalls[i];
+          JSEvents.deferredCalls.splice(i, 1);
+          --i;
+          call.targetFunction.apply(null, call.argsList);
+        }
+      },
+  eventHandlers:[],
+  removeAllHandlersOnTarget:(target, eventTypeString) => {
+        for (var i = 0; i < JSEvents.eventHandlers.length; ++i) {
+          if (JSEvents.eventHandlers[i].target == target &&
+            (!eventTypeString || eventTypeString == JSEvents.eventHandlers[i].eventTypeString)) {
+             JSEvents._removeHandler(i--);
+           }
+        }
+      },
+  _removeHandler(i) {
+        var h = JSEvents.eventHandlers[i];
+        h.target.removeEventListener(h.eventTypeString, h.eventListenerFunc, h.useCapture);
+        JSEvents.eventHandlers.splice(i, 1);
+      },
+  registerOrRemoveHandler(eventHandler) {
+        if (!eventHandler.target) {
+          err('registerOrRemoveHandler: the target element for event handler registration does not exist, when processing the following event handler registration:');
+          console.dir(eventHandler);
+          return -4;
+        }
+        if (eventHandler.callbackfunc) {
+          eventHandler.eventListenerFunc = function(event) {
+            // Increment nesting count for the event handler.
+            ++JSEvents.inEventHandler;
+            JSEvents.currentEventHandler = eventHandler;
+            // Process any old deferred calls the user has placed.
+            JSEvents.runDeferredCalls();
+            // Process the actual event, calls back to user C code handler.
+            eventHandler.handlerFunc(event);
+            // Process any new deferred calls that were placed right now from this event handler.
+            JSEvents.runDeferredCalls();
+            // Out of event handler - restore nesting count.
+            --JSEvents.inEventHandler;
+          };
+  
+          eventHandler.target.addEventListener(eventHandler.eventTypeString,
+                                               eventHandler.eventListenerFunc,
+                                               eventHandler.useCapture);
+          JSEvents.eventHandlers.push(eventHandler);
+        } else {
+          for (var i = 0; i < JSEvents.eventHandlers.length; ++i) {
+            if (JSEvents.eventHandlers[i].target == eventHandler.target
+             && JSEvents.eventHandlers[i].eventTypeString == eventHandler.eventTypeString) {
+               JSEvents._removeHandler(i--);
+             }
+          }
+        }
+        return 0;
+      },
+  getNodeNameForTarget(target) {
+        if (!target) return '';
+        if (target == window) return '#window';
+        if (target == screen) return '#screen';
+        return target?.nodeName || '';
+      },
+  fullscreenEnabled() {
+        return document.fullscreenEnabled
+        // Safari 13.0.3 on macOS Catalina 10.15.1 still ships with prefixed webkitFullscreenEnabled.
+        // TODO: If Safari at some point ships with unprefixed version, update the version check above.
+        || document.webkitFullscreenEnabled
+         ;
+      },
+  };
+  
+  var requestPointerLock = (target) => {
+      if (target.requestPointerLock) {
+        target.requestPointerLock();
+      } else {
+        // document.body is known to accept pointer lock, so use that to differentiate if the user passed a bad element,
+        // or if the whole browser just doesn't support the feature.
+        if (document.body.requestPointerLock
+          ) {
+          return -3;
+        }
+        return -1;
+      }
+      return 0;
+    };
+  var _emscripten_exit_pointerlock = () => {
+      // Make sure no queued up calls will fire after this.
+      JSEvents.removeDeferredCalls(requestPointerLock);
+  
+      if (document.exitPointerLock) {
+        document.exitPointerLock();
+      } else {
+        return -1;
+      }
+      return 0;
     };
 
   var webgl_enable_ANGLE_instanced_arrays = (ctx) => {
@@ -7840,140 +8008,6 @@ var ASM_CONSTS = {
   var _emscripten_memcpy_js = (dest, src, num) => HEAPU8.copyWithin(dest, src, src + num);
 
   
-  var withStackSave = (f) => {
-      var stack = stackSave();
-      var ret = f();
-      stackRestore(stack);
-      return ret;
-    };
-  var JSEvents = {
-  removeAllEventListeners() {
-        while (JSEvents.eventHandlers.length) {
-          JSEvents._removeHandler(JSEvents.eventHandlers.length - 1);
-        }
-        JSEvents.deferredCalls = [];
-      },
-  inEventHandler:0,
-  deferredCalls:[],
-  deferCall(targetFunction, precedence, argsList) {
-        function arraysHaveEqualContent(arrA, arrB) {
-          if (arrA.length != arrB.length) return false;
-  
-          for (var i in arrA) {
-            if (arrA[i] != arrB[i]) return false;
-          }
-          return true;
-        }
-        // Test if the given call was already queued, and if so, don't add it again.
-        for (var i in JSEvents.deferredCalls) {
-          var call = JSEvents.deferredCalls[i];
-          if (call.targetFunction == targetFunction && arraysHaveEqualContent(call.argsList, argsList)) {
-            return;
-          }
-        }
-        JSEvents.deferredCalls.push({
-          targetFunction,
-          precedence,
-          argsList
-        });
-  
-        JSEvents.deferredCalls.sort((x,y) => x.precedence < y.precedence);
-      },
-  removeDeferredCalls(targetFunction) {
-        for (var i = 0; i < JSEvents.deferredCalls.length; ++i) {
-          if (JSEvents.deferredCalls[i].targetFunction == targetFunction) {
-            JSEvents.deferredCalls.splice(i, 1);
-            --i;
-          }
-        }
-      },
-  canPerformEventHandlerRequests() {
-        if (navigator.userActivation) {
-          // Verify against transient activation status from UserActivation API
-          // whether it is possible to perform a request here without needing to defer. See
-          // https://developer.mozilla.org/en-US/docs/Web/Security/User_activation#transient_activation
-          // and https://caniuse.com/mdn-api_useractivation
-          // At the time of writing, Firefox does not support this API: https://bugzilla.mozilla.org/show_bug.cgi?id=1791079
-          return navigator.userActivation.isActive;
-        }
-  
-        return JSEvents.inEventHandler && JSEvents.currentEventHandler.allowsDeferredCalls;
-      },
-  runDeferredCalls() {
-        if (!JSEvents.canPerformEventHandlerRequests()) {
-          return;
-        }
-        for (var i = 0; i < JSEvents.deferredCalls.length; ++i) {
-          var call = JSEvents.deferredCalls[i];
-          JSEvents.deferredCalls.splice(i, 1);
-          --i;
-          call.targetFunction.apply(null, call.argsList);
-        }
-      },
-  eventHandlers:[],
-  removeAllHandlersOnTarget:(target, eventTypeString) => {
-        for (var i = 0; i < JSEvents.eventHandlers.length; ++i) {
-          if (JSEvents.eventHandlers[i].target == target &&
-            (!eventTypeString || eventTypeString == JSEvents.eventHandlers[i].eventTypeString)) {
-             JSEvents._removeHandler(i--);
-           }
-        }
-      },
-  _removeHandler(i) {
-        var h = JSEvents.eventHandlers[i];
-        h.target.removeEventListener(h.eventTypeString, h.eventListenerFunc, h.useCapture);
-        JSEvents.eventHandlers.splice(i, 1);
-      },
-  registerOrRemoveHandler(eventHandler) {
-        if (!eventHandler.target) {
-          err('registerOrRemoveHandler: the target element for event handler registration does not exist, when processing the following event handler registration:');
-          console.dir(eventHandler);
-          return -4;
-        }
-        if (eventHandler.callbackfunc) {
-          eventHandler.eventListenerFunc = function(event) {
-            // Increment nesting count for the event handler.
-            ++JSEvents.inEventHandler;
-            JSEvents.currentEventHandler = eventHandler;
-            // Process any old deferred calls the user has placed.
-            JSEvents.runDeferredCalls();
-            // Process the actual event, calls back to user C code handler.
-            eventHandler.handlerFunc(event);
-            // Process any new deferred calls that were placed right now from this event handler.
-            JSEvents.runDeferredCalls();
-            // Out of event handler - restore nesting count.
-            --JSEvents.inEventHandler;
-          };
-  
-          eventHandler.target.addEventListener(eventHandler.eventTypeString,
-                                               eventHandler.eventListenerFunc,
-                                               eventHandler.useCapture);
-          JSEvents.eventHandlers.push(eventHandler);
-        } else {
-          for (var i = 0; i < JSEvents.eventHandlers.length; ++i) {
-            if (JSEvents.eventHandlers[i].target == eventHandler.target
-             && JSEvents.eventHandlers[i].eventTypeString == eventHandler.eventTypeString) {
-               JSEvents._removeHandler(i--);
-             }
-          }
-        }
-        return 0;
-      },
-  getNodeNameForTarget(target) {
-        if (!target) return '';
-        if (target == window) return '#window';
-        if (target == screen) return '#screen';
-        return target?.nodeName || '';
-      },
-  fullscreenEnabled() {
-        return document.fullscreenEnabled
-        // Safari 13.0.3 on macOS Catalina 10.15.1 still ships with prefixed webkitFullscreenEnabled.
-        // TODO: If Safari at some point ships with unprefixed version, update the version check above.
-        || document.webkitFullscreenEnabled
-         ;
-      },
-  };
-  
   var setLetterbox = (element, topBottom, leftRight) => {
       // Cannot use margin to specify letterboxes in FF or Chrome, since those ignore margins in fullscreen mode.
       element.style.paddingLeft = element.style.paddingRight = leftRight + 'px';
@@ -8240,20 +8274,6 @@ var ASM_CONSTS = {
     };
 
   
-  var requestPointerLock = (target) => {
-      if (target.requestPointerLock) {
-        target.requestPointerLock();
-      } else {
-        // document.body is known to accept pointer lock, so use that to differentiate if the user passed a bad element,
-        // or if the whole browser just doesn't support the feature.
-        if (document.body.requestPointerLock
-          ) {
-          return -3;
-        }
-        return -1;
-      }
-      return 0;
-    };
   
   var _emscripten_request_pointerlock = (target, deferUntilInEventHandler) => {
       target = findEventTarget(target);
@@ -10099,7 +10119,11 @@ var wasmImports = {
   /** @export */
   _emscripten_fs_load_embedded_files: __emscripten_fs_load_embedded_files,
   /** @export */
+  emscripten_asm_const_double: _emscripten_asm_const_double,
+  /** @export */
   emscripten_asm_const_int: _emscripten_asm_const_int,
+  /** @export */
+  emscripten_exit_pointerlock: _emscripten_exit_pointerlock,
   /** @export */
   emscripten_glActiveTexture: _emscripten_glActiveTexture,
   /** @export */
@@ -10801,7 +10825,6 @@ var _free = createExportWrapper('free');
 var _RGFW_handleKeyEvent = Module['_RGFW_handleKeyEvent'] = createExportWrapper('RGFW_handleKeyEvent');
 var _RGFW_handleKeyMods = Module['_RGFW_handleKeyMods'] = createExportWrapper('RGFW_handleKeyMods');
 var _Emscripten_onDrop = Module['_Emscripten_onDrop'] = createExportWrapper('Emscripten_onDrop');
-var _RGFW_makeSetValue = Module['_RGFW_makeSetValue'] = createExportWrapper('RGFW_makeSetValue');
 var _RGFW_mkdir = Module['_RGFW_mkdir'] = createExportWrapper('RGFW_mkdir');
 var _RGFW_writeFile = Module['_RGFW_writeFile'] = createExportWrapper('RGFW_writeFile');
 var _main = Module['_main'] = createExportWrapper('main');
@@ -10849,7 +10872,7 @@ var _asyncify_start_unwind = createExportWrapper('asyncify_start_unwind');
 var _asyncify_stop_unwind = createExportWrapper('asyncify_stop_unwind');
 var _asyncify_start_rewind = createExportWrapper('asyncify_start_rewind');
 var _asyncify_stop_rewind = createExportWrapper('asyncify_stop_rewind');
-var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 244504;
+var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 244636;
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===
