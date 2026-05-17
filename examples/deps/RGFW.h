@@ -2753,7 +2753,7 @@ RGFWDEF size_t RGFW_sizeofInfo(void);
 
 /**!
  * @brief Initializes the RGFW library internally.
- * @return 0 on success, or a negative error code on failure.
+ * @return 0 on success, a negative number error error on failure.
  * @note This is automatically called when the first window is created.
 */
 RGFWDEF i32 RGFW_init(void);
@@ -2767,7 +2767,7 @@ RGFWDEF void RGFW_deinit(void);
 /**!
  * @brief Initializes RGFW using a user-provided RGFW_info structure.
  * @param info A pointer to an RGFW_info structure to be used for initialization.
- * @return 0 on success, or a negative error code on failure.
+ * @return  0 on success, a negative number error error on failure and a positive number for a warning.
 */
 RGFWDEF i32 RGFW_init_ptr(RGFW_info* info);
 
@@ -3094,9 +3094,6 @@ typedef struct RGFW_monitors {
 	#endif
 } RGFW_monitors;
 
-RGFWDEF RGFW_monitorNode* RGFW_monitors_add(const RGFW_monitor* mon);
-RGFWDEF void RGFW_monitors_remove(RGFW_monitorNode* node, RGFW_monitorNode* prev);
-
 struct RGFW_info {
     RGFW_window* root;
     i32 windowCount;
@@ -3246,7 +3243,10 @@ RGFWDEF void RGFW_keyUpdateKeyModsEx(RGFW_window* win, RGFW_bool capital, RGFW_b
 RGFWDEF void RGFW_keyUpdateKeyMods(RGFW_window* win, RGFW_bool capital, RGFW_bool numlock, RGFW_bool scroll);
 RGFWDEF void RGFW_window_showMouseFlags(RGFW_window* win, RGFW_bool show);
 RGFWDEF void RGFW_keyUpdateKeyMod(RGFW_window* win, RGFW_keymod mod, RGFW_bool value);
+
 RGFWDEF void RGFW_monitors_refresh(void);
+RGFWDEF RGFW_monitorNode* RGFW_monitors_add(const RGFW_monitor* mon);
+RGFWDEF void RGFW_monitors_remove(RGFW_monitorNode* node, RGFW_monitorNode* prev);
 
 RGFWDEF void RGFW_windowMaximizedCallback(RGFW_window* win, i32 x, i32 y, i32 w, i32 h);
 RGFWDEF void RGFW_windowMinimizedCallback(RGFW_window* win);
@@ -4774,6 +4774,7 @@ RGFW_bool RGFW_getMonitorsPtr(size_t max, RGFW_monitor** monitors, size_t* len) 
 }
 
 RGFW_monitor* RGFW_getPrimaryMonitor(void) {
+	RGFW_init();
 	if (_RGFW->monitors.primary == NULL) {
 		_RGFW->monitors.primary = _RGFW->monitors.list.head;
 	}
@@ -6416,7 +6417,17 @@ void RGFW_FUNC(RGFW_window_setBorder) (RGFW_window* win, RGFW_bool border) {
 }
 
 void RGFW_FUNC(RGFW_window_setRawMouseModePlatform) (RGFW_window* win, RGFW_bool state) {
-	RGFW_UNUSED(win); RGFW_UNUSED(state);
+	RGFW_UNUSED(win);
+	unsigned char mask[XIMaskLen(XI_RawMotion)];
+	RGFW_MEMZERO(mask, sizeof(mask));
+	if (state) XISetMask(mask, XI_RawMotion);
+
+	XIEventMask em;
+	em.deviceid = XIAllMasterDevices;
+	em.mask_len = sizeof(mask);
+	em.mask = mask;
+
+	XISelectEvents(_RGFW->display, XDefaultRootWindow(_RGFW->display), &em, 1);
 }
 
 void RGFW_FUNC(RGFW_window_captureMousePlatform) (RGFW_window* win, RGFW_bool state) {
@@ -8564,17 +8575,6 @@ i32 RGFW_initPlatform_X11(void) {
 	XSetLocaleModifiers("");
 	XRegisterIMInstantiateCallback(_RGFW->display, NULL, NULL, NULL, RGFW_x11_imInitCallback, NULL);
 
-	unsigned char mask[XIMaskLen(XI_RawMotion)];
-	RGFW_MEMZERO(mask, sizeof(mask));
-	XISetMask(mask, XI_RawMotion);
-
-	XIEventMask em;
-	em.deviceid = XIAllMasterDevices;
-	em.mask_len = sizeof(mask);
-	em.mask = mask;
-
-	XISelectEvents(_RGFW->display, XDefaultRootWindow(_RGFW->display), &em, 1);
-
 	i32 errorBase;
 	if (XRRQueryExtension(_RGFW->display, &_RGFW->xrandrEventBase, &errorBase)) {
         XRRSelectInput(_RGFW->display, RootWindow(_RGFW->display, DefaultScreen(_RGFW->display)), RROutputChangeNotifyMask);
@@ -9482,7 +9482,7 @@ i32 RGFW_initPlatform_Wayland(void) {
 
 	if (_RGFW->compositor == NULL) {
 		RGFW_debugCallback(RGFW_typeError, RGFW_errWayland, "Can't find compositor.");
-		return 1;
+		return -1;
 	}
 
 	if (_RGFW->wl_cursor_theme == NULL) {
@@ -9933,10 +9933,32 @@ void RGFW_FUNC(RGFW_pollEvents) (void) {
 
 	/* read the events; if empty this reads from the */
 	/* wayland file descriptor */
-	if (wl_display_dispatch(_RGFW->wl_display) == -1) {
-		return;
-	}
+	struct pollfd fds;
+	memset(&fds, 0, sizeof(fds));
+    fds.fd = wl_display_get_fd(_RGFW->wl_display);
+    fds.events = POLLIN;
+    fds.revents = 0;
 
+    while (1) {
+        while (wl_display_prepare_read(_RGFW->wl_display) != 0) {
+            if (wl_display_dispatch_pending(_RGFW->wl_display) > 0)
+                return;
+        }
+
+        if (poll(&fds, 1, 0) == 0) {
+            wl_display_cancel_read(_RGFW->wl_display);
+            return;
+        }
+
+        if (fds.revents & POLLIN) {
+            wl_display_read_events(_RGFW->wl_display);
+            if (wl_display_dispatch_pending(_RGFW->wl_display) > 0) {
+				return;
+			}
+		} else {
+            wl_display_cancel_read(_RGFW->wl_display);
+		}
+	}
 }
 
 void RGFW_FUNC(RGFW_window_move) (RGFW_window* win, i32 x, i32 y) {
@@ -11232,7 +11254,7 @@ i32 RGFW_initPlatform(void) {
 
 	u8 RGFW_blk[] = { 0, 0, 0, 0 };
 	_RGFW->hiddenMouse = RGFW_createMouse(RGFW_blk, 1, 1, RGFW_formatRGBA8);
-    return 1;
+    return 0;
 }
 
 RGFW_window* RGFW_createWindowPlatform(const char* name, RGFW_windowFlags flags, RGFW_window* win) {
@@ -14976,6 +14998,8 @@ void EMSCRIPTEN_KEEPALIVE Emscripten_onDrop(char* file, size_t size) {
 	RGFW_dataDropCallback(_RGFW->root, file, size, RGFW_dataFile);
 }
 
+void EMSCRIPTEN_KEEPALIVE RGFW_webFree(void* ptr) { free(ptr); }
+
 void RGFW_stopCheckEvents(void) {
 	_RGFW->stopCheckEvents_bool = RGFW_TRUE;
 }
@@ -15196,7 +15220,7 @@ RGFW_window* RGFW_createWindowPlatform(const char* name, RGFW_windowFlags flags,
 				}
 
 				Module._RGFW_handleKeyEvent(code, codepoint, 1);
-				_free(code);
+				Module._RGFW_webFree(code);
 			},
 		true);
 		window.addEventListener("keyup",
@@ -15204,7 +15228,7 @@ RGFW_window* RGFW_createWindowPlatform(const char* name, RGFW_windowFlags flags,
 				var code = stringToNewUTF8(event.code);
 				Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock"));
 				Module._RGFW_handleKeyEvent(code, 0, 0);
-				_free(code);
+				Module._RGFW_webFree(code);
 			},
 		true);
 	});
@@ -15263,8 +15287,13 @@ RGFW_bool RGFW_window_fetchSize(RGFW_window* win, i32* w, i32* h) {
 }
 
 void RGFW_pollEvents(void) {
+	static int using_asyncify = -1;
+	if (using_asyncify == -1) using_asyncify = EM_ASM_INT({ return 'Asyncify' in Module; });
+
 	RGFW_resetPrevState();
-	emscripten_sleep(0);
+	if (using_asyncify) {
+		emscripten_sleep(0);
+	}
 }
 
 void RGFW_window_resize(RGFW_window* win, i32 w, i32 h) {
@@ -15385,17 +15414,34 @@ RGFW_bool RGFW_window_createContextPtr_OpenGL(RGFW_window* win, RGFW_glContext* 
 	attrs.failIfMajorPerformanceCaveat = EM_FALSE;
 
 	attrs.enableExtensionsByDefault = EM_TRUE;
-	attrs.explicitSwapControl = EM_TRUE;
 
 	if (hints->profile == RGFW_glWeb) {
 		attrs.majorVersion = (hints->major == 0) ? 1 : hints->major;
 		attrs.minorVersion = hints->minor;
 	} else {
-		attrs.majorVersion = (hints->major == 0) ? 1 : hints->major - 1;
+		attrs.majorVersion = (hints->major == 0) ? 1 : ( (hints->major > 1) ? hints->major - 1 : hints->major );
 		attrs.minorVersion = hints->minor;
 	}
 
+	attrs.explicitSwapControl = EM_TRUE;
 	win->src.ctx.native->ctx = emscripten_webgl_create_context("#canvas", &attrs);
+
+	if (win->src.ctx.native->ctx == 0) {
+		RGFW_debugCallback(RGFW_typeError, RGFW_warningOpenGL, "WebGL: Failed to create an OpenGL Context with explicit swap control.");
+		attrs.explicitSwapControl = EM_FALSE;
+		win->src.ctx.native->ctx = emscripten_webgl_create_context("#canvas", &attrs);
+	}
+
+	if (win->src.ctx.native->ctx == 0) {
+		RGFW_debugCallback(RGFW_typeError, RGFW_errOpenGLContext, "Failed to create an OpenGL Context with the requested attributes, falling back to defaults.");
+		win->src.ctx.native->ctx = emscripten_webgl_create_context("#canvas", &attrs);
+	}
+
+	if (win->src.ctx.native->ctx == 0) {
+		RGFW_debugCallback(RGFW_typeError, RGFW_errOpenGLContext, "Failed to create an OpenGL Context.");
+		return RGFW_FALSE;
+	}
+
 	emscripten_webgl_make_context_current(win->src.ctx.native->ctx);
 
 	#ifdef LEGACY_GL_EMULATION
@@ -15775,8 +15821,8 @@ typedef struct RGFW_FunctionPointers {
     RGFW_window_setName_ptr window_setName;
     RGFW_window_setMousePassthrough_ptr window_setMousePassthrough;
     RGFW_window_setIconEx_ptr window_setIconEx;
-    RGFW_createMouse_ptr loadMouse;
-    RGFW_createMouseStandard_ptr loadMouseStandard;
+    RGFW_createMouse_ptr createMouse;
+    RGFW_createMouseStandard_ptr createMouseStandard;
     RGFW_window_setMousePlatform_ptr window_setMousePlatform;
     RGFW_window_moveMouse_ptr window_moveMouse;
     RGFW_window_hide_ptr window_hide;
@@ -15847,8 +15893,8 @@ void RGFW_window_setMousePassthrough(RGFW_window* win, RGFW_bool passthrough) { 
 #endif
 
 RGFW_bool RGFW_window_setIconEx(RGFW_window* win, u8* data, i32 w, i32 h, RGFW_format format, u8 type) { return RGFW_api.window_setIconEx(win, data, w, h, format, type); }
-RGFW_mouse* RGFW_createMouse(u8* data, i32 w, i32 h, RGFW_format format) { return RGFW_api.loadMouse(data, w, h, format); }
-RGFW_mouse* RGFW_createMouseStandard(RGFW_mouseIcon icon) { return RGFW_api.loadMouseStandard(icon); }
+RGFW_mouse* RGFW_createMouse(u8* data, i32 w, i32 h, RGFW_format format) { return RGFW_api.createMouse(data, w, h, format); }
+RGFW_mouse* RGFW_createMouseStandard(RGFW_mouseIcon icon) { return RGFW_api.createMouseStandard(icon); }
 RGFW_bool RGFW_window_setMousePlatform(RGFW_window* win, RGFW_mouse* mouse) { return RGFW_api.window_setMousePlatform(win, mouse); }
 void RGFW_window_moveMouse(RGFW_window* win, i32 x, i32 y) { RGFW_api.window_moveMouse(win, x, y); }
 void RGFW_window_hide(RGFW_window* win) { RGFW_api.window_hide(win); }
@@ -15924,7 +15970,8 @@ void RGFW_load_X11(void) {
     RGFW_api.window_setMousePassthrough = RGFW_window_setMousePassthrough_X11;
 #endif
     RGFW_api.window_setIconEx = RGFW_window_setIconEx_X11;
-    RGFW_api.loadMouse = RGFW_createMouse_X11;
+    RGFW_api.createMouse = RGFW_createMouse_X11;
+	RGFW_api.createMouseStandard = RGFW_createMouseStandard_X11;
     RGFW_api.window_setMousePlatform = RGFW_window_setMousePlatform_X11;
     RGFW_api.window_moveMouse = RGFW_window_moveMouse_X11;
     RGFW_api.window_hide = RGFW_window_hide_X11;
@@ -15991,7 +16038,8 @@ void RGFW_load_Wayland(void) {
     RGFW_api.window_setMousePassthrough = RGFW_window_setMousePassthrough_Wayland;
 #endif
     RGFW_api.window_setIconEx = RGFW_window_setIconEx_Wayland;
-	RGFW_api.loadMouse = RGFW_createMouse_Wayland;
+    RGFW_api.createMouse = RGFW_createMouse_Wayland;
+	RGFW_api.createMouseStandard = RGFW_createMouseStandard_Wayland;
     RGFW_api.window_setMousePlatform = RGFW_window_setMousePlatform_Wayland;
     RGFW_api.window_moveMouse = RGFW_window_moveMouse_Wayland;
     RGFW_api.window_hide = RGFW_window_hide_Wayland;

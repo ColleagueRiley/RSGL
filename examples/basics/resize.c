@@ -21,6 +21,11 @@ int main(void) {
 	i32 width = 500;
 	i32 height = 500;
 
+    RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
+    hints->major = 3;
+    hints->minor = 3;
+    RGFW_setGlobalHints_OpenGL(hints);
+
 	RGFW_window* win = RGFW_createWindow("RSGL shapes example", 0, 0, width, height, RGFW_windowCenter | RGFW_windowOpenGL);
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
 
