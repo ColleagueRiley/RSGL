@@ -305,6 +305,11 @@ static int text_height(mu_Font font) {
 int main(int argc, char **argv) {
 	RGFW_UNUSED(argc); RGFW_UNUSED(argv);
 	/* init RGFW window */
+    RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
+    hints->major = 3;
+    hints->minor = 3;
+    RGFW_setGlobalHints_OpenGL(hints);
+
 	RGFW_window* window = RGFW_createWindow("", 0, 0, 800, 600, RGFW_windowCenter |  RGFW_windowOpenGL);
 
 	RGFW_monitor* mon = RGFW_window_getMonitor(window);

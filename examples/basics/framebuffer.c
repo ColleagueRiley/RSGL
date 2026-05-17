@@ -18,7 +18,11 @@
 #include <stdio.h>
 
 int main(void) {
-    RGFW_window* win = RGFW_createWindow("RSGL shapes example", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
+    RGFW_glHints* hints = RGFW_getGlobalHints_OpenGL();
+    hints->major = 3;
+    hints->minor = 3;
+    RGFW_setGlobalHints_OpenGL(hints);
+	RGFW_window* win = RGFW_createWindow("RSGL shapes example", 0, 0, 500, 500, RGFW_windowCenter | RGFW_windowOpenGL);
 
 	RSGL_renderer* renderer = RSGL_renderer_init(RSGL_GL_rendererProc(), (void*)RGFW_getProcAddress_OpenGL);
     RSGL_renderer_viewport(renderer, RSGL_RECT(0, 0, 500, 500));

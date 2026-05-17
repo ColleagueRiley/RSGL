@@ -1,6 +1,6 @@
 /*
 *
-* Copyright (c) 2021-25 ColleagueRiley ColleagueRiley@gmail.com
+* Copyright (c) 2021-26 ColleagueRiley ColleagueRiley@gmail.com
 *
 * This software is provided 'as-is', without any express or implied
 * warranty.  In no event will the authors be held liable for any damages
@@ -844,8 +844,9 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, void* loader, void* data, RSG
 	renderer->data.len = 0;
 	renderer->data.elements_count = 0;
 
-	if (renderer->proc.initPtr)
+	if (renderer->proc.initPtr) {
 		renderer->proc.initPtr(renderer->ctx, loader);
+	}
 
 	RSGL_renderer_setFramebuffer(renderer, 0);
 
