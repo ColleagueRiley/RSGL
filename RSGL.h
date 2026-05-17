@@ -844,8 +844,9 @@ void RSGL_renderer_initPtr(RSGL_rendererProc proc, void* loader, void* data, RSG
 	renderer->data.len = 0;
 	renderer->data.elements_count = 0;
 
-	if (renderer->proc.initPtr)
+	if (renderer->proc.initPtr) {
 		renderer->proc.initPtr(renderer->ctx, loader);
+	}
 
 	RSGL_renderer_setFramebuffer(renderer, 0);
 

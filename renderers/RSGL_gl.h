@@ -7,18 +7,30 @@
 #undef RSGL_USE_COMPUTE
 #endif
 
-#if defined(__EMSCRIPTEN__)
-	#define RSGL_GLES2
+#ifdef __EMSCRIPTEN__
+	#if defined(RSGL_GL2)
+		#undef RSGL_GL2
+		#define RSGL_GLES2
+	#endif
+	#if defined(RSGL_GL3)
+		#undef RSGL_GL3
+		#define RSGL_GLES3
+	#endif
+#endif
+
+
+#if !defined(RSGL_GLES3) && !defined(RSGL_GLES2) && !defined(RSGL_GL2) && !defined(RSGL_GL3)
+	#ifndef __EMSCRIPTEN__
+		#define RSGL_GL3
+	#else
+		#define RSGL_GLES3
+	#endif
 #endif
 
 #if defined(RSGL_GLES3) || defined(RSGL_GLES2)
 	#ifndef RSGL_NO_GL_LOADER
 		#define RSGL_NO_GL_LOADER
 	#endif
-#endif
-
-#if !defined(RSGL_GLES3) && !defined(RSGL_GLES2) && !defined(RSGL_GL2) && !defined(RSGL_GL3)
-	#define RSGL_GL3
 #endif
 
 #ifndef RSGL_GL_H
@@ -469,7 +481,7 @@ print matrix array code snippet
 
 
 void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
-    #if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
+	#if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
     if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
         #ifdef RSGL_DEBUG
         printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
