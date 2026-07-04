@@ -9,7 +9,7 @@
 #ifndef RSGL_GL1_H
 #define RSGL_GL1_H
 
-typedef struct RSGL_gl1Renderer { } RSGL_gl1Renderer;
+typedef void* RSGL_gl1Renderer;
 
 RSGLDEF RSGL_rendererProc RSGL_GL1_rendererProc(void);
 RSGLDEF size_t RSGL_GL1_size(void);
@@ -39,7 +39,7 @@ RSGLDEF void RSGL_GL1_scissorEnd(RSGL_gl1Renderer* ctx);
 #ifdef RSGL_IMPLEMENTATION
 
 RSGL_renderer* RSGL_GL1_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL1_rendererProc(), loader); }
-void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL1_rendererProc(), loader, ptr, renderer); }
+void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer) { RSGL_renderer_initPtr(RSGL_GL1_rendererProc(), loader, ptr, renderer); }
 
 
 /* prevent winapi conflicts (opengl includes windows.h for some reason) */
@@ -63,7 +63,13 @@ typedef int	 GLsizei;
 #define GL_DYNAMIC_DRAW 0x88E8
 #define GL_TEXTURE0 0x84C0
 
-#include <GL/glext.h>
+#ifndef GL_BGR 
+	#define GL_BGR                            0x80E0
+#endif
+#ifndef GL_BGRA
+	#define GL_BGRA                           0x80E1
+#endif
+
 #endif
 
 size_t RSGL_GL1_size(void) {
@@ -119,7 +125,17 @@ void RSGL_GL1_deleteBuffer(RSGL_gl1Renderer* ctx, size_t buffer) {
 }
 
 void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc) {
+	#ifdef RSGL_GL1_LOAD_WITH_GLAD
+	if (gladLoadGL((GLADloadfunc)proc) == 0) {
+        #ifdef RSGL_DEBUG
+        printf("Failed to load an OpenGL functions\n");
+        #endif
+        return;
+    }
+	#endif
+
 	RSGL_UNUSED(proc); RSGL_UNUSED(ctx);
+
 	glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }

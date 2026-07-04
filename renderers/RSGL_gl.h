@@ -84,7 +84,7 @@ RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_glRenderer* ctx, u32 texture, u8 fo
 #ifdef RSGL_IMPLEMENTATION
 
 RSGL_renderer* RSGL_GL_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL_rendererProc(), loader); }
-void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer) { return RSGL_renderer_initPtr(RSGL_GL_rendererProc(), loader, ptr, renderer); }
+void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer) { RSGL_renderer_initPtr(RSGL_GL_rendererProc(), loader, ptr, renderer); }
 
 
 /* prevent winapi conflicts (opengl includes windows.h for some reason) */
@@ -108,7 +108,6 @@ void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer*
 #if defined(_WIN32)
 typedef char GLchar;
 typedef int	 GLsizei;
-#include <GL/glext.h>
 #endif
 
 #ifndef RSGL_NO_GL_LOADER
@@ -488,10 +487,17 @@ void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
         #endif
         return;
     }
-    #else
+    #elif defined(RSGL_GL_LOAD_WITH_GLAD)
+	if (gladLoadGL((GLADloadfunc)proc) == 0) {
+        #ifdef RSGL_DEBUG
+        printf("Failed to load an OpenGL functions\n");
+        #endif
+        return;
+    }
+	#else
     RSGL_UNUSED(proc);
     #endif
-
+	
 #ifdef RSGL_DEBUG
 	printf("OpenGL Vendor: %s\n", glGetString(GL_VENDOR));
 	printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
