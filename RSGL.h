@@ -31,18 +31,21 @@
     #define RSGL_MAX_VERTS [number of verts] - set max number of verts to be allocated (global, not per batch)
 */
 #include <stdint.h>
-#ifndef RSGL_MAX_BATCHES
-#define RSGL_MAX_BATCHES 2028
-#endif
-#ifndef RSGL_MAX_VERTS
-#define RSGL_MAX_VERTS 8192
-#endif
 
 #ifndef RSGL_MALLOC
 #include <stdlib.h>
 #define RSGL_MALLOC malloc
 #define RSGL_REALLOC realloc
 #define RSGL_FREE free
+#endif
+
+#ifndef RSGL_ASSERT
+	#include <assert.h>
+	#define RSGL_ASSERT(x) assert(x)
+#endif
+
+#ifndef RSGL__STATIC_ASSERT
+	#define RSGL_STATIC_ASSERT(check_name, x) typedef char RSGL_check_##check_name[(x) ? 1 : -1];
 #endif
 
 #ifndef RSGL_SIN
@@ -71,18 +74,30 @@
 #endif
 #endif
 
+#include <stddef.h>
+
 #ifndef RSGL_INT_DEFINED
-    #define RSGL_INT_DEFINED
-	#if defined(_MSC_VER) || defined(__SYMBIAN32__)
-		typedef unsigned char 	u8;
-		typedef signed char		i8;
-		typedef unsigned short  u16;
-		typedef signed short 	i16;
-		typedef unsigned int 	u32;
-		typedef signed int		i32;
-		typedef unsigned long long	u64;
-		typedef signed   long long	i64;
-	#else
+	#ifdef RSGL_USE_INT /* optional for any system that might not have stdint.h */
+		#include <limits.h>
+		typedef unsigned char       u8;
+		typedef signed char         i8;
+		typedef unsigned short     u16;
+		typedef signed short 	   i16;
+		#if INT_MAX == 0x7FFFFFFF
+			typedef unsigned int  u32;
+			typedef signed int    i32;
+		#else
+			typedef unsigned long int  u32;
+			typedef signed long int    i32;
+		#endif
+		#if LONG_MAX == 0x7FFFFFFFFFFFFFFFL
+	typedef unsigned long u64;
+			typedef signed long   i64;
+		#else
+			typedef unsigned long long u64;
+			typedef signed long long   i64;
+		#endif
+	#else /* use stdint standard types instead of c "standard" types */
 		#include <stdint.h>
 
 		typedef uint8_t     u8;
@@ -94,17 +109,30 @@
 		typedef uint64_t   u64;
 		typedef int64_t    i64;
 	#endif
+	#define RSGL_INT_DEFINED
 #endif
 
-#ifndef RSGL_BOOL_DEFINED
-#define RSGL_BOOL_DEFINED
+RSGL_STATIC_ASSERT(size64, sizeof(i64) == 8)
+RSGL_STATIC_ASSERT(size32, sizeof(i32) == 4)
+RSGL_STATIC_ASSERT(size16, sizeof(i16) == 2)
 
-#include <stdbool.h>
-typedef bool RSGL_bool;
+#ifndef RSGL_BOOL_DEFINED
+	#define RSGL_BOOL_DEFINED
+
+	#include <stdbool.h>
+	typedef bool RSGL_bool;
 #endif
 
 #define RSGL_TRUE (RSGL_bool)1
 #define RSGL_FALSE (RSGL_bool)0
+
+#ifndef RSGL_MAX_BATCHES
+	#define RSGL_MAX_BATCHES 2028
+#endif
+
+	#ifndef RSGL_MAX_VERTS
+#define RSGL_MAX_VERTS 8192
+#endif
 
 typedef enum RSGL_textureFormat {
 	RSGL_formatNone = 0,
@@ -197,29 +225,11 @@ typedef struct RSGL_color {
 #define RSGL_RGB_TO_HEX(r, g, b, a) (RSGL_COLOR_TO_HEX(RSGL_RGBA(r, g, b, a)))
 #define RSGL_RGBA_TO_HEX(r, g, b) (RSGL_COLOR_TO_HEX(RSGL_RGB(r, g, b, a)))
 
-/*
-*********************
-RSGL matrix math
-*********************
-*/
-
 #ifndef RSGL_mat4
 typedef struct RSGL_mat4 {
     float m[16];
 } RSGL_mat4;
 #endif
-
-RSGLDEF RSGL_mat4 RSGL_mat4_loadIdentity(void);
-RSGLDEF RSGL_mat4 RSGL_mat4_scale(float matrix[16], float x, float y, float z);
-RSGLDEF RSGL_mat4 RSGL_mat4_rotate(float matrix[16], float angle, float x, float y, float z);
-RSGLDEF RSGL_mat4 RSGL_mat4_translate(float matrix[16], float x, float y, float z);
-RSGLDEF RSGL_mat4 RSGL_mat4_perspective(float matrix[16], float fovY, float aspect, float zNear, float zFar);
-RSGLDEF RSGL_mat4 RSGL_mat4_ortho(float matrix[16], float left, float right, float bottom, float top, float znear, float zfar);
-RSGLDEF RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ, float upX, float upY, float upZ);
-
-RSGLDEF RSGL_mat4 RSGL_mat4_multiply(float left[16], float right[16]);
-
-RSGLDEF RSGL_vec3D RSGL_mat4_multiplyPoint(RSGL_mat4 matrix, RSGL_vec3D point);
 
 /*
 *******
@@ -252,8 +262,6 @@ typedef union RSGL_projection {
 	RSGL_projection2D p2D;
 	RSGL_projection3D p3D;
 } RSGL_projection;
-
-RSGLDEF RSGL_mat4 RSGL_projection_getMatrix(const RSGL_projection* projection);
 
 /*
 *********************
@@ -401,6 +409,93 @@ typedef struct RSGL_renderer {
 	RSGL_renderBuffers buffers;
 } RSGL_renderer;
 
+/*
+*******
+RSGL_draw low level
+*******
+*/
+
+typedef enum RSGL_drawType {
+	RSGL_TRIANGLES = 0,
+	RSGL_POINTS = 1,
+	RSGL_LINES = 2
+} RSGL_drawType;
+
+typedef struct RSGL_rawVerts {
+	RSGL_drawType type;
+	float* verts;
+	float* texCoords;
+	u16* elements;
+	size_t elmCount;
+	size_t vert_count;
+} RSGL_rawVerts;
+
+/*
+*******
+RSGL_view
+*******
+*/
+
+typedef enum RSGL_viewType {
+	RSGL_viewTypeNone = 0,
+	RSGL_viewType2D,
+	RSGL_viewType3D,
+} RSGL_viewType;
+
+typedef struct RSGL_view2D {
+	RSGL_viewType type;
+	RSGL_vec3D offset;
+	RSGL_vec3D target;
+    float rotation;
+    float zoom;
+} RSGL_view2D;
+
+/* RSGL translation */
+typedef struct RSGL_view3D {
+	RSGL_viewType type;
+	RSGL_vec3D pos;
+	RSGL_vec3D target;
+    RSGL_vec3D up;
+} RSGL_view3D;
+
+typedef union RSGL_view {
+	RSGL_viewType type;
+	RSGL_view2D view2D;
+	RSGL_view3D view3D;
+} RSGL_view;
+
+/*
+*********************
+RSGL matrix math
+*********************
+*/
+
+RSGLDEF RSGL_mat4 RSGL_mat4_loadIdentity(void);
+RSGLDEF RSGL_mat4 RSGL_mat4_scale(float matrix[16], float x, float y, float z);
+RSGLDEF RSGL_mat4 RSGL_mat4_rotate(float matrix[16], float angle, float x, float y, float z);
+RSGLDEF RSGL_mat4 RSGL_mat4_translate(float matrix[16], float x, float y, float z);
+RSGLDEF RSGL_mat4 RSGL_mat4_perspective(float matrix[16], float fovY, float aspect, float zNear, float zFar);
+RSGLDEF RSGL_mat4 RSGL_mat4_ortho(float matrix[16], float left, float right, float bottom, float top, float znear, float zfar);
+RSGLDEF RSGL_mat4 RSGL_mat4_lookAt(float matrix[16], float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ, float upX, float upY, float upZ);
+
+RSGLDEF RSGL_mat4 RSGL_mat4_multiply(float left[16], float right[16]);
+
+RSGLDEF RSGL_vec3D RSGL_mat4_multiplyPoint(RSGL_mat4 matrix, RSGL_vec3D point);
+
+/*
+*******
+RSGL_perspective
+*******
+*/
+
+RSGLDEF RSGL_mat4 RSGL_projection_getMatrix(const RSGL_projection* projection);
+
+/*
+*********************
+RSGL renderer
+*********************
+*/
+
 RSGLDEF void RSGL_renderer_getRenderState(RSGL_renderer* renderer, RSGL_renderState* state);
 
 RSGLDEF size_t RSGL_renderer_size(RSGL_renderer* renderer);
@@ -490,21 +585,6 @@ RSGL_drawRawVerts is a function used internally by RSGL, but you can use it your
 RSGL_drawRawVerts batches a given set of points based on th data to be rendered
 */
 
-typedef enum RSGL_drawType {
-	RSGL_TRIANGLES = 0,
-	RSGL_POINTS = 1,
-	RSGL_LINES = 2
-} RSGL_drawType;
-
-typedef struct RSGL_rawVerts {
-	RSGL_drawType type;
-	float* verts;
-	float* texCoords;
-	u16* elements;
-	size_t elmCount;
-	size_t vert_count;
-} RSGL_rawVerts;
-
 RSGLDEF i32 RSGL_drawRawVerts(RSGL_renderer* renderer, const RSGL_rawVerts* data);
 
 /*
@@ -567,15 +647,11 @@ RSGLDEF i32 RSGL_drawCube(RSGL_renderer* renderer, RSGL_cube cube);
 RSGLDEF i32 RSGL_drawTriangleOutline(RSGL_renderer* renderer, RSGL_vec3D triangle[3], u32 thickness);
 
 RSGLDEF i32 RSGL_drawRectOutline(RSGL_renderer* renderer, RSGL_rect r, u32 thickness);
-RSGLDEF i32 RSGL_drawRectOutline(RSGL_renderer* renderer, RSGL_rect r, u32 thickness);
 
-RSGLDEF i32 RSGL_drawRoundRectOutline(RSGL_renderer* renderer, RSGL_rect r, RSGL_vec2D rounding, u32 thickness);
 RSGLDEF i32 RSGL_drawRoundRectOutline(RSGL_renderer* renderer, RSGL_rect r, RSGL_vec2D rounding, u32 thickness);
 
 RSGLDEF i32 RSGL_drawPolygonOutline(RSGL_renderer* renderer, RSGL_rect r, u32 sides, u32 thickness);
-RSGLDEF i32 RSGL_drawPolygonOutline(RSGL_renderer* renderer, RSGL_rect r, u32 sides, u32 thickness);
 
-RSGLDEF i32 RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_vec2D arc, u32 thickness);
 RSGLDEF i32 RSGL_drawArcOutline(RSGL_renderer* renderer, RSGL_rect o, RSGL_vec2D arc, u32 thickness);
 
 RSGLDEF i32 RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thickness);
@@ -585,34 +661,6 @@ RSGLDEF i32 RSGL_drawOvalOutline(RSGL_renderer* renderer, RSGL_rect o, u32 thick
 RSGL_view
 *******
 */
-
-typedef enum RSGL_viewType {
-	RSGL_viewTypeNone = 0,
-	RSGL_viewType2D,
-	RSGL_viewType3D,
-} RSGL_viewType;
-
-typedef struct RSGL_view2D {
-	RSGL_viewType type;
-	RSGL_vec3D offset;
-	RSGL_vec3D target;
-    float rotation;
-    float zoom;
-} RSGL_view2D;
-
-/* RSGL translation */
-typedef struct RSGL_view3D {
-	RSGL_viewType type;
-	RSGL_vec3D pos;
-	RSGL_vec3D target;
-    RSGL_vec3D up;
-} RSGL_view3D;
-
-typedef union RSGL_view {
-	RSGL_viewType type;
-	RSGL_view2D view2D;
-	RSGL_view3D view3D;
-} RSGL_view;
 
 RSGLDEF RSGL_mat4 RSGL_view_getMatrix(const RSGL_view* view);
 
@@ -912,7 +960,7 @@ RSGL_texture RSGL_renderer_createTexture(RSGL_renderer* renderer, const RSGL_tex
 	return tex;
 }
 void RSGL_renderer_copyToTexture(RSGL_renderer* renderer, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob) {
-    return renderer->proc.copyToTexture(renderer->ctx, texture, x, y, blob);
+    renderer->proc.copyToTexture(renderer->ctx, texture, x, y, blob);
 }
 void RSGL_renderer_deleteTexture(RSGL_renderer* renderer, RSGL_texture tex) { renderer->proc.deleteTexture(renderer->ctx, tex); }
 void RSGL_renderer_scissorStart(RSGL_renderer* renderer, RSGL_rect scissor, i32 height) {
@@ -954,7 +1002,7 @@ RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, RSGL_progr
 	RSGL_programInfo info;
 	RSGL_MEMSET(&info, 0, sizeof(info));
 
-	if (blob->fragment == NULL || blob->vertex == NULL) {
+	if (renderer->proc.createProgram != NULL && (blob->fragment == NULL || blob->vertex == NULL)) {
 		RSGL_programBlob pBlob = RSGL_renderer_defaultBlob(renderer);
 		renderer->defaultProgram = RSGL_renderer_createProgram(renderer, &pBlob);
 
@@ -975,7 +1023,9 @@ RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, RSGL_progr
 
 	return info;
 }
-void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, const RSGL_programInfo* program) { return renderer->proc.deleteProgram(renderer->ctx, program); }
+void RSGL_renderer_deleteProgram(RSGL_renderer* renderer, const RSGL_programInfo* program) { 
+	renderer->proc.deleteProgram(renderer->ctx, program); 
+}
 
 size_t RSGL_renderer_findShaderVariable(RSGL_renderer* renderer, const RSGL_programInfo* program, const char* var, size_t len) {
     return renderer->proc.findShaderVariable(renderer->ctx, program, var, len);
