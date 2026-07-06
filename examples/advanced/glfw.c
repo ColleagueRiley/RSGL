@@ -1,5 +1,6 @@
 #include <GLFW/glfw3.h>
 
+#define RSGL_GL_USE_GLAD
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"

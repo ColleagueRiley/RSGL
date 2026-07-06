@@ -3,6 +3,7 @@
 #define RGFW_IMPLEMENTATION
 #include "RGFW.h"
 
+#define RSGL_GL_USE_GLAD
 #define RGFW_INT_DEFINED
 #define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION

@@ -1,4 +1,5 @@
 #define RSGL_IMPLEMENTATION
+#define RSGL_GL_USE_GLAD
 #include "RSGL.h"
 #include "RSGL_gl.h"
 

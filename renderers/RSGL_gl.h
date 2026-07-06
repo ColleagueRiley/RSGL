@@ -2,10 +2,20 @@
 #include "RSGL.h"
 #endif
 
-// WebGL doesn't support compute shaders iirc so yeah
-#if defined(__EMSCRIPTEN__) && defined(RSGL_USE_COMPUTE)
-#undef RSGL_USE_COMPUTE
-#endif
+#ifndef RSGL_GL_H
+#define RSGL_GL_H
+
+typedef struct RSGL_glRenderer RSGL_glRenderer;
+
+RSGLDEF RSGL_rendererProc RSGL_GL_rendererProc(void);
+RSGLDEF size_t RSGL_GL_size(void);
+
+RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(void* loader);
+RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
+
+#endif /* RSGL_GL_H */
+
+#ifdef RSGL_IMPLEMENTATION
 
 #ifdef __EMSCRIPTEN__
 	#if defined(RSGL_GL2)
@@ -18,7 +28,6 @@
 	#endif
 #endif
 
-
 #if !defined(RSGL_GLES3) && !defined(RSGL_GLES2) && !defined(RSGL_GL2) && !defined(RSGL_GL3)
 	#ifndef __EMSCRIPTEN__
 		#define RSGL_GL3
@@ -27,24 +36,25 @@
 	#endif
 #endif
 
-#if defined(RSGL_GLES3) || defined(RSGL_GLES2)
-	#ifndef RSGL_NO_GL_LOADER
-		#define RSGL_NO_GL_LOADER
+#if (defined(__EMSCRIPTEN__) || defined(RSGL_GLES3) || defined(RSGL_GLES2)) && defined(RSGL_GL_USE_GLAD) 
+	#undef RSGL_GL_USE_GLAD
+#endif
+
+#if defined(RSGL_GLES3)
+	#include <GLES3/gl3.h>
+#elif defined(RSGL_GLES2)
+	#include <GLES2/gl2.h>
+#endif
+
+#ifdef RSGL_GL_USE_GLAD
+	#if !defined(GLAD_GL_H_) || !defined(GLAD_GL_IMPLEMENTATION) 
+		#define GLAD_MALLOC RSGL_MALLOC 
+		#define GLAD_FREE RSGL_FREE
+		#define GLAD_GL_IMPLEMENTATION
+		#include "glad.h"
 	#endif
 #endif
 
-#ifndef RSGL_GL_H
-#define RSGL_GL_H
-
-typedef struct RSGL_glRenderer {
-	u32 vao;
-} RSGL_glRenderer;
-
-RSGLDEF RSGL_rendererProc RSGL_GL_rendererProc(void);
-RSGLDEF size_t RSGL_GL_size(void);
-
-RSGLDEF RSGL_renderer* RSGL_GL_renderer_init(void* loader);
-RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer);
 RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass);
 RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
@@ -79,198 +89,21 @@ RSGLDEF RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_glRenderer* ctx, cons
 RSGLDEF void RSGL_GL_dispatchComputeProgram(RSGL_glRenderer* ctx, RSGL_programInfo program, u32 groups_x, u32 groups_y, u32 groups_z);
 RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_glRenderer* ctx, u32 texture, u8 format);
 #endif
-#endif
 
-#ifdef RSGL_IMPLEMENTATION
+/* WebGL doesn't support compute shaders */
+#if defined(__EMSCRIPTEN__) && defined(RSGL_USE_COMPUTE)
+	#undef RSGL_USE_COMPUTE
+#endif
 
 RSGL_renderer* RSGL_GL_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL_rendererProc(), loader); }
 void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer) { RSGL_renderer_initPtr(RSGL_GL_rendererProc(), loader, ptr, renderer); }
 
-
-/* prevent winapi conflicts (opengl includes windows.h for some reason) */
-#define OEMRESOURCE
-
-#define GL_GLEXT_PROTOTYPES
-
-#ifndef __APPLE__
-#include <GL/gl.h>
-#else
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#endif
-
-#if defined(RSGL_GLES3)
-	#include <GLES3/gl3.h>
-#elif defined(RSGL_GLES2)
-	#include <GLES2/gl2.h>
-#endif
-
-#if defined(_WIN32)
-typedef char GLchar;
-typedef int	 GLsizei;
-#endif
-
-#ifndef RSGL_NO_GL_LOADER
-
-typedef void (*RSGL_gl_proc)(void); // function pointer equivalent of void*
-#define RSGL_PROC_DEF(proc, name) name##SRC = (name##PROC)(RSGL_gl_proc)proc(#name)
-
-typedef void (*RSGLapiproc)(void);
-typedef RSGLapiproc (*RSGLloadfunc)(const char *name);
-
-typedef void (*glShaderSourcePROC) (GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
-typedef GLuint (*glCreateShaderPROC) (GLenum type);
-typedef void (*glCompileShaderPROC) (GLuint shader);
-typedef GLuint (*glCreateProgramPROC) (void);
-typedef void (*glAttachShaderPROC) (GLuint program, GLuint shader);
-typedef void (*glBindAttribLocationPROC) (GLuint program, GLuint index, const GLchar *name);
-typedef void (*glLinkProgramPROC) (GLuint program);
-typedef void (*glBindBufferPROC) (GLenum target, GLuint buffer);
-typedef void (*glBufferDataPROC) (GLenum target, GLsizeiptr size, const void *data, GLenum usage);
-typedef void (*glEnableVertexAttribArrayPROC) (GLuint index);
-typedef void (*glVertexAttribPointerPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
-typedef void (*glDisableVertexAttribArrayPROC) (GLuint index);
-typedef void (*glDeleteBuffersPROC) (GLsizei n, const GLuint *buffers);
-typedef void (*glUseProgramPROC) (GLuint program);
-typedef void (*glDetachShaderPROC) (GLuint program, GLuint shader);
-typedef void (*glDeleteShaderPROC) (GLuint shader);
-typedef void (*glDeleteProgramPROC) (GLuint program);
-typedef void (*glBufferSubDataPROC) (GLenum target, GLintptr offset, GLsizeiptr size, const void *data);
-typedef void (*glGetShaderivPROC)(GLuint shader, GLenum pname, GLint *params);
-typedef void (*glGetShaderInfoLogPROC)(GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef void (*glGetProgramivPROC)(GLuint program, GLenum pname, GLint *params);
-typedef void (*glGetProgramInfoLogPROC)(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef void (*glGenBuffersPROC)(GLsizei n, GLuint *buffers);
-typedef GLint (*glGetUniformLocationPROC)(GLuint program, const GLchar *name);
-typedef GLint (*glGetAttribLocationPROC)(GLuint program, const GLchar *name);
-typedef void (*glUniformMatrix4fvPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
-typedef void (*glTexImage2DPROC)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void *pixels);
-typedef void (*glActiveTexturePROC) (GLenum texture);
-typedef void (*glUniform1fPROC) (GLint location, GLfloat v0);
-typedef void (*glUniform2fPROC) (GLint location, GLfloat v0, GLfloat v1);
-typedef void (*glUniform3fPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
-typedef void (*glUniform4fPROC) (GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
-
-#if defined(RSGL_GLES3) || defined(RSGL_GL3)
-	typedef void (*glGenVertexArraysPROC)(GLsizei n, GLuint *arrays);
-	typedef void (*glBindVertexArrayPROC)(GLuint array);
-	typedef void (*glDeleteVertexArraysPROC) (GLsizei n, const GLuint *arrays);
-
-	glGenVertexArraysPROC glGenVertexArraysSRC = NULL;
-	glBindVertexArrayPROC glBindVertexArraySRC = NULL;
-	glDeleteVertexArraysPROC glDeleteVertexArraysSRC = NULL;
-#endif
-
-glShaderSourcePROC glShaderSourceSRC = NULL;
-glCreateShaderPROC glCreateShaderSRC = NULL;
-glCompileShaderPROC glCompileShaderSRC = NULL;
-glCreateProgramPROC glCreateProgramSRC = NULL;
-glAttachShaderPROC glAttachShaderSRC = NULL;
-glBindAttribLocationPROC glBindAttribLocationSRC = NULL;
-glLinkProgramPROC glLinkProgramSRC = NULL;
-glBindBufferPROC glBindBufferSRC = NULL;
-glBufferDataPROC glBufferDataSRC = NULL;
-glEnableVertexAttribArrayPROC glEnableVertexAttribArraySRC = NULL;
-glVertexAttribPointerPROC glVertexAttribPointerSRC = NULL;
-glDisableVertexAttribArrayPROC glDisableVertexAttribArraySRC = NULL;
-glDeleteBuffersPROC glDeleteBuffersSRC = NULL;
-glUseProgramPROC glUseProgramSRC = NULL;
-glDetachShaderPROC glDetachShaderSRC = NULL;
-glDeleteShaderPROC glDeleteShaderSRC = NULL;
-glDeleteProgramPROC glDeleteProgramSRC = NULL;
-glBufferSubDataPROC glBufferSubDataSRC = NULL;
-glGetShaderivPROC glGetShaderivSRC = NULL;
-glGetShaderInfoLogPROC glGetShaderInfoLogSRC = NULL;
-glGetProgramivPROC glGetProgramivSRC = NULL;
-glGetProgramInfoLogPROC glGetProgramInfoLogSRC = NULL;
-glGenBuffersPROC glGenBuffersSRC = NULL;
-glGetUniformLocationPROC glGetUniformLocationSRC = NULL;
-glGetAttribLocationPROC glGetAttribLocationSRC = NULL;
-glUniformMatrix4fvPROC glUniformMatrix4fvSRC = NULL;
-glActiveTexturePROC glActiveTextureSRC = NULL;
-glUniform1fPROC glUniform1fSRC = NULL;
-glUniform2fPROC glUniform2fSRC = NULL;
-glUniform3fPROC glUniform3fSRC = NULL;
-glUniform4fPROC glUniform4fSRC = NULL;
-
-typedef void (*glBindFramebufferPROC) (GLenum target, GLuint framebuffer);
-typedef void (*glGenFramebuffersPROC) (GLsizei n, GLuint *ids);
-typedef void (*glDeleteFramebuffersPROC) (GLsizei n, GLuint *framebuffers);
-typedef void (*glFramebufferTexture2DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-
-#ifdef RSGL_USE_COMPUTE
-typedef void (*glDispatchComputePROC)(GLuint x, GLuint y, GLuint z);
-glDispatchComputePROC glDispatchComputeSRC = NULL;
-
-typedef void (*glMemoryBarrierPROC)(GLenum e);
-glMemoryBarrierPROC glMemoryBarrierSRC = NULL;
-
-typedef void (*glBindImageTexturePROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
-glBindImageTexturePROC glBindImageTextureSRC = NULL;
-
-#endif
-
-glBindFramebufferPROC glBindFramebufferSRC = NULL;
-glGenFramebuffersPROC glGenFramebuffersSRC = NULL;
-glDeleteFramebuffersPROC glDeleteFramebuffersSRC = NULL;
-glFramebufferTexture2DPROC glFramebufferTexture2DSRC = NULL;
-
-#define glUniform1f glUniform1fSRC
-#define glUniform2f glUniform2fSRC
-#define glUniform3f glUniform3fSRC
-#define glUniform4f glUniform4fSRC
-#define glActiveTexture glActiveTextureSRC
-#define glShaderSource glShaderSourceSRC
-#define glCreateShader glCreateShaderSRC
-#define glCompileShader glCompileShaderSRC
-#define glCreateProgram glCreateProgramSRC
-#define glAttachShader glAttachShaderSRC
-#define glBindAttribLocation glBindAttribLocationSRC
-#define glLinkProgram glLinkProgramSRC
-#define glBindBuffer glBindBufferSRC
-#define glBufferData glBufferDataSRC
-#define glEnableVertexAttribArray glEnableVertexAttribArraySRC
-#define glVertexAttribPointer glVertexAttribPointerSRC
-#define glDisableVertexAttribArray glDisableVertexAttribArraySRC
-#define glDeleteBuffers glDeleteBuffersSRC
-#define glUseProgram glUseProgramSRC
-#define glDetachShader glDetachShaderSRC
-#define glDeleteShader glDeleteShaderSRC
-#define glDeleteProgram glDeleteProgramSRC
-#define glBufferSubData glBufferSubDataSRC
-#define glGetShaderiv glGetShaderivSRC
-#define glGetShaderInfoLog glGetShaderInfoLogSRC
-#define glGetProgramiv glGetProgramivSRC
-#define glGetProgramInfoLog glGetProgramInfoLogSRC
-#define glGenBuffers glGenBuffersSRC
-#define glGetUniformLocation glGetUniformLocationSRC
-#define glGetAttribLocation glGetAttribLocationSRC
-#define glUniformMatrix4fv glUniformMatrix4fvSRC
-#define glBindFramebuffer glBindFramebufferSRC
-#define glGenFramebuffers glGenFramebuffersSRC
-#define glDeleteFramebuffers glDeleteFramebuffersSRC
-#define glFramebufferTexture2D glFramebufferTexture2DSRC
-
-#if defined(RSGL_GLES3) || defined(RSGL_GL3)
-	#define glGenVertexArrays glGenVertexArraysSRC
-	#define glBindVertexArray glBindVertexArraySRC
-	#define glDeleteVertexArrays glDeleteVertexArraysSRC
-#endif
-
-#ifdef RSGL_USE_COMPUTE
-#define glMemoryBarrier glMemoryBarrierSRC
-#define glDispatchCompute glDispatchComputeSRC
-#define glBindImageTexture glBindImageTextureSRC
-#endif
-
-#ifndef GL_TEXTURE_SWIZZLE_RGBA
-	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
-#endif
-
-extern int RSGL_loadGLModern(RSGLloadfunc proc);
-#endif
-
 #define RSGL_MULTILINE_STR(...) #__VA_ARGS__
+
+struct RSGL_glRenderer {
+	u32 vao;
+};
+
 size_t RSGL_GL_size(void) {
 	return sizeof(RSGL_glRenderer);
 }
@@ -301,8 +134,6 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	proc.createFramebuffer = (RSGL_framebuffer (*)(void*, size_t, size_t))RSGL_GL_createFramebuffer;
 	proc.attachFramebuffer = (void (*)(void*, RSGL_framebuffer, RSGL_texture, u8, u8))RSGL_GL_attachFramebuffer;
 	proc.deleteFramebuffer = (void (*)(void*, RSGL_framebuffer))RSGL_GL_deleteFramebuffer;
-
-
 //	proc.setSurface = (void (*)(void*, void*))RSGL_GL_setSurface;
 #ifdef RSGL_USE_COMPUTE
 	proc.createComputeProgram = (RSGL_programInfo (*)(void*, const char*))RSGL_GL_createComputeProgram;
@@ -332,13 +163,16 @@ GLuint RSGL_GL_bufferTypeToNative(RSGL_bufferType type) {
 	switch (type) {
 		case RSGL_arrayBuffer: return GL_ARRAY_BUFFER;
 		case RSGL_elementArrayBuffer: return GL_ELEMENT_ARRAY_BUFFER;
-		#if !defined(__APPLE__)
+		#if !defined(__APPLE__) && !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
 			case RSGL_shaderStorageBuffer: return GL_SHADER_STORAGE_BUFFER;
-		#endif
-		#if !defined(__APPLE__) || defined(RSGL_GLES3)
 			case RSGL_textureBuffer: return GL_TEXTURE_BUFFER;
 			case RSGL_uniformBuffer: return GL_UNIFORM_BUFFER;
+		#else
+			case RSGL_shaderStorageBuffer: RSGL_ASSERT(!"shader storage buffer is not supported");
+			case RSGL_textureBuffer: RSGL_ASSERT(!"shader texture buffer is not supported");
+			case RSGL_uniformBuffer: RSGL_ASSERT(!"uniform buffer is not supported");
 		#endif
+
 		default: break;
 	}
 
@@ -480,14 +314,7 @@ print matrix array code snippet
 
 
 void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
-	#if !defined(__EMSCRIPTEN__) && !defined(RSGL_NO_GL_LOADER)
-    if (RSGL_loadGLModern((RSGLloadfunc)proc)) {
-        #ifdef RSGL_DEBUG
-        printf("Failed to load an OpenGL 3.3 Context, reverting to OpenGL Legacy\n");
-        #endif
-        return;
-    }
-    #elif defined(RSGL_GL_LOAD_WITH_GLAD)
+	#if defined(RSGL_GL_USE_GLAD)
 	if (gladLoadGL((GLADloadfunc)proc) == 0) {
         #ifdef RSGL_DEBUG
         printf("Failed to load an OpenGL functions\n");
@@ -589,12 +416,20 @@ void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx) {
 GLuint RSGL_GL_textureFormatToNative(RSGL_textureFormat format) {
 	switch (format) {
 		case RSGL_formatRGB: return GL_RGB;
-		case RSGL_formatBGR: return GL_BGR;
 		case RSGL_formatRGBA: return GL_RGBA;
-		case RSGL_formatBGRA: return GL_BGRA;
-		case RSGL_formatRed: return GL_RED;
-		case RSGL_formatGrayscale: return GL_RED;
-		case RSGL_formatGrayscaleAlpha: return GL_RED;
+		#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
+			case RSGL_formatBGR: return GL_BGR;
+			case RSGL_formatBGRA: return GL_BGRA;
+			case RSGL_formatRed: return GL_RED;
+			case RSGL_formatGrayscale: return GL_RED;
+			case RSGL_formatGrayscaleAlpha: return GL_RED;
+		#else
+			case RSGL_formatBGR: RSGL_ASSERT(!"GLES does not support BGR"); break;
+			case RSGL_formatBGRA: RSGL_ASSERT(!"GLES does not support BGRA"); break;
+			case RSGL_formatRed: RSGL_ASSERT(!"GLES does not support GL RED"); break;
+			case RSGL_formatGrayscale: RSGL_ASSERT(!"GLES does not support GL RED"); break;
+			case RSGL_formatGrayscaleAlpha: RSGL_ASSERT(!"GLES does not support GL RED"); break;
+		#endif
 		default: break;
 	}
 
@@ -649,7 +484,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
 	u32 textureFormat = RSGL_GL_textureFormatToNative(blob->textureFormat);
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
-#ifndef RSGL_GLES2
+#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
 	if (blob->dataFormat == RSGL_formatGrayscale) {
 		static GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
@@ -676,7 +511,7 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
 
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
-#ifndef RSGL_GLES2
+#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
 	if (blob->dataFormat == RSGL_formatGrayscale) {
 		static GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
@@ -689,15 +524,6 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
 	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, (i32)blob->width, (i32)blob->height, dataFormat, dataType, blob->data);
     glBindTexture(GL_TEXTURE_2D, 0);
 }
-
-#ifndef GL_DEBUG_TYPE_ERROR
-#define GL_DEBUG_TYPE_ERROR               0x824C
-#define GL_DEBUG_OUTPUT                   0x92E0
-#define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
-#define GL_COMPILE_STATUS                 0x8B81
-#define GL_LINK_STATUS                    0x8B82
-#define GL_INFO_LOG_LENGTH                0x8B84
-#endif
 
 #ifdef RSGL_DEBUG
 void RSGL_opengl_getError(void) {
@@ -713,12 +539,14 @@ void RSGL_opengl_getError(void) {
 		case GL_INVALID_OPERATION:
 			printf("OpenGL error: GL_INVALID_OPERATION\n");
 			break;
+		#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
 		case GL_STACK_OVERFLOW:
 			printf("OpenGL error: GL_STACK_OVERFLOW\n");
 			break;
 		case GL_STACK_UNDERFLOW:
 			printf("OpenGL error: GL_STACK_UNDERFLOW\n");
 			break;
+		#endif
 		default:
 			printf("OpenGL error: Unknown error code 0x%x\n", err);
 			break;
@@ -873,22 +701,6 @@ void RSGL_GL_deleteFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo) {
 
 #ifdef RSGL_USE_COMPUTE
 
-#ifndef GL_RG8
-#define GL_RG8 0x822B
-#endif
-
-#ifndef GL_READ_WRITE
-#define GL_READ_WRITE 0x88BA
-#endif
-
-#ifndef GL_COMPUTE_SHADER
-#define GL_COMPUTE_SHADER 0x91B9
-#endif
-
-#ifndef GL_SHADER_IMAGE_ACCESS_BARRIER_BIT
-#define GL_SHADER_IMAGE_ACCESS_BARRIER_BIT 0x00000020
-#endif
-
 RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_glRenderer* ctx, const char* CShaderCode) {
 	RSGL_programInfo program;
 	program.type = RSGL_shaderTypeCompute;
@@ -931,89 +743,6 @@ void RSGL_GL_bindComputeTexture(RSGL_glRenderer* ctx, u32 texture, u8 format) {
 	glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, c);
 }
 
-#endif
-
-#ifndef RSGL_NO_GL_LOADER
-int RSGL_loadGLModern(RSGLloadfunc proc) {
-    RSGL_PROC_DEF(proc, glShaderSource);
-    RSGL_PROC_DEF(proc, glCreateShader);
-    RSGL_PROC_DEF(proc, glCompileShader);
-    RSGL_PROC_DEF(proc, glCreateProgram);
-    RSGL_PROC_DEF(proc, glAttachShader);
-    RSGL_PROC_DEF(proc, glBindAttribLocation);
-    RSGL_PROC_DEF(proc, glLinkProgram);
-    RSGL_PROC_DEF(proc, glBindBuffer);
-    RSGL_PROC_DEF(proc, glBufferData);
-    RSGL_PROC_DEF(proc, glEnableVertexAttribArray);
-    RSGL_PROC_DEF(proc, glVertexAttribPointer);
-    RSGL_PROC_DEF(proc, glDisableVertexAttribArray);
-    RSGL_PROC_DEF(proc, glDeleteBuffers);
-    RSGL_PROC_DEF(proc, glUseProgram);
-    RSGL_PROC_DEF(proc, glDetachShader);
-    RSGL_PROC_DEF(proc, glDeleteShader);
-    RSGL_PROC_DEF(proc, glDeleteProgram);
-    RSGL_PROC_DEF(proc, glBufferSubData);
-    RSGL_PROC_DEF(proc, glGetShaderiv);
-    RSGL_PROC_DEF(proc, glGetShaderInfoLog);
-    RSGL_PROC_DEF(proc, glGetProgramiv);
-    RSGL_PROC_DEF(proc, glGetProgramInfoLog);
-    RSGL_PROC_DEF(proc, glGenBuffers);
-    RSGL_PROC_DEF(proc, glGetUniformLocation);
-    RSGL_PROC_DEF(proc, glGetAttribLocation);
-    RSGL_PROC_DEF(proc, glUniformMatrix4fv);
-    RSGL_PROC_DEF(proc, glActiveTexture);
-    RSGL_PROC_DEF(proc, glUniform1f);
-    RSGL_PROC_DEF(proc, glUniform2f);
-    RSGL_PROC_DEF(proc, glUniform3f);
-    RSGL_PROC_DEF(proc, glUniform4f);
-    RSGL_PROC_DEF(proc, glBindFramebuffer);
-    RSGL_PROC_DEF(proc, glGenFramebuffers);
-    RSGL_PROC_DEF(proc, glDeleteFramebuffers);
-    RSGL_PROC_DEF(proc, glFramebufferTexture2D);
-#if defined(RSGL_GLES3) || defined(RSGL_GL3)
-	RSGL_PROC_DEF(proc, glBindVertexArray);
-	RSGL_PROC_DEF(proc, glGenVertexArrays);
-	RSGL_PROC_DEF(proc, glDeleteVertexArrays);
-#endif
-#ifdef RSGL_USE_COMPUTE
-	RSGL_PROC_DEF(proc, glDispatchCompute);
-	RSGL_PROC_DEF(proc, glMemoryBarrier);
-	RSGL_PROC_DEF(proc, glBindImageTexture);
-#endif
-
-    if (
-        glShaderSourceSRC == NULL ||
-        glCreateShaderSRC == NULL ||
-        glCompileShaderSRC == NULL ||
-        glCreateProgramSRC == NULL ||
-        glAttachShaderSRC == NULL ||
-        glBindAttribLocationSRC == NULL ||
-        glLinkProgramSRC == NULL ||
-        glBindBufferSRC == NULL ||
-        glBufferDataSRC == NULL ||
-        glVertexAttribPointerSRC == NULL ||
-        glDisableVertexAttribArraySRC == NULL ||
-        glDeleteBuffersSRC == NULL ||
-        glUseProgramSRC == NULL ||
-        glDetachShaderSRC == NULL ||
-        glDeleteShaderSRC == NULL ||
-        glDeleteProgramSRC == NULL ||
-        glBufferSubDataSRC == NULL ||
-        glGetShaderivSRC == NULL ||
-        glGetShaderInfoLogSRC == NULL ||
-        glGetProgramivSRC == NULL ||
-        glGetProgramInfoLogSRC == NULL ||
-        glGenBuffersSRC == NULL ||
-        glGetUniformLocationSRC == NULL ||
-        glUniformMatrix4fvSRC == NULL ||
-		glBindFramebufferSRC == NULL ||
-		glGenFramebuffersSRC == NULL ||
-		glDeleteFramebuffersSRC == NULL ||
-		glFramebufferTexture2DSRC == NULL
-    )
-        return 1;
-    return 0;
-}
 #endif
 
 #endif /* RSGL_IMPLEMENTATION */

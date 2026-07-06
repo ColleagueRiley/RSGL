@@ -4,8 +4,10 @@
 #include "RSGL.h"
 
 #ifndef __EMSCRIPTEN__
+#define RSGL_GL1_USE_GLAD
 #include "RSGL_gl1.h"
 #else
+#define RSGL_GL_USE_GLAD
 #include "RSGL_gl.h"
 #endif
 

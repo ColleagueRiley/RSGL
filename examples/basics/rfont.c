@@ -6,6 +6,7 @@
 #define RFONT_IMPLEMENTATION
 #include "RFont.h"
 
+#define RSGL_GL_USE_GLAD
 #define RSGL_RFONT
 #define RSGL_INT_DEFINED
 #define RSGL_IMPLEMENTATION
