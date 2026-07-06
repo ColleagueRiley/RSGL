@@ -47,7 +47,7 @@ RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_r
 #endif
 
 #ifdef RSGL_GL_USE_GLAD
-	#if !defined(GLAD_GL_H_) && defined(GLAD_GL_IMPLEMENTATION) 
+	#if !defined(GLAD_GL_H_) || !defined(GLAD_GL_IMPLEMENTATION) 
 		#define GLAD_MALLOC RSGL_MALLOC 
 		#define GLAD_FREE RSGL_FREE
 		#define GLAD_GL_IMPLEMENTATION
