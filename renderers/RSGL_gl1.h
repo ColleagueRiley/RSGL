@@ -29,10 +29,6 @@ RSGLDEF void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL
 	#endif
 #endif
 
-#ifndef GL_TEXTURE_SWIZZLE_RGBA
-	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
-#endif
-
 RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_renderPass* pass);
 RSGLDEF void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL1_freePtr(RSGL_gl1Renderer* ctx); /* free render backend */

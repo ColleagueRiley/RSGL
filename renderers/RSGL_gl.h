@@ -514,15 +514,6 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#ifndef GL_DEBUG_TYPE_ERROR
-#define GL_DEBUG_TYPE_ERROR               0x824C
-#define GL_DEBUG_OUTPUT                   0x92E0
-#define GL_DEBUG_OUTPUT_SYNCHRONOUS       0x8242
-#define GL_COMPILE_STATUS                 0x8B81
-#define GL_LINK_STATUS                    0x8B82
-#define GL_INFO_LOG_LENGTH                0x8B84
-#endif
-
 #ifdef RSGL_DEBUG
 void RSGL_opengl_getError(void) {
 	GLenum err;
@@ -696,22 +687,6 @@ void RSGL_GL_deleteFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo) {
 }
 
 #ifdef RSGL_USE_COMPUTE
-
-#ifndef GL_RG8
-#define GL_RG8 0x822B
-#endif
-
-#ifndef GL_READ_WRITE
-#define GL_READ_WRITE 0x88BA
-#endif
-
-#ifndef GL_COMPUTE_SHADER
-#define GL_COMPUTE_SHADER 0x91B9
-#endif
-
-#ifndef GL_SHADER_IMAGE_ACCESS_BARRIER_BIT
-#define GL_SHADER_IMAGE_ACCESS_BARRIER_BIT 0x00000020
-#endif
 
 RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_glRenderer* ctx, const char* CShaderCode) {
 	RSGL_programInfo program;
