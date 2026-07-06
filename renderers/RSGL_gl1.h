@@ -16,6 +16,10 @@ RSGLDEF void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL
 
 #ifdef RSGL_IMPLEMENTATION
 
+#if defined(__EMSCRIPTEN__) && defined(RSGL_GL1_USE_GLAD) 
+	#undef RSGL_GL_USE_GLAD
+#endif
+
 #ifdef RSGL_GL1_USE_GLAD
 	#if !defined(GLAD_GL_H_) && defined(GLAD_GL_IMPLEMENTATION) 
 		#define GLAD_MALLOC RSGL_MALLOC 

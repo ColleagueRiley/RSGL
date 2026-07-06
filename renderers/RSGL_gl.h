@@ -17,6 +17,35 @@ RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_r
 
 #ifdef RSGL_IMPLEMENTATION
 
+#ifdef __EMSCRIPTEN__
+	#if defined(RSGL_GL2)
+		#undef RSGL_GL2
+		#define RSGL_GLES2
+	#endif
+	#if defined(RSGL_GL3)
+		#undef RSGL_GL3
+		#define RSGL_GLES3
+	#endif
+#endif
+
+#if !defined(RSGL_GLES3) && !defined(RSGL_GLES2) && !defined(RSGL_GL2) && !defined(RSGL_GL3)
+	#ifndef __EMSCRIPTEN__
+		#define RSGL_GL3
+	#else
+		#define RSGL_GLES3
+	#endif
+#endif
+
+#if (defined(__EMSCRIPTEN__) || defined(RSGL_GLES3) || defined(RSGL_GLES2)) && defined(RSGL_GL_USE_GLAD) 
+	#undef RSGL_GL_USE_GLAD
+#endif
+
+#if defined(RSGL_GLES3)
+	#include <GLES3/gl3.h>
+#elif defined(RSGL_GLES2)
+	#include <GLES2/gl2.h>
+#endif
+
 #ifdef RSGL_GL_USE_GLAD
 	#if !defined(GLAD_GL_H_) && defined(GLAD_GL_IMPLEMENTATION) 
 		#define GLAD_MALLOC RSGL_MALLOC 
@@ -66,46 +95,8 @@ RSGLDEF void RSGL_GL_bindComputeTexture(RSGL_glRenderer* ctx, u32 texture, u8 fo
 	#undef RSGL_USE_COMPUTE
 #endif
 
-#ifdef __EMSCRIPTEN__
-	#if defined(RSGL_GL2)
-		#undef RSGL_GL2
-		#define RSGL_GLES2
-	#endif
-	#if defined(RSGL_GL3)
-		#undef RSGL_GL3
-		#define RSGL_GLES3
-	#endif
-#endif
-
-
-#if !defined(RSGL_GLES3) && !defined(RSGL_GLES2) && !defined(RSGL_GL2) && !defined(RSGL_GL3)
-	#ifndef __EMSCRIPTEN__
-		#define RSGL_GL3
-	#else
-		#define RSGL_GLES3
-	#endif
-#endif
-
 RSGL_renderer* RSGL_GL_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL_rendererProc(), loader); }
 void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_renderer* renderer) { RSGL_renderer_initPtr(RSGL_GL_rendererProc(), loader, ptr, renderer); }
-
-/* prevent winapi conflicts (opengl includes windows.h for some reason) */
-#define OEMRESOURCE
-
-#define GL_GLEXT_PROTOTYPES
-
-#ifndef __APPLE__
-#include <GL/gl.h>
-#else
-#include <OpenGL/gl.h>
-#include <OpenGL/glext.h>
-#endif
-
-#if defined(RSGL_GLES3)
-	#include <GLES3/gl3.h>
-#elif defined(RSGL_GLES2)
-	#include <GLES2/gl2.h>
-#endif
 
 #define RSGL_MULTILINE_STR(...) #__VA_ARGS__
 
