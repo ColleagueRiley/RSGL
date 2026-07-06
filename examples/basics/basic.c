@@ -1,8 +1,10 @@
+#define RSGL_GL_USE_GLAD
 #define RSGL_IMPLEMENTATION
 #include "RSGL.h"
 #include "RSGL_gl.h"
 
 #ifndef __EMSCRIPTEN__
+#define RSGL_GL1_USE_GLAD
 #include "RSGL_gl1.h"
 #endif
 

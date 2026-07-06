@@ -9,6 +9,7 @@
 #undef __linux__
 #endif
 
+#define RSGL_GL_USE_GLAD
 #define RSGL_DEBUG
 //#define RSGL_RENDER_LEGACY
 #define RSGL_IMPLEMENTATION
