@@ -416,17 +416,18 @@ void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx) {
 GLuint RSGL_GL_textureFormatToNative(RSGL_textureFormat format) {
 	switch (format) {
 		case RSGL_formatRGB: return GL_RGB;
+		case RSGL_formatRGBA: return GL_RGBA;
+		case RSGL_formatGrayscale: return GL_RED;
+		case RSGL_formatGrayscaleAlpha: return GL_RED;
 		#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
 			case RSGL_formatBGR: return GL_BGR;
 			case RSGL_formatBGRA: return GL_BGRA;
+			case RSGL_formatRed: return GL_RED;
 		#else
-			case RSGL_formatRGB: RSGL_ASSERT(!"GLES does not support BGR"); break;
+			case RSGL_formatBGR: RSGL_ASSERT(!"GLES does not support BGR"); break;
 			case RSGL_formatBGRA: RSGL_ASSERT(!"GLES does not support BGRA"); break;
+			case RSGL_formatRed: return RSGL_ASSERT(!"GLES does not support GL RED"); break;
 		#endif
-		case RSGL_formatRGBA: return GL_RGBA;
-		case RSGL_formatRed: return GL_RED;
-		case RSGL_formatGrayscale: return GL_RED;
-		case RSGL_formatGrayscaleAlpha: return GL_RED;
 		default: break;
 	}
 
