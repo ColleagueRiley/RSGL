@@ -426,7 +426,7 @@ GLuint RSGL_GL_textureFormatToNative(RSGL_textureFormat format) {
 		#else
 			case RSGL_formatBGR: RSGL_ASSERT(!"GLES does not support BGR"); break;
 			case RSGL_formatBGRA: RSGL_ASSERT(!"GLES does not support BGRA"); break;
-			case RSGL_formatRed: return RSGL_ASSERT(!"GLES does not support GL RED"); break;
+			case RSGL_formatRed: RSGL_ASSERT(!"GLES does not support GL RED"); break;
 		#endif
 		default: break;
 	}
@@ -482,7 +482,7 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
 	u32 textureFormat = RSGL_GL_textureFormatToNative(blob->textureFormat);
 	u32 dataType = RSGL_GL_textureDataTypeToNative(blob->dataType);
 
-#ifndef RSGL_GLES2
+#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
 	if (blob->dataFormat == RSGL_formatGrayscale) {
 		static GLint swizzleRgbaParams[4] = { GL_RED, GL_RED, GL_RED, GL_ONE  };
 		glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRgbaParams);
