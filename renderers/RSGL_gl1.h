@@ -2,10 +2,6 @@
 #include "RSGL.h"
 #endif
 
-#ifndef GL_TEXTURE_SWIZZLE_RGBA
-	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
-#endif
-
 #ifndef RSGL_GL1_H
 #define RSGL_GL1_H
 
@@ -16,6 +12,22 @@ RSGLDEF size_t RSGL_GL1_size(void);
 
 RSGLDEF RSGL_renderer* RSGL_GL1_renderer_init(void* loader);
 RSGLDEF void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer);
+#endif
+
+#ifdef RSGL_IMPLEMENTATION
+
+#ifdef RSGL_GL1_USE_GLAD
+	#if !defined(GLAD_GL_H_) && defined(GLAD_GL_IMPLEMENTATION) 
+		#define GLAD_MALLOC RSGL_MALLOC 
+		#define GLAD_FREE RSGL_FREE
+		#define GLAD_GL_IMPLEMENTATION
+		#include "glad.h"
+	#endif
+#endif
+
+#ifndef GL_TEXTURE_SWIZZLE_RGBA
+	#define GL_TEXTURE_SWIZZLE_RGBA 0x8E46
+#endif
 
 RSGLDEF void RSGL_GL1_render(RSGL_gl1Renderer* ctx, const RSGL_renderPass* pass);
 RSGLDEF void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc); /* init render backend */
@@ -34,43 +46,9 @@ RSGLDEF void RSGL_GL1_deleteTexture(RSGL_gl1Renderer* ctx, RSGL_texture tex);
 RSGLDEF void RSGL_GL1_scissorStart(RSGL_gl1Renderer* ctx, float x, float y, float w, float h, float renderer_height);
 /* stops scissoring */
 RSGLDEF void RSGL_GL1_scissorEnd(RSGL_gl1Renderer* ctx);
-#endif
-
-#ifdef RSGL_IMPLEMENTATION
 
 RSGL_renderer* RSGL_GL1_renderer_init(void* loader) { return RSGL_renderer_init(RSGL_GL1_rendererProc(), loader); }
 void RSGL_GL1_renderer_initPtr(void* loader, RSGL_gl1Renderer* ptr, RSGL_renderer* renderer) { RSGL_renderer_initPtr(RSGL_GL1_rendererProc(), loader, ptr, renderer); }
-
-
-/* prevent winapi conflicts (opengl includes windows.h for some reason) */
-#define OEMRESOURCE
-
-#ifndef __APPLE__
-#include <GL/gl.h>
-#else
-#include <OpenGL/gl.h>
-#endif
-
-#if defined(_WIN32)
-typedef char GLchar;
-typedef int	 GLsizei;
-
-#define GL_VERTEX_SHADER   0x8B31
-#define GL_FRAGMENT_SHADER 0x8B30
-#define GL_ARRAY_BUFFER         0x8892
-#define GL_ELEMENT_ARRAY_BUFFER 0x8893
-#define GL_STATIC_DRAW  0x88E4
-#define GL_DYNAMIC_DRAW 0x88E8
-#define GL_TEXTURE0 0x84C0
-
-#ifndef GL_BGR 
-	#define GL_BGR                            0x80E0
-#endif
-#ifndef GL_BGRA
-	#define GL_BGRA                           0x80E1
-#endif
-
-#endif
 
 size_t RSGL_GL1_size(void) {
 	return sizeof(RSGL_gl1Renderer);
@@ -125,7 +103,7 @@ void RSGL_GL1_deleteBuffer(RSGL_gl1Renderer* ctx, size_t buffer) {
 }
 
 void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc) {
-	#ifdef RSGL_GL1_LOAD_WITH_GLAD
+	#ifdef RSGL_GL1_USE_GLAD
 	if (gladLoadGL((GLADloadfunc)proc) == 0) {
         #ifdef RSGL_DEBUG
         printf("Failed to load an OpenGL functions\n");
