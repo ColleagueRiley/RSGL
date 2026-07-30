@@ -64,6 +64,13 @@
 	#define RSGL_MEMSET(ptr, value, num) memset(ptr, value, num)
 #endif
 
+#ifdef RSGL_DEBUG
+	#ifndef RSGL_PRINTF
+		#include <stdio.h>
+		#define RSGL_PRINTF printf
+	#endif /* RSGL_PRINTF */
+#endif /* RSGL_DEBUG */
+
 #ifndef RSGL_H
 #define RSGL_H
 #ifndef RSGLDEF
@@ -134,7 +141,46 @@ RSGL_STATIC_ASSERT(size16, sizeof(i16) == 2)
 #define RSGL_MAX_VERTS 8192
 #endif
 
-typedef enum RSGL_textureFormat {
+#define RSGL_ENUM(type, name) type name; enum name##_enum
+
+/* 
+******
+RSGL_debug
+*****
+*/
+
+/*! @brief the type of debug message */
+typedef RSGL_ENUM(u8, RSGL_debugType) {
+	RSGL_typeError = 0, RSGL_typeWarning, RSGL_typeInfo
+};
+
+/*! @brief error codes for known failure types */
+typedef RSGL_ENUM(u8, RSGL_errorCode) {
+	RSGL_noError = 0, /*!< no error */
+	RSGL_errorBackend, 
+	RSGL_errorQueryFail,
+	RSGL_errorShader,
+	RSGL_infoBackend,
+	RSGL_infoShader,
+	RSGL_warningBackend
+};
+
+/*! @brief data for debug messages */
+typedef struct RSGL_debugInfo {
+	RSGL_debugType type; /*!< the type of message */
+	RSGL_errorCode code; /*!< the code for the specific type of debug message */
+	const char* msg; /*!< string message */
+} RSGL_debugInfo;
+
+typedef void (* RSGL_debugFunc)(const RSGL_debugInfo* info);
+
+/* 
+******
+RSGL_renderer types
+*****
+*/
+
+typedef RSGL_ENUM(i32, RSGL_textureFormat) {
 	RSGL_formatNone = 0,
 	RSGL_formatRGB,    /*!< 8-bit RGB (3 channels) */
     RSGL_formatBGR,    /*!< 8-bit BGR (3 channels) */
@@ -144,17 +190,17 @@ typedef enum RSGL_textureFormat {
     RSGL_formatGrayscale,   /*!< 8-bit grayscale (1 channel) */
     RSGL_formatGrayscaleAlpha,   /*!< 8-bit grayscale alpha (1 channel) */
 	RSGL_formatCount
-} RSGL_textureFormat;
+};
 
-typedef enum RSGL_textureDataType {
+typedef RSGL_ENUM(i32, RSGL_textureDataType) {
 	RSGL_textureDataInt = 0,
 	RSGL_textureDataFloat
-} RSGL_textureDataType;
+};
 
-typedef enum RSGL_textureFilter {
+typedef RSGL_ENUM(i32, RSGL_textureFilter) {
 	RSGL_filterNearest = 0,
 	RSGL_filterLinear
-} RSGL_textureFilter;
+};
 
 typedef struct RSGL_textureBlob {
 	void* data; /* input data */
@@ -237,11 +283,11 @@ RSGL_perspective
 *******
 */
 
-typedef enum RSGL_projectionType {
+typedef RSGL_ENUM(i32, RSGL_projectionType) {
 	RSGL_projectionOrtho2D = 0,
 	RSGL_projectionOrtho3D,
 	RSGL_projectionPerspective3D,
-} RSGL_projectionType;
+};
 
 typedef struct RSGL_projection2D {
 	RSGL_projectionType type;
@@ -264,18 +310,39 @@ typedef union RSGL_projection {
 } RSGL_projection;
 
 /*
+*******
+RSGL_draw low level
+*******
+*/
+
+typedef RSGL_ENUM(i32, RSGL_drawType) {
+	RSGL_TRIANGLES = 0,
+	RSGL_POINTS = 1,
+	RSGL_LINES = 2
+};
+
+typedef struct RSGL_rawVerts {
+	RSGL_drawType type;
+	float* verts;
+	float* texCoords;
+	u16* elements;
+	size_t elmCount;
+	size_t vert_count;
+} RSGL_rawVerts;
+
+/*
 *********************
 RSGL renderer
 *********************
 */
 
 /* used internally for RSGL_deleteProgram */
-typedef enum RSGL_shaderType {
+typedef RSGL_ENUM(i32, RSGL_shaderType) {
 	RSGL_shaderTypeNone = 0,
 	RSGL_shaderTypeStandard = 1, /* standard vertex+fragment shader */
 	RSGL_shaderTypeCompute = 2,
 	RSGL_shaderTypeGeometry = 4, /* unimplemented as of now */
-} RSGL_shaderType;
+};
 
 /* shader program and blob */
 typedef struct RSGL_programBlob {
@@ -299,7 +366,7 @@ typedef struct RSGL_programInfo {
 typedef struct RSGL_BATCH {
     size_t start, len; /* when batch starts and it's length */
     size_t elmStart, elmCount; /* when element batch starts and it's length */
-    u32 type;
+	RSGL_drawType type;
     RSGL_texture tex;
     float lineWidth;
     RSGL_mat4 matrix;
@@ -316,13 +383,13 @@ typedef struct RSGL_renderData {
 	RSGL_mat4 perspective; /* perspective matrix */
 } RSGL_renderData;
 
-typedef enum RSGL_bufferType {
+typedef RSGL_ENUM(i32, RSGL_bufferType) {
 	RSGL_arrayBuffer = 0,
 	RSGL_elementArrayBuffer,
 	RSGL_shaderStorageBuffer,
 	RSGL_textureBuffer,
 	RSGL_uniformBuffer
-} RSGL_bufferType;
+};
 
 typedef struct RSGL_renderBuffers {
 	size_t vertex, color, texture, elements;
@@ -411,36 +478,15 @@ typedef struct RSGL_renderer {
 
 /*
 *******
-RSGL_draw low level
-*******
-*/
-
-typedef enum RSGL_drawType {
-	RSGL_TRIANGLES = 0,
-	RSGL_POINTS = 1,
-	RSGL_LINES = 2
-} RSGL_drawType;
-
-typedef struct RSGL_rawVerts {
-	RSGL_drawType type;
-	float* verts;
-	float* texCoords;
-	u16* elements;
-	size_t elmCount;
-	size_t vert_count;
-} RSGL_rawVerts;
-
-/*
-*******
 RSGL_view
 *******
 */
 
-typedef enum RSGL_viewType {
+typedef RSGL_ENUM(i32, RSGL_viewType) {
 	RSGL_viewTypeNone = 0,
 	RSGL_viewType2D,
 	RSGL_viewType3D,
-} RSGL_viewType;
+};
 
 typedef struct RSGL_view2D {
 	RSGL_viewType type;
@@ -463,6 +509,15 @@ typedef union RSGL_view {
 	RSGL_view2D view2D;
 	RSGL_view3D view3D;
 } RSGL_view;
+
+/* 
+******
+RSGL_debug
+*****
+*/
+
+RSGLDEF RSGL_debugFunc RSGL_setDebugCallback(RSGL_debugFunc func);
+RSGLDEF void RSGL_debugCallback(RSGL_debugType type, RSGL_errorCode code, const char* msg);
 
 /*
 *********************
@@ -693,6 +748,33 @@ RSGLDEF RSGL_mat4 RSGL_view_getMatrix(const RSGL_view* view);
             RSGL_GET_MATRIX_Y(x, y, z), \
             RSGL_GET_MATRIX_Z(x, y, z), \
             RSGL_GET_MATRIX_W(x, y, z) \
+
+RSGL_debugFunc RSGL_debugCallbackSrc = NULL;
+RSGL_debugFunc RSGL_setDebugCallback(RSGL_debugFunc func) {
+	RSGL_debugFunc prev = func;
+	RSGL_debugCallbackSrc = func;
+	return prev;
+}
+
+void RSGL_debugCallback(RSGL_debugType type, RSGL_errorCode code, const char* msg) {
+	RSGL_debugInfo info;
+	info.type = type;
+	info.code = code;
+	info.msg = msg;
+
+	if (RSGL_debugCallbackSrc) RSGL_debugCallbackSrc(&info);
+
+    #ifdef RSGL_DEBUG
+	switch (type) {
+		case RSGL_typeInfo: RSGL_PRINTF("RSGL INFO (%i %i): %s", type, code, msg); break;
+		case RSGL_typeError: RSGL_PRINTF("RSGL DEBUG (%i %i): %s", type, code, msg); break;
+		case RSGL_typeWarning: RSGL_PRINTF("RSGL WARNING (%i %i): %s", type, code, msg); break;
+		default: break;
+	}
+
+	RSGL_PRINTF("\n");
+	#endif
+}
 
 void RSGL_renderer_forceBatch(RSGL_renderer* renderer) {
     renderer->state.forceBatch = RSGL_TRUE;

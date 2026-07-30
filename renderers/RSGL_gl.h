@@ -55,6 +55,11 @@ RSGLDEF void RSGL_GL_renderer_initPtr(void* loader, RSGL_glRenderer* ptr, RSGL_r
 	#endif
 #endif
 
+#ifndef RSGL_SNPRINTF
+	#include <stdio.h>
+	#define RSGL_SNPRINTF snprintf 
+#endif /* RSGL_SNPRINTF */
+
 RSGLDEF void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass);
 RSGLDEF void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc); /* init render backend */
 RSGLDEF void RSGL_GL_freePtr(RSGL_glRenderer* ctx); /* free render backend */
@@ -303,7 +308,7 @@ RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
 print matrix array code snippet
 	for (size_t iy = 0; iy < 4; iy++) {
 		for (size_t ix = 0; ix < 4; ix++) {
-			printf("%f, ", matrix[(iy * 4) + ix]);
+			printf"%f, ", matrix[(iy * 4) + ix]);
 		}
 		printf("\n");
 	}
@@ -316,21 +321,26 @@ print matrix array code snippet
 void RSGL_GL_initPtr(RSGL_glRenderer* ctx, void* proc) {
 	#if defined(RSGL_GL_USE_GLAD)
 	if (gladLoadGL((GLADloadfunc)proc) == 0) {
-        #ifdef RSGL_DEBUG
-        printf("Failed to load an OpenGL functions\n");
-        #endif
+        RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "Failed to load an OpenGL functions\n");
         return;
     }
 	#else
     RSGL_UNUSED(proc);
     #endif
+
+	char buf[256];
+
+	RSGL_SNPRINTF(buf, 256, "OpenGL Vendor: %s\n", glGetString(GL_VENDOR));
+	RSGL_debugCallback(RSGL_typeInfo, RSGL_infoBackend, buf);
+
+	RSGL_SNPRINTF(buf, 256, "OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
+	RSGL_debugCallback(RSGL_typeInfo, RSGL_infoBackend, buf);
+
+	RSGL_SNPRINTF(buf, 256, "OpenGL Version: %s\n", glGetString(GL_VERSION));
+	RSGL_debugCallback(RSGL_typeInfo, RSGL_infoBackend, buf);
 	
-#ifdef RSGL_DEBUG
-	printf("OpenGL Vendor: %s\n", glGetString(GL_VENDOR));
-	printf("OpenGL Renderer: %s\n", glGetString(GL_RENDERER));
-	printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
-	printf("GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-#endif
+	RSGL_SNPRINTF(buf, 256, "GLSL Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+	RSGL_debugCallback(RSGL_typeInfo, RSGL_infoBackend, buf);
 
 #if defined(RSGL_GLES3) || defined(RSGL_GL3)
 	glGenVertexArrays(1, &ctx->vao);
@@ -525,31 +535,33 @@ void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x,
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-#ifdef RSGL_DEBUG
 void RSGL_opengl_getError(void) {
 	GLenum err;
 	while ((err = glGetError()) != GL_NO_ERROR) {
 		switch (err) {
-		case GL_INVALID_ENUM:
-			printf("OpenGL error: GL_INVALID_ENUM\n");
-			break;
-		case GL_INVALID_VALUE:
-			printf("OpenGL error: GL_INVALID_VALUE\n");
-			break;
-		case GL_INVALID_OPERATION:
-			printf("OpenGL error: GL_INVALID_OPERATION\n");
-			break;
-		#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
-		case GL_STACK_OVERFLOW:
-			printf("OpenGL error: GL_STACK_OVERFLOW\n");
-			break;
-		case GL_STACK_UNDERFLOW:
-			printf("OpenGL error: GL_STACK_UNDERFLOW\n");
-			break;
-		#endif
-		default:
-			printf("OpenGL error: Unknown error code 0x%x\n", err);
-			break;
+			case GL_INVALID_ENUM:
+				RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "OpenGL error: GL_INVALID_ENUM\n");
+				break;
+			case GL_INVALID_VALUE:
+				RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "OpenGL error: GL_INVALID_VALUE\n");
+				break;
+			case GL_INVALID_OPERATION:
+				RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "OpenGL error: GL_INVALID_OPERATION\n");
+				break;
+			#if !defined(RSGL_GLES2) && !defined(RSGL_GLES3)
+			case GL_STACK_OVERFLOW:
+				RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "OpenGL error: GL_STACK_OVERFLOW\n");
+				break;
+			case GL_STACK_UNDERFLOW:
+				RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "OpenGL error: GL_STACK_UNDERFLOW\n");
+				break;
+			#endif
+			default: {
+				char buf[256];
+				RSGL_SNPRINTF(buf, 256, "OpenGL error: Unknown error code 0x%x\n", err);
+				RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, buf);
+				break;
+			}
 		}
 	}
 }
@@ -557,29 +569,35 @@ void RSGL_opengl_getError(void) {
 
 void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
     GLint status;
+
 	if (action[0] == 'l')
 		glGetProgramiv(src, GL_LINK_STATUS, &status);
 	else
 		glGetShaderiv(src, GL_COMPILE_STATUS, &status);
 
-	if (status == GL_TRUE)
-		printf("%s Shader %s successfully.\n", shader, action);
-	else {
-		printf("%s Shader failed to %s.\n", shader, action);
+	char buf[1024];
+
+	if (status == GL_TRUE) {
+		RSGL_SNPRINTF(buf, 256, "%s Shader %s successfully.\n", shader, action);
+		RSGL_debugCallback(RSGL_typeInfo, RSGL_infoShader, buf);
+	} else {
+		RSGL_SNPRINTF(buf, 256, "%s Shader failed to %s.\n", shader, action);
+		RSGL_debugCallback(RSGL_typeError, RSGL_errorShader, buf);
 
 		GLchar infoLog[512];
 		if (action[0] == 'c') {
-			glGetShaderInfoLog(src, 512, NULL, infoLog);
-			printf("%s Shader info log:\n%s\n", shader, infoLog);
+			glGetShaderInfoLog(src, 1024, NULL, infoLog);
+			RSGL_SNPRINTF(buf, 1024, "%s Shader info log:\n%s\n", shader, infoLog);
 		} else {
-			glGetProgramInfoLog(src, 512, NULL, infoLog);
-			printf("%s info log:\n%s\n", shader, infoLog);
+			glGetProgramInfoLog(src, 1024, NULL, infoLog);
+			RSGL_SNPRINTF(buf, 1024, "%s info log:\n%s\n", shader, infoLog);
 		}
+
+		RSGL_debugCallback(RSGL_typeError, RSGL_errorShader, buf);
 
 		RSGL_opengl_getError();
 	}
 }
-#endif
 
 RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* blob) {
 	RSGL_programInfo program;
@@ -590,18 +608,14 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 	glShaderSource(vShader, 1, &blob->vertex, NULL);
 	glCompileShader(vShader);
 
-#ifdef RSGL_DEBUG
 	RSGL_debug_shader(vShader, "Vertex", "compile");
-#endif
 
 	/* compile fragment shader */
 	fShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fShader, 1, &blob->fragment, NULL);
 	glCompileShader(fShader);
 
-#ifdef RSGL_DEBUG
 	RSGL_debug_shader(fShader, "Fragment", "compile");
-#endif
 
 	/* create program and link vertex and fragment shaders */
 	program.program = glCreateProgram();
@@ -610,9 +624,7 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 	glAttachShader(program.program, fShader);
 	glLinkProgram(program.program);
 
-#ifdef RSGL_DEBUG
 	RSGL_debug_shader(program.program, "Program", "link");
-#endif
 
 	glDeleteShader(vShader);
 	glDeleteShader(fShader);
@@ -626,11 +638,9 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 	program.perspectiveView = glGetUniformLocation(program.program, "pv");
 	program.model = glGetUniformLocation(program.program, "model");
 
-	#ifdef RSGL_DEBUG
 	if (program.perspectiveView < 0 || program.model < 0) {
-		printf("Failed to locate the shader variables\n");
+		RSGL_debugCallback(RSGL_typeError, RSGL_errorQueryFail, "Failed to locate the shader variables\n");
 	}
-	#endif
 
 	glUseProgram(0);
 
@@ -709,16 +719,12 @@ RSGL_programInfo RSGL_GL_createComputeProgram(RSGL_glRenderer* ctx, const char* 
 	glShaderSource(compute, 1, &CShaderCode, NULL);
 	glCompileShader(compute);
 
-#ifdef RSGL_DEBUG
 	RSGL_debug_shader(compute, "Compute", "compile");
-#endif
 
 	program.program = glCreateProgram();
 	glAttachShader(program.program, compute);
 	glLinkProgram(program.program);
-#ifdef RSGL_DEBUG
 	RSGL_debug_shader(program.program, "Program", "link");
-#endif
 
 	glDeleteShader(compute);
 
