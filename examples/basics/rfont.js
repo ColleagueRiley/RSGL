@@ -991,26 +991,26 @@ function dbg(text) {
 // === Body ===
 
 var ASM_CONSTS = {
-  248076: () => { Module.canvas.focus(); },  
- 248101: ($0, $1, $2, $3, $4) => { var data = Module.HEAPU8.slice($0, $0 + $1 * $2 * 4); let context = document.getElementById("canvas").getContext("2d"); let image = context.getImageData(0, 0, $1, $2); image.data.set(data); context.putImageData(image, 0, $4 - $2); },  
- 248336: () => { return window.devicePixelRatio || 1; },  
- 248375: () => { return window.innerWidth || 0; },  
- 248408: () => { return window.innerHeight || 0; },  
- 248442: () => { window.addEventListener("keydown", (event) => { var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); var codepoint = event.key.charCodeAt(0); if(codepoint < 0x7f && event.key.length > 1) { codepoint = 0; } Module._RGFW_handleKeyEvent(code, codepoint, 1); Module._RGFW_webFree(code); }, true); window.addEventListener("keyup", (event) => { var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(code, 0, 0); Module._RGFW_webFree(code); }, true); },  
- 249427: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; Module._RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); Module._Emscripten_onDrop(filename, path.length + 1); free(filename); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
- 250331: () => { return 'Asyncify' in Module; },  
- 250364: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
- 250435: () => { document.getElementById('canvas').style.cursor = 'none'; },  
- 250492: () => { return window.mouseX || 0; },  
- 250523: () => { return window.mouseY || 0; },  
- 250554: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
- 250701: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
- 250754: ($0, $1) => { var ext = UTF8ToString($0, $1); var canvas = document.querySelector('canvas'); var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl'); if (!gl) return 0; var supported = gl.getSupportedExtensions(); return supported && supported.includes(ext) ? 1 : 0; },  
- 251034: () => { return window.innerWidth; },  
- 251064: () => { return window.innerHeight; },  
- 251095: () => { Module.requestFullscreen(false, true); },  
- 251134: () => { Module.exitFullscreen(false, true); },  
- 251170: ($0, $1) => { var element = document.getElementById("canvas"); if (element) element.style.opacity = $1; }
+  248988: () => { Module.canvas.focus(); },  
+ 249013: ($0, $1, $2, $3, $4) => { var data = Module.HEAPU8.slice($0, $0 + $1 * $2 * 4); let context = document.getElementById("canvas").getContext("2d"); let image = context.getImageData(0, 0, $1, $2); image.data.set(data); context.putImageData(image, 0, $4 - $2); },  
+ 249248: () => { return window.devicePixelRatio || 1; },  
+ 249287: () => { return window.innerWidth || 0; },  
+ 249320: () => { return window.innerHeight || 0; },  
+ 249354: () => { window.addEventListener("keydown", (event) => { var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); var codepoint = event.key.charCodeAt(0); if(codepoint < 0x7f && event.key.length > 1) { codepoint = 0; } Module._RGFW_handleKeyEvent(code, codepoint, 1); Module._RGFW_webFree(code); }, true); window.addEventListener("keyup", (event) => { var code = stringToNewUTF8(event.code); Module._RGFW_handleKeyMods(event.getModifierState("CapsLock"), event.getModifierState("NumLock"), event.getModifierState("Control"), event.getModifierState("Alt"), event.getModifierState("Shift"), event.getModifierState("Meta"), event.getModifierState("ScrollLock")); Module._RGFW_handleKeyEvent(code, 0, 0); Module._RGFW_webFree(code); }, true); },  
+ 250339: () => { var canvas = document.getElementById('canvas'); canvas.addEventListener('drop', function(e) { e.preventDefault(); if (e.dataTransfer.file < 0) return; var count = e.dataTransfer.files.length; var drop_dir = '.rgfw_dropped_files'; Module._RGFW_mkdir(drop_dir); for (var i = 0; i < count; i++) { var file = e.dataTransfer.files[i]; var path = '/' + drop_dir + '/' + file.name.replace("//", '_'); var reader = new FileReader(); reader.onloadend = (e) => { if (reader.readyState != 2) { out('failed to read dropped file: '+file.name+': '+reader.error); } else { var data = e.target.result; Module._RGFW_writeFile(path, new Uint8Array(data), file.size); } }; reader.readAsArrayBuffer(file); var filename = stringToNewUTF8(path); Module._Emscripten_onDrop(filename, path.length + 1); free(filename); } }, true); canvas.addEventListener('dragover', function(e) { e.preventDefault(); return false; }, true); },  
+ 251243: () => { return 'Asyncify' in Module; },  
+ 251276: ($0) => { document.getElementById("canvas").style.cursor = UTF8ToString($0); },  
+ 251347: () => { document.getElementById('canvas').style.cursor = 'none'; },  
+ 251404: () => { return window.mouseX || 0; },  
+ 251435: () => { return window.mouseY || 0; },  
+ 251466: ($0) => { var canvas = document.getElementById('canvas'); if ($0) { canvas.style.pointerEvents = 'none'; } else { canvas.style.pointerEvents = 'auto'; } },  
+ 251613: ($0) => { navigator.clipboard.writeText(UTF8ToString($0)); },  
+ 251666: ($0, $1) => { var ext = UTF8ToString($0, $1); var canvas = document.querySelector('canvas'); var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl'); if (!gl) return 0; var supported = gl.getSupportedExtensions(); return supported && supported.includes(ext) ? 1 : 0; },  
+ 251946: () => { return window.innerWidth; },  
+ 251976: () => { return window.innerHeight; },  
+ 252007: () => { Module.requestFullscreen(false, true); },  
+ 252046: () => { Module.exitFullscreen(false, true); },  
+ 252082: ($0, $1) => { var element = document.getElementById("canvas"); if (element) element.style.opacity = $1; }
 };
 
 
@@ -9748,6 +9748,12 @@ var ASM_CONSTS = {
 
 
 
+
+
+
+
+
+
   var runAndAbortIfError = (func) => {
       try {
         return func();
@@ -10793,6 +10799,18 @@ var wasmImports = {
   /** @export */
   glGetAttribLocation: _glGetAttribLocation,
   /** @export */
+  glGetError: _glGetError,
+  /** @export */
+  glGetProgramInfoLog: _glGetProgramInfoLog,
+  /** @export */
+  glGetProgramiv: _glGetProgramiv,
+  /** @export */
+  glGetShaderInfoLog: _glGetShaderInfoLog,
+  /** @export */
+  glGetShaderiv: _glGetShaderiv,
+  /** @export */
+  glGetString: _glGetString,
+  /** @export */
   glGetUniformLocation: _glGetUniformLocation,
   /** @export */
   glLineWidth: _glLineWidth,
@@ -10879,11 +10897,12 @@ var dynCall_viiiiiiiiii = Module['dynCall_viiiiiiiiii'] = createExportWrapper('d
 var dynCall_viiiiiiiiiii = Module['dynCall_viiiiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiiiii');
 var dynCall_viifi = Module['dynCall_viifi'] = createExportWrapper('dynCall_viifi');
 var dynCall_jiji = Module['dynCall_jiji'] = createExportWrapper('dynCall_jiji');
+var dynCall_iidiiii = Module['dynCall_iidiiii'] = createExportWrapper('dynCall_iidiiii');
 var _asyncify_start_unwind = createExportWrapper('asyncify_start_unwind');
 var _asyncify_stop_unwind = createExportWrapper('asyncify_stop_unwind');
 var _asyncify_start_rewind = createExportWrapper('asyncify_start_rewind');
 var _asyncify_stop_rewind = createExportWrapper('asyncify_stop_rewind');
-var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 245084;
+var ___emscripten_embedded_file_data = Module['___emscripten_embedded_file_data'] = 245516;
 
 // include: postamble.js
 // === Auto-generated postamble setup entry stuff ===

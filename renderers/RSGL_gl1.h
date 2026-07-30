@@ -105,9 +105,7 @@ void RSGL_GL1_deleteBuffer(RSGL_gl1Renderer* ctx, size_t buffer) {
 void RSGL_GL1_initPtr(RSGL_gl1Renderer* ctx, void* proc) {
 	#ifdef RSGL_GL1_USE_GLAD
 	if (gladLoadGL((GLADloadfunc)proc) == 0) {
-        #ifdef RSGL_DEBUG
-        printf("Failed to load an OpenGL functions\n");
-        #endif
+        RSGL_debugCallback(RSGL_typeError, RSGL_errorBackend, "Failed to load an OpenGL functions\n");
         return;
     }
 	#endif
