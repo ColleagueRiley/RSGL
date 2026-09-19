@@ -1086,7 +1086,6 @@ RSGL_programInfo RSGL_renderer_createProgram(RSGL_renderer* renderer, RSGL_progr
 
 	if (renderer->proc.createProgram != NULL && (blob->fragment == NULL || blob->vertex == NULL)) {
 		RSGL_programBlob pBlob = RSGL_renderer_defaultBlob(renderer);
-		renderer->defaultProgram = RSGL_renderer_createProgram(renderer, &pBlob);
 
 		if (blob->vertex == NULL) {
 			blob->vertex = pBlob.vertex;
