@@ -1262,7 +1262,7 @@ RFont_texture RFont_RSGL_createAtlas(RSGL_renderer* renderer, u32 atlasWidth, u3
 	RSGL_textureBlob blob;
 	blob.data = NULL;
 	blob.width = atlasWidth;
-	blob.height = atlasWidth;
+	blob.height = atlasHeight;
 	blob.dataType = RSGL_textureDataInt;
 	blob.dataFormat = RSGL_formatRGBA; //RSGL_formatRGBA;
 	blob.textureFormat = RSGL_formatRGBA;//RSGL_formatRGBA;
