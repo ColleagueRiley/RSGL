@@ -152,10 +152,12 @@ RSGL_rendererProc RSGL_GL_rendererProc() {
 	return proc;
 }
 
-void RSGL_GL_deleteTexture(RSGL_glRenderer* ctx, RSGL_texture tex) { glDeleteTextures(1, (u32*)&tex); }
-void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h) { glViewport(x, y, w ,h); }
+void RSGL_GL_deleteTexture(RSGL_glRenderer* ctx, RSGL_texture tex) { RSGL_UNUSED(ctx); glDeleteTextures(1, (u32*)&tex); }
+void RSGL_GL_viewport(RSGL_glRenderer* ctx, i32 x, i32 y, i32 w, i32 h) { RSGL_UNUSED(ctx); glViewport(x, y, w ,h); }
 
 void RSGL_GL_clear(RSGL_glRenderer* ctx, RSGL_framebuffer framebuffer, float r, float g, float b, float a) {
+    RSGL_UNUSED(ctx);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
     glClearColor(r, g, b, a);
@@ -185,6 +187,8 @@ GLuint RSGL_GL_bufferTypeToNative(RSGL_bufferType type) {
 }
 
 void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t size, const void* data, size_t* buffer) {
+    RSGL_UNUSED(ctx);
+
 	glGenBuffers(1, (u32*)buffer);
 
 	GLenum usage = GL_STATIC_DRAW;
@@ -196,15 +200,21 @@ void RSGL_GL_createBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t siz
 }
 
 void RSGL_GL_updateBuffer(RSGL_glRenderer* ctx, RSGL_bufferType type, size_t buffer, const void* data, size_t start, size_t end) {
+    RSGL_UNUSED(ctx);
+
 	glBindBuffer(RSGL_GL_bufferTypeToNative(type), *(u32*)&buffer);
 	glBufferSubData(RSGL_GL_bufferTypeToNative(type), start, end, data);
 }
 
 void RSGL_GL_deleteBuffer(RSGL_glRenderer* ctx, size_t buffer) {
+    RSGL_UNUSED(ctx);
+
 	glDeleteBuffers(1, (u32*)&buffer);
 }
 
 RSGL_programBlob RSGL_GL_defaultBlob(RSGL_glRenderer* ctx) {
+    RSGL_UNUSED(ctx);
+
 #ifdef RSGL_GL3
 
 	static const char *defaultVShaderCode = RSGL_MULTILINE_STR(
@@ -414,12 +424,16 @@ void RSGL_GL_render(RSGL_glRenderer* ctx, const RSGL_renderPass* pass) {
 }
 
 void RSGL_GL_scissorStart(RSGL_glRenderer* ctx, float x, float y, float w, float h, float renderer_height) {
+    RSGL_UNUSED(ctx);
+
     glEnable(GL_SCISSOR_TEST);
 
 	glScissor(x, renderer_height - (y + h), w, h);
 }
 
 void RSGL_GL_scissorEnd(RSGL_glRenderer* ctx) {
+    RSGL_UNUSED(ctx);
+
     glDisable(GL_SCISSOR_TEST);
 }
 
@@ -468,6 +482,7 @@ GLuint RSGL_GL_textureFilterToNative(RSGL_textureFilter filter) {
 
 /* textures / images */
 RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob* blob) {
+    RSGL_UNUSED(ctx);
     unsigned int id = 0;
 
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -511,6 +526,8 @@ RSGL_texture RSGL_GL_createTexture(RSGL_glRenderer* ctx, const RSGL_textureBlob*
 }
 
 void RSGL_GL_copyToTexture(RSGL_glRenderer* ctx, RSGL_texture texture, size_t x, size_t y, const RSGL_textureBlob* blob) {
+    RSGL_UNUSED(ctx);
+
 	glBindTexture(GL_TEXTURE_2D, texture);
 
 #ifndef RSGL_GLES2
@@ -600,6 +617,8 @@ void RSGL_debug_shader(u32 src, const char *shader, const char *action) {
 }
 
 RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* blob) {
+    RSGL_UNUSED(ctx);
+
 	RSGL_programInfo program;
 	u32 vShader, fShader;
 
@@ -638,7 +657,7 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 	program.perspectiveView = glGetUniformLocation(program.program, "pv");
 	program.model = glGetUniformLocation(program.program, "model");
 
-	if (program.perspectiveView < 0 || program.model < 0) {
+	if (program.perspectiveView == SIZE_MAX || program.model == SIZE_MAX) {
 		RSGL_debugCallback(RSGL_typeError, RSGL_errorQueryFail, "Failed to locate the shader variables\n");
 	}
 
@@ -649,11 +668,16 @@ RSGL_programInfo RSGL_GL_createProgram(RSGL_glRenderer* ctx, RSGL_programBlob* b
 }
 
 void RSGL_GL_deleteProgram(RSGL_glRenderer* ctx, const RSGL_programInfo* program) {
+    RSGL_UNUSED(ctx);
+
     glUseProgram(0);
     glDeleteProgram(program->program);
 }
 
 size_t RSGL_GL_findShaderArray(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const char* var, const size_t len) {
+    RSGL_UNUSED(ctx);
+    RSGL_UNUSED(len);
+
 	glUseProgram(program->program);
     int loc = glGetAttribLocation(program->program, var);
     glUseProgram(0);
@@ -661,6 +685,9 @@ size_t RSGL_GL_findShaderArray(RSGL_glRenderer* ctx, const RSGL_programInfo* pro
 }
 
 size_t RSGL_GL_findShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, const char* var, const size_t len) {
+    RSGL_UNUSED(ctx);
+    RSGL_UNUSED(len);
+
 	glUseProgram(program->program);
     int loc = glGetUniformLocation(program->program, var);
     glUseProgram(0);
@@ -668,6 +695,8 @@ size_t RSGL_GL_findShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* 
 }
 
 void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* program, size_t var, const float value[], u8 len) {
+    RSGL_UNUSED(ctx);
+
 	glUseProgram(program->program);
     int loc = (int)var;
 
@@ -684,12 +713,18 @@ void RSGL_GL_updateShaderVariable(RSGL_glRenderer* ctx, const RSGL_programInfo* 
 }
 
 RSGL_framebuffer RSGL_GL_createFramebuffer(RSGL_glRenderer* ctx, size_t width, size_t height) {
+    RSGL_UNUSED(ctx);
+    RSGL_UNUSED(width);
+    RSGL_UNUSED(height);
+
 	u32 result = 0;
 	glGenFramebuffers(1, &result);
     return (RSGL_framebuffer)result;
 }
 
 void RSGL_GL_attachFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo, RSGL_texture tex, u8 attachType, u8 mipLevel) {
+    RSGL_UNUSED(ctx);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     if (attachType < 8)
@@ -705,6 +740,8 @@ void RSGL_GL_attachFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo, RSGL_
 }
 
 void RSGL_GL_deleteFramebuffer(RSGL_glRenderer* ctx, RSGL_framebuffer fbo) {
+    RSGL_UNUSED(ctx);
+
 	u32 value = fbo;
     glDeleteFramebuffers(1, &value);
 }
